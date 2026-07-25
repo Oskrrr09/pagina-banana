@@ -21,6 +21,7 @@ export interface ColorVariant {
   color: string // slug corto, p. ej. 'plata'
   name: string // nombre visible, p. ej. 'Plata'
   hex: string // muestra de color (decorativa; el nombre siempre en texto)
+  image: string // foto real de producto (public/img/products/…)
   capacities: CapacityOption[]
 }
 

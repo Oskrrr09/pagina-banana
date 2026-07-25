@@ -21,6 +21,7 @@ export interface CartLine {
 export interface CompareItem {
   id: string
   modelSlug: string
+  family: string
   name: string
   color: string
   capacity: string
@@ -98,6 +99,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const toggleCompare: StoreState['toggleCompare'] = (item) =>
       setCompare((prev) => {
         if (prev.find((c) => c.id === item.id)) return prev.filter((c) => c.id !== item.id)
+        // Solo se comparan productos del mismo tipo (iPhone con iPhone, Mac con
+        // Mac…). Si el nuevo es de otra familia, empezamos una comparación nueva.
+        if (prev.length > 0 && prev[0].family !== item.family) return [item]
         if (prev.length >= MAX_COMPARE) return prev
         return [...prev, item]
       })

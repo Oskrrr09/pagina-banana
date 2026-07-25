@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { Model } from '../../data/types'
 import { euro } from '../../lib/format'
 import { useStore } from '../../lib/store'
-import { Placeholder } from '../ui/Placeholder'
+import { ProductImage } from './ProductImage'
 import { ProvisionalBadge, OfferBadge } from '../ui/Tag'
 import { Icon } from '../ui/Icon'
 
@@ -14,6 +14,10 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
   const fav = isFavorite(favId)
   const firstCap = model.colors[0].capacities[0]
   const hasOffer = firstCap.previousPrice != null
+  const discount =
+    hasOffer && firstCap.previousPrice
+      ? Math.round(((firstCap.previousPrice - firstCap.price) / firstCap.previousPrice) * 100)
+      : 0
 
   if (loading) {
     return (
@@ -26,7 +30,7 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
   }
 
   return (
-    <div className="group relative flex flex-col rounded-[12px] border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]">
+    <div className="group relative flex flex-col rounded-[12px] border border-line bg-surface p-4 transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]">
       <button
         onClick={() => toggleFavorite(favId)}
         aria-label={fav ? `Quitar ${model.name} de favoritos` : `Añadir ${model.name} a favoritos`}
@@ -37,13 +41,14 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
       </button>
 
       {hasOffer && (
-        <div className="absolute left-5 top-5 z-10">
+        <div className="absolute left-5 top-5 z-10 flex items-center gap-1.5">
           <OfferBadge>Oferta</OfferBadge>
+          {discount > 0 && <OfferBadge>-{discount}%</OfferBadge>}
         </div>
       )}
 
       <Link to={`/${model.family}/${model.slug}`} className="block focus-visible:outline-none">
-        <Placeholder label={model.name} tint={model.colors[0].hex} />
+        <ProductImage src={model.colors[0].image} alt={`${model.name} ${model.colors[0].name}`} />
         <h3 className="mt-4 text-[15px] font-semibold text-ink group-hover:text-brand">{model.name}</h3>
       </Link>
 

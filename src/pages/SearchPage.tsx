@@ -4,7 +4,7 @@ import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ProductCard } from '../components/product/ProductCard'
 import { ButtonLink } from '../components/ui/Button'
-import { iphoneModels, families } from '../data/products'
+import { allModels, families, modelsByFamily } from '../data/products'
 import { services } from '../data/content'
 import { supportTopics } from '../data/content'
 
@@ -18,10 +18,10 @@ export function SearchPage() {
   const productResults = useMemo(
     () =>
       term
-        ? iphoneModels.filter(
+        ? allModels.filter(
             (m) => m.name.toLowerCase().includes(term) || m.tagline.toLowerCase().includes(term),
           )
-        : iphoneModels,
+        : allModels,
     [term],
   )
 
@@ -77,7 +77,7 @@ export function SearchPage() {
             {families.slice(0, 4).map((f) => (
               <Link
                 key={f.slug}
-                to="/iphone"
+                to={modelsByFamily[f.slug] ? `/${f.slug}` : '/iphone'}
                 className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:border-brand hover:text-brand"
               >
                 {f.name}
@@ -110,7 +110,13 @@ export function SearchPage() {
                 {categoryResults.map((c) => (
                   <li key={c.name}>
                     <Link
-                      to={'slug' in c && c.slug === 'iphone' ? '/iphone' : 'line' in c ? '/servicios' : '/iphone'}
+                      to={
+                        'slug' in c && modelsByFamily[c.slug]
+                          ? `/${c.slug}`
+                          : 'line' in c
+                            ? '/servicios'
+                            : '/iphone'
+                      }
                       className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-ink hover:bg-neutral hover:text-brand"
                     >
                       <Icon name="chevron-right" size={16} className="text-muted" />

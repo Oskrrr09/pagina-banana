@@ -51,27 +51,18 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-line bg-surface/85 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-black/10 bg-banana-gradient">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-5 sm:px-6 lg:px-8">
-          {/* Móvil: botón de menú */}
-          <button
-            onClick={() => setMobileOpen(true)}
-            aria-label="Abrir menú"
-            className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-neutral lg:hidden"
-          >
-            <Icon name="menu" size={24} />
-          </button>
-
           <Logo />
 
           {/* Escritorio: navegación con mega-menú */}
-          <nav className="ml-4 hidden flex-1 items-center gap-1 lg:flex" aria-label="Principal">
+          <nav className="ml-6 hidden flex-1 items-center gap-1 lg:ml-8 lg:flex" aria-label="Principal">
             {familiesNav.map((fam) => (
               <div key={fam.slug} onMouseEnter={() => openMega(fam.slug)} onMouseLeave={scheduleClose}>
                 <Link
-                  to={fam.slug === 'iphone' ? '/iphone' : '/iphone'}
-                  className={`rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-neutral ${
-                    activeFamily === fam.slug ? 'text-brand' : 'text-ink'
+                  to={fam.demo ? '/iphone' : `/${fam.slug}`}
+                  className={`rounded-full px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 ${
+                    activeFamily === fam.slug ? 'bg-black/5 font-semibold' : ''
                   }`}
                   onFocus={() => openMega(fam.slug)}
                 >
@@ -83,7 +74,7 @@ export function Header() {
               <Link
                 key={l.to}
                 to={l.to}
-                className="rounded-full px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-neutral"
+                className="rounded-full px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5"
               >
                 {l.label}
               </Link>
@@ -96,7 +87,7 @@ export function Header() {
               onClick={() => setSearchOpen((v) => !v)}
               aria-label="Buscar"
               aria-expanded={searchOpen}
-              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-neutral lg:grid"
+              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 lg:grid"
             >
               <Icon name="search" />
             </button>
@@ -104,17 +95,25 @@ export function Header() {
             <IconBadge to="/comparar" icon="compare" label="Comparador" count={compare.length} desktopOnly />
             <button
               aria-label="Cuenta"
-              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-neutral lg:grid"
+              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 lg:grid"
             >
               <Icon name="user" />
             </button>
             <IconBadge to="/carrito" icon="cart" label="Carrito" count={cartCount} />
+            {/* Móvil: botón de menú (a la derecha, con el logo fijo a la izquierda) */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              aria-label="Abrir menú"
+              className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 lg:hidden"
+            >
+              <Icon name="menu" size={24} />
+            </button>
           </div>
         </div>
 
         {/* Barra de búsqueda desplegable (escritorio) */}
         {searchOpen && (
-          <div className="border-t border-line bg-surface">
+          <div className="border-t border-black/10 bg-surface">
             <form onSubmit={submitSearch} className="mx-auto w-full max-w-6xl px-5 py-3 sm:px-6 lg:px-8">
               <div className="flex items-center gap-2 rounded-full border border-line bg-neutral px-4 py-2.5">
                 <Icon name="search" className="text-muted" />
@@ -161,7 +160,7 @@ function IconBadge({
     <Link
       to={to}
       aria-label={count > 0 ? `${label} (${count})` : label}
-      className={`relative grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-neutral ${
+      className={`relative grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 ${
         desktopOnly ? 'hidden lg:grid' : 'grid'
       }`}
     >

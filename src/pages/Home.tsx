@@ -3,15 +3,17 @@ import { Link } from 'react-router-dom'
 import { Container, Section, SectionHeader } from '../components/ui/Container'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Placeholder } from '../components/ui/Placeholder'
-import { ProvisionalBadge, OfferBadge } from '../components/ui/Tag'
+import { ProvisionalBadge } from '../components/ui/Tag'
 import { Reveal, StaggerGroup, StaggerItem } from '../components/ui/Reveal'
 import { Accordion } from '../components/ui/Accordion'
 import { Icon } from '../components/ui/Icon'
 import { ProductCard } from '../components/product/ProductCard'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
-import { families, iphoneModels } from '../data/products'
+import { ProductImage } from '../components/product/ProductImage'
+import { StoreCarousel } from '../components/home/StoreCarousel'
+import { BentoShowcase } from '../components/home/BentoShowcase'
+import { families, iphoneModels, modelsByFamily } from '../data/products'
 import { advantages, homeFaq, sampleReview } from '../data/content'
-import { stores } from '../data/stores'
 
 export function Home() {
   const [financeOpen, setFinanceOpen] = useState(false)
@@ -20,45 +22,56 @@ export function Home() {
 
   return (
     <>
-      {/* 02 — Campaña principal */}
-      <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
-        <Container className="grid items-center gap-8 py-12 md:grid-cols-2 md:py-20">
-          <Reveal>
-            <Placeholder label="Imagen de producto" tint="#c8642a" ratio="4 / 3" />
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h1 className="text-4xl font-extrabold leading-[1.05] text-ink sm:text-5xl">
-              iPhone 17 Pro.
-              <br />
-              Ya en Banana.
-            </h1>
-            <p className="mt-4 text-lg text-muted">
-              El nuevo iPhone, con envío a toda Canarias y recogida gratuita en tienda.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <ButtonLink to="/iphone/17-pro" size="lg">
-                Ver oferta
-              </ButtonLink>
-              <ProvisionalBadge label="Contenido provisional" />
-            </div>
-          </Reveal>
-        </Container>
+      {/* 02 — Campaña principal (banner real de Banana) */}
+      <section className="bg-ink">
+        <Link to="/iphone/17-pro" className="group relative mx-auto block max-w-[1400px]">
+          <picture>
+            <source media="(min-width: 768px)" srcSet="/img/hero-17pro-desktop.png" />
+            <img
+              src="/img/hero-17pro-mobile.png"
+              alt="iPhone 17 Pro, ya en Banana"
+              className="mx-auto block w-full"
+              fetchPriority="high"
+            />
+          </picture>
+          <span className="absolute right-4 top-4">
+            <span className="inline-flex items-center rounded-full bg-white/90 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink">
+              Contenido provisional
+            </span>
+          </span>
+        </Link>
       </section>
+
+      {/* 02b — Bento de destacados (producto estrella + servicios clave) */}
+      <Section>
+        <SectionHeader eyebrow="Banana Computer" title="Todo lo Apple, cerca de ti" />
+        <Reveal>
+          <BentoShowcase />
+        </Reveal>
+      </Section>
 
       {/* 03 — Categorías principales (carrusel) */}
       <Section>
         <SectionHeader title="Explora por categoría" />
         <div className="-mx-5 flex snap-x gap-4 overflow-x-auto px-5 pb-2 no-scrollbar sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
-          {families.map((fam) => (
-            <Link
-              key={fam.slug}
-              to="/iphone"
-              className="group w-40 shrink-0 snap-start rounded-[12px] border border-line bg-surface p-4 text-center transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)] sm:w-auto"
-            >
-              <Placeholder label={fam.name} ratio="4 / 3" />
-              <p className="mt-3 text-sm font-semibold text-ink group-hover:text-brand">{fam.name}</p>
-            </Link>
-          ))}
+          {families.map((fam) => {
+            const cover = modelsByFamily[fam.slug]?.[0]?.colors[0].image
+            const to = modelsByFamily[fam.slug] ? `/${fam.slug}` : '/iphone'
+            return (
+              <Link
+                key={fam.slug}
+                to={to}
+                className="group w-40 shrink-0 snap-start rounded-[12px] border border-line bg-surface p-4 text-center transition-all hover:-translate-y-1 hover:border-banana hover:shadow-[var(--shadow-raised)] sm:w-auto"
+              >
+                {cover ? (
+                  <ProductImage src={cover} alt={fam.name} ratio="1 / 1" />
+                ) : (
+                  <Placeholder label={fam.name} ratio="1 / 1" />
+                )}
+                <p className="mt-3 text-sm font-semibold text-ink group-hover:text-brand">{fam.name}</p>
+              </Link>
+            )
+          })}
         </div>
       </Section>
 
@@ -80,10 +93,7 @@ export function Home() {
           <SectionHeader eyebrow="Rincón del chollo" title="Ofertas destacadas" desc="Precios demostrativos, pendientes de validación." />
           <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {offers.map((m) => (
-              <StaggerItem key={m.slug} className="relative">
-                <div className="absolute left-3 top-3 z-20">
-                  <OfferBadge>-15%</OfferBadge>
-                </div>
+              <StaggerItem key={m.slug}>
                 <ProductCard model={m} />
               </StaggerItem>
             ))}
@@ -92,16 +102,16 @@ export function Home() {
       )}
 
       {/* 06 — Ventajas (franja de confianza) */}
-      <section className="border-y border-line bg-brand text-white">
+      <section className="bg-banana text-ink">
         <Container className="grid grid-cols-2 gap-8 py-10 lg:grid-cols-4">
           {advantages.map((a) => (
             <div key={a.title} className="flex items-start gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/10">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-black/10 text-ink">
                 <Icon name={a.icon} />
               </span>
               <div>
                 <p className="font-semibold leading-tight">{a.title}</p>
-                <p className="mt-0.5 text-xs text-white/60">{a.note}</p>
+                <p className="mt-0.5 text-xs text-ink/70">{a.note}</p>
               </div>
             </div>
           ))}
@@ -142,9 +152,9 @@ export function Home() {
       {/* Reseña de ejemplo (§7) */}
       <Section alt>
         <Reveal className="mx-auto max-w-2xl text-center">
-          <div className="mb-3 flex justify-center gap-1 text-action">
+          <div className="mb-3 flex justify-center gap-1 text-banana">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Icon key={i} name="star" className="fill-action" />
+              <Icon key={i} name="star" className="fill-banana" />
             ))}
           </div>
           <blockquote className="text-xl font-medium leading-relaxed text-ink sm:text-2xl">
@@ -157,30 +167,17 @@ export function Home() {
         </Reveal>
       </Section>
 
-      {/* 09 — Tiendas físicas */}
+      {/* 09 — Tiendas físicas (carrusel) */}
       <Section>
-        <div className="grid gap-8 md:grid-cols-2 md:items-center">
-          <Reveal>
-            <Placeholder label="Mapa de tiendas" ratio="4 / 3" />
-          </Reveal>
-          <Reveal delay={0.1}>
-            <SectionHeader eyebrow="Estamos cerca" title="Tiendas físicas en Canarias" />
-            <ul className="space-y-3">
-              {stores.slice(0, 3).map((s) => (
-                <li key={s.slug}>
-                  <Link to={`/tiendas/${s.slug}`} className="flex items-center gap-2 text-ink hover:text-brand">
-                    <Icon name="map-pin" size={18} className="text-muted" />
-                    <span className="font-medium">{s.name}</span>
-                    <span className="text-sm text-muted">· {s.island}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <ButtonLink to="/tiendas" variant="tertiary" className="mt-4">
-              Ver todas las tiendas <Icon name="arrow-right" size={16} />
-            </ButtonLink>
-          </Reveal>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <SectionHeader eyebrow="Estamos cerca" title="Tiendas físicas en Canarias" className="mb-0" />
+          <ButtonLink to="/tiendas" variant="tertiary">
+            Ver todas las tiendas <Icon name="arrow-right" size={16} />
+          </ButtonLink>
         </div>
+        <Reveal>
+          <StoreCarousel />
+        </Reveal>
       </Section>
 
       {/* 11 — FAQ */}
@@ -193,9 +190,9 @@ export function Home() {
 
       {/* 13 — Newsletter */}
       <Section>
-        <Reveal className="rounded-[20px] bg-brand px-6 py-12 text-center text-white sm:px-12">
+        <Reveal className="bg-banana rounded-[20px] px-6 py-12 text-center text-ink sm:px-12">
           <h2 className="text-2xl font-bold sm:text-3xl">No te pierdas ninguna oferta</h2>
-          <p className="mt-2 text-white/70">Suscríbete y recibe las novedades antes que nadie.</p>
+          <p className="mt-2 text-ink/70">Suscríbete y recibe las novedades antes que nadie.</p>
           <form
             onSubmit={(e) => e.preventDefault()}
             className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row"
@@ -207,11 +204,14 @@ export function Home() {
               aria-label="Tu correo electrónico"
               className="h-12 flex-1 rounded-[12px] border-0 bg-white px-4 text-ink outline-none placeholder:text-muted"
             />
-            <Button type="submit" size="lg">
+            <button
+              type="submit"
+              className="inline-flex h-12 items-center justify-center rounded-[12px] bg-ink px-8 font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5"
+            >
               Suscribirme
-            </Button>
+            </button>
           </form>
-          <p className="mt-3 text-xs text-white/60">
+          <p className="mt-3 text-xs text-ink/60">
             Demostración: el formulario no envía datos reales.
           </p>
         </Reveal>

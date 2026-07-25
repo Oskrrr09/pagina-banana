@@ -63,7 +63,7 @@ export function PlanRenovePage() {
       </Section>
 
       <Section alt>
-        <Reveal className="rounded-[20px] bg-brand px-6 py-12 text-center text-white sm:px-12">
+        <Reveal className="rounded-[20px] bg-ink px-6 py-12 text-center text-white sm:px-12">
           <h2 className="text-2xl font-bold sm:text-3xl">Empieza tu Plan Renove</h2>
           <p className="mt-2 text-white/70">Elige una tienda cercana o reserva cita previa.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">

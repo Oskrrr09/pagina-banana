@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
-import { Breadcrumb } from '../components/ui/Breadcrumb'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
@@ -12,7 +11,7 @@ import { ProvisionalBadge } from '../components/ui/Tag'
 import { Accordion } from '../components/ui/Accordion'
 import { StorePicker } from '../components/product/StorePicker'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
-import { getModel } from '../data/products'
+import { getModel, familyInfo } from '../data/products'
 import { serviceFaq } from '../data/content'
 import { euro } from '../lib/format'
 import { useStore } from '../lib/store'
@@ -20,9 +19,22 @@ import { NotFound } from './NotFound'
 
 const TABS = ['Características', 'Comparar', 'Plan Renove', 'Garantía', 'Accesorios', 'FAQ'] as const
 
+// Aclara un color hacia el blanco (amount 0–1). Se usa para teñir suavemente el
+// fondo de la galería según el color elegido, al estilo de las fichas de Apple.
+function tintHex(hex: string, amount: number) {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  const mix = (c: number) => Math.round(c + (255 - c) * amount)
+  const to2 = (n: number) => n.toString(16).padStart(2, '0')
+  return `#${to2(mix(r))}${to2(mix(g))}${to2(mix(b))}`
+}
+
 export function VariantPage() {
-  const { model: modelSlug, variant } = useParams()
-  const model = getModel('iphone', modelSlug ?? '')
+  const { family: familySlug, model: modelSlug, variant } = useParams()
+  const family = familyInfo(familySlug ?? '')
+  const model = getModel(familySlug ?? '', modelSlug ?? '')
   const navigate = useNavigate()
   const { addToCart } = useStore()
 
@@ -64,19 +76,19 @@ export function VariantPage() {
 
   // Actualiza la URL al cambiar de variante, sin recargar (§9.3)
   useEffect(() => {
-    if (model && color && capacity) {
+    if (family && model && color && capacity) {
       const slug = `${capacity.toLowerCase()}-${color.color}`
-      window.history.replaceState(null, '', `/iphone/${model.slug}/${slug}`)
+      window.history.replaceState(null, '', `/${family.slug}/${model.slug}/${slug}`)
     }
-  }, [model, color, capacity])
+  }, [family, model, color, capacity])
 
-  if (!model || !color || !current) return <NotFound />
+  if (!family || !model || !color || !current) return <NotFound />
 
   const soldOut = current.availability === 'agotado'
   const cartLine = {
-    id: `iphone/${model.slug}/${color.color}/${current.capacity}`,
+    id: `${family.slug}/${model.slug}/${color.color}/${current.capacity}`,
     modelSlug: model.slug,
-    family: 'iphone',
+    family: family.slug,
     name: model.name,
     color: color.name,
     capacity: current.capacity,
@@ -90,22 +102,49 @@ export function VariantPage() {
 
   return (
     <>
-      <Container className="py-6">
-        <Breadcrumb
-          items={[
-            { label: 'Inicio', to: '/' },
-            { label: 'iPhone', to: '/iphone' },
-            { label: model.name, to: `/iphone/${model.slug}` },
-            { label: `${current.capacity} · ${color.name}` },
-          ]}
-        />
-      </Container>
-
       {/* Información esencial — siempre visible */}
-      <Container className="grid gap-8 pb-8 lg:grid-cols-2">
+      <Container className="grid gap-8 py-8 lg:grid-cols-2">
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <Placeholder label={`${model.name} · ${color.name}`} tint={color.hex} ratio="1 / 1" />
-          <p className="mt-2 text-center text-xs text-muted">Galería de fotos (zoom, por color) · imagen de ejemplo</p>
+          <motion.div
+            className="relative grid aspect-square place-items-center overflow-hidden rounded-[20px] border border-line p-6"
+            animate={{ backgroundColor: tintHex(color.hex, 0.84) }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={color.color}
+                src={color.image}
+                alt={`${model.name} · ${color.name}`}
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.04 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                className="h-full w-full object-contain"
+              />
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Muestras de color: cambian la foto con fundido y tiñen el fondo */}
+          <div className="mt-4 flex justify-center gap-2.5">
+            {model.colors.map((c) => (
+              <button
+                key={c.color}
+                onClick={() => {
+                  setColorSlug(c.color)
+                  if (!c.capacities.some((cap) => cap.capacity === capacity)) {
+                    setCapacity(c.capacities[0].capacity)
+                  }
+                }}
+                aria-label={`Ver en ${c.name}`}
+                aria-pressed={c.color === color.color}
+                className={`h-8 w-8 rounded-full border transition-transform hover:scale-110 ${
+                  c.color === color.color ? 'border-ink ring-2 ring-ink ring-offset-2' : 'border-black/15'
+                }`}
+                style={{ background: c.hex }}
+              />
+            ))}
+          </div>
+          <p className="mt-3 text-center text-xs text-muted">Elige un color · imagen de ejemplo</p>
         </div>
 
         <div ref={buyBoxRef}>

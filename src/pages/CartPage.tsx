@@ -4,8 +4,10 @@ import { Container } from '../components/ui/Container'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
 import { Placeholder } from '../components/ui/Placeholder'
+import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { useStore } from '../lib/store'
+import { productImage } from '../data/products'
 import { euro } from '../lib/format'
 
 export function CartPage() {
@@ -45,7 +47,7 @@ export function CartPage() {
             {cart.map((line) => (
               <li key={line.id} className="flex gap-4 py-5">
                 <div className="w-20 shrink-0 sm:w-24">
-                  <Placeholder label={line.color} ratio="1 / 1" />
+                  <ProductImage src={productImage(line.modelSlug, line.color)} alt={`${line.name} ${line.color}`} ratio="1 / 1" />
                 </div>
                 <div className="flex flex-1 flex-col">
                   <div className="flex items-start justify-between gap-3">

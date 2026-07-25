@@ -3,11 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
-import { Placeholder } from '../components/ui/Placeholder'
+import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { Chip } from '../components/ui/Chip'
 import { Logo } from '../components/layout/Logo'
 import { useStore } from '../lib/store'
+import { productImage } from '../data/products'
 import { euro, monthlyQuote } from '../lib/format'
 
 // Checkout de 3 pasos (§4.10). Cabecera simplificada (sin menú, para reducir
@@ -293,7 +294,7 @@ export function CheckoutPage() {
               {(cart.length ? cart : []).map((line) => (
                 <li key={line.id} className="flex gap-3">
                   <div className="w-14 shrink-0">
-                    <Placeholder label={line.color} ratio="1 / 1" />
+                    <ProductImage src={productImage(line.modelSlug, line.color)} alt={`${line.name} ${line.color}`} ratio="1 / 1" />
                   </div>
                   <div className="text-sm">
                     <p className="font-medium text-ink">

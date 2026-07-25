@@ -1,9 +1,7 @@
-import { iphoneModels } from './products'
+import { families, modelsByFamily } from './products'
 
 // Navegación principal (§2.2). Las familias abren mega-menú (§2.4);
 // Servicios/Tiendas/Soporte son enlaces directos.
-// En este prototipo, la familia desarrollada a fondo es iPhone (§8): el resto
-// muestra en su mega-menú un aviso y un enlace a la familia desarrollada.
 
 export interface MegaColumn {
   explore: { label: string; to: string }[]
@@ -14,7 +12,7 @@ export interface MegaColumn {
 export interface FamilyNav {
   slug: string
   name: string
-  demo: boolean // true = aún no desarrollada en el prototipo
+  demo: boolean // true = familia sin catálogo desarrollado en el prototipo
   mega: MegaColumn
 }
 
@@ -22,44 +20,60 @@ const serviceLinks = [
   { label: 'Financiación', to: '/servicios#financiacion' },
   { label: 'Plan Renove', to: '/plan-renove' },
   { label: 'Seguro a todo riesgo', to: '/servicios#seguro' },
-  { label: 'Accesorios', to: '/buscar?q=accesorios' },
+  { label: 'Todas las tiendas', to: '/tiendas' },
 ]
 
-const iphoneNav: FamilyNav = {
-  slug: 'iphone',
-  name: 'iPhone',
-  demo: false,
-  mega: {
-    explore: [
-      ...iphoneModels.map((m) => ({ label: m.name, to: `/iphone/${m.slug}` })),
-      { label: 'Comparar modelos', to: '/comparar' },
-    ],
-    buy: serviceLinks,
-    featured: { name: 'iPhone 17 Pro', cta: 'Ver la novedad', to: '/iphone/17-pro', tint: '#c8642a' },
-  },
+// Tinte del bloque "Destacado" por familia (decorativo, en negro y grises).
+const tints: Record<string, string> = {
+  mac: '#8a8f98',
+  iphone: '#c8642a',
+  ipad: '#5b7a9a',
+  'apple-watch': '#c0555a',
+  airpods: '#4a4a4c',
+  accesorios: '#7fa08a',
 }
 
-function demoFamily(slug: string, name: string, tint: string): FamilyNav {
+function buildFamilyNav(slug: string, name: string): FamilyNav {
+  const models = modelsByFamily[slug] ?? []
+  const developed = models.length > 0
+  if (!developed) {
+    // Accesorios aún no tiene catálogo con fotos reales: enlaza a lo desarrollado.
+    return {
+      slug,
+      name,
+      demo: true,
+      mega: {
+        explore: [{ label: `Ver todo ${name}`, to: '/iphone' }],
+        buy: serviceLinks,
+        featured: { name, cta: 'Explorar el catálogo', to: '/iphone', tint: tints[slug] ?? '#8a8f98' },
+      },
+    }
+  }
+  const featured = models[0]
   return {
     slug,
     name,
-    demo: true,
+    demo: false,
     mega: {
-      explore: [{ label: `Ver todo ${name}`, to: '/iphone' }],
+      explore: [
+        ...models.map((m) => ({ label: m.name, to: `/${slug}/${m.slug}` })),
+        { label: `Comparar ${name}`, to: `/comparar?familia=${slug}` },
+      ],
       buy: serviceLinks,
-      featured: { name, cta: 'Ver iPhone (desarrollado)', to: '/iphone', tint },
+      featured: {
+        name: featured.name,
+        cta: 'Ver la novedad',
+        to: `/${slug}/${featured.slug}`,
+        tint: tints[slug] ?? '#8a8f98',
+      },
     },
   }
 }
 
-export const familiesNav: FamilyNav[] = [
-  demoFamily('mac', 'Mac', '#8a8f98'),
-  iphoneNav,
-  demoFamily('ipad', 'iPad', '#5b7a9a'),
-  demoFamily('apple-watch', 'Apple Watch', '#c0555a'),
-  demoFamily('airpods', 'AirPods', '#4a4a4c'),
-  demoFamily('accesorios', 'Accesorios', '#7fa08a'),
-]
+export const familiesNav: FamilyNav[] = families
+  .filter((f) => f.slug !== 'accesorios')
+  .map((f) => buildFamilyNav(f.slug, f.name))
+  .concat(buildFamilyNav('accesorios', 'Accesorios'))
 
 export const directLinks = [
   { label: 'Servicios', to: '/servicios' },

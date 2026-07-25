@@ -3,13 +3,13 @@ import { ButtonLink } from '../components/ui/Button'
 import { ProductCard } from '../components/product/ProductCard'
 import { Icon } from '../components/ui/Icon'
 import { useStore } from '../lib/store'
-import { iphoneModels } from '../data/products'
+import { allModels } from '../data/products'
 
 export function FavoritesPage() {
   const { favorites } = useStore()
   // Los favoritos guardan `family/model` o `family/model/color`; agrupamos a modelo.
-  const favModels = iphoneModels.filter((m) =>
-    favorites.some((f) => f.startsWith(`iphone/${m.slug}`)),
+  const favModels = allModels.filter((m) =>
+    favorites.some((f) => f.startsWith(`${m.family}/${m.slug}`)),
   )
 
   return (

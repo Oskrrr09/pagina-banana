@@ -30,15 +30,6 @@ export const stores: Store[] = [
     services: ['Click & Collect', 'Plan Renove', 'Servicio técnico', 'Financiación presencial'],
   },
   {
-    slug: 'plaza-espana',
-    name: 'Banana Plaza de España',
-    island: 'Gran Canaria',
-    address: 'Plaza de España, 5 · Las Palmas de Gran Canaria',
-    openNow: true,
-    hours: week('10:00–21:00', '10:00–20:00'),
-    services: ['Click & Collect', 'Parking gratuito', 'Plan Renove', 'Servicio técnico', 'Financiación presencial'],
-  },
-  {
     slug: 'castillo',
     name: 'Banana Castillo',
     island: 'Tenerife',
@@ -64,6 +55,15 @@ export const stores: Store[] = [
     openNow: false,
     hours: week('10:00–20:00', '10:00–14:00'),
     services: ['Click & Collect', 'Plan Renove', 'Servicio técnico'],
+  },
+  {
+    slug: 'safari',
+    name: 'Banana Safari',
+    island: 'Tenerife',
+    address: 'C.C. Safari, Av. Rafael Puig Lluvina, 3 · Playa de las Américas, Arona',
+    openNow: true,
+    hours: week('10:00–22:00', '10:00–22:00', '10:00–22:00'),
+    services: ['Click & Collect', 'Parking gratuito', 'Plan Renove', 'Servicio técnico', 'Financiación presencial'],
   },
 ]
 

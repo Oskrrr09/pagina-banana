@@ -22,9 +22,9 @@ export function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/iphone" element={<FamilyPage />} />
-        <Route path="/iphone/:model" element={<ModelPage />} />
-        <Route path="/iphone/:model/:variant" element={<VariantPage />} />
+        <Route path="/:family" element={<FamilyPage />} />
+        <Route path="/:family/:model" element={<ModelPage />} />
+        <Route path="/:family/:model/:variant" element={<VariantPage />} />
         <Route path="/buscar" element={<SearchPage />} />
         <Route path="/comparar" element={<ComparePage />} />
         <Route path="/carrito" element={<CartPage />} />

@@ -1,16 +1,15 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
-import { Breadcrumb } from '../components/ui/Breadcrumb'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
-import { Placeholder } from '../components/ui/Placeholder'
+import { ProductImage } from '../components/product/ProductImage'
 import { StockIndicator } from '../components/ui/StockIndicator'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { StorePicker } from '../components/product/StorePicker'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
-import { iphoneModels, getModel } from '../data/products'
+import { getModel, familyInfo } from '../data/products'
 import type { ColorVariant, Model } from '../data/types'
 import { useStore } from '../lib/store'
 import { euro } from '../lib/format'
@@ -19,8 +18,9 @@ import { NotFound } from './NotFound'
 type SortKey = 'relevancia' | 'precio' | 'novedad'
 
 export function ModelPage() {
-  const { model: modelSlug } = useParams()
-  const model = getModel('iphone', modelSlug ?? '')
+  const { family: familySlug, model: modelSlug } = useParams()
+  const family = familyInfo(familySlug ?? '')
+  const model = getModel(familySlug ?? '', modelSlug ?? '')
 
   const [capFilter, setCapFilter] = useState<string | null>(null)
   const [inStockOnly, setInStockOnly] = useState(false)
@@ -33,7 +33,7 @@ export function ModelPage() {
     return [...set]
   }, [model])
 
-  if (!model) return <NotFound />
+  if (!family || !model) return <NotFound />
 
   const colors = [...model.colors].sort((a, b) => {
     if (sort === 'precio') return a.capacities[0].price - b.capacities[0].price
@@ -42,25 +42,6 @@ export function ModelPage() {
 
   return (
     <>
-      <Container className="py-6">
-        <Breadcrumb
-          items={[{ label: 'Inicio', to: '/' }, { label: 'iPhone', to: '/iphone' }, { label: model.name }]}
-        />
-      </Container>
-
-      {/* Pestañas de modelo (§4.6) */}
-      <div className="sticky top-16 z-30 border-y border-line bg-surface/90 backdrop-blur">
-        <Container className="py-3">
-          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {iphoneModels.map((m) => (
-              <Link key={m.slug} to={`/iphone/${m.slug}`}>
-                <Chip selected={m.slug === model.slug}>{m.name.replace('iPhone ', '')}</Chip>
-              </Link>
-            ))}
-          </div>
-        </Container>
-      </div>
-
       <Container className="py-8">
         <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -101,6 +82,7 @@ export function ModelPage() {
           {colors.map((color) => (
             <ColorCard
               key={color.color}
+              family={family.slug}
               model={model}
               color={color}
               capFilter={capFilter}
@@ -120,11 +102,13 @@ export function ModelPage() {
 
 // Tarjeta de color con selector de capacidad embebido (§4.6).
 function ColorCard({
+  family,
   model,
   color,
   capFilter,
   inStockOnly,
 }: {
+  family: string
   model: Model
   color: ColorVariant
   capFilter: string | null
@@ -144,15 +128,15 @@ function ColorCard({
   if (inStockOnly && color.capacities.every((c) => c.availability === 'agotado')) return null
   if (capFilter && !color.capacities.some((c) => c.capacity === capFilter)) return null
 
-  const favId = `iphone/${model.slug}/${color.color}`
-  const compareId = `iphone/${model.slug}/${color.color}/${current.capacity}`
+  const favId = `${family}/${model.slug}/${color.color}`
+  const compareId = `${family}/${model.slug}/${color.color}/${current.capacity}`
   const soldOut = current.availability === 'agotado'
 
   const addToCartLine = () =>
     addToCart({
       id: compareId,
       modelSlug: model.slug,
-      family: 'iphone',
+      family,
       name: model.name,
       color: color.name,
       capacity: current.capacity,
@@ -171,7 +155,7 @@ function ColorCard({
         >
           <Icon name="heart" className={isFavorite(favId) ? 'fill-danger text-danger' : ''} />
         </button>
-        <Placeholder label={`${model.name} · ${color.name}`} tint={color.hex} ratio="4 / 3" />
+        <ProductImage src={color.image} alt={`${model.name} · ${color.name}`} ratio="4 / 3" />
       </div>
 
       <div className="mt-4 flex items-center gap-2">
@@ -236,6 +220,7 @@ function ColorCard({
               toggleCompare({
                 id: compareId,
                 modelSlug: model.slug,
+                family,
                 name: model.name,
                 color: color.name,
                 capacity: current.capacity,

@@ -23,9 +23,19 @@ export function Section({
   )
 }
 
-export function SectionHeader({ eyebrow, title, desc }: { eyebrow?: string; title: string; desc?: string }) {
+export function SectionHeader({
+  eyebrow,
+  title,
+  desc,
+  className = '',
+}: {
+  eyebrow?: string
+  title: string
+  desc?: string
+  className?: string
+}) {
   return (
-    <div className="mb-8 max-w-2xl">
+    <div className={`mb-8 max-w-2xl ${className}`}>
       {eyebrow && (
         <p className="mb-2 text-sm font-bold uppercase tracking-wider text-brand">{eyebrow}</p>
       )}
