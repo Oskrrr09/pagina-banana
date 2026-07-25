@@ -1,0 +1,71 @@
+import { Container, Section, SectionHeader } from '../components/ui/Container'
+import { Icon } from '../components/ui/Icon'
+import { Accordion } from '../components/ui/Accordion'
+import { ProvisionalBadge } from '../components/ui/Tag'
+import { Reveal, StaggerGroup, StaggerItem } from '../components/ui/Reveal'
+import { ButtonLink } from '../components/ui/Button'
+import { services, serviceFaq } from '../data/content'
+
+// Página de servicios (§4.11).
+export function ServicesPage() {
+  return (
+    <>
+      <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
+        <Container className="py-12 md:py-16">
+          <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">Servicios</h1>
+          <p className="mt-3 max-w-2xl text-lg text-muted">
+            Comprar en Banana es más que un producto: financiación, envíos a toda Canarias, Plan Renove, seguro y
+            descuento educativo.
+          </p>
+        </Container>
+      </section>
+
+      <Section>
+        <SectionHeader title="Todo lo que te ofrecemos" />
+        <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {services.map((s) => (
+            <StaggerItem key={s.slug}>
+              <div id={s.slug} className="flex h-full flex-col rounded-[12px] border border-line bg-surface p-6 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]">
+                <span className="grid h-12 w-12 place-items-center rounded-[12px] bg-brand-050 text-brand">
+                  <Icon name={s.icon} size={24} />
+                </span>
+                <h3 className="mt-4 text-lg font-bold text-ink">{s.name}</h3>
+                <p className="mt-1 flex-1 text-sm text-muted">{s.line}</p>
+                <div className="mt-3">
+                  <ProvisionalBadge label={s.note} />
+                </div>
+                <ButtonLink
+                  to={s.slug === 'plan-renove' ? '/plan-renove' : '/servicios'}
+                  variant="tertiary"
+                  className="mt-4"
+                >
+                  Más información <Icon name="arrow-right" size={16} />
+                </ButtonLink>
+              </div>
+            </StaggerItem>
+          ))}
+        </StaggerGroup>
+      </Section>
+
+      <Section alt>
+        <div className="mx-auto max-w-3xl">
+          <SectionHeader title="Preguntas frecuentes de servicios" />
+          <Accordion items={serviceFaq} />
+        </div>
+      </Section>
+
+      <Section>
+        <Reveal className="rounded-[20px] border border-line bg-neutral p-8 text-center">
+          <h2 className="text-2xl font-bold text-ink">¿Tienes dudas sobre algún servicio?</h2>
+          <p className="mt-2 text-muted">Nuestro equipo te ayuda en tienda o desde el centro de soporte.</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <ButtonLink to="/soporte">Ir a soporte</ButtonLink>
+            <ButtonLink to="/tiendas" variant="secondary">
+              Ver tiendas
+            </ButtonLink>
+          </div>
+        </Reveal>
+      </Section>
+    </>
+  )
+}

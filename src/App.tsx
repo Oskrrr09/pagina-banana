@@ -1,0 +1,42 @@
+import { Routes, Route } from 'react-router-dom'
+import { Layout } from './components/layout/Layout'
+import { Home } from './pages/Home'
+import { FamilyPage } from './pages/FamilyPage'
+import { ModelPage } from './pages/ModelPage'
+import { VariantPage } from './pages/VariantPage'
+import { SearchPage } from './pages/SearchPage'
+import { ComparePage } from './pages/ComparePage'
+import { CartPage } from './pages/CartPage'
+import { CheckoutPage } from './pages/CheckoutPage'
+import { ServicesPage } from './pages/ServicesPage'
+import { PlanRenovePage } from './pages/PlanRenovePage'
+import { StoresPage } from './pages/StoresPage'
+import { StoreDetailPage } from './pages/StoreDetailPage'
+import { SupportPage } from './pages/SupportPage'
+import { FavoritesPage } from './pages/FavoritesPage'
+import { NotFound } from './pages/NotFound'
+
+// Rutas del apartado 9.1.
+export function App() {
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/iphone" element={<FamilyPage />} />
+        <Route path="/iphone/:model" element={<ModelPage />} />
+        <Route path="/iphone/:model/:variant" element={<VariantPage />} />
+        <Route path="/buscar" element={<SearchPage />} />
+        <Route path="/comparar" element={<ComparePage />} />
+        <Route path="/carrito" element={<CartPage />} />
+        <Route path="/checkout/:step" element={<CheckoutPage />} />
+        <Route path="/servicios" element={<ServicesPage />} />
+        <Route path="/plan-renove" element={<PlanRenovePage />} />
+        <Route path="/tiendas" element={<StoresPage />} />
+        <Route path="/tiendas/:slug" element={<StoreDetailPage />} />
+        <Route path="/soporte" element={<SupportPage />} />
+        <Route path="/favoritos" element={<FavoritesPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  )
+}

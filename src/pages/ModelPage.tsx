@@ -1,0 +1,266 @@
+import { useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { Container } from '../components/ui/Container'
+import { Breadcrumb } from '../components/ui/Breadcrumb'
+import { Chip } from '../components/ui/Chip'
+import { Button } from '../components/ui/Button'
+import { Icon } from '../components/ui/Icon'
+import { Placeholder } from '../components/ui/Placeholder'
+import { StockIndicator } from '../components/ui/StockIndicator'
+import { ProvisionalBadge } from '../components/ui/Tag'
+import { StorePicker } from '../components/product/StorePicker'
+import { FinanceSimulator } from '../components/product/FinanceSimulator'
+import { iphoneModels, getModel } from '../data/products'
+import type { ColorVariant, Model } from '../data/types'
+import { useStore } from '../lib/store'
+import { euro } from '../lib/format'
+import { NotFound } from './NotFound'
+
+type SortKey = 'relevancia' | 'precio' | 'novedad'
+
+export function ModelPage() {
+  const { model: modelSlug } = useParams()
+  const model = getModel('iphone', modelSlug ?? '')
+
+  const [capFilter, setCapFilter] = useState<string | null>(null)
+  const [inStockOnly, setInStockOnly] = useState(false)
+  const [sort, setSort] = useState<SortKey>('relevancia')
+
+  const allCapacities = useMemo(() => {
+    if (!model) return []
+    const set = new Set<string>()
+    model.colors.forEach((c) => c.capacities.forEach((cap) => set.add(cap.capacity)))
+    return [...set]
+  }, [model])
+
+  if (!model) return <NotFound />
+
+  const colors = [...model.colors].sort((a, b) => {
+    if (sort === 'precio') return a.capacities[0].price - b.capacities[0].price
+    return 0
+  })
+
+  return (
+    <>
+      <Container className="py-6">
+        <Breadcrumb
+          items={[{ label: 'Inicio', to: '/' }, { label: 'iPhone', to: '/iphone' }, { label: model.name }]}
+        />
+      </Container>
+
+      {/* Pestañas de modelo (§4.6) */}
+      <div className="sticky top-16 z-30 border-y border-line bg-surface/90 backdrop-blur">
+        <Container className="py-3">
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {iphoneModels.map((m) => (
+              <Link key={m.slug} to={`/iphone/${m.slug}`}>
+                <Chip selected={m.slug === model.slug}>{m.name.replace('iPhone ', '')}</Chip>
+              </Link>
+            ))}
+          </div>
+        </Container>
+      </div>
+
+      <Container className="py-8">
+        <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-ink">{model.name}</h1>
+            <p className="mt-1 max-w-xl text-muted">{model.tagline}</p>
+          </div>
+        </div>
+
+        {/* Barra de filtros y orden */}
+        <div className="mb-8 flex flex-wrap items-center gap-2 border-b border-line pb-6">
+          {allCapacities.map((cap) => (
+            <Chip key={cap} selected={capFilter === cap} onClick={() => setCapFilter(capFilter === cap ? null : cap)}>
+              {cap}
+            </Chip>
+          ))}
+          <Chip selected={inStockOnly} onClick={() => setInStockOnly((v) => !v)}>
+            En stock
+          </Chip>
+          <div className="ml-auto flex items-center gap-2">
+            <label htmlFor="sort" className="text-sm text-muted">
+              Ordenar
+            </label>
+            <select
+              id="sort"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="h-11 rounded-[12px] border border-line bg-surface px-3 text-sm outline-none"
+            >
+              <option value="relevancia">Relevancia</option>
+              <option value="precio">Precio</option>
+              <option value="novedad">Novedad</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Agrupación por color */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {colors.map((color) => (
+            <ColorCard
+              key={color.color}
+              model={model}
+              color={color}
+              capFilter={capFilter}
+              inStockOnly={inStockOnly}
+            />
+          ))}
+        </div>
+
+        <p className="mt-8 text-sm text-muted">
+          Consulta rápida: cada tarjeta permite ver stock por tienda y la cuota de financiación sin salir de la
+          página.
+        </p>
+      </Container>
+    </>
+  )
+}
+
+// Tarjeta de color con selector de capacidad embebido (§4.6).
+function ColorCard({
+  model,
+  color,
+  capFilter,
+  inStockOnly,
+}: {
+  model: Model
+  color: ColorVariant
+  capFilter: string | null
+  inStockOnly: boolean
+}) {
+  const { toggleFavorite, isFavorite, toggleCompare, isComparing, compareFull, addToCart } = useStore()
+  const [storeOpen, setStoreOpen] = useState(false)
+  const [financeOpen, setFinanceOpen] = useState(false)
+
+  // Respeta el filtro de capacidad: si está activo y esta capacidad no existe, la 1ª válida
+  const initialCap =
+    (capFilter && color.capacities.find((c) => c.capacity === capFilter)) || color.capacities[0]
+  const [selectedCap, setSelectedCap] = useState(initialCap.capacity)
+  const current = color.capacities.find((c) => c.capacity === selectedCap) ?? color.capacities[0]
+
+  // Si el filtro "en stock" oculta este color entero (todas agotadas), no lo mostramos
+  if (inStockOnly && color.capacities.every((c) => c.availability === 'agotado')) return null
+  if (capFilter && !color.capacities.some((c) => c.capacity === capFilter)) return null
+
+  const favId = `iphone/${model.slug}/${color.color}`
+  const compareId = `iphone/${model.slug}/${color.color}/${current.capacity}`
+  const soldOut = current.availability === 'agotado'
+
+  const addToCartLine = () =>
+    addToCart({
+      id: compareId,
+      modelSlug: model.slug,
+      family: 'iphone',
+      name: model.name,
+      color: color.name,
+      capacity: current.capacity,
+      price: current.price,
+      previousPrice: current.previousPrice,
+    })
+
+  return (
+    <div className="flex flex-col rounded-[12px] border border-line bg-surface p-5 shadow-[var(--shadow-rest)]">
+      <div className="relative">
+        <button
+          onClick={() => toggleFavorite(favId)}
+          aria-label={isFavorite(favId) ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+          aria-pressed={isFavorite(favId)}
+          className="absolute right-2 top-2 z-10 grid h-9 w-9 place-items-center rounded-full bg-surface/80 text-muted backdrop-blur hover:text-danger"
+        >
+          <Icon name="heart" className={isFavorite(favId) ? 'fill-danger text-danger' : ''} />
+        </button>
+        <Placeholder label={`${model.name} · ${color.name}`} tint={color.hex} ratio="4 / 3" />
+      </div>
+
+      <div className="mt-4 flex items-center gap-2">
+        <span className="h-4 w-4 rounded-full border border-black/10" style={{ background: color.hex }} aria-hidden />
+        <h2 className="font-semibold text-ink">
+          {model.name} · {color.name}
+        </h2>
+      </div>
+
+      {/* Selector de capacidad */}
+      <p className="mt-4 mb-2 text-xs font-semibold text-muted">Selecciona capacidad:</p>
+      <div className="flex flex-wrap gap-2">
+        {color.capacities.map((cap) => (
+          <Chip
+            key={cap.capacity}
+            selected={cap.capacity === selectedCap}
+            onClick={() => setSelectedCap(cap.capacity)}
+            ariaLabel={`${cap.capacity} · ${euro(cap.price)}`}
+          >
+            {cap.capacity}
+          </Chip>
+        ))}
+      </div>
+
+      {/* Precio + disponibilidad (se actualizan al instante) */}
+      <div className="mt-4 flex items-end gap-2">
+        <span className="text-2xl font-bold text-ink">{euro(current.price)}</span>
+        {current.previousPrice && (
+          <span className="pb-1 text-sm text-muted line-through">{euro(current.previousPrice)}</span>
+        )}
+      </div>
+      <div className="mt-1">
+        <ProvisionalBadge label="Precio demostrativo" />
+      </div>
+      <div className="mt-3">
+        <StockIndicator status={current.availability} note={current.availabilityNote} size="sm" />
+      </div>
+
+      {/* Acciones */}
+      <div className="mt-5 flex flex-col gap-2">
+        {soldOut ? (
+          <Button variant="secondary" onClick={() => alert('Te avisaremos cuando esté disponible (demostración).')}>
+            Avísame cuando esté disponible
+          </Button>
+        ) : (
+          <Button onClick={addToCartLine}>Comprar</Button>
+        )}
+        <div className="flex items-center justify-between text-sm">
+          <button onClick={() => setStoreOpen(true)} className="font-semibold text-brand hover:underline">
+            Ver stock por tienda ›
+          </button>
+          <button onClick={() => setFinanceOpen(true)} className="text-muted hover:text-ink">
+            desde {euro(model.financeFrom.monthly)}/mes*
+          </button>
+        </div>
+        <label className="mt-1 flex items-center gap-2 text-sm text-muted">
+          <input
+            type="checkbox"
+            checked={isComparing(compareId)}
+            disabled={!isComparing(compareId) && compareFull}
+            onChange={() =>
+              toggleCompare({
+                id: compareId,
+                modelSlug: model.slug,
+                name: model.name,
+                color: color.name,
+                capacity: current.capacity,
+                price: current.price,
+                specs: model.specs,
+              })
+            }
+            className="h-4 w-4 accent-[var(--color-brand)]"
+          />
+          Añadir a comparar
+          {!isComparing(compareId) && compareFull && <span className="text-xs">(máx. 3)</span>}
+        </label>
+      </div>
+
+      <StorePicker
+        open={storeOpen}
+        onClose={() => setStoreOpen(false)}
+        variantLabel={`${model.name} ${current.capacity} ${color.name}`}
+      />
+      <FinanceSimulator
+        open={financeOpen}
+        onClose={() => setFinanceOpen(false)}
+        price={current.price}
+        productName={`${model.name} ${current.capacity} · ${color.name}`}
+      />
+    </div>
+  )
+}

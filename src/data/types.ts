@@ -1,0 +1,54 @@
+// Tipos del catálogo. En el prototipo, los datos son de ejemplo (apartado 7):
+// ningún precio, plazo o stock es real.
+
+export type ProvisionalTag =
+  | 'Contenido provisional'
+  | 'Precio demostrativo'
+  | 'Condiciones pendientes de validación'
+  | 'Stock de ejemplo'
+
+export type Availability = 'disponible' | 'bajo-pedido' | 'agotado'
+
+export interface CapacityOption {
+  capacity: string
+  price: number
+  previousPrice: number | null
+  availability: Availability
+  availabilityNote?: string
+}
+
+export interface ColorVariant {
+  color: string // slug corto, p. ej. 'plata'
+  name: string // nombre visible, p. ej. 'Plata'
+  hex: string // muestra de color (decorativa; el nombre siempre en texto)
+  capacities: CapacityOption[]
+}
+
+export interface Model {
+  slug: string
+  family: string
+  name: string
+  tagline: string
+  fromPrice: number
+  financeFrom: { monthly: number; months: number }
+  colors: ColorVariant[]
+  specs: { label: string; value: string }[]
+  highlights: string[]
+}
+
+export interface Family {
+  slug: string
+  name: string
+  tagline: string
+  fromPrice: number
+}
+
+export interface Store {
+  slug: string
+  name: string
+  island: string
+  address: string
+  openNow: boolean
+  hours: { day: string; time: string }[]
+  services: string[]
+}
