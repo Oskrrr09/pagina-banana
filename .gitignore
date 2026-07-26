@@ -17,6 +17,8 @@ yarn-error.log*
 !.vscode/extensions.json
 .idea/
 *.local
+.obsidian/
+docs/.obsidian/
 
 # Vite
 .vite/
