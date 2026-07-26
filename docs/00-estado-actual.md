@@ -14,9 +14,9 @@ actualizado: 2026-07-26
 ## Referencia de la auditoría
 
 - Rama: `main`.
-- Commit funcional desplegado: `405e817073f682b8b2dbf746d2a7b5557062f78d`
+- Commit funcional desplegado: `03e11f13f3a3c6446382441a39a78a427332caed`
   (merge de la PR
-  [#4](https://github.com/luis-lop-nas/pagina-banana/pull/4)).
+  [#5](https://github.com/luis-lop-nas/pagina-banana/pull/5)).
 - URL pública verificada:
   <https://luis-lop-nas.github.io/pagina-banana/>.
 - Sin diferencias en archivos versionados antes de iniciar esta estructura
@@ -109,6 +109,11 @@ El despliegue de la PR #4 finalizó correctamente el 2026-07-26 en el workflow
 [`30211613240`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30211613240).
 La URL pública devolvió HTTP 200, cargó los recursos desde
 `/pagina-banana/assets/` y mostró el bloque neutro de opiniones.
+
+El despliegue de la PR #5 finalizó correctamente el 2026-07-26 en el workflow
+[`30214178171`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30214178171).
+La versión pública conservó el tema oscuro tras navegar, mantuvo el fondo negro
+continuo de la campaña y cargó las ocho fotografías Mac centradas.
 
 El despliegue de la PR #2 finalizó correctamente en el workflow
 [`30208520075`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30208520075).

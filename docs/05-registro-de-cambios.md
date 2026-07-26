@@ -8,7 +8,13 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-26 — Selector de tema e imágenes Mac, pendiente de publicación
+## 2026-07-26 — Selector de tema e imágenes Mac, publicado
+
+La PR [#5](https://github.com/luis-lop-nas/pagina-banana/pull/5) se fusionó en
+`main`. El workflow
+[`30214178171`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30214178171)
+compiló y publicó la versión en
+<https://luis-lop-nas.github.io/pagina-banana/>.
 
 - Añadido un selector claro/oscuro en la cabecera comercial y en checkout.
 - La preferencia del sistema actúa como valor inicial y la elección manual se
@@ -20,6 +26,8 @@ autores, diffs y marcas de tiempo.
 - Sustituidas las ocho siluetas del selector Mac por fotografías oficiales
   descargadas de Apple Newsroom, documentadas y centradas en marcos uniformes.
 - Compilación de producción y comprobación manual local correctas.
+- En producción se verificaron la persistencia del tema, el fondo negro de la
+  campaña y la carga y el centrado de las ocho imágenes.
 
 ## 2026-07-26 — Consistencia visual y tema del dispositivo, publicado
 

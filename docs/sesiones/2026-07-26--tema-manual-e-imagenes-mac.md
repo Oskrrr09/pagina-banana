@@ -58,4 +58,6 @@ fotografías reales centradas.
 
 ## Siguiente paso
 
-Publicar la rama, fusionarla en `main` y verificar el resultado en GitHub Pages.
+La PR #5 quedó fusionada en `main` y el workflow `30214178171` publicó la
+versión correctamente. El siguiente paso es recoger nuevas observaciones de uso
+sin ampliar este alcance visual.
