@@ -14,8 +14,11 @@ actualizado: 2026-07-26
 ## Referencia de la auditoría
 
 - Rama: `main`.
-- Commit auditado: `e7de00bc3f8d6a944c0b64433512c6440e16ea25`
-  (`Añade despliegue automático a GitHub Pages`).
+- Commit desplegado: `bdd7c85fd8a5a9c8da237692a21406920ba4111c`
+  (merge de la PR
+  [#1](https://github.com/luis-lop-nas/pagina-banana/pull/1)).
+- URL pública verificada:
+  <https://luis-lop-nas.github.io/pagina-banana/>.
 - Sin diferencias en archivos versionados antes de iniciar esta estructura
   documental.
 - Ya existían dos carpetas locales no versionadas: `.agents/` y `.obsidian/`.
@@ -72,6 +75,11 @@ Las versiones instaladas desde `package-lock.json` durante la auditoría fueron:
 
 El workflow de GitHub Actions usa Node 20, ejecuta `npm ci` y `npm run build`, y
 publica `dist/` en GitHub Pages en cada push a `main`.
+
+El despliegue de la PR #1 finalizó correctamente el 2026-07-26 en el workflow
+[`30206642599`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30206642599).
+La URL pública devolvió HTTP 200, cargó los recursos desde
+`/pagina-banana/assets/` y mostró el bloque neutro de opiniones.
 
 ## Verificación realizada
 

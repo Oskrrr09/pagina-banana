@@ -8,7 +8,13 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## Sin publicar
+## 2026-07-26 — Publicado en GitHub Pages
+
+La PR [#1](https://github.com/luis-lop-nas/pagina-banana/pull/1) se fusionó en
+`main` y el workflow
+[`30206642599`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30206642599)
+publicó correctamente esta versión en
+<https://luis-lop-nas.github.io/pagina-banana/>.
 
 ### Presentación y accesibilidad
 
@@ -50,6 +56,7 @@ autores, diffs y marcas de tiempo.
 
 ### 2026-07-26
 
+- `bdd7c85` — Fusiona las correcciones de presentación y accesibilidad.
 - `e7de00b` — Añade despliegue automático a GitHub Pages.
 - `76642b3` — Unifica el color de marca a amarillo Banana.
 - `35fca54` — Ajustes de tiendas, comparador y cabecera.
