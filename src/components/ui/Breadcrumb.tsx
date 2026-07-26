@@ -8,7 +8,7 @@ export function Breadcrumb({ items }: { items: { label: string; to?: string }[] 
         <span key={i} className="flex items-center gap-1">
           {i > 0 && <Icon name="chevron-right" size={14} className="text-line" />}
           {item.to ? (
-            <Link to={item.to} className="hover:text-brand">
+            <Link to={item.to} className="hover:text-ink">
               {item.label}
             </Link>
           ) : (

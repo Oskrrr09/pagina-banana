@@ -72,7 +72,7 @@ export function StoreCarousel() {
 
             <Link
               to={`/tiendas/${store.slug}`}
-              className="mt-6 inline-flex items-center gap-1 font-semibold text-brand hover:gap-2 transition-all"
+              className="mt-6 inline-flex items-center gap-1 font-semibold text-ink hover:gap-2 transition-all"
             >
               Ver tienda <Icon name="arrow-right" size={16} />
             </Link>

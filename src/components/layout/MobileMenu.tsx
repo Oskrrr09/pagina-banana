@@ -95,7 +95,7 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
                                   <Link
                                     to={item.to}
                                     onClick={onClose}
-                                    className="block py-2.5 pl-1 text-[15px] text-muted hover:text-brand"
+                                    className="block py-2.5 pl-1 text-[15px] text-muted hover:text-ink"
                                   >
                                     {item.label}
                                   </Link>
@@ -114,7 +114,7 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
                     <Link
                       to={l.to}
                       onClick={onClose}
-                      className="block py-4 text-lg font-bold text-ink hover:text-brand"
+                      className="block py-4 text-lg font-bold text-ink hover:text-ink"
                     >
                       {l.label}
                     </Link>

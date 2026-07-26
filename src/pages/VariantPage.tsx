@@ -155,7 +155,7 @@ export function VariantPage() {
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <span className="text-3xl font-bold text-ink">{euro(current.price)}</span>
             {current.previousPrice && (
-              <span className="pb-1 text-action-600">
+              <span className="pb-1 text-ink">
                 {euro(current.previousPrice)} · ahorra {euro(current.previousPrice - current.price)}
               </span>
             )}
@@ -214,7 +214,7 @@ export function VariantPage() {
           <div className="mt-6 border-t border-line pt-5">
             <p className="font-semibold text-ink">Entrega o recogida</p>
             <p className="text-sm text-muted">Envío a toda Canarias · Recogida gratuita en tienda</p>
-            <button onClick={() => setStoreOpen(true)} className="mt-1 text-sm font-semibold text-brand hover:underline">
+            <button onClick={() => setStoreOpen(true)} className="mt-1 text-sm font-semibold text-ink hover:underline">
               Ver stock por tienda ›
             </button>
           </div>
@@ -224,7 +224,7 @@ export function VariantPage() {
             <p className="font-semibold text-ink">Financiación</p>
             <button onClick={() => setFinanceOpen(true)} className="text-sm text-muted hover:text-ink">
               desde {euro(model.financeFrom.monthly)}/mes (TIN/TAE de ejemplo, a validar)* ·{' '}
-              <span className="font-semibold text-brand">Simular ›</span>
+              <span className="font-semibold text-ink">Simular ›</span>
             </button>
           </div>
 
@@ -290,7 +290,7 @@ export function VariantPage() {
                     </div>
                   ))}
                 </dl>
-                <button className="mt-4 text-sm font-semibold text-brand hover:underline">
+                <button className="mt-4 text-sm font-semibold text-ink hover:underline">
                   Ver ficha técnica completa ›
                 </button>
               </div>
@@ -353,7 +353,7 @@ export function VariantPage() {
               <div>
                 <p className="text-lg font-bold leading-none text-ink">{euro(current.price)}</p>
                 {current.previousPrice && (
-                  <p className="text-xs text-action-600">antes {euro(current.previousPrice)}</p>
+                  <p className="text-xs text-ink">antes {euro(current.previousPrice)}</p>
                 )}
               </div>
               <Button size="lg" onClick={buyNow} className="min-w-[45%]">

@@ -49,7 +49,7 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
 
       <Link to={`/${model.family}/${model.slug}`} className="block focus-visible:outline-none">
         <ProductImage src={model.colors[0].image} alt={`${model.name} ${model.colors[0].name}`} />
-        <h3 className="mt-4 text-[15px] font-semibold text-ink group-hover:text-brand">{model.name}</h3>
+        <h3 className="mt-4 text-[15px] font-semibold text-ink group-hover:text-ink">{model.name}</h3>
       </Link>
 
       <p className="mt-1 line-clamp-2 text-sm text-muted">{model.tagline}</p>

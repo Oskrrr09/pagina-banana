@@ -78,7 +78,7 @@ export function SearchPage() {
               <Link
                 key={f.slug}
                 to={modelsByFamily[f.slug] ? `/${f.slug}` : '/iphone'}
-                className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:border-brand hover:text-brand"
+                className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:border-brand hover:text-ink"
               >
                 {f.name}
               </Link>
@@ -117,7 +117,7 @@ export function SearchPage() {
                             ? '/servicios'
                             : '/iphone'
                       }
-                      className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-ink hover:bg-neutral hover:text-brand"
+                      className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-ink hover:bg-neutral hover:text-ink"
                     >
                       <Icon name="chevron-right" size={16} className="text-muted" />
                       {c.name}
@@ -135,7 +135,7 @@ export function SearchPage() {
               <ul className="divide-y divide-line border-y border-line">
                 {helpResults.map((h) => (
                   <li key={h.q} className="py-3">
-                    <Link to="/soporte" className="font-medium text-ink hover:text-brand">
+                    <Link to="/soporte" className="font-medium text-ink hover:text-ink">
                       {h.q}
                     </Link>
                     <p className="mt-0.5 text-sm text-muted">{h.a}</p>

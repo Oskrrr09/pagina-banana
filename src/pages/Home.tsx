@@ -68,7 +68,7 @@ export function Home() {
                 ) : (
                   <Placeholder label={fam.name} ratio="1 / 1" />
                 )}
-                <p className="mt-3 text-sm font-semibold text-ink group-hover:text-brand">{fam.name}</p>
+                <p className="mt-3 text-sm font-semibold text-ink group-hover:text-ink">{fam.name}</p>
               </Link>
             )
           })}
@@ -123,7 +123,7 @@ export function Home() {
         <div className="grid gap-6 md:grid-cols-2">
           <Reveal className="flex flex-col justify-between rounded-[20px] border border-line bg-neutral p-8">
             <div>
-              <p className="text-sm font-bold uppercase tracking-wider text-brand">Financiación</p>
+              <p className="text-sm font-bold uppercase tracking-wider text-ink">Financiación</p>
               <h2 className="mt-2 text-2xl font-bold text-ink">Llévatelo hoy, págalo poco a poco</h2>
               <p className="mt-2 text-sm text-muted">Simulación de cuota — condiciones pendientes de validación.</p>
             </div>
@@ -136,7 +136,7 @@ export function Home() {
 
           <Reveal delay={0.1} className="flex flex-col justify-between rounded-[20px] border border-line bg-neutral p-8">
             <div>
-              <p className="text-sm font-bold uppercase tracking-wider text-brand">Plan Renove</p>
+              <p className="text-sm font-bold uppercase tracking-wider text-ink">Plan Renove</p>
               <h2 className="mt-2 text-2xl font-bold text-ink">Tu Apple actual vale más de lo que crees</h2>
               <p className="mt-2 text-sm text-muted">Tasación presencial en tienda.</p>
             </div>

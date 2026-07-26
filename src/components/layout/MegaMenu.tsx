@@ -43,7 +43,7 @@ export function MegaMenu({ family, onNavigate }: { family: FamilyNav; onNavigate
                 <Link
                   to={link.to}
                   onClick={onNavigate}
-                  className="flex items-center justify-between rounded-[8px] px-3 py-2 text-[15px] font-medium text-ink transition-colors hover:bg-neutral hover:text-brand"
+                  className="flex items-center justify-between rounded-[8px] px-3 py-2 text-[15px] font-medium text-ink transition-colors hover:bg-neutral hover:text-ink"
                 >
                   {link.label}
                   <Icon name="chevron-right" size={16} className="text-muted" />
@@ -75,7 +75,7 @@ export function MegaMenu({ family, onNavigate }: { family: FamilyNav; onNavigate
           <Link to={family.mega.featured.to} onClick={onNavigate} className="group block">
             <Placeholder label={family.mega.featured.name} tint={family.mega.featured.tint} ratio="16 / 10" />
             <p className="mt-3 font-display text-lg font-bold text-ink">{family.mega.featured.name}</p>
-            <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-action transition-all group-hover:gap-2">
+            <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-ink transition-all group-hover:gap-2">
               {family.mega.featured.cta} <Icon name="arrow-right" size={16} />
             </p>
           </Link>

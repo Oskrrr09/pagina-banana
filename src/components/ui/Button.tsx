@@ -12,11 +12,12 @@ const base =
   'inline-flex items-center justify-center gap-2 rounded-[12px] font-semibold transition-[transform,background-color,color,border-color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:translate-y-0 disabled:pointer-events-none disabled:opacity-50 select-none'
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-action text-white hover:bg-action-600 hover:-translate-y-0.5 shadow-[var(--shadow-rest)]',
-  brand: 'bg-brand text-white hover:bg-brand-600 hover:-translate-y-0.5 shadow-[var(--shadow-rest)]',
+  // Relleno amarillo Banana con texto negro (legible sobre amarillo).
+  primary: 'bg-action text-ink hover:bg-action-600 hover:-translate-y-0.5 shadow-[var(--shadow-rest)]',
+  brand: 'bg-brand text-ink hover:bg-brand-600 hover:-translate-y-0.5 shadow-[var(--shadow-rest)]',
   secondary:
-    'border border-action text-action bg-transparent hover:bg-action-050 hover:-translate-y-0.5',
-  tertiary: 'text-action hover:text-action-600 underline-offset-4 hover:underline px-0',
+    'border border-ink/20 text-ink bg-transparent hover:bg-action-050 hover:border-ink/40 hover:-translate-y-0.5',
+  tertiary: 'text-ink underline-offset-4 hover:underline px-0',
 }
 
 const sizes: Record<Size, string> = {

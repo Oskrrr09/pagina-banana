@@ -50,7 +50,7 @@ export function StorePicker({
               </div>
               <Link
                 to={`/tiendas/${store.slug}`}
-                className="shrink-0 text-sm font-semibold text-brand hover:underline"
+                className="shrink-0 text-sm font-semibold text-ink hover:underline"
               >
                 Ver tienda ›
               </Link>

@@ -52,11 +52,13 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-black/10 bg-banana">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center px-4 lg:px-6">
+        {/* Tres bloques a todo el ancho: logo a la izquierda (con margen), menú
+            centrado y accesos (buscar/favoritos/carrito…) pegados a la derecha. */}
+        <div className="flex h-16 w-full items-center px-6 sm:px-8 lg:px-12">
           <Logo />
 
-          {/* Escritorio: navegación con mega-menú */}
-          <nav className="ml-3 hidden flex-1 items-center gap-1 lg:flex" aria-label="Principal">
+          {/* Escritorio: navegación centrada con mega-menú */}
+          <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex" aria-label="Principal">
             {familiesNav.map((fam) => (
               <div key={fam.slug} onMouseEnter={() => openMega(fam.slug)} onMouseLeave={scheduleClose}>
                 <Link

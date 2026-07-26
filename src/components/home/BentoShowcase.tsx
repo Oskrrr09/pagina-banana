@@ -34,7 +34,7 @@ export function BentoShowcase() {
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-brand">Novedad</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-ink">Novedad</p>
             <h3 className="mt-1 font-display text-2xl font-bold text-ink sm:text-3xl">{feature.name}</h3>
             <p className="mt-1 text-sm text-muted">{feature.tagline}</p>
           </div>
@@ -50,7 +50,7 @@ export function BentoShowcase() {
             className="h-full min-h-[220px]"
           />
         </div>
-        <span className="mt-2 inline-flex items-center gap-1 font-semibold text-brand transition-all group-hover:gap-2">
+        <span className="mt-2 inline-flex items-center gap-1 font-semibold text-ink transition-all group-hover:gap-2">
           Descúbrelo <Icon name="arrow-right" size={18} />
         </span>
       </Cell>
@@ -67,12 +67,12 @@ export function BentoShowcase() {
 
       {/* Plan Renove */}
       <Cell to="/plan-renove" className="bg-surface">
-        <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-050 text-brand">
+        <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-050 text-ink">
           <Icon name="refresh" />
         </span>
         <h3 className="mt-4 text-lg font-bold text-ink">Plan Renove</h3>
         <p className="mt-1 text-sm text-muted">Tu Apple actual vale más de lo que crees.</p>
-        <span className="mt-auto pt-3 text-sm font-semibold text-brand">Valorar ›</span>
+        <span className="mt-auto pt-3 text-sm font-semibold text-ink">Valorar ›</span>
       </Cell>
 
       {/* Tiendas */}
@@ -87,12 +87,12 @@ export function BentoShowcase() {
 
       {/* Envío */}
       <Cell to="/servicios" className="bg-surface">
-        <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-050 text-brand">
+        <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-050 text-ink">
           <Icon name="truck" />
         </span>
         <h3 className="mt-4 text-lg font-bold text-ink">Envío a toda Canarias</h3>
         <p className="mt-1 text-sm text-muted">Rápido y con seguimiento en cada pedido.</p>
-        <span className="mt-auto pt-3 text-sm font-semibold text-brand">Cómo funciona ›</span>
+        <span className="mt-auto pt-3 text-sm font-semibold text-ink">Cómo funciona ›</span>
       </Cell>
     </div>
   )

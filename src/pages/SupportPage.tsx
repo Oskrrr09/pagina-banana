@@ -49,7 +49,7 @@ export function SupportPage() {
               key={l.title}
               className="flex flex-col items-start rounded-[12px] border border-line bg-surface p-5 text-left transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
             >
-              <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-brand-050 text-brand">
+              <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-brand-050 text-ink">
                 <Icon name={l.icon} size={22} />
               </span>
               <p className="mt-3 font-semibold text-ink">{l.title}</p>
@@ -70,7 +70,7 @@ export function SupportPage() {
             <div className="grid gap-8 md:grid-cols-2">
               {filteredTopics.map((t) => (
                 <div key={t.topic}>
-                  <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-brand">{t.topic}</h3>
+                  <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-ink">{t.topic}</h3>
                   <Accordion items={t.items} />
                 </div>
               ))}
@@ -83,7 +83,7 @@ export function SupportPage() {
           <h2 className="text-xl font-bold text-ink">¿No encuentras lo que buscas?</h2>
           <p className="mt-2 text-muted">Estamos aquí para ayudarte por el canal que prefieras.</p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
-            <button className="inline-flex items-center gap-2 rounded-[12px] bg-action px-6 py-3 font-semibold text-white hover:bg-action-600">
+            <button className="inline-flex items-center gap-2 rounded-[12px] bg-action px-6 py-3 font-semibold text-ink hover:bg-action-600">
               <Icon name="chat" size={18} /> Abrir chat
             </button>
             <button className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-6 py-3 font-semibold text-ink hover:border-ink/30">
@@ -96,7 +96,7 @@ export function SupportPage() {
       {/* Botón de chat fijo (esquina inferior) */}
       <button
         aria-label="Abrir chat de soporte"
-        className="fixed bottom-5 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-brand text-white shadow-[var(--shadow-raised)] transition-transform hover:scale-105"
+        className="fixed bottom-5 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-brand text-ink shadow-[var(--shadow-raised)] transition-transform hover:scale-105"
       >
         <Icon name="chat" size={24} />
       </button>

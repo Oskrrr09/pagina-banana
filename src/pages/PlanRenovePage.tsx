@@ -36,7 +36,7 @@ export function PlanRenovePage() {
             <ol className="space-y-4">
               {planRenoveSteps.map((step, i) => (
                 <li key={i} className="flex items-start gap-4">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand text-sm font-bold text-white">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand text-sm font-bold text-ink">
                     {i + 1}
                   </span>
                   <p className="pt-1.5 text-ink">{step}</p>

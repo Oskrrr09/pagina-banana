@@ -34,7 +34,7 @@ export function CheckoutPage() {
     return (
       <Container className="py-20 text-center">
         <h1 className="text-2xl font-bold text-ink">No hay nada que comprar</h1>
-        <Link to="/iphone" className="mt-4 inline-block font-semibold text-brand hover:underline">
+        <Link to="/iphone" className="mt-4 inline-block font-semibold text-ink hover:underline">
           Ver productos
         </Link>
       </Container>
@@ -90,7 +90,7 @@ export function CheckoutPage() {
                 <div className="flex items-center gap-2">
                   <span
                     className={`grid h-7 w-7 place-items-center rounded-full text-xs font-bold ${
-                      active ? 'bg-ink text-white' : done ? 'bg-brand text-white' : 'bg-line text-muted'
+                      active ? 'bg-ink text-white' : done ? 'bg-brand text-ink' : 'bg-line text-muted'
                     }`}
                   >
                     {done ? <Icon name="check" size={14} /> : n}
@@ -221,7 +221,7 @@ export function CheckoutPage() {
                 <p className="text-sm font-semibold text-ink">Nota Plan Renove</p>
                 <p className="mt-1 text-sm text-muted">
                   Servicio presencial: la tasación se gestiona en tienda, no forma parte de este paso online.{' '}
-                  <Link to="/plan-renove" className="font-semibold text-brand hover:underline">
+                  <Link to="/plan-renove" className="font-semibold text-ink hover:underline">
                     Ver Plan Renove ›
                   </Link>
                 </p>
@@ -250,11 +250,11 @@ export function CheckoutPage() {
                 </ul>
               </div>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <Link to="/" className="font-semibold text-brand hover:underline">
+                <Link to="/" className="font-semibold text-ink hover:underline">
                   Volver al inicio
                 </Link>
                 <span className="text-line">·</span>
-                <Link to="/soporte" className="font-semibold text-brand hover:underline">
+                <Link to="/soporte" className="font-semibold text-ink hover:underline">
                   Ir a soporte
                 </Link>
               </div>
@@ -345,7 +345,7 @@ function ModeButton({ active, onClick, icon, label }: { active: boolean; onClick
       onClick={onClick}
       aria-pressed={active}
       className={`flex flex-1 items-center gap-2 rounded-[12px] border p-3 text-sm font-semibold transition-colors ${
-        active ? 'border-brand bg-brand-050 text-brand ring-1 ring-brand' : 'border-line text-ink hover:border-ink/30'
+        active ? 'border-brand bg-brand-050 text-ink ring-1 ring-brand' : 'border-line text-ink hover:border-ink/30'
       }`}
     >
       <Icon name={icon} /> {label}

@@ -69,7 +69,7 @@ export function StoresPage() {
             className="group flex flex-col rounded-[12px] border border-line bg-surface p-5 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
           >
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-ink group-hover:text-brand">{store.name}</h2>
+              <h2 className="font-bold text-ink group-hover:text-ink">{store.name}</h2>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
                   store.openNow ? 'bg-available-050 text-available' : 'bg-neutral text-muted'
@@ -84,7 +84,7 @@ export function StoresPage() {
             <div className="mt-3 flex flex-wrap gap-1.5">
               {store.services.length > 0 ? (
                 store.services.map((s) => (
-                  <span key={s} className="rounded-full bg-brand-050 px-2 py-0.5 text-[11px] font-semibold text-brand">
+                  <span key={s} className="rounded-full bg-brand-050 px-2 py-0.5 text-[11px] font-semibold text-ink">
                     {s}
                   </span>
                 ))

@@ -26,7 +26,7 @@ export function ServicesPage() {
           {services.map((s) => (
             <StaggerItem key={s.slug}>
               <div id={s.slug} className="flex h-full flex-col rounded-[12px] border border-line bg-surface p-6 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]">
-                <span className="grid h-12 w-12 place-items-center rounded-[12px] bg-brand-050 text-brand">
+                <span className="grid h-12 w-12 place-items-center rounded-[12px] bg-brand-050 text-ink">
                   <Icon name={s.icon} size={24} />
                 </span>
                 <h3 className="mt-4 text-lg font-bold text-ink">{s.name}</h3>

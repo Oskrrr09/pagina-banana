@@ -128,7 +128,7 @@ export function CartPage() {
                 <Button variant="secondary">Aplicar</Button>
               </div>
             ) : (
-              <button onClick={() => setCouponOpen(true)} className="text-sm font-semibold text-brand hover:underline">
+              <button onClick={() => setCouponOpen(true)} className="text-sm font-semibold text-ink hover:underline">
                 ¿Tienes un cupón?
               </button>
             )}
@@ -158,7 +158,7 @@ export function CartPage() {
             </ButtonLink>
             <Link
               to="/iphone"
-              className="mt-3 block text-center text-sm font-semibold text-brand hover:underline"
+              className="mt-3 block text-center text-sm font-semibold text-ink hover:underline"
             >
               Seguir comprando
             </Link>
@@ -204,7 +204,7 @@ function DeliveryOption({
         active ? 'border-brand bg-brand-050 ring-1 ring-brand' : 'border-line hover:border-ink/30'
       }`}
     >
-      <Icon name={icon} className={active ? 'text-brand' : 'text-muted'} />
+      <Icon name={icon} className={active ? 'text-ink' : 'text-muted'} />
       <span>
         <span className="block text-sm font-semibold text-ink">{title}</span>
         <span className="block text-xs text-muted">{desc}</span>

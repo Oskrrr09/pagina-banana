@@ -161,7 +161,7 @@ export function ComparePage() {
                     {vals.map((v, i) => (
                       <td
                         key={i}
-                        className={`p-3 text-sm ${same ? 'text-ink' : 'bg-action-050 font-semibold text-action-600'}`}
+                        className={`p-3 text-sm ${same ? 'text-ink' : 'bg-action-050 font-semibold text-ink'}`}
                       >
                         {v}
                       </td>
@@ -226,7 +226,7 @@ export function ComparePage() {
                     <ProductImage src={m.colors[0].image} alt={m.name} ratio="4 / 3" />
                     <p className="mt-2 text-sm font-semibold text-ink">{m.name}</p>
                     <p className="text-xs text-muted">desde {euro(m.fromPrice)}</p>
-                    <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand">
+                    <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-ink">
                       <Icon name="plus" size={14} /> Añadir a comparar
                     </span>
                   </motion.button>

@@ -10,14 +10,17 @@
      naranja de acción + amarillo plátano, texto negro sobre blanco, rojo de
      oferta. Sustituye el verde/ámbar provisional de la Fase 2 (§5, "a validar
      con Banana"). */
-  --color-brand: #fe8401; /* Naranja Banana — identidad + acción */
-  --color-brand-600: #e5760a; /* hover */
-  --color-brand-700: #c96400;
-  --color-brand-050: #fff3e7; /* naranja muy claro (fondos suaves, chips) */
-  --color-action: #fe8401; /* misma acción naranja (botones, CTAs) */
-  --color-action-600: #e5760a;
-  --color-action-050: #fff3e7;
-  --color-banana: #ffce1f; /* Amarillo plátano brillante (menos mostaza) */
+  /* Identidad unificada en amarillo Banana. El texto sobre amarillo va SIEMPRE
+     en negro (--color-ink); el amarillo se reserva a rellenos, no a texto sobre
+     blanco (donde sería ilegible). */
+  --color-brand: #ffce1f; /* Amarillo Banana — identidad + acción */
+  --color-brand-600: #f0b800; /* hover (amarillo algo más intenso) */
+  --color-brand-700: #d9a400;
+  --color-brand-050: #fff7db; /* amarillo muy claro (fondos suaves, chips) */
+  --color-action: #ffce1f; /* misma acción amarilla (botones, CTAs) */
+  --color-action-600: #f0b800;
+  --color-action-050: #fff7db;
+  --color-banana: #ffce1f; /* Amarillo plátano brillante */
   --color-banana-600: #f0b800;
   --color-ink: #1d1d1f; /* Casi negro (estilo Apple) — texto principal */
   --color-muted: #6e6e73; /* Gris medio — texto secundario */
@@ -77,7 +80,7 @@ h1, h2, h3, .font-display {
 
 /* Foco visible SIEMPRE (criterio de accesibilidad 9.4) — contorno verde 2px */
 :focus-visible {
-  outline: 2px solid var(--color-brand-700);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
   border-radius: 4px;
 }

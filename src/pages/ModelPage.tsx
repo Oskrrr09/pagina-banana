@@ -204,7 +204,7 @@ function ColorCard({
           <Button onClick={addToCartLine}>Comprar</Button>
         )}
         <div className="flex items-center justify-between text-sm">
-          <button onClick={() => setStoreOpen(true)} className="font-semibold text-brand hover:underline">
+          <button onClick={() => setStoreOpen(true)} className="font-semibold text-ink hover:underline">
             Ver stock por tienda ›
           </button>
           <button onClick={() => setFinanceOpen(true)} className="text-muted hover:text-ink">
