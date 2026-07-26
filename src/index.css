@@ -22,7 +22,7 @@
   --color-action-050: #fff7db;
   --color-banana: #ffce1f; /* Amarillo plátano brillante */
   --color-banana-600: #f0b800;
-  --color-checkout: #f3dc82; /* amarillo suave para el flujo de pago */
+  --color-checkout: #f7e6a9; /* amarillo pastel opaco para el flujo de pago */
   --color-ink: #1d1d1f; /* Casi negro (estilo Apple) — texto principal */
   --color-muted: #6e6e73; /* Gris medio — texto secundario */
   --color-neutral: #f5f5f7; /* Fondo neutro */
@@ -72,6 +72,50 @@ body {
   background: var(--color-surface);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* El amarillo de marca es siempre una superficie clara, también en modo
+   oscuro: conserva texto negro legible sin depender del tema de alrededor. */
+.banana-surface {
+  --color-ink: #1d1d1f;
+  --color-muted: #525257;
+  --color-line: rgb(0 0 0 / 0.16);
+}
+
+/* Se adapta al modo del dispositivo sin requerir un interruptor propio. Los
+   colores de Tailwind se apoyan en estos tokens, por lo que tarjetas, campos,
+   bordes, modales y el catálogo se actualizan de forma coherente. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-brand-050: #4d4217;
+    --color-action-050: #4d4217;
+    --color-checkout: #756227;
+    --color-ink: #f5f5f7;
+    --color-muted: #b8b8bf;
+    --color-neutral: #252527;
+    --color-line: #434347;
+    --color-surface: #171719;
+    --color-available: #83d88a;
+    --color-available-050: #173b24;
+    --color-backorder: #f0ad62;
+    --color-backorder-050: #4b3017;
+    --color-soldout: #b6b6bc;
+    --color-danger: #ff6b6b;
+    --color-danger-050: #4b2020;
+    --shadow-rest: 0 1px 2px rgb(0 0 0 / 0.22), 0 1px 3px rgb(0 0 0 / 0.32);
+    --shadow-raised: 0 10px 26px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.28);
+  }
+
+  .banana-header-bar {
+    --color-ink: #1d1d1f;
+    --color-muted: #4f4f54;
+    --color-line: rgb(0 0 0 / 0.15);
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, #303034 25%, #3c3c40 50%, #303034 75%) 0 0 / 200% 100%;
+  }
 }
 
 h1, h2, h3, .font-display {

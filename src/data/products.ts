@@ -159,8 +159,8 @@ export const macModels: Model[] = [
     fromPrice: 729,
     financeFrom: { monthly: 31, months: 24 },
     colors: buildColors([
-      { slug: 'citrico', name: 'Cítrico', hex: '#d8d19a', image: `${IMG}/macbook-neo.png`, caps: [['8 GB · 256 GB', 729, 759], ['16 GB · 512 GB', 999]] },
-      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/macbook-neo.png`, caps: [['8 GB · 256 GB', 729, 759], ['16 GB · 512 GB', 999]] },
+      { slug: 'citrico', name: 'Cítrico', hex: '#d8d19a', image: `${IMG}/macbook-neo-clean.png`, caps: [['8 GB · 256 GB', 729, 759], ['16 GB · 512 GB', 999]] },
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/macbook-neo-clean.png`, caps: [['8 GB · 256 GB', 729, 759], ['16 GB · 512 GB', 999]] },
     ]),
     specs: macSpecs('Apple Silicon', 'Portátil de 13"', '8 o 16 GB'),
     highlights: ['Diseño ligero', 'Pantalla de 13 pulgadas', 'Autonomía para todo el día', 'Touch ID', 'macOS'],

@@ -36,7 +36,7 @@ export function VariantPage() {
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
   const navigate = useNavigate()
-  const { addToCart, insurancePrice } = useStore()
+  const { addToCart, cart, insurancePrice, removeFromCart, setQty } = useStore()
 
   const initialColor =
     model?.colors.find((candidate) => variant?.endsWith(`-${candidate.color}`)) ?? model?.colors[0]
@@ -99,6 +99,8 @@ export function VariantPage() {
     previousPrice: current.previousPrice,
     insured: insurance,
   }
+  const lineInCart = cart.find((line) => line.id === cartLine.id)
+
   const buyNow = () => {
     addToCart(cartLine)
     navigate('/checkout/1')
@@ -106,6 +108,24 @@ export function VariantPage() {
   const addAndContinue = () => {
     addToCart(cartLine)
     setAddedMessage(`${model.name} se ha añadido al carrito.`)
+  }
+  const increaseQuantity = () => {
+    if (lineInCart) {
+      setQty(lineInCart.id, lineInCart.qty + 1)
+      setAddedMessage(`Has añadido otra unidad de ${model.name}.`)
+      return
+    }
+    addAndContinue()
+  }
+  const decreaseQuantity = () => {
+    if (!lineInCart) return
+    if (lineInCart.qty === 1) {
+      removeFromCart(lineInCart.id)
+      setAddedMessage(`${model.name} se ha quitado del carrito.`)
+      return
+    }
+    setQty(lineInCart.id, lineInCart.qty - 1)
+    setAddedMessage(`Has quitado una unidad de ${model.name}.`)
   }
 
   return (
@@ -254,9 +274,19 @@ export function VariantPage() {
                 <Button size="lg" className="w-full" onClick={buyNow}>
                   Comprar
                 </Button>
-                <Button size="lg" variant="secondary" className="w-full" onClick={addAndContinue}>
-                  Añadir al carrito
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="lg" variant="secondary" className="min-w-0 flex-1" onClick={addAndContinue}>
+                    {lineInCart ? 'Añadir otra' : 'Añadir al carrito'}
+                  </Button>
+                  {lineInCart && (
+                    <QuantityControl
+                      quantity={lineInCart.qty}
+                      productName={model.name}
+                      onDecrease={decreaseQuantity}
+                      onIncrease={increaseQuantity}
+                    />
+                  )}
+                </div>
               </div>
             )}
             <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[12px] border border-line px-4 py-3 text-left transition-colors hover:border-ink/30">
@@ -393,9 +423,20 @@ export function VariantPage() {
                   <p className="text-xs text-ink">antes {euro(current.previousPrice)}</p>
                 )}
               </div>
-              <Button size="lg" variant="secondary" onClick={addAndContinue} className="ml-auto px-3">
-                Al carrito
-              </Button>
+              {lineInCart ? (
+                <QuantityControl
+                  quantity={lineInCart.qty}
+                  productName={model.name}
+                  onDecrease={decreaseQuantity}
+                  onIncrease={increaseQuantity}
+                  compact
+                  className="ml-auto"
+                />
+              ) : (
+                <Button size="lg" variant="secondary" onClick={addAndContinue} className="ml-auto px-3">
+                  Al carrito
+                </Button>
+              )}
               <Button size="lg" onClick={buyNow} className="px-4">
                 Comprar
               </Button>
@@ -416,5 +457,49 @@ export function VariantPage() {
         productName={`${model.name} ${current.capacity} · ${color.name}`}
       />
     </>
+  )
+}
+
+function QuantityControl({
+  quantity,
+  productName,
+  onDecrease,
+  onIncrease,
+  compact = false,
+  className = '',
+}: {
+  quantity: number
+  productName: string
+  onDecrease: () => void
+  onIncrease: () => void
+  compact?: boolean
+  className?: string
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={`Cantidad de ${productName} en el carrito`}
+      className={`inline-flex h-13 shrink-0 items-center rounded-[12px] border border-line bg-surface ${className}`}
+    >
+      <button
+        type="button"
+        onClick={onDecrease}
+        aria-label={quantity === 1 ? `Quitar ${productName} del carrito` : `Quitar una unidad de ${productName}`}
+        className={`grid h-full ${compact ? 'w-9' : 'w-10'} place-items-center text-ink hover:bg-neutral`}
+      >
+        <Icon name="minus" size={16} />
+      </button>
+      <span className={`min-w-5 text-center text-sm font-bold text-ink ${compact ? '' : 'px-1'}`} aria-live="polite">
+        {quantity}
+      </span>
+      <button
+        type="button"
+        onClick={onIncrease}
+        aria-label={`Añadir una unidad de ${productName}`}
+        className={`grid h-full ${compact ? 'w-9' : 'w-10'} place-items-center text-ink hover:bg-neutral`}
+      >
+        <Icon name="plus" size={16} />
+      </button>
+    </div>
   )
 }

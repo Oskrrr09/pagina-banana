@@ -165,6 +165,30 @@ No atribuye motivaciones que el repositorio no documenta.
 - Consecuencia: queda reservado el punto de entrada visual sin afirmar que
   exista todavía atención por chat.
 
+## D-017 — Tema automático según el dispositivo
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: adaptar la interfaz a `prefers-color-scheme` con tokens oscuros,
+  sin añadir un selector ni persistir una preferencia adicional.
+- Evidencia: `src/index.css`, `src/components/layout/Header.tsx` y
+  `src/components/ui/Button.tsx`.
+- Consecuencia: el amarillo Banana conserva texto oscuro y legible, mientras
+  las superficies, bordes, campos y contenido comercial se adaptan al modo
+  oscuro del sistema.
+
+## D-018 — Dimensiones estables para contenido intercambiable
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: reservar altura en el carrusel de tiendas, mega-menú y tarjetas de
+  catálogo, y normalizar los bloques internos de las tarjetas de producto.
+- Evidencia: `src/components/home/StoreCarousel.tsx`,
+  `src/components/layout/MegaMenu.tsx` y
+  `src/components/product/ProductCard.tsx`.
+- Consecuencia: los cambios de tienda, familia o texto descriptivo no alteran
+  visualmente la rejilla ni desplazan el contenido adyacente.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

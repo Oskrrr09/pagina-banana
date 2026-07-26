@@ -34,7 +34,7 @@ export function StoreCarousel() {
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carrusel"
     >
-      <div className="relative overflow-hidden rounded-[20px] border border-line bg-neutral">
+      <div className="relative h-[380px] overflow-hidden rounded-[20px] border border-line bg-neutral sm:h-[340px]">
         <AnimatePresence mode="wait" custom={dir}>
           <motion.div
             key={store.slug}
@@ -43,7 +43,7 @@ export function StoreCarousel() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: dir * -40 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="px-16 py-8 sm:px-20 sm:py-10"
+            className="flex h-full flex-col px-16 py-8 sm:px-20 sm:py-10"
           >
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-muted">
@@ -59,7 +59,7 @@ export function StoreCarousel() {
               {store.address}
             </p>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 min-h-16 flex flex-wrap content-start gap-2">
               {store.services.slice(0, 4).map((s) => (
                 <span key={s} className="rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink">
                   {s}
@@ -69,7 +69,7 @@ export function StoreCarousel() {
 
             <Link
               to={`/tiendas/${store.slug}`}
-              className="mt-6 inline-flex items-center gap-1 font-semibold text-ink hover:gap-2 transition-all"
+              className="mt-auto inline-flex items-center gap-1 pt-6 font-semibold text-ink transition-all hover:gap-2"
             >
               Ver tienda <Icon name="arrow-right" size={16} />
             </Link>

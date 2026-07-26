@@ -65,7 +65,7 @@ export function ChatBubble() {
         aria-expanded={open}
         aria-controls="chat-banana-preview"
         onClick={() => setOpen((value) => !value)}
-        className="ml-auto grid h-14 w-14 place-items-center rounded-full border border-black/10 bg-brand text-ink shadow-raised transition-transform hover:-translate-y-0.5 hover:bg-brand-600 active:translate-y-0"
+        className="ml-auto grid h-14 w-14 place-items-center rounded-full border border-black/10 bg-brand text-[#1d1d1f] shadow-raised transition-transform hover:-translate-y-0.5 hover:bg-brand-600 active:translate-y-0"
       >
         <Icon name={open ? 'close' : 'chat'} size={25} />
       </button>

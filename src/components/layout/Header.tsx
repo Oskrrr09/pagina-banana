@@ -57,7 +57,7 @@ export function Header() {
       <header className="sticky top-0 z-40 border-b border-black/10 bg-banana">
         {/* Tres bloques a todo el ancho: logo a la izquierda (con margen), menú
             centrado y accesos (buscar/favoritos/carrito…) pegados a la derecha. */}
-        <div className="flex h-16 w-full items-center px-6 sm:px-8 lg:px-12">
+        <div className="banana-header-bar flex h-16 w-full items-center px-6 sm:px-8 lg:px-12">
           <Logo />
 
           {/* Escritorio: navegación centrada con mega-menú */}

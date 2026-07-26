@@ -31,7 +31,7 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
   }
 
   return (
-    <div className="group relative flex flex-col rounded-[12px] border border-line bg-surface p-4 transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]">
+    <div className="group relative flex h-full min-h-[400px] flex-col rounded-[12px] border border-line bg-surface p-4 transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]">
       <button
         onClick={() => toggleFavorite(favId)}
         aria-label={fav ? `Quitar ${model.name} de favoritos` : `Añadir ${model.name} a favoritos`}
@@ -50,12 +50,12 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
 
       <Link to={variantPath(model)} className="block focus-visible:outline-none">
         <ProductImage src={model.colors[0].image} alt={`${model.name} ${model.colors[0].name}`} />
-        <h3 className="mt-4 text-[15px] font-semibold text-ink group-hover:text-ink">{model.name}</h3>
+        <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">{model.name}</h3>
       </Link>
 
-      <p className="mt-1 line-clamp-2 text-sm text-muted">{model.tagline}</p>
+      <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{model.tagline}</p>
 
-      <div className="mt-3 flex items-end gap-2">
+      <div className="mt-auto flex items-end gap-2 pt-3">
         <span className="text-lg font-bold text-ink">desde {euro(model.fromPrice)}</span>
         {hasOffer && firstCap.previousPrice && (
           <span className="pb-0.5 text-sm text-muted line-through">{euro(firstCap.previousPrice)}</span>
