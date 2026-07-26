@@ -6,7 +6,7 @@ import { families, modelsByFamily, variantPath } from './products'
 export interface MegaColumn {
   explore: { label: string; to: string }[]
   buy: { label: string; to: string }[]
-  featured: { name: string; cta: string; to: string; tint: string }
+  featured: { name: string; cta: string; to: string; tint: string; image?: string; isNew?: boolean }
 }
 
 export interface FamilyNav {
@@ -49,14 +49,28 @@ function buildFamilyNav(slug: string, name: string): FamilyNav {
       },
     }
   }
-  const featured = models[0]
+  const macOrder = [
+    'macbook-neo',
+    'macbook-air-m4',
+    'macbook-air-m5',
+    'macbook-pro-m4',
+    'macbook-pro-m5',
+    'imac-24-m4',
+    'mac-studio',
+    'mac-mini-m4',
+  ]
+  const orderedModels =
+    slug === 'mac'
+      ? [...models].sort((a, b) => macOrder.indexOf(a.slug) - macOrder.indexOf(b.slug))
+      : models
+  const featured = orderedModels[0]
   return {
     slug,
     name,
     demo: false,
     mega: {
       explore: [
-        ...models.map((m) => ({ label: m.name, to: variantPath(m) })),
+        ...orderedModels.map((m) => ({ label: m.name, to: variantPath(m) })),
         { label: `Comparar ${name}`, to: `/comparar?familia=${slug}` },
       ],
       buy: serviceLinks,
@@ -65,6 +79,8 @@ function buildFamilyNav(slug: string, name: string): FamilyNav {
         cta: 'Ver la novedad',
         to: variantPath(featured),
         tint: tints[slug] ?? '#8a8f98',
+        image: featured.colors[0].image,
+        isNew: featured.slug === 'macbook-neo',
       },
     },
   }

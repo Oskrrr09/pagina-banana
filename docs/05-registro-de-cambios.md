@@ -8,6 +8,18 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-26 — Consistencia visual y tema del dispositivo, pendiente de publicación
+
+- Fijada la altura del carrusel de tiendas y del mega-menú de escritorio.
+- El mega-menú Mac usa imagen de producto, sitúa “Nuevo” sobre la tarjeta y
+  lista juntos los MacBook Air M4/M5 y los MacBook Pro M4/M5.
+- Normalizadas las áreas internas de las tarjetas de producto para alinear las
+  tarjetas de una misma categoría.
+- La ficha muestra controles de cantidad junto al carrito una vez que la
+  variante está añadida; la capacidad conserva el color seleccionado.
+- La cabecera de checkout usa un amarillo pastel opaco.
+- Añadido tema automático claro/oscuro según el dispositivo.
+
 ## 2026-07-26 — Catálogo y flujo de compra publicado
 
 La PR [#3](https://github.com/luis-lop-nas/pagina-banana/pull/3) se fusionó en

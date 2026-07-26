@@ -54,6 +54,15 @@ actualizado: 2026-07-26
   amarilla suave, sin navegación o footer comerciales.
 - Acceso flotante global al futuro chat, identificado expresamente como
   “próximamente” y enlazado al soporte existente.
+- Las tarjetas de producto reservan las mismas áreas para imagen, nombre y
+  descripción, de modo que mantienen una altura alineada dentro de cada rejilla.
+- El carrusel de tiendas y el mega-menú de escritorio mantienen una altura fija
+  al cambiar de contenido; el menú Mac muestra una imagen del destacado y
+  ordena juntos los MacBook Air y los MacBook Pro.
+- La ficha permite aumentar o quitar unidades de una variante ya añadida sin
+  abandonar la página; cambiar capacidad conserva el color elegido.
+- La interfaz se adapta automáticamente a `prefers-color-scheme`, con
+  superficies oscuras, contraste revisado y amarillo de marca legible.
 - Directorio de cinco tiendas con direcciones y horarios contrastados con las
   fichas oficiales el 2026-07-26. No se muestra un estado “Abierto ahora”:
   los horarios llevan fuente y aviso de posibles variaciones.
@@ -148,6 +157,16 @@ El 2026-07-26, en la rama `feature/catalog-and-purchase-flow`:
 - La URL pública mostró el catálogo Mac, la ruta profunda de MacBook Neo, las
   dos acciones de compra, el seguro por producto, la cabecera amarilla suave y
   el globo del chat.
+
+El 2026-07-26, en la rama `fix/layout-consistency`:
+
+- `npm run build`: correcto; 421 módulos transformados.
+- La tarjeta de tiendas midió 340 px antes y después de cambiar entre Banana
+  Castillo y Banana La Laguna.
+- Al cambiar MacBook Neo de `8 GB · 256 GB` a `16 GB · 512 GB`, el color
+  Cítrico y el sufijo `-citrico` de la URL se conservaron.
+- Revisado el modo oscuro del dispositivo en portada y ficha: contraste correcto
+  en superficies, texto, tarjetas, cabecera amarilla y controles de compra.
 
 ## Navegación de la documentación
 

@@ -13,8 +13,8 @@ const base =
 
 const variants: Record<Variant, string> = {
   // Relleno amarillo Banana con texto negro (legible sobre amarillo).
-  primary: 'bg-action text-ink hover:bg-action-600 hover:-translate-y-0.5 shadow-[var(--shadow-rest)]',
-  brand: 'bg-brand text-ink hover:bg-brand-600 hover:-translate-y-0.5 shadow-[var(--shadow-rest)]',
+  primary: 'bg-action text-[#1d1d1f] hover:bg-action-600 hover:-translate-y-0.5 shadow-[var(--shadow-rest)]',
+  brand: 'bg-brand text-[#1d1d1f] hover:bg-brand-600 hover:-translate-y-0.5 shadow-[var(--shadow-rest)]',
   secondary:
     'border border-ink/20 text-ink bg-transparent hover:bg-action-050 hover:border-ink/40 hover:-translate-y-0.5',
   tertiary: 'text-ink underline-offset-4 hover:underline px-0',

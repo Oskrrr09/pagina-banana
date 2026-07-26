@@ -133,6 +133,10 @@ No hay migración ni validación del esquema almacenado.
   desde 768 px.
 - Imágenes raster locales para producto/campaña y placeholders explícitos en
   experiencias todavía simuladas.
+- Los tokens de color se redefinen mediante `prefers-color-scheme: dark`; el
+  tema sigue el modo del dispositivo sin guardar una preferencia propia.
+- El carrusel de tiendas y el mega-menú reservan altura fija para que el cambio
+  de tienda o familia no provoque saltos de diseño.
 
 ## Construcción y despliegue
 

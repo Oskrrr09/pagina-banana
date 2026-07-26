@@ -101,7 +101,7 @@ export function Home() {
       )}
 
       {/* 06 — Ventajas (franja de confianza) */}
-      <section className="bg-banana text-ink">
+      <section className="banana-surface bg-banana text-ink">
         <Container className="grid grid-cols-2 gap-8 py-10 lg:grid-cols-4">
           {advantages.map((a) => (
             <div key={a.title} className="flex items-start gap-3">
@@ -180,7 +180,7 @@ export function Home() {
 
       {/* 13 — Newsletter */}
       <Section>
-        <Reveal className="bg-banana rounded-[20px] px-6 py-12 text-center text-ink sm:px-12">
+        <Reveal className="banana-surface bg-banana rounded-[20px] px-6 py-12 text-center text-ink sm:px-12">
           <h2 className="text-2xl font-bold sm:text-3xl">No te pierdas ninguna oferta</h2>
           <p className="mt-2 text-ink/70">Suscríbete y recibe las novedades antes que nadie.</p>
           <form
@@ -192,7 +192,7 @@ export function Home() {
               required
               placeholder="tu@email.com"
               aria-label="Tu correo electrónico"
-              className="min-h-12 w-full min-w-0 flex-1 rounded-[12px] border-0 bg-white px-5 py-3 text-base text-ink outline-none placeholder:text-muted"
+              className="min-h-12 w-full min-w-0 flex-1 rounded-[12px] border-0 bg-white px-5 py-3 text-base text-[#1d1d1f] outline-none placeholder:text-[#6e6e73]"
             />
             <button
               type="submit"
