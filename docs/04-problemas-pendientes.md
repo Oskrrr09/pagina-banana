@@ -123,6 +123,18 @@ del repositorio. No se corrigen en la preparación documental.
 - Corrección disponible: sí, según `npm audit`. Debe evaluarse y verificarse sin
   aplicar automáticamente `npm audit fix`.
 
+## CI-001 — Actions fuerza Node 24 por obsolescencia de Node 20
+
+- Estado: abierto.
+- Impacto: bajo hoy; mantenimiento preventivo.
+- Evidencia: el workflow de Pages `30210351355` terminó correctamente, pero
+  avisó de que Node.js 20 está obsoleto y que fuerza Node.js 24 para
+  `actions/checkout@v4`, `actions/setup-node@v4` y
+  `actions/upload-artifact@v4`.
+- Consecuencia actual: ninguna en el despliegue verificado.
+- Siguiente validación: actualizar de forma explícita la versión de Node del
+  workflow y volver a comprobar `npm ci`, build y Pages.
+
 ## ENTORNO-001 — Configuración Obsidian preexistente en la raíz
 
 - Estado: cerrado el 2026-07-26.

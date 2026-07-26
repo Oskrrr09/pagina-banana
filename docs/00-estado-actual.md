@@ -14,9 +14,9 @@ actualizado: 2026-07-26
 ## Referencia de la auditoría
 
 - Rama: `main`.
-- Commit funcional desplegado: `a1143615cb8443ac8d62fccc694acd31337183ba`
+- Commit funcional desplegado: `17fbad9cd7584221b48f5604fa7c962a48dd770c`
   (merge de la PR
-  [#2](https://github.com/luis-lop-nas/pagina-banana/pull/2)).
+  [#3](https://github.com/luis-lop-nas/pagina-banana/pull/3)).
 - URL pública verificada:
   <https://luis-lop-nas.github.io/pagina-banana/>.
 - Sin diferencias en archivos versionados antes de iniciar esta estructura
@@ -142,6 +142,12 @@ El 2026-07-26, en la rama `feature/catalog-and-purchase-flow`:
 - Comprobación responsive a 375, 768, 1024 y 1440 px sin scroll horizontal.
 - El acceso al chat abre un aviso de disponibilidad futura, cierra con Escape y
   devuelve el foco a su botón.
+- La PR #3 se fusionó en `main`; el workflow
+  [`30210351355`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30210351355)
+  compiló y desplegó correctamente.
+- La URL pública mostró el catálogo Mac, la ruta profunda de MacBook Neo, las
+  dos acciones de compra, el seguro por producto, la cabecera amarilla suave y
+  el globo del chat.
 
 ## Navegación de la documentación
 

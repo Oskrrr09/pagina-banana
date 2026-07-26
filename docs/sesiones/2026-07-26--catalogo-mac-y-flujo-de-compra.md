@@ -61,5 +61,5 @@ los precios, stock o condiciones del prototipo en datos oficiales.
 
 ## Siguiente paso
 
-Publicar la rama mediante pull request, verificar el workflow de GitHub Pages y
-comprobar la URL pública antes de considerar la sesión cerrada.
+Validar con usuarios el nuevo flujo y decidir el alcance real del chat. La PR
+#3, el workflow `30210351355` y la URL pública quedaron verificados.

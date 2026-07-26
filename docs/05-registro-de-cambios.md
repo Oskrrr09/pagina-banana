@@ -8,7 +8,13 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-26 — Catálogo y flujo de compra, pendiente de publicación
+## 2026-07-26 — Catálogo y flujo de compra publicado
+
+La PR [#3](https://github.com/luis-lop-nas/pagina-banana/pull/3) se fusionó en
+`main`. El workflow
+[`30210351355`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30210351355)
+compiló y publicó la versión, verificada después en
+<https://luis-lop-nas.github.io/pagina-banana/>.
 
 - Nueva presentación de iPhone y Mac con franja horizontal de modelos, ofertas
   destacadas y acceso directo a variantes.
@@ -25,6 +31,7 @@ autores, diffs y marcas de tiempo.
   comunica que todavía no está disponible.
 - Verificados build, rutas principales y 375, 768, 1024 y 1440 px sin
   desbordamiento horizontal.
+- Registrado el aviso no bloqueante del workflow sobre la retirada de Node 20.
 
 ## 2026-07-26 — Flujo de variantes y seguro publicado
 
