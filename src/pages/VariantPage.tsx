@@ -36,7 +36,7 @@ export function VariantPage() {
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
   const navigate = useNavigate()
-  const { addToCart } = useStore()
+  const { addToCart, insuranceSelected, setInsuranceSelected } = useStore()
 
   // Parse "256gb-plata" → capacidad + color
   const [capToken, ...colorParts] = (variant ?? '').split('-')
@@ -60,6 +60,7 @@ export function VariantPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>('Características')
   const [storeOpen, setStoreOpen] = useState(false)
   const [financeOpen, setFinanceOpen] = useState(false)
+  const [insurance, setInsurance] = useState(insuranceSelected)
   const [showBar, setShowBar] = useState(false)
   const buyBoxRef = useRef<HTMLDivElement>(null)
 
@@ -78,9 +79,9 @@ export function VariantPage() {
   useEffect(() => {
     if (family && model && color && capacity) {
       const slug = `${capacity.toLowerCase()}-${color.color}`
-      window.history.replaceState(null, '', `/${family.slug}/${model.slug}/${slug}`)
+      navigate(`/${family.slug}/${model.slug}/${slug}`, { replace: true })
     }
-  }, [family, model, color, capacity])
+  }, [family, model, color, capacity, navigate])
 
   if (!family || !model || !color || !current) return <NotFound />
 
@@ -97,6 +98,7 @@ export function VariantPage() {
   }
   const buyNow = () => {
     addToCart(cartLine)
+    setInsuranceSelected(insurance)
     navigate('/carrito')
   }
 
@@ -246,9 +248,21 @@ export function VariantPage() {
                 Comprar
               </Button>
             )}
-            <Button variant="secondary" size="lg" className="w-full" onClick={() => addToCart(cartLine)}>
-              <Icon name="shield" size={18} /> Añadir seguro a todo riesgo
-            </Button>
+            <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[12px] border border-line px-4 py-3 text-left transition-colors hover:border-ink/30">
+              <input
+                type="checkbox"
+                checked={insurance}
+                onChange={(event) => setInsurance(event.target.checked)}
+                className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
+              />
+              <span className="flex min-w-0 items-center gap-2">
+                <Icon name="shield" size={18} />
+                <span>
+                  <span className="block text-sm font-semibold text-ink">Seguro a todo riesgo</span>
+                  <span className="block text-xs text-muted">Añade 8,99 €/mes* al total</span>
+                </span>
+              </span>
+            </label>
           </div>
         </div>
       </Container>

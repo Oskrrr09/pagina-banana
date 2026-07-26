@@ -11,7 +11,15 @@ import { productImage } from '../data/products'
 import { euro } from '../lib/format'
 
 export function CartPage() {
-  const { cart, setQty, removeFromCart, cartSubtotal, cartCount } = useStore()
+  const {
+    cart,
+    setQty,
+    removeFromCart,
+    cartSubtotal,
+    cartCount,
+    insuranceSelected,
+    insurancePrice,
+  } = useStore()
   const [couponOpen, setCouponOpen] = useState(false)
   const [delivery, setDelivery] = useState<'envio' | 'recogida'>('envio')
 
@@ -34,7 +42,7 @@ export function CartPage() {
   }
 
   const shipping = delivery === 'recogida' ? 0 : 0 // envío gratis de ejemplo
-  const total = cartSubtotal + shipping
+  const total = cartSubtotal + shipping + (insuranceSelected ? insurancePrice : 0)
 
   return (
     <Container className="py-10">
@@ -144,6 +152,12 @@ export function CartPage() {
                 <dt className="text-muted">Subtotal</dt>
                 <dd className="font-medium text-ink">{euro(cartSubtotal)}</dd>
               </div>
+              {insuranceSelected && (
+                <div className="flex justify-between">
+                  <dt className="text-muted">Seguro a todo riesgo</dt>
+                  <dd className="font-medium text-ink">{euro(insurancePrice)}/mes*</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-muted">Envío estimado</dt>
                 <dd className="font-medium text-available">Gratis*</dd>

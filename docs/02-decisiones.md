@@ -122,6 +122,17 @@ No atribuye motivaciones que el repositorio no documenta.
 - Evidencia: `src/components/layout/Header.tsx` y
   `src/components/layout/MobileMenu.tsx`.
 
+## D-013 — Seguro como opción única del pedido
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: tratar el seguro a todo riesgo de 8,99 € como una opción del pedido,
+  no como una línea ni una unidad de producto.
+- Evidencia: `src/lib/store.tsx`, `src/pages/VariantPage.tsx`,
+  `src/pages/CartPage.tsx` y `src/pages/CheckoutPage.tsx`.
+- Consecuencia: la ficha selecciona el seguro antes de comprar y carrito y
+  checkout comparten el mismo estado e importe.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y
