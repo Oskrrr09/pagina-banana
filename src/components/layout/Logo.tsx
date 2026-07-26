@@ -11,7 +11,7 @@ export function Logo({ onClick, variant = 'dark' }: { onClick?: () => void; vari
       aria-label="Banana Computer — Inicio"
     >
       <img
-        src={variant === 'white' ? '/img/logo-white.svg' : '/img/logo-dark.svg'}
+        src={`${import.meta.env.BASE_URL}img/${variant === 'white' ? 'logo-white.svg' : 'logo-dark.svg'}`}
         alt="Banana Computer"
         className="pointer-events-none h-5 w-auto sm:h-6"
       />

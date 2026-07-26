@@ -25,7 +25,7 @@ export const families: Family[] = [
   { slug: 'accesorios', name: 'Accesorios', tagline: 'Fundas, cargadores y más', fromPrice: 29 },
 ]
 
-const IMG = '/img/products'
+const IMG = `${import.meta.env.BASE_URL}img/products`
 
 // Color: helper. `av` describe disponibilidad por capacidad.
 type CapSpec = [capacity: string, price: number, prev?: number | null, av?: CapacityOption['availability'], note?: string]

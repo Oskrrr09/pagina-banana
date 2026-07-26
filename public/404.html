@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Banana Computer</title>
+    <!--
+      Fallback SPA para GitHub Pages. Al recargar una ruta profunda (p. ej.
+      /pagina-banana/tiendas) GitHub devuelve 404 porque no existe ese archivo.
+      Este script reescribe la URL a la raíz con la ruta codificada en la query
+      y redirige; index.html la vuelve a decodificar. pathSegmentsToKeep=1 = el
+      segmento del repositorio (/pagina-banana/). Técnica de rafgraph/spa-github-pages.
+    -->
+    <script>
+      var pathSegmentsToKeep = 1;
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

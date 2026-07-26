@@ -26,9 +26,9 @@ export function Home() {
       <section className="bg-ink">
         <Link to="/iphone/17-pro" className="group relative mx-auto block max-w-[1400px]">
           <picture>
-            <source media="(min-width: 768px)" srcSet="/img/hero-17pro-desktop.png" />
+            <source media="(min-width: 768px)" srcSet={`${import.meta.env.BASE_URL}img/hero-17pro-desktop.png`} />
             <img
-              src="/img/hero-17pro-mobile.png"
+              src={`${import.meta.env.BASE_URL}img/hero-17pro-mobile.png`}
               alt="iPhone 17 Pro, ya en Banana"
               className="mx-auto block w-full"
               fetchPriority="high"
