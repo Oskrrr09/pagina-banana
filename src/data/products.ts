@@ -3,8 +3,8 @@ import type { CapacityOption, ColorVariant, Family, Model } from './types'
 // ------------------------------------------------------------------
 // Contenido de ejemplo (apartado 7). Editable, nunca fijo en el código
 // de negocio. Todo precio/stock lleva su etiqueta correspondiente.
-// Imágenes: fotos reales del CDN de Banana (media.bananacomputer.com),
-// descargadas a /public/img/products. Nada inventado.
+// Imágenes: recursos de producto publicados por distribuidores Apple y
+// descargados a /public/img/products. Nada se presenta como catálogo oficial.
 // ------------------------------------------------------------------
 
 const cap = (
@@ -17,7 +17,7 @@ const cap = (
 
 // Familias para la home y el mega-menú.
 export const families: Family[] = [
-  { slug: 'mac', name: 'Mac', tagline: 'Potencia de sobremesa y portátil', fromPrice: 1999 },
+  { slug: 'mac', name: 'Mac', tagline: 'Potencia de sobremesa y portátil', fromPrice: 719 },
   { slug: 'iphone', name: 'iPhone', tagline: 'El iPhone que buscas, al mejor precio en Canarias', fromPrice: 959 },
   { slug: 'ipad', name: 'iPad', tagline: 'Versátil, ligero, para todo', fromPrice: 719 },
   { slug: 'apple-watch', name: 'Watch', tagline: 'Tu salud, en la muñeca', fromPrice: 459 },
@@ -142,26 +142,127 @@ export const iphoneModels: Model[] = [
 ]
 
 // =====================  Mac  =====================
+const macSpecs = (chip: string, format: string, memory: string): Model['specs'] => [
+  { label: 'Chip', value: chip },
+  { label: 'Formato', value: format },
+  { label: 'Memoria', value: memory },
+  { label: 'Sistema', value: 'macOS' },
+  { label: 'Inteligencia', value: 'Compatible con Apple Intelligence' },
+]
+
 export const macModels: Model[] = [
   {
-    slug: 'macbook-pro-14',
+    slug: 'macbook-neo',
     family: 'mac',
-    name: 'MacBook Pro 14"',
-    tagline: 'El chip M5 lleva la potencia y la eficiencia a otro nivel.',
-    fromPrice: 1999,
-    financeFrom: { monthly: 83, months: 24 },
+    name: 'MacBook Neo',
+    tagline: 'Un Mac ligero y accesible para estudiar, crear y trabajar cada día.',
+    fromPrice: 729,
+    financeFrom: { monthly: 31, months: 24 },
     colors: buildColors([
-      { slug: 'plata', name: 'Plata', hex: '#e3e4e6', image: `${IMG}/mac-mbp14-plata.png`, caps: [['16 GB · 512 GB', 1999], ['24 GB · 1 TB', 2499], ['36 GB · 1 TB', 2999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-      { slug: 'negro', name: 'Negro espacial', hex: '#2a2a2c', image: `${IMG}/mac-mbp14-negro.png`, caps: [['16 GB · 512 GB', 1999], ['24 GB · 1 TB', 2499], ['36 GB · 1 TB', 2999]] },
+      { slug: 'citrico', name: 'Cítrico', hex: '#d8d19a', image: `${IMG}/macbook-neo.png`, caps: [['8 GB · 256 GB', 729, 759], ['16 GB · 512 GB', 999]] },
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/macbook-neo.png`, caps: [['8 GB · 256 GB', 729, 759], ['16 GB · 512 GB', 999]] },
     ]),
-    specs: [
-      { label: 'Chip', value: 'Apple M5' },
-      { label: 'Pantalla', value: 'Liquid Retina XDR 14,2"' },
-      { label: 'Memoria', value: 'Hasta 36 GB' },
-      { label: 'Puertos', value: 'Thunderbolt 5, HDMI, SDXC' },
-      { label: 'Batería', value: 'Hasta 24 h' },
-    ],
-    highlights: ['Chip Apple M5', 'Pantalla Liquid Retina XDR', 'Hasta 24 h de batería', 'Thunderbolt 5', 'Cámara Center Stage 12 Mpx'],
+    specs: macSpecs('Apple Silicon', 'Portátil de 13"', '8 o 16 GB'),
+    highlights: ['Diseño ligero', 'Pantalla de 13 pulgadas', 'Autonomía para todo el día', 'Touch ID', 'macOS'],
+  },
+  {
+    slug: 'macbook-air-m4',
+    family: 'mac',
+    name: 'MacBook Air M4',
+    tagline: 'Diseño ultrafino, gran autonomía y potencia M4 para todo el día.',
+    fromPrice: 1119,
+    financeFrom: { monthly: 47, months: 24 },
+    colors: buildColors([
+      { slug: 'medianoche', name: 'Medianoche', hex: '#2c3138', image: `${IMG}/macbook-air-m4.png`, caps: [['13" · 16 GB · 256 GB', 1119, 1199], ['15" · 16 GB · 256 GB', 1299]] },
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/macbook-air-m4.png`, caps: [['13" · 16 GB · 256 GB', 1119, 1199], ['15" · 16 GB · 256 GB', 1299]] },
+      { slug: 'blanco-estrella', name: 'Blanco estrella', hex: '#ded8ca', image: `${IMG}/macbook-air-m4.png`, caps: [['13" · 16 GB · 256 GB', 1119, 1199], ['15" · 16 GB · 256 GB', 1299]] },
+    ]),
+    specs: macSpecs('Apple M4', 'Portátil de 13" o 15"', '16 GB'),
+    highlights: ['Chip Apple M4', 'Dos tamaños', 'Diseño sin ventilador', 'Hasta 18 h de autonomía', 'MagSafe'],
+  },
+  {
+    slug: 'macbook-pro-m4',
+    family: 'mac',
+    name: 'MacBook Pro M4',
+    tagline: 'Rendimiento profesional M4 y pantalla Liquid Retina XDR.',
+    fromPrice: 1699,
+    financeFrom: { monthly: 71, months: 24 },
+    colors: buildColors([
+      { slug: 'negro', name: 'Negro espacial', hex: '#2a2a2c', image: `${IMG}/macbook-pro-m4.png`, caps: [['14" · 16 GB · 512 GB', 1699, 1899], ['16" · 24 GB · 512 GB', 2699]] },
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/macbook-pro-m4.png`, caps: [['14" · 16 GB · 512 GB', 1699, 1899], ['16" · 24 GB · 512 GB', 2699]] },
+    ]),
+    specs: macSpecs('Apple M4', 'Portátil de 14" o 16"', 'Desde 16 GB'),
+    highlights: ['Chip Apple M4', 'Pantalla Liquid Retina XDR', 'Hasta 24 h de batería', 'HDMI y SDXC', 'MagSafe'],
+  },
+  {
+    slug: 'macbook-air-m5',
+    family: 'mac',
+    name: 'MacBook Air M5',
+    tagline: 'El portátil fino y ligero de Apple, ahora superpotenciado con M5.',
+    fromPrice: 1319,
+    financeFrom: { monthly: 55, months: 24 },
+    colors: buildColors([
+      { slug: 'azul-cielo', name: 'Azul cielo', hex: '#a9c3d6', image: `${IMG}/macbook-air-m5.png`, caps: [['13" · 16 GB · 512 GB', 1319], ['15" · 16 GB · 512 GB', 1579, 1649]] },
+      { slug: 'medianoche', name: 'Medianoche', hex: '#2c3138', image: `${IMG}/macbook-air-m5.png`, caps: [['13" · 16 GB · 512 GB', 1319], ['15" · 16 GB · 512 GB', 1579, 1649]] },
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/macbook-air-m5.png`, caps: [['13" · 16 GB · 512 GB', 1319], ['15" · 16 GB · 512 GB', 1579, 1649]] },
+    ]),
+    specs: macSpecs('Apple M5', 'Portátil de 13" o 15"', '16 GB'),
+    highlights: ['Chip Apple M5', 'Dos tamaños', 'Hasta 18 h de autonomía', 'Apple Intelligence', 'MagSafe'],
+  },
+  {
+    slug: 'macbook-pro-m5',
+    family: 'mac',
+    name: 'MacBook Pro M5',
+    tagline: 'Potencia profesional de nueva generación para los proyectos más exigentes.',
+    fromPrice: 1839,
+    financeFrom: { monthly: 77, months: 24 },
+    colors: buildColors([
+      { slug: 'negro', name: 'Negro espacial', hex: '#2a2a2c', image: `${IMG}/macbook-pro-m5.png`, caps: [['14" · 16 GB · 1 TB', 1839, 2119], ['16" · 24 GB · 1 TB', 2999]] },
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/macbook-pro-m5.png`, caps: [['14" · 16 GB · 1 TB', 1839, 2119], ['16" · 24 GB · 1 TB', 2999]] },
+    ]),
+    specs: macSpecs('Apple M5', 'Portátil de 14" o 16"', 'Desde 16 GB'),
+    highlights: ['Chip Apple M5', 'Pantalla Liquid Retina XDR', 'Rendimiento profesional', 'Thunderbolt', 'Hasta 24 h de batería'],
+  },
+  {
+    slug: 'imac-24-m4',
+    family: 'mac',
+    name: 'iMac 24" M4',
+    tagline: 'Todo en uno. Todo color. Una pantalla Retina 4,5K espectacular.',
+    fromPrice: 1499,
+    financeFrom: { monthly: 63, months: 24 },
+    colors: buildColors([
+      { slug: 'azul', name: 'Azul', hex: '#9ab9ca', image: `${IMG}/imac-24-m4.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749]] },
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/imac-24-m4.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749]] },
+      { slug: 'rosa', name: 'Rosa', hex: '#d9a6a2', image: `${IMG}/imac-24-m4.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749]] },
+    ]),
+    specs: macSpecs('Apple M4', 'Todo en uno de 24"', 'Desde 16 GB'),
+    highlights: ['Pantalla Retina 4,5K', 'Chip Apple M4', 'Diseño todo en uno', 'Cámara Center Stage', 'Seis altavoces'],
+  },
+  {
+    slug: 'mac-studio',
+    family: 'mac',
+    name: 'Mac Studio',
+    tagline: 'Potencia de estudio profesional en un diseño increíblemente compacto.',
+    fromPrice: 2499,
+    financeFrom: { monthly: 105, months: 24 },
+    colors: buildColors([
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/mac-studio.png`, caps: [['M4 Max · 36 GB · 512 GB', 2499], ['M3 Ultra · 96 GB · 1 TB', 4999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+    ]),
+    specs: macSpecs('M4 Max o M3 Ultra', 'Sobremesa compacto', 'Desde 36 GB'),
+    highlights: ['M4 Max o M3 Ultra', 'Diseño compacto', 'Conectividad profesional', 'Hasta cinco pantallas', 'Alto rendimiento sostenido'],
+  },
+  {
+    slug: 'mac-mini-m4',
+    family: 'mac',
+    name: 'Mac mini M4',
+    tagline: 'Un pequeño gigante con M4 para aprovechar tu pantalla y accesorios.',
+    fromPrice: 719,
+    financeFrom: { monthly: 30, months: 24 },
+    colors: buildColors([
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/mac-mini-m4.png`, caps: [['16 GB · 256 GB', 719], ['16 GB · 512 GB', 949], ['M4 Pro · 24 GB · 512 GB', 1649]] },
+    ]),
+    specs: macSpecs('Apple M4 o M4 Pro', 'Sobremesa compacto', 'Desde 16 GB'),
+    highlights: ['Chip M4 o M4 Pro', 'Diseño ultracompacto', 'Thunderbolt', 'HDMI', 'Gigabit Ethernet'],
   },
 ]
 
@@ -327,6 +428,23 @@ export function getFamilyModels(family: string): Model[] {
 
 export function getModel(family: string, slug: string): Model | undefined {
   return getFamilyModels(family).find((m) => m.slug === slug)
+}
+
+export function capacitySlug(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+export function variantPath(
+  model: Model,
+  color = model.colors[0],
+  capacity = color.capacities[0],
+): string {
+  return `/${model.family}/${model.slug}/${capacitySlug(capacity.capacity)}-${color.color}`
 }
 
 export function getVariant(model: Model, colorSlug: string) {

@@ -5,6 +5,7 @@ import { useStore } from '../../lib/store'
 import { ProductImage } from './ProductImage'
 import { ProvisionalBadge, OfferBadge } from '../ui/Tag'
 import { Icon } from '../ui/Icon'
+import { variantPath } from '../../data/products'
 
 // Tarjeta de producto (§6): resume un modelo para decidir si entrar a la ficha.
 // Precio y disponibilidad en texto, no solo en color. Favorito con estado.
@@ -47,7 +48,7 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
         </div>
       )}
 
-      <Link to={`/${model.family}/${model.slug}`} className="block focus-visible:outline-none">
+      <Link to={variantPath(model)} className="block focus-visible:outline-none">
         <ProductImage src={model.colors[0].image} alt={`${model.name} ${model.colors[0].name}`} />
         <h3 className="mt-4 text-[15px] font-semibold text-ink group-hover:text-ink">{model.name}</h3>
       </Link>

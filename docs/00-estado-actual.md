@@ -35,18 +35,25 @@ actualizado: 2026-07-26
   testimonios, nombres ni valoraciones inventadas.
 - Catálogo desarrollado para cinco familias: iPhone, Mac, iPad, Apple Watch y
   AirPods. Accesorios existe en navegación, pero redirige al catálogo de iPhone.
-- Once modelos con variantes de color/capacidad, imágenes locales, precios y
+- Dieciocho modelos con variantes de color/capacidad, imágenes locales, precios y
   disponibilidad de ejemplo.
+- Las familias iPhone y Mac presentan un selector horizontal de modelos y una
+  zona de ofertas; cada modelo abre directamente su variante configurable.
+- La categoría Mac incluye MacBook Neo, MacBook Air M4/M5, MacBook Pro M4/M5,
+  iMac 24" M4, Mac Studio y Mac mini M4.
 - Búsqueda sobre modelos, categorías, servicios y contenido de ayuda.
 - Favoritos, comparador de hasta tres productos de la misma familia y carrito.
-- Persistencia local en las claves `banana:cart`, `banana:insurance`,
-  `banana:fav` y `banana:compare` de `localStorage`.
-- El configurador de modelo abre la ficha profunda de la variante seleccionada
-  al pulsar “Comprar”; la ficha conserva color y capacidad en la URL.
-- El seguro a todo riesgo es una opción del pedido: no añade unidades, suma
-  8,99 € al total y mantiene el mismo estado entre ficha, carrito y checkout.
+- Persistencia local en las claves `banana:cart`, `banana:fav` y
+  `banana:compare` de `localStorage`.
+- La ficha conserva color y capacidad en la URL. “Comprar” añade la variante y
+  abre el checkout; “Añadir al carrito” la guarda sin abandonar la ficha.
+- El seguro a todo riesgo se asocia a cada línea del carrito: no añade unidades,
+  suma 8,99 € por unidad asegurada y se puede activar o retirar tanto en la
+  tarjeta de cesta como en “Pago y extras”.
 - Checkout de tres pasos con layout propio, una única cabecera simplificada y
-  sin navegación o footer comerciales.
+  amarilla suave, sin navegación o footer comerciales.
+- Acceso flotante global al futuro chat, identificado expresamente como
+  “próximamente” y enlazado al soporte existente.
 - Directorio de cinco tiendas con direcciones y horarios contrastados con las
   fichas oficiales el 2026-07-26. No se muestra un estado “Abierto ahora”:
   los horarios llevan fuente y aviso de posibles variaciones.
@@ -122,6 +129,19 @@ El 2026-07-26, en la rama `fix/presentation-polish`:
 - `npm audit`: dos vulnerabilidades moderadas, ambas en la cadena de
   `react-router-dom@6.30.4`; hay corrección disponible. Véase
   [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
+
+El 2026-07-26, en la rama `feature/catalog-and-purchase-flow`:
+
+- `npm run build`: correcto; 421 módulos transformados.
+- Recorrido manual correcto desde las portadas de iPhone y Mac hasta una
+  variante, cesta y “Pago y extras”.
+- Verificados los dos destinos de compra: checkout inmediato y añadido sin
+  abandonar la ficha.
+- El seguro se comprobó por línea de producto en ficha, cesta, resumen y
+  checkout.
+- Comprobación responsive a 375, 768, 1024 y 1440 px sin scroll horizontal.
+- El acceso al chat abre un aviso de disponibilidad futura, cierra con Escape y
+  devuelve el foco a su botón.
 
 ## Navegación de la documentación
 

@@ -43,10 +43,11 @@ del repositorio. No se corrigen en la preparación documental.
   riesgo” ejecuta `addToCart(cartLine)`.
 - Resultado actual: incrementa el producto en el carrito; no representa un
   seguro separado.
-- Resolución: sustituido el botón por una casilla; el estado del seguro se
-  persiste como opción única del pedido y añade 8,99 € en carrito y checkout.
-- Validación: una compra con seguro mantuvo `1 ud.`, mostró el extra por separado
-  y conservó la casilla marcada en “Pago y extras”.
+- Resolución: sustituido el botón por una casilla asociada a la línea exacta del
+  carrito. Añade 8,99 € por unidad asegurada y puede modificarse en la propia
+  tarjeta de cesta o en “Pago y extras”.
+- Validación: una compra con seguro mantuvo `1 ud.`, mostró el extra en esa
+  tarjeta y en el resumen, y conservó la casilla marcada en checkout.
 
 ## FUNC-003 — “Comprar” omite la ficha de variante
 
@@ -57,6 +58,9 @@ del repositorio. No se corrigen en la preparación documental.
   y color seleccionados.
 - Validación: iPhone 17 Pro, color Naranja cósmico y 512GB abrió
   `/pagina-banana/iphone/17-pro/512gb-naranja` sin modificar el carrito.
+- Evolución posterior: los escaparates de iPhone y Mac y los enlaces del
+  megamenú abren directamente la variante inicial, sin exigir esta pantalla
+  intermedia.
 
 ## DATA-001 — Tiendas inconsistentes en el checkout
 

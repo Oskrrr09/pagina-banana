@@ -16,7 +16,7 @@ export function CheckoutLayout() {
         Saltar al contenido
       </a>
 
-      <header className="border-b border-line bg-surface">
+      <header className="border-b border-black/10 bg-checkout">
         <Container className="flex min-h-16 items-center justify-between gap-4 py-2">
           <Logo />
           <div className="flex items-center gap-3 sm:gap-5">

@@ -27,9 +27,10 @@ index.html
         │   ├── Header / navegación
         │   ├── páginas comerciales
         │   └── Footer
-        └── CheckoutLayout
+        ├── CheckoutLayout
             ├── cabecera simplificada
             └── CheckoutPage
+        └── ChatBubble (acceso global; chat aún no implementado)
 ```
 
 - `src/pages/`: pantallas asociadas a las rutas.
@@ -71,7 +72,7 @@ dinámicas estén declaradas primero.
 
 - 6 familias visibles.
 - 5 familias con catálogo.
-- 11 modelos en total.
+- 18 modelos en total.
 - Cada modelo define familia, slug, nombre, texto, precio inicial, financiación,
   colores, capacidades, disponibilidad, especificaciones y destacados.
 
@@ -80,6 +81,12 @@ direcciones y horarios se contrastaron con las fichas oficiales de Banana
 Computer el 2026-07-26 y cada registro conserva su URL de origen. La interfaz
 no afirma que una tienda esté abierta en tiempo real y avisa de posibles
 variaciones en festivos.
+
+La composición actual de la familia Mac se contrastó el 2026-07-26 con los
+listados públicos de [Banana Computer](https://tienda.bananacomputer.com/productos/)
+y [K-tuin](https://www.k-tuin.com/comprar-un-mac). Las imágenes se almacenan
+localmente; precios, financiación y disponibilidad continúan tratados como
+datos demostrativos y no se sincronizan con esas fuentes.
 
 `src/data/content.ts` contiene servicios, ventajas, FAQ, soporte y Plan Renove.
 La portada no incluye reseñas hasta disponer de opiniones verificadas.
@@ -94,15 +101,19 @@ Fonts.
 desde `localStorage` y se vuelven a serializar al cambiar:
 
 - El carrito agrupa por identificador de familia/modelo/color/capacidad.
-- El seguro es una opción única del pedido persistida en `banana:insurance`;
-  ficha, carrito y checkout comparten ese estado.
+- Cada línea del carrito puede incluir `insured`; el coste se calcula por unidad
+  y ficha, carrito y checkout comparten ese estado mediante `banana:cart`.
 - Los favoritos guardan identificadores de modelo o de variante.
 - El comparador admite un máximo de tres elementos y reinicia la selección al
   cambiar de familia.
 
-En `/:family/:model`, cada tarjeta permite elegir color y capacidad antes de
-abrir `/:family/:model/:variant`. La ficha profunda es el único punto del
-catálogo normal que añade esa variante al carrito.
+Las familias iPhone y Mac enlazan cada modelo directamente a su variante
+inicial. La ruta intermedia `/:family/:model` se conserva para accesos profundos
+y permite elegir color y capacidad antes de abrir la ficha.
+
+En la ficha, “Comprar” añade la variante y abre el primer paso del checkout;
+“Añadir al carrito” la guarda y permite continuar navegando. El seguro elegido
+se adjunta exclusivamente a esa variante.
 
 No hay migración ni validación del esquema almacenado.
 

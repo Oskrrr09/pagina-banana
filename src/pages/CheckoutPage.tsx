@@ -22,9 +22,9 @@ export function CheckoutPage() {
   const {
     cart,
     cartSubtotal,
+    cartInsuranceTotal,
     clearCart,
-    insuranceSelected,
-    setInsuranceSelected,
+    setLineInsurance,
     insurancePrice,
   } = useStore()
 
@@ -70,7 +70,7 @@ export function CheckoutPage() {
     navigate(`/checkout/${current + 1}`)
   }
 
-  const total = cartSubtotal + (insuranceSelected ? insurancePrice : 0)
+  const total = cartSubtotal + cartInsuranceTotal
 
   return (
     <div>
@@ -212,15 +212,27 @@ export function CheckoutPage() {
 
               <div className="mt-6 border-t border-line pt-5">
                 <p className="text-sm font-semibold text-ink">Extras</p>
-                <label className="mt-2 flex items-center gap-2 text-sm text-ink">
-                  <input
-                    type="checkbox"
-                    checked={insuranceSelected}
-                    onChange={(event) => setInsuranceSelected(event.target.checked)}
-                    className="h-4 w-4 accent-[var(--color-brand)]"
-                  />
-                  Añadir seguro a todo riesgo (desde 8,99 €/mes*)
-                </label>
+                <div className="mt-2 space-y-2">
+                  {cart.map((line) => (
+                    <label
+                      key={line.id}
+                      className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[10px] border border-line px-3 py-2 text-sm text-ink"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={Boolean(line.insured)}
+                        onChange={(event) => setLineInsurance(line.id, event.target.checked)}
+                        className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
+                      />
+                      <span>
+                        <span className="block font-semibold">Seguro para {line.name}</span>
+                        <span className="block text-xs text-muted">
+                          {line.capacity} · {line.color} · +{euro(insurancePrice)}/mes* por unidad
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
                 <div className="mt-4">
                   <p className="mb-1 text-sm font-semibold text-ink">Código de cupón</p>
                   <input placeholder="Introduce tu código" className="field max-w-xs" />
@@ -314,6 +326,12 @@ export function CheckoutPage() {
                       {line.color} · {line.qty} ud.
                     </p>
                     <p className="font-semibold text-ink">{euro(line.price * line.qty)}</p>
+                    {line.insured && (
+                      <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-available">
+                        <Icon name="shield" size={14} />
+                        Seguro incluido · {euro(insurancePrice * line.qty)}/mes*
+                      </p>
+                    )}
                   </div>
                 </li>
               ))}
@@ -322,10 +340,10 @@ export function CheckoutPage() {
             {current < 3 && (
               <>
                 <dl className="mt-4 space-y-1 border-t border-line pt-4 text-sm">
-                  {insuranceSelected && (
+                  {cartInsuranceTotal > 0 && (
                     <div className="flex justify-between">
                       <dt className="text-muted">Seguro</dt>
-                      <dd className="text-ink">{euro(insurancePrice)}/mes*</dd>
+                      <dd className="text-ink">{euro(cartInsuranceTotal)}/mes*</dd>
                     </div>
                   )}
                   <div className="flex justify-between">
