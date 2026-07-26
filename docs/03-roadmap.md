@@ -13,11 +13,8 @@ actualizado: 2026-07-26
 ## 1. Estabilizar el prototipo publicado
 
 - Resolver el manejo de la URL de variante bajo el `basename` de GitHub Pages.
-- Evitar que el checkout muestre simultáneamente el layout global y su propia
-  cabecera simplificada.
 - Corregir la acción “Añadir seguro a todo riesgo”, que hoy añade otra unidad del
   producto.
-- Alinear el selector de tiendas del checkout con `src/data/stores.ts`.
 - Actualizar React Router a una versión sin los avisos moderados actuales y
   volver a ejecutar build y audit.
 
@@ -40,7 +37,8 @@ Pendientes ya declarados en el repositorio:
 - Precios, promociones y stock reales.
 - Condiciones de financiación, envío, seguro, garantía y descuento educativo.
 - Funcionamiento y presencialidad del Plan Renove.
-- Tiendas, direcciones, horarios y servicios reales.
+- Revalidación periódica de tiendas, horarios y servicios antes de presentarlos
+  como información comercial definitiva.
 - Reseñas reales y autorización/uso de recursos de marca e imágenes.
 
 Hasta esa validación deben conservarse las etiquetas de contenido demostrativo.

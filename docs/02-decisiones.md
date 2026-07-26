@@ -91,6 +91,37 @@ No atribuye motivaciones que el repositorio no documenta.
 - Consecuencia: se versiona el conocimiento del proyecto, no las preferencias
   locales de Obsidian.
 
+## D-010 — Layout exclusivo para checkout
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: mantener `/checkout/:step` fuera del layout comercial y envolverlo
+  en `CheckoutLayout`, con una sola cabecera simplificada y sin footer general.
+- Evidencia: `src/App.tsx`, `src/components/layout/CheckoutLayout.tsx` y
+  `src/pages/CheckoutPage.tsx`.
+- Consecuencia: los tres pasos conservan el flujo funcional sin duplicar la
+  navegación de la tienda.
+
+## D-011 — Horarios con fuente, sin estado en tiempo real
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: conservar en `src/data/stores.ts` las direcciones y horarios
+  publicados por Banana Computer, la fecha de consulta y la URL oficial, pero
+  no inferir ni mostrar “Abierto ahora”.
+- Motivo: un horario regular no garantiza aperturas en festivos o incidencias.
+- Consecuencia: la interfaz muestra el horario correspondiente al día en
+  Canarias como orientación y pide confirmación antes del desplazamiento.
+
+## D-012 — Navegación modal accesible en móvil
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: tratar el menú móvil como diálogo modal, confinar el foco, cerrarlo
+  con Escape, devolver el foco al disparador y bloquear el scroll de fondo.
+- Evidencia: `src/components/layout/Header.tsx` y
+  `src/components/layout/MobileMenu.tsx`.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

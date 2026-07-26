@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { familiesNav, directLinks } from '../../data/nav'
 import { Icon } from '../ui/Icon'
@@ -7,18 +8,70 @@ import { Logo } from './Logo'
 
 // Menú móvil (§4.3): overlay de pantalla completa. Buscador siempre arriba.
 // Cada familia se expande in situ (acordeón) sin cambiar de pantalla.
-export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function MobileMenu({
+  open,
+  onClose,
+  returnFocusRef,
+}: {
+  open: boolean
+  onClose: () => void
+  returnFocusRef: RefObject<HTMLButtonElement>
+}) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [q, setQ] = useState('')
   const navigate = useNavigate()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    if (open) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = ''
-    return () => {
-      document.body.style.overflow = ''
+    if (!open) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) return
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute('hidden'))
+
+      if (focusable.length === 0) {
+        event.preventDefault()
+        dialogRef.current.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+
+      if (event.shiftKey && (active === first || !dialogRef.current.contains(active))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
-  }, [open])
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.cancelAnimationFrame(focusFrame)
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
+      window.requestAnimationFrame(() => returnFocusRef.current?.focus())
+    }
+  }, [onClose, open, returnFocusRef])
 
   function submitSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -32,18 +85,25 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={dialogRef}
+          id="mobile-navigation-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menú principal"
+          tabIndex={-1}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[90] flex flex-col bg-surface lg:hidden"
+          className="fixed inset-0 z-[90] flex flex-col bg-surface xl:hidden"
         >
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <Logo onClick={onClose} />
             <button
+              ref={closeButtonRef}
               onClick={onClose}
               aria-label="Cerrar menú"
-              className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-neutral"
+              className="grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-neutral"
             >
               <Icon name="close" size={24} />
             </button>
@@ -63,7 +123,7 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
               </div>
             </form>
 
-            <nav>
+            <nav aria-label="Navegación principal móvil">
               <ul>
                 {familiesNav.map((fam) => {
                   const isOpen = expanded === fam.slug

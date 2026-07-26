@@ -148,10 +148,3 @@ export const supportTopics = [
     ],
   },
 ]
-
-// Reseña de ejemplo (§7 — pendiente de sustituir por reseñas reales)
-export const sampleReview = {
-  text: 'Muy buena atención en la tienda de Triana, me ayudaron a elegir sin prisa.',
-  author: 'Cliente de ejemplo',
-  note: 'Contenido provisional — pendiente de sustituir por reseñas reales',
-}

@@ -10,6 +10,24 @@ autores, diffs y marcas de tiempo.
 
 ## Sin publicar
 
+### Presentación y accesibilidad
+
+- Sustituida la reseña ficticia por un espacio neutro para futuras opiniones
+  verificadas.
+- Separado checkout del layout comercial: una cabecera simplificada y sin
+  footer general en los tres pasos.
+- Actualizadas las cinco tiendas con direcciones, horarios, fecha de consulta y
+  fuentes oficiales; eliminado el estado “Abierto ahora”.
+- El selector de recogida del checkout reutiliza los datos centrales de tiendas.
+- Añadida trampa de foco, Escape, retorno del foco, ARIA modal y bloqueo de
+  scroll al menú móvil.
+- Convertido el footer móvil en acordeones cerrados inicialmente, con controles
+  táctiles de al menos 44 px.
+- Reforzada la newsletter móvil con campo y botón de 48 px, texto de 16 px y
+  apilado sin desbordamiento a 375 px.
+- Ajustado el breakpoint de la navegación comercial para evitar desbordamiento
+  a 1024 px.
+
 ### Documentación
 
 - Añadido `AGENTS.md` con reglas de contexto, alcance, mantenimiento documental
@@ -24,8 +42,9 @@ autores, diffs y marcas de tiempo.
 ### Verificación
 
 - Compilación de producción correcta.
+- Instalación reproducible con `npm ci`.
+- Comprobación manual correcta a 375, 768, 1024 y 1440 px.
 - Registrados dos avisos moderados de seguridad de React Router.
-- No se cambió el funcionamiento ni el diseño de la web.
 
 ## Historial existente
 

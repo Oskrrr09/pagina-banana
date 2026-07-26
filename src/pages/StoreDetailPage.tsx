@@ -4,11 +4,9 @@ import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Placeholder } from '../components/ui/Placeholder'
 import { Button } from '../components/ui/Button'
-import { getStore, UNIVERSAL_SERVICES } from '../data/stores'
+import { currentStoreDay, getStore, STORE_HOURS_NOTICE, UNIVERSAL_SERVICES } from '../data/stores'
 import { allModels } from '../data/products'
 import { NotFound } from './NotFound'
-
-const TODAY = new Date().toLocaleDateString('es-ES', { weekday: 'long' })
 
 // Ficha de una tienda (§4.14).
 export function StoreDetailPage() {
@@ -18,7 +16,7 @@ export function StoreDetailPage() {
 
   if (!store) return <NotFound />
 
-  const today = TODAY.charAt(0).toUpperCase() + TODAY.slice(1)
+  const today = currentStoreDay()
   // Todos los servicios de la tienda: los comunes + los propios (p. ej. técnico).
   const services = [...UNIVERSAL_SERVICES, ...store.services]
 
@@ -30,12 +28,8 @@ export function StoreDetailPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-extrabold text-ink">{store.name}</h1>
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                store.openNow ? 'bg-available-050 text-available' : 'bg-neutral text-muted'
-              }`}
-            >
-              {store.openNow ? 'Abierta ahora' : 'Cerrada ahora'}
+            <span className="rounded-full border border-line bg-neutral px-2.5 py-0.5 text-xs font-semibold text-muted">
+              Horario orientativo
             </span>
           </div>
           <p className="mt-2 flex items-center gap-1.5 text-muted">
@@ -86,6 +80,17 @@ export function StoreDetailPage() {
               })}
             </tbody>
           </table>
+          <p className="mt-3 text-xs leading-relaxed text-muted">
+            {STORE_HOURS_NOTICE}{' '}
+            <a
+              href={store.hoursSource}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-ink underline underline-offset-2"
+            >
+              Consultar la fuente oficial
+            </a>
+          </p>
         </div>
 
         {/* 5 — Consultar stock en esta tienda (menú desplegable) */}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { familiesNav, directLinks } from '../../data/nav'
 import { useStore } from '../../lib/store'
@@ -17,6 +17,7 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [q, setQ] = useState('')
   const closeTimer = useRef<number | null>(null)
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -42,6 +43,8 @@ export function Header() {
     closeTimer.current = window.setTimeout(() => setActiveFamily(null), 120)
   }
 
+  const closeMobileMenu = useCallback(() => setMobileOpen(false), [])
+
   function submitSearch(e: React.FormEvent) {
     e.preventDefault()
     if (q.trim()) navigate(`/buscar?q=${encodeURIComponent(q.trim())}`)
@@ -58,7 +61,7 @@ export function Header() {
           <Logo />
 
           {/* Escritorio: navegación centrada con mega-menú */}
-          <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex" aria-label="Principal">
+          <nav className="hidden flex-1 items-center justify-center gap-1 xl:flex" aria-label="Principal">
             {familiesNav.map((fam) => (
               <div key={fam.slug} onMouseEnter={() => openMega(fam.slug)} onMouseLeave={scheduleClose}>
                 <Link
@@ -89,7 +92,7 @@ export function Header() {
               onClick={() => setSearchOpen((v) => !v)}
               aria-label="Buscar"
               aria-expanded={searchOpen}
-              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 lg:grid"
+              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
             >
               <Icon name="search" />
             </button>
@@ -97,16 +100,19 @@ export function Header() {
             <IconBadge to="/comparar" icon="compare" label="Comparador" count={compare.length} desktopOnly />
             <button
               aria-label="Cuenta"
-              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 lg:grid"
+              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
             >
               <Icon name="user" />
             </button>
             <IconBadge to="/carrito" icon="cart" label="Carrito" count={cartCount} />
             {/* Móvil: botón de menú (a la derecha, con el logo fijo a la izquierda) */}
             <button
+              ref={mobileMenuButtonRef}
               onClick={() => setMobileOpen(true)}
               aria-label="Abrir menú"
-              className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 lg:hidden"
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-navigation-dialog"
+              className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:hidden"
             >
               <Icon name="menu" size={24} />
             </button>
@@ -140,7 +146,7 @@ export function Header() {
         )}
       </header>
 
-      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <MobileMenu open={mobileOpen} onClose={closeMobileMenu} returnFocusRef={mobileMenuButtonRef} />
     </>
   )
 }
@@ -163,7 +169,7 @@ function IconBadge({
       to={to}
       aria-label={count > 0 ? `${label} (${count})` : label}
       className={`relative grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 ${
-        desktopOnly ? 'hidden lg:grid' : 'grid'
+        desktopOnly ? 'hidden xl:grid' : 'grid'
       }`}
     >
       <Icon name={icon} />

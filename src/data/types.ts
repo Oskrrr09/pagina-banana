@@ -49,7 +49,8 @@ export interface Store {
   name: string
   island: string
   address: string
-  openNow: boolean
   hours: { day: string; time: string }[]
+  hoursSource: string
+  hoursVerifiedOn: string
   services: string[]
 }
