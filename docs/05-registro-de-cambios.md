@@ -8,6 +8,19 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-26 — Selector de tema e imágenes Mac, pendiente de publicación
+
+- Añadido un selector claro/oscuro en la cabecera comercial y en checkout.
+- La preferencia del sistema actúa como valor inicial y la elección manual se
+  conserva en `localStorage`.
+- El paso entre temas usa un fundido accesible de 360 ms que respeta la
+  reducción de movimiento.
+- Corregidas las franjas blancas laterales de la campaña principal en modo
+  oscuro.
+- Sustituidas las ocho siluetas del selector Mac por fotografías oficiales
+  descargadas de Apple Newsroom, documentadas y centradas en marcos uniformes.
+- Compilación de producción y comprobación manual local correctas.
+
 ## 2026-07-26 — Consistencia visual y tema del dispositivo, publicado
 
 La PR [#4](https://github.com/luis-lop-nas/pagina-banana/pull/4) se fusionó en

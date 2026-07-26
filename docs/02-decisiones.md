@@ -168,7 +168,7 @@ No atribuye motivaciones que el repositorio no documenta.
 ## D-017 — Tema automático según el dispositivo
 
 - Fecha: 2026-07-26.
-- Estado: vigente.
+- Estado: reemplazada por D-019.
 - Decisión: adaptar la interfaz a `prefers-color-scheme` con tokens oscuros,
   sin añadir un selector ni persistir una preferencia adicional.
 - Evidencia: `src/index.css`, `src/components/layout/Header.tsx` y
@@ -188,6 +188,31 @@ No atribuye motivaciones que el repositorio no documenta.
   `src/components/product/ProductCard.tsx`.
 - Consecuencia: los cambios de tienda, familia o texto descriptivo no alteran
   visualmente la rejilla ni desplazan el contenido adyacente.
+
+## D-019 — Tema manual con preferencia del sistema como punto de partida
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: ofrecer un control visible de tema claro/oscuro, usar
+  `prefers-color-scheme` mientras no exista una elección manual y persistirla en
+  `banana:theme`.
+- Evidencia: `src/lib/theme.tsx`, `src/components/ui/ThemeToggle.tsx`,
+  `src/main.tsx` y `src/index.css`.
+- Consecuencia: la página evita un destello de tema incorrecto al iniciar y
+  anima el cambio durante 360 ms; con `prefers-reduced-motion`, el cambio es
+  inmediato.
+
+## D-020 — Fotografías Mac oficiales y trazables
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: sustituir las siluetas del selector Mac por fotografías de producto
+  publicadas por Apple Newsroom, guardarlas localmente y documentar sus páginas
+  de origen.
+- Evidencia: `src/data/products.ts`, `src/pages/FamilyPage.tsx`,
+  `public/img/products/*-photo.jpg` y `public/img/products/SOURCES.md`.
+- Consecuencia: las imágenes no dependen de una carga remota y se encuadran
+  centradas en marcos uniformes.
 
 ## Cómo añadir una decisión
 

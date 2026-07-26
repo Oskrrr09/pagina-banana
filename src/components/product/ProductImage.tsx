@@ -1,5 +1,5 @@
-// Foto real de producto (descargada del CDN de Banana). Las imágenes tienen
-// fondo transparente, así que se muestran contenidas sobre una superficie clara.
+// Foto real de producto almacenada localmente y con procedencia documentada.
+// Se muestra contenida para conservar el encuadre aunque cambie su proporción.
 
 export function ProductImage({
   src,

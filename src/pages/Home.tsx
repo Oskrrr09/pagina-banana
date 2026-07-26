@@ -22,14 +22,14 @@ export function Home() {
   return (
     <>
       {/* 02 — Campaña principal (banner real de Banana) */}
-      <section className="bg-ink">
+      <section className="bg-black">
         <Link to="/iphone/17-pro" className="group relative mx-auto block max-w-[1400px]">
-          <picture>
+          <picture className="block">
             <source media="(min-width: 768px)" srcSet={`${import.meta.env.BASE_URL}img/hero-17pro-desktop.png`} />
             <img
               src={`${import.meta.env.BASE_URL}img/hero-17pro-mobile.png`}
               alt="iPhone 17 Pro, ya en Banana"
-              className="mx-auto block w-full"
+              className="mx-auto block h-auto w-full"
               fetchPriority="high"
             />
           </picture>
