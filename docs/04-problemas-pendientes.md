@@ -23,15 +23,15 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## WEB-002 — El checkout duplica la estructura global
 
-- Estado: abierto.
+- Estado: cerrado el 2026-07-26.
 - Impacto: medio.
 - Evidencia: `/checkout/:step` es hija de `Layout`, que ya renderiza `Header` y
   `Footer`; `CheckoutPage` añade además una cabecera propia descrita como
   “simplificada”.
-- Riesgo: el checkout no elimina las fugas de navegación que dice evitar y
-  presenta dos cabeceras.
-- Validación de cierre: comprobar visualmente los tres pasos en móvil y
-  escritorio.
+- Resolución: `/checkout/:step` usa `CheckoutLayout`, separado de `Layout`, con
+  una sola cabecera simplificada y sin footer comercial.
+- Validación: los tres pasos se completaron manualmente; se comprobó una sola
+  cabecera a 375, 768, 1024 y 1440 px.
 
 ## FUNC-001 — “Añadir seguro” añade otra unidad del producto
 
@@ -44,12 +44,14 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## DATA-001 — Tiendas inconsistentes en el checkout
 
-- Estado: abierto.
+- Estado: cerrado el 2026-07-26.
 - Impacto: medio.
 - Evidencia: `CheckoutPage` ofrece `plaza-espana`, que no existe en
   `src/data/stores.ts`, y omite tiendas que sí están en ese módulo.
-- Resultado actual: el selector de recogida no comparte la fuente central de
-  tiendas.
+- Resolución: el selector genera sus opciones directamente desde
+  `src/data/stores.ts`.
+- Validación: muestra las cinco tiendas actuales, incluida Banana Plaza de
+  España, sin opciones duplicadas manualmente en el componente.
 
 ## DOC-001 — README desactualizado
 

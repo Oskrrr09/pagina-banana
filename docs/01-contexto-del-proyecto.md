@@ -23,10 +23,13 @@ index.html
     ├── BrowserRouter (basename = import.meta.env.BASE_URL)
     ├── StoreProvider
     └── App
-        └── Layout
-            ├── Header / navegación
-            ├── páginas
-            └── Footer
+        ├── Layout
+        │   ├── Header / navegación
+        │   ├── páginas comerciales
+        │   └── Footer
+        └── CheckoutLayout
+            ├── cabecera simplificada
+            └── CheckoutPage
 ```
 
 - `src/pages/`: pantallas asociadas a las rutas.
@@ -72,9 +75,14 @@ dinámicas estén declaradas primero.
 - Cada modelo define familia, slug, nombre, texto, precio inicial, financiación,
   colores, capacidades, disponibilidad, especificaciones y destacados.
 
-`src/data/stores.ts` define cinco tiendas de ejemplo en Gran Canaria y Tenerife.
-`src/data/content.ts` contiene servicios, ventajas, FAQ, soporte, Plan Renove y
-una reseña de muestra.
+`src/data/stores.ts` define cinco tiendas en Gran Canaria y Tenerife. Sus
+direcciones y horarios se contrastaron con las fichas oficiales de Banana
+Computer el 2026-07-26 y cada registro conserva su URL de origen. La interfaz
+no afirma que una tienda esté abierta en tiempo real y avisa de posibles
+variaciones en festivos.
+
+`src/data/content.ts` contiene servicios, ventajas, FAQ, soporte y Plan Renove.
+La portada no incluye reseñas hasta disponer de opiniones verificadas.
 
 No se realiza ninguna petición HTTP para obtener datos de negocio. Las únicas
 conexiones declaradas por la página son la carga de Manrope e Inter desde Google
@@ -102,6 +110,10 @@ No hay migración ni validación del esquema almacenado.
 - Foco visible, enlace “Saltar al contenido”, áreas táctiles amplias,
   disponibilidad expresada con texto y color, y tratamiento global de
   `prefers-reduced-motion`.
+- El menú móvil funciona como diálogo modal con trampa de foco, cierre mediante
+  Escape, devolución del foco y bloqueo temporal del scroll.
+- El footer usa acordeones cerrados inicialmente en móvil y columnas estáticas
+  desde 768 px.
 - Imágenes raster locales para producto/campaña y placeholders explícitos en
   experiencias todavía simuladas.
 

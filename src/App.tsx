@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
+import { CheckoutLayout } from './components/layout/CheckoutLayout'
 import { Home } from './pages/Home'
 import { FamilyPage } from './pages/FamilyPage'
 import { ModelPage } from './pages/ModelPage'
@@ -28,7 +29,6 @@ export function App() {
         <Route path="/buscar" element={<SearchPage />} />
         <Route path="/comparar" element={<ComparePage />} />
         <Route path="/carrito" element={<CartPage />} />
-        <Route path="/checkout/:step" element={<CheckoutPage />} />
         <Route path="/servicios" element={<ServicesPage />} />
         <Route path="/plan-renove" element={<PlanRenovePage />} />
         <Route path="/tiendas" element={<StoresPage />} />
@@ -36,6 +36,9 @@ export function App() {
         <Route path="/soporte" element={<SupportPage />} />
         <Route path="/favoritos" element={<FavoritesPage />} />
         <Route path="*" element={<NotFound />} />
+      </Route>
+      <Route element={<CheckoutLayout />}>
+        <Route path="/checkout/:step" element={<CheckoutPage />} />
       </Route>
     </Routes>
   )

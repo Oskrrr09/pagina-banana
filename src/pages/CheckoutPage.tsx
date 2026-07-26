@@ -6,9 +6,9 @@ import { Icon } from '../components/ui/Icon'
 import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { Chip } from '../components/ui/Chip'
-import { Logo } from '../components/layout/Logo'
 import { useStore } from '../lib/store'
 import { productImage } from '../data/products'
+import { stores } from '../data/stores'
 import { euro, monthlyQuote } from '../lib/format'
 
 // Checkout de 3 pasos (§4.10). Cabecera simplificada (sin menú, para reducir
@@ -67,26 +67,21 @@ export function CheckoutPage() {
   const total = cartSubtotal + (seguro ? 8.99 : 0)
 
   return (
-    <div className="min-h-screen bg-neutral">
-      {/* Cabecera simplificada */}
-      <header className="border-b border-line bg-surface">
-        <Container className="flex h-16 items-center justify-between">
-          <Logo />
-          <Link to="/carrito" className="flex items-center gap-1 text-sm text-muted hover:text-ink">
-            <Icon name="chevron-right" size={16} className="rotate-180" /> Volver a la cesta
-          </Link>
-        </Container>
-      </header>
-
+    <div>
       {/* Indicador de pasos */}
       <Container className="py-6">
-        <ol className="flex items-center gap-2 sm:gap-4">
+        <ol className="flex items-center justify-between gap-2 sm:justify-start sm:gap-4">
           {STEPS.map((label, i) => {
             const n = i + 1
             const done = n < current
             const active = n === current
             return (
-              <li key={label} className="flex items-center gap-2 sm:gap-4">
+              <li
+                key={label}
+                aria-label={`Paso ${n}: ${label}`}
+                aria-current={active ? 'step' : undefined}
+                className="flex items-center gap-2 sm:gap-4"
+              >
                 <div className="flex items-center gap-2">
                   <span
                     className={`grid h-7 w-7 place-items-center rounded-full text-xs font-bold ${
@@ -95,7 +90,9 @@ export function CheckoutPage() {
                   >
                     {done ? <Icon name="check" size={14} /> : n}
                   </span>
-                  <span className={`text-sm ${active ? 'font-semibold text-ink' : 'text-muted'}`}>{label}</span>
+                  <span className={`hidden text-sm sm:inline ${active ? 'font-semibold text-ink' : 'text-muted'}`}>
+                    {label}
+                  </span>
                 </div>
                 {n < STEPS.length && <span className="h-px w-6 bg-line sm:w-10" aria-hidden />}
               </li>
@@ -159,9 +156,11 @@ export function CheckoutPage() {
                       onChange={(e) => setForm({ ...form, tienda: e.target.value })}
                       className="field"
                     >
-                      <option value="triana">Banana Triana — Gran Canaria</option>
-                      <option value="plaza-espana">Banana Plaza de España — Gran Canaria</option>
-                      <option value="castillo">Banana Castillo — Tenerife</option>
+                      {stores.map((store) => (
+                        <option key={store.slug} value={store.slug}>
+                          {store.name} — {store.island}
+                        </option>
+                      ))}
                     </select>
                   </Field>
                 )}

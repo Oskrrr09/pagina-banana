@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { Container, Section, SectionHeader } from '../components/ui/Container'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Placeholder } from '../components/ui/Placeholder'
-import { ProvisionalBadge } from '../components/ui/Tag'
 import { Reveal, StaggerGroup, StaggerItem } from '../components/ui/Reveal'
 import { Accordion } from '../components/ui/Accordion'
 import { Icon } from '../components/ui/Icon'
@@ -13,7 +12,7 @@ import { ProductImage } from '../components/product/ProductImage'
 import { StoreCarousel } from '../components/home/StoreCarousel'
 import { BentoShowcase } from '../components/home/BentoShowcase'
 import { families, iphoneModels, modelsByFamily } from '../data/products'
-import { advantages, homeFaq, sampleReview } from '../data/content'
+import { advantages, homeFaq } from '../data/content'
 
 export function Home() {
   const [financeOpen, setFinanceOpen] = useState(false)
@@ -149,21 +148,12 @@ export function Home() {
         </div>
       </Section>
 
-      {/* Reseña de ejemplo (§7) */}
+      {/* Reserva para futuras opiniones verificadas */}
       <Section alt>
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <div className="mb-3 flex justify-center gap-1 text-banana">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Icon key={i} name="star" className="fill-banana" />
-            ))}
-          </div>
-          <blockquote className="text-xl font-medium leading-relaxed text-ink sm:text-2xl">
-            “{sampleReview.text}”
-          </blockquote>
-          <p className="mt-3 text-sm text-muted">— {sampleReview.author}</p>
-          <div className="mt-4 flex justify-center">
-            <ProvisionalBadge label="Contenido provisional" />
-          </div>
+        <Reveal className="mx-auto flex min-h-48 max-w-2xl items-center justify-center rounded-[20px] border border-dashed border-line bg-surface px-6 py-12 text-center">
+          <p className="max-w-lg text-xl font-medium leading-relaxed text-muted sm:text-2xl">
+            Espacio reservado para opiniones verificadas de clientes
+          </p>
         </Reveal>
       </Section>
 
@@ -195,18 +185,18 @@ export function Home() {
           <p className="mt-2 text-ink/70">Suscríbete y recibe las novedades antes que nadie.</p>
           <form
             onSubmit={(e) => e.preventDefault()}
-            className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row"
+            className="mx-auto mt-6 flex w-full max-w-md flex-col gap-4 sm:flex-row sm:gap-3"
           >
             <input
               type="email"
               required
               placeholder="tu@email.com"
               aria-label="Tu correo electrónico"
-              className="h-12 flex-1 rounded-[12px] border-0 bg-white px-4 text-ink outline-none placeholder:text-muted"
+              className="min-h-12 w-full min-w-0 flex-1 rounded-[12px] border-0 bg-white px-5 py-3 text-base text-ink outline-none placeholder:text-muted"
             />
             <button
               type="submit"
-              className="inline-flex h-12 items-center justify-center rounded-[12px] bg-ink px-8 font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-[12px] bg-ink px-8 py-3 font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5 sm:w-auto"
             >
               Suscribirme
             </button>

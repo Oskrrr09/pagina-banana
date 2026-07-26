@@ -4,7 +4,7 @@ import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Placeholder } from '../components/ui/Placeholder'
 import { Chip } from '../components/ui/Chip'
-import { stores, islands, ALL_SERVICES, UNIVERSAL_SERVICES } from '../data/stores'
+import { stores, islands, ALL_SERVICES, UNIVERSAL_SERVICES, getTodayHours } from '../data/stores'
 
 // Página de tiendas (§4.13): mapa, filtros y lista.
 export function StoresPage() {
@@ -62,38 +62,38 @@ export function StoresPage() {
 
       {/* 3 — Lista de tiendas */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        {filtered.map((store) => (
-          <Link
-            key={store.slug}
-            to={`/tiendas/${store.slug}`}
-            className="group flex flex-col rounded-[12px] border border-line bg-surface p-5 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold text-ink group-hover:text-ink">{store.name}</h2>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                  store.openNow ? 'bg-available-050 text-available' : 'bg-neutral text-muted'
-                }`}
-              >
-                {store.openNow ? 'Abierta ahora' : 'Cerrada'}
-              </span>
-            </div>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-              <Icon name="map-pin" size={15} /> {store.address}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {store.services.length > 0 ? (
-                store.services.map((s) => (
-                  <span key={s} className="rounded-full bg-brand-050 px-2 py-0.5 text-[11px] font-semibold text-ink">
-                    {s}
-                  </span>
-                ))
-              ) : (
-                <span className="text-[11px] text-muted">Servicios comunes de Banana</span>
-              )}
-            </div>
-          </Link>
-        ))}
+        {filtered.map((store) => {
+          const todayHours = getTodayHours(store)
+
+          return (
+            <Link
+              key={store.slug}
+              to={`/tiendas/${store.slug}`}
+              className="group flex flex-col rounded-[12px] border border-line bg-surface p-5 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-bold text-ink group-hover:text-ink">{store.name}</h2>
+                <span className="rounded-full border border-line bg-neutral px-2.5 py-0.5 text-xs font-semibold text-muted">
+                  Hoy: {todayHours?.time ?? 'Consulta el horario'}
+                </span>
+              </div>
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+                <Icon name="map-pin" size={15} /> {store.address}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {store.services.length > 0 ? (
+                  store.services.map((s) => (
+                    <span key={s} className="rounded-full bg-brand-050 px-2 py-0.5 text-[11px] font-semibold text-ink">
+                      {s}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[11px] text-muted">Servicios comunes de Banana</span>
+                )}
+              </div>
+            </Link>
+          )
+        })}
       </div>
 
       {filtered.length === 0 && (

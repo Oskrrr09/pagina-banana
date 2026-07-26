@@ -1,9 +1,9 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from './Logo'
 import { Icon } from '../ui/Icon'
 
-// Pie de página (§2.9): bloques temáticos. En móvil se colapsan en acordeón
-// (aquí, con <details> nativo, accesible por teclado).
+// Pie de página (§2.9): acordeones cerrados en móvil y columnas en escritorio.
 const blocks: { title: string; links: { label: string; to: string }[] }[] = [
   {
     title: 'Contáctanos',
@@ -42,26 +42,57 @@ const blocks: { title: string; links: { label: string; to: string }[] }[] = [
 ]
 
 export function Footer() {
+  const [openBlocks, setOpenBlocks] = useState<string[]>([])
+
+  function toggleBlock(title: string) {
+    setOpenBlocks((current) =>
+      current.includes(title) ? current.filter((item) => item !== title) : [...current, title],
+    )
+  }
+
   return (
-    <footer className="border-t border-line bg-neutral">
+    <footer className="overflow-x-clip border-t border-line bg-neutral">
       <div className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-2 md:grid-cols-4 md:gap-8">
-          {blocks.map((b) => (
-            <details key={b.title} className="group border-b border-line md:border-0" open>
-              <summary className="flex cursor-pointer list-none items-center justify-between py-3 text-sm font-bold text-ink md:cursor-default md:py-0 md:pb-4">
-                {b.title}
-                <Icon name="chevron-down" size={16} className="text-muted transition-transform group-open:rotate-180 md:hidden" />
-              </summary>
-              <ul className="space-y-2 pb-4 md:pb-0">
-                {b.links.map((l) => (
-                  <li key={l.label}>
-                    <Link to={l.to} className="text-sm text-muted transition-colors hover:text-ink">
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </details>
+        <div className="md:hidden">
+          {blocks.map((block, index) => {
+            const isOpen = openBlocks.includes(block.title)
+            const panelId = `footer-mobile-panel-${index}`
+
+            return (
+              <div key={block.title} className="border-b border-line">
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  aria-controls={panelId}
+                  onClick={() => toggleBlock(block.title)}
+                  className="flex min-h-11 w-full items-center justify-between py-2 text-left text-sm font-bold text-ink"
+                >
+                  {block.title}
+                  <Icon
+                    name="chevron-down"
+                    size={16}
+                    className={`text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                <div id={panelId} hidden={!isOpen}>
+                  <FooterLinks links={block.links} className="pb-4" />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="hidden grid-cols-4 gap-8 md:grid">
+          {blocks.map((block, index) => (
+            <section key={block.title} aria-labelledby={`footer-desktop-heading-${index}`}>
+              <h2
+                id={`footer-desktop-heading-${index}`}
+                className="pb-4 text-sm font-bold text-ink"
+              >
+                {block.title}
+              </h2>
+              <FooterLinks links={block.links} />
+            </section>
           ))}
         </div>
 
@@ -79,5 +110,28 @@ export function Footer() {
         </div>
       </div>
     </footer>
+  )
+}
+
+function FooterLinks({
+  links,
+  className = '',
+}: {
+  links: { label: string; to: string }[]
+  className?: string
+}) {
+  return (
+    <ul className={`min-w-0 space-y-2 ${className}`}>
+      {links.map((link) => (
+        <li key={link.label}>
+          <Link
+            to={link.to}
+            className="break-words text-sm text-muted transition-colors hover:text-ink"
+          >
+            {link.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
   )
 }

@@ -28,6 +28,8 @@ actualizado: 2026-07-26
 - Navegación cliente con React Router y página 404.
 - Home con campaña, bento, categorías, lanzamientos, ofertas, servicios,
   tiendas, FAQ y newsletter de demostración.
+- La portada reserva un bloque neutro para futuras opiniones verificadas, sin
+  testimonios, nombres ni valoraciones inventadas.
 - Catálogo desarrollado para cinco familias: iPhone, Mac, iPad, Apple Watch y
   AirPods. Accesorios existe en navegación, pero redirige al catálogo de iPhone.
 - Once modelos con variantes de color/capacidad, imágenes locales, precios y
@@ -36,9 +38,15 @@ actualizado: 2026-07-26
 - Favoritos, comparador de hasta tres productos de la misma familia y carrito.
 - Persistencia local en las claves `banana:cart`, `banana:fav` y
   `banana:compare` de `localStorage`.
-- Checkout de tres pasos, simulador de financiación y selector de stock por
-  tienda, todos sin transacciones ni consultas reales.
-- Directorio de cinco tiendas de ejemplo, filtros y fichas individuales.
+- Checkout de tres pasos con layout propio, una única cabecera simplificada y
+  sin navegación o footer comerciales.
+- Directorio de cinco tiendas con direcciones y horarios contrastados con las
+  fichas oficiales el 2026-07-26. No se muestra un estado “Abierto ahora”:
+  los horarios llevan fuente y aviso de posibles variaciones.
+- El menú móvil mueve y confina el foco, cierra con Escape, devuelve el foco al
+  disparador y bloquea/restaura el scroll de fondo.
+- En móvil, los bloques del footer comienzan cerrados como acordeones; la
+  newsletter mantiene controles de al menos 48 px y texto de 16 px.
 - Motion para transiciones/reveals y reglas globales para reducir movimiento.
 
 ## Qué no existe
@@ -67,14 +75,20 @@ publica `dist/` en GitHub Pages en cada push a `main`.
 
 ## Verificación realizada
 
-El 2026-07-26:
+El 2026-07-26, en la rama `fix/presentation-polish`:
 
-- `npm ci --cache /tmp/codex-npm-cache-pagina-banana`: correcto.
-- `npm run build`: correcto; 419 módulos transformados.
-- Salida principal: CSS `44.84 kB` (`8.56 kB` gzip) y JavaScript `397.93 kB`
-  (`120.99 kB` gzip).
-- El build conservó sin cambios `tsconfig.tsbuildinfo` y el resto de archivos
-  versionados.
+- `npm ci --cache /tmp/codex-npm-cache-pagina-banana-polish`: correcto.
+- `npm run build`: correcto; 420 módulos transformados.
+- Salida principal: CSS `44.95 kB` (`8.55 kB` gzip) y JavaScript `401.15 kB`
+  (`121.86 kB` gzip).
+- No existen scripts de test ni lint.
+- Comprobación manual correcta a 375, 768, 1024 y 1440 px, sin scroll
+  horizontal.
+- Comprobados portada, newsletter, menú móvil con teclado, footer, tiendas,
+  carrito y los tres pasos del checkout.
+- El menú cierra con Escape, conserva el foco dentro mientras está abierto y lo
+  devuelve al botón disparador.
+- Checkout mantiene una sola cabecera y no renderiza el footer comercial.
 - `npm audit`: dos vulnerabilidades moderadas, ambas en la cadena de
   `react-router-dom@6.30.4`; hay corrección disponible. Véase
   [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].

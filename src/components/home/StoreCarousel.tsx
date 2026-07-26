@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
-import { stores } from '../../data/stores'
+import { getTodayHours, stores } from '../../data/stores'
 
 // Carrusel de tiendas para la home: avanza solo cada pocos segundos y permite
 // navegar con las flechas o los puntos. Se pausa al pasar el cursor por encima.
@@ -25,6 +25,7 @@ export function StoreCarousel() {
   }, [index, paused])
 
   const store = stores[index]
+  const todayHours = getTodayHours(store)
 
   return (
     <div
@@ -45,13 +46,9 @@ export function StoreCarousel() {
             className="px-16 py-8 sm:px-20 sm:py-10"
           >
             <div className="flex items-center gap-2">
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                  store.openNow ? 'bg-available-050 text-available' : 'bg-neutral text-muted'
-                }`}
-              >
-                <span className={`h-2 w-2 rounded-full ${store.openNow ? 'bg-available' : 'bg-soldout'}`} />
-                {store.openNow ? 'Abierto ahora' : 'Cerrado ahora'}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-muted">
+                <Icon name="clock" size={14} />
+                Hoy: {todayHours?.time ?? 'Consulta el horario'}
               </span>
               <span className="text-sm text-muted">· {store.island}</span>
             </div>
