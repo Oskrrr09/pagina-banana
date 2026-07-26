@@ -11,13 +11,17 @@ const week = (weekday: string, sat: string, sun = 'Cerrado') => [
   { day: 'Domingo', time: sun },
 ]
 
-export const ALL_SERVICES = [
+// Servicios universales (todas las tiendas los ofrecen), se muestran como nota
+// general en vez de repetirlos en cada tienda.
+export const UNIVERSAL_SERVICES = [
   'Click & Collect',
   'Parking gratuito',
   'Plan Renove',
-  'Servicio técnico',
   'Financiación presencial',
 ] as const
+
+// Solo se listan/filtran los servicios que diferencian a unas tiendas de otras.
+export const ALL_SERVICES = ['Servicio técnico'] as const
 
 export const stores: Store[] = [
   {
@@ -27,7 +31,7 @@ export const stores: Store[] = [
     address: 'Calle Triana, 100 · Las Palmas de Gran Canaria',
     openNow: true,
     hours: week('10:00–20:00', '10:00–14:00'),
-    services: ['Click & Collect', 'Plan Renove', 'Servicio técnico', 'Financiación presencial'],
+    services: [],
   },
   {
     slug: 'castillo',
@@ -36,7 +40,7 @@ export const stores: Store[] = [
     address: 'Av. de las Palmeras, 22 · Santa Cruz de Tenerife',
     openNow: false,
     hours: week('10:00–20:00', 'Cerrado'),
-    services: ['Click & Collect', 'Servicio técnico', 'Financiación presencial'],
+    services: ['Servicio técnico'],
   },
   {
     slug: 'mesa-lopez',
@@ -45,7 +49,7 @@ export const stores: Store[] = [
     address: 'Av. Mesa y López, 18 · Las Palmas de Gran Canaria',
     openNow: true,
     hours: week('09:30–20:30', '10:00–14:00'),
-    services: ['Click & Collect', 'Parking gratuito', 'Plan Renove'],
+    services: [],
   },
   {
     slug: 'la-laguna',
@@ -54,7 +58,7 @@ export const stores: Store[] = [
     address: 'Calle Herradores, 40 · San Cristóbal de La Laguna',
     openNow: false,
     hours: week('10:00–20:00', '10:00–14:00'),
-    services: ['Click & Collect', 'Plan Renove', 'Servicio técnico'],
+    services: [],
   },
   {
     slug: 'safari',
@@ -63,7 +67,7 @@ export const stores: Store[] = [
     address: 'C.C. Safari, Av. Rafael Puig Lluvina, 3 · Playa de las Américas, Arona',
     openNow: true,
     hours: week('10:00–22:00', '10:00–22:00', '10:00–22:00'),
-    services: ['Click & Collect', 'Parking gratuito', 'Plan Renove', 'Servicio técnico', 'Financiación presencial'],
+    services: [],
   },
 ]
 

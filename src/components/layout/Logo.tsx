@@ -7,7 +7,7 @@ export function Logo({ onClick, variant = 'dark' }: { onClick?: () => void; vari
     <Link
       to="/"
       onClick={onClick}
-      className="-my-2 -ml-1 flex shrink-0 items-center rounded-lg px-1 py-2 transition-opacity hover:opacity-80"
+      className="-my-2 flex shrink-0 items-center rounded-lg py-2 transition-opacity hover:opacity-80"
       aria-label="Banana Computer — Inicio"
     >
       <img

@@ -4,7 +4,7 @@ import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Placeholder } from '../components/ui/Placeholder'
 import { Chip } from '../components/ui/Chip'
-import { stores, islands, ALL_SERVICES } from '../data/stores'
+import { stores, islands, ALL_SERVICES, UNIVERSAL_SERVICES } from '../data/stores'
 
 // Página de tiendas (§4.13): mapa, filtros y lista.
 export function StoresPage() {
@@ -43,7 +43,7 @@ export function StoresPage() {
         </div>
         <div>
           <p className="mb-2 text-sm font-semibold text-ink">Servicio disponible</p>
-          <div className="flex flex-wrap gap-2 overflow-x-auto pb-1">
+          <div className="flex flex-wrap gap-2 px-0.5 py-1.5">
             {ALL_SERVICES.map((s) => (
               <Chip key={s} selected={service === s} onClick={() => setService(service === s ? null : s)}>
                 {s}
@@ -52,6 +52,13 @@ export function StoresPage() {
           </div>
         </div>
       </div>
+
+      {/* Servicios comunes a todas las tiendas */}
+      <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[12px] bg-neutral px-4 py-3 text-sm text-muted">
+        <Icon name="check" size={16} className="text-available" />
+        <span className="font-semibold text-ink">Todas las tiendas</span> ofrecen{' '}
+        {UNIVERSAL_SERVICES.join(' · ')}.
+      </p>
 
       {/* 3 — Lista de tiendas */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -75,11 +82,15 @@ export function StoresPage() {
               <Icon name="map-pin" size={15} /> {store.address}
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {store.services.map((s) => (
-                <span key={s} className="rounded-full bg-neutral px-2 py-0.5 text-[11px] font-medium text-muted">
-                  {s}
-                </span>
-              ))}
+              {store.services.length > 0 ? (
+                store.services.map((s) => (
+                  <span key={s} className="rounded-full bg-brand-050 px-2 py-0.5 text-[11px] font-semibold text-brand">
+                    {s}
+                  </span>
+                ))
+              ) : (
+                <span className="text-[11px] text-muted">Servicios comunes de Banana</span>
+              )}
             </div>
           </Link>
         ))}

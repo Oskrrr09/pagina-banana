@@ -78,10 +78,10 @@ export function ComparePage() {
       {/* Tabla comparativa (cuando hay al menos un producto) */}
       {compare.length > 0 && (
         <div className="mt-8 overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse">
+          <table className="mx-auto w-auto border-collapse">
             <thead>
               <tr>
-                <th className="w-40 p-3 text-left align-bottom text-sm font-medium text-muted">Producto</th>
+                <th className="w-32 p-3 text-left align-bottom text-sm font-medium text-muted">Producto</th>
                 <AnimatePresence mode="popLayout" initial={false}>
                   {compare.map((c) => (
                     <motion.th
@@ -91,7 +91,7 @@ export function ComparePage() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.85, y: -10 }}
                       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                      className="p-3 align-bottom"
+                      className="w-56 p-3 align-bottom"
                     >
                       <div className="relative rounded-[12px] border border-line p-3 pt-4">
                         <button
@@ -130,7 +130,7 @@ export function ComparePage() {
                   ))}
                 </AnimatePresence>
                 {compare.length < 3 && pickable.length > 0 && (
-                  <th className="p-3 align-middle">
+                  <th className="w-56 p-3 align-middle">
                     <div className="grid h-full min-h-[180px] place-items-center rounded-[12px] border border-dashed border-line px-3 text-center text-sm text-muted">
                       Añade otro modelo desde la lista de abajo ↓
                     </div>

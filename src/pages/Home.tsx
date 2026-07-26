@@ -53,7 +53,7 @@ export function Home() {
       {/* 03 — Categorías principales (carrusel) */}
       <Section>
         <SectionHeader title="Explora por categoría" />
-        <div className="-mx-5 flex snap-x gap-4 overflow-x-auto px-5 pb-2 no-scrollbar sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
+        <div className="-mx-5 flex snap-x gap-4 overflow-x-auto px-5 py-3 no-scrollbar sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
           {families.map((fam) => {
             const cover = modelsByFamily[fam.slug]?.[0]?.colors[0].image
             const to = modelsByFamily[fam.slug] ? `/${fam.slug}` : '/iphone'

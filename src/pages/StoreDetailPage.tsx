@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
-import { Breadcrumb } from '../components/ui/Breadcrumb'
 import { Icon } from '../components/ui/Icon'
 import { Placeholder } from '../components/ui/Placeholder'
 import { Button } from '../components/ui/Button'
-import { getStore } from '../data/stores'
+import { getStore, UNIVERSAL_SERVICES } from '../data/stores'
+import { allModels } from '../data/products'
 import { NotFound } from './NotFound'
 
 const TODAY = new Date().toLocaleDateString('es-ES', { weekday: 'long' })
@@ -13,18 +14,18 @@ const TODAY = new Date().toLocaleDateString('es-ES', { weekday: 'long' })
 export function StoreDetailPage() {
   const { slug } = useParams()
   const store = getStore(slug ?? '')
+  const [product, setProduct] = useState('')
+
   if (!store) return <NotFound />
 
   const today = TODAY.charAt(0).toUpperCase() + TODAY.slice(1)
+  // Todos los servicios de la tienda: los comunes + los propios (p. ej. técnico).
+  const services = [...UNIVERSAL_SERVICES, ...store.services]
 
   return (
     <Container className="py-8">
-      <Breadcrumb
-        items={[{ label: 'Inicio', to: '/' }, { label: 'Tiendas', to: '/tiendas' }, { label: store.name }]}
-      />
-
       {/* 1 — Cabecera de tienda */}
-      <div className="mt-6 grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         <Placeholder label={store.name} ratio="4 / 3" />
         <div>
           <div className="flex items-center gap-3">
@@ -53,7 +54,7 @@ export function StoreDetailPage() {
           <div className="mt-6">
             <p className="mb-2 font-semibold text-ink">Servicios disponibles</p>
             <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {store.services.map((s) => (
+              {services.map((s) => (
                 <li key={s} className="flex items-center gap-2 text-sm text-ink">
                   <Icon name="check" size={16} className="text-available" /> {s}
                 </li>
@@ -74,8 +75,11 @@ export function StoreDetailPage() {
               {store.hours.map((h) => {
                 const isToday = h.day === today
                 return (
-                  <tr key={h.day} className={`border-b border-line ${isToday ? 'font-semibold text-brand' : 'text-ink'}`}>
-                    <td className="py-2">{h.day}</td>
+                  <tr key={h.day} className={`border-b border-line ${isToday ? 'font-semibold text-ink' : 'text-ink'}`}>
+                    <td className="py-2">
+                      {h.day}
+                      {isToday && <span className="ml-2 rounded-full bg-banana px-2 py-0.5 text-[11px] font-bold text-ink">Hoy</span>}
+                    </td>
                     <td className="py-2 text-right text-muted">{h.time}</td>
                   </tr>
                 )
@@ -84,18 +88,37 @@ export function StoreDetailPage() {
           </table>
         </div>
 
-        {/* 5 — Consultar stock en esta tienda */}
+        {/* 5 — Consultar stock en esta tienda (menú desplegable) */}
         <div>
           <h2 className="mb-3 font-bold text-ink">Consultar stock en esta tienda</h2>
-          <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
-            <input
-              placeholder="Buscar producto…"
-              aria-label="Buscar producto en esta tienda"
-              className="field"
-            />
-            <Button>Buscar</Button>
-          </form>
-          <p className="mt-2 text-xs text-muted">Stock de ejemplo: la consulta es una demostración.</p>
+          <label htmlFor="stock-product" className="mb-1.5 block text-sm text-muted">
+            Elige un producto
+          </label>
+          <select
+            id="stock-product"
+            value={product}
+            onChange={(e) => setProduct(e.target.value)}
+            className="field"
+          >
+            <option value="">Selecciona un producto…</option>
+            {allModels.map((m) => (
+              <option key={`${m.family}/${m.slug}`} value={m.name}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+
+          {product && (
+            <div className="mt-4 flex items-start gap-2 rounded-[12px] border border-line bg-neutral p-4">
+              <Icon name="check" size={18} className="mt-0.5 text-available" />
+              <div>
+                <p className="text-sm font-semibold text-ink">
+                  {product} · disponible en {store.name}
+                </p>
+                <p className="text-xs text-muted">Stock de ejemplo: la consulta es una demostración.</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Container>

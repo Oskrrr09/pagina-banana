@@ -51,12 +51,12 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-black/10 bg-banana-gradient">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-5 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-40 border-b border-black/10 bg-banana">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center px-4 lg:px-6">
           <Logo />
 
           {/* Escritorio: navegación con mega-menú */}
-          <nav className="ml-6 hidden flex-1 items-center gap-1 lg:ml-8 lg:flex" aria-label="Principal">
+          <nav className="ml-3 hidden flex-1 items-center gap-1 lg:flex" aria-label="Principal">
             {familiesNav.map((fam) => (
               <div key={fam.slug} onMouseEnter={() => openMega(fam.slug)} onMouseLeave={scheduleClose}>
                 <Link
@@ -166,7 +166,7 @@ function IconBadge({
     >
       <Icon name={icon} />
       {count > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-action px-1 text-[10px] font-bold text-white">
+        <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-[10px] font-bold text-white">
           {count}
         </span>
       )}
