@@ -1,6 +1,7 @@
 import { Link, Outlet, useParams } from 'react-router-dom'
 import { Container } from '../ui/Container'
 import { Icon } from '../ui/Icon'
+import { ThemeToggle } from '../ui/ThemeToggle'
 import { Logo } from './Logo'
 
 export function CheckoutLayout() {
@@ -20,6 +21,7 @@ export function CheckoutLayout() {
         <Container className="flex min-h-16 items-center justify-between gap-4 py-2">
           <Logo />
           <div className="flex items-center gap-3 sm:gap-5">
+            <ThemeToggle className="text-ink" />
             <span className="hidden items-center gap-1.5 text-sm font-semibold text-ink sm:flex">
               <Icon name="shield" size={18} />
               Compra segura

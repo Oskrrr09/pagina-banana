@@ -142,11 +142,13 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                     to={variantPath(model)}
                     className="group flex min-h-40 flex-col items-center rounded-[16px] border border-transparent px-3 py-3 text-center transition-[background-color,border-color,transform] hover:-translate-y-1 hover:border-line hover:bg-surface"
                   >
-                    <img
-                      src={model.colors[0].image}
-                      alt=""
-                      className="h-22 w-24 object-contain transition-transform duration-300 group-hover:scale-105"
-                    />
+                    <span className="grid h-24 w-full place-items-center overflow-hidden rounded-[12px] bg-surface">
+                      <img
+                        src={model.colors[0].image}
+                        alt=""
+                        className="block h-full w-full object-contain object-center transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </span>
                     <span className="mt-2 text-sm font-semibold leading-tight text-ink">{model.name}</span>
                     <span className="mt-1 text-xs text-muted">desde {euro(model.fromPrice)}</span>
                   </Link>
@@ -191,7 +193,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                 <Link
                   key={model.slug}
                   to={variantPath(model, firstColor, offer)}
-                  className="group relative overflow-hidden rounded-[20px] border border-white/60 bg-white/45 p-6 shadow-[var(--shadow-rest)] backdrop-blur-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
+                  className="group relative overflow-hidden rounded-[20px] border border-line bg-surface/55 p-6 shadow-[var(--shadow-rest)] backdrop-blur-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>

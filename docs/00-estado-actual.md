@@ -61,8 +61,14 @@ actualizado: 2026-07-26
   ordena juntos los MacBook Air y los MacBook Pro.
 - La ficha permite aumentar o quitar unidades de una variante ya añadida sin
   abandonar la página; cambiar capacidad conserva el color elegido.
-- La interfaz se adapta automáticamente a `prefers-color-scheme`, con
-  superficies oscuras, contraste revisado y amarillo de marca legible.
+- La interfaz ofrece un selector claro/oscuro, parte de
+  `prefers-color-scheme` cuando no hay preferencia guardada y persiste la
+  elección en `banana:theme`.
+- El cambio de tema usa una transición global de 360 ms y la elimina cuando el
+  dispositivo solicita reducir el movimiento.
+- La franja de modelos Mac usa fotografías oficiales de producto almacenadas
+  localmente, centradas dentro de marcos de tamaño constante; su procedencia se
+  registra en `public/img/products/SOURCES.md`.
 - Directorio de cinco tiendas con direcciones y horarios contrastados con las
   fichas oficiales el 2026-07-26. No se muestra un estado “Abierto ahora”:
   los horarios llevan fuente y aviso de posibles variaciones.
@@ -170,6 +176,22 @@ El 2026-07-26, en la rama `fix/layout-consistency`:
   Cítrico y el sufijo `-citrico` de la URL se conservaron.
 - Revisado el modo oscuro del dispositivo en portada y ficha: contraste correcto
   en superficies, texto, tarjetas, cabecera amarilla y controles de compra.
+
+El 2026-07-26, en la rama `fix/theme-and-mac-images`:
+
+- `npm ci --cache /tmp/codex-npm-cache-pagina-banana-theme`: correcto.
+- `npm run build`: correcto; 423 módulos transformados.
+- Salida principal: CSS `49.93 kB` (`9.42 kB` gzip) y JavaScript `419.54 kB`
+  (`126.08 kB` gzip).
+- No existen scripts de test ni lint.
+- El selector cambia de claro a oscuro y de oscuro a claro con un fundido de
+  360 ms; la clase temporal se retira al terminar.
+- La preferencia manual se conserva al recargar y, mientras no exista, se sigue
+  el modo del dispositivo.
+- La imagen principal de portada mantiene fondo negro en todo su ancho en ambos
+  temas, sin franjas blancas laterales.
+- Los ocho modelos Mac cargan fotografías locales procedentes de Apple Newsroom
+  y sus centros visuales coinciden con los centros de sus marcos.
 
 ## Navegación de la documentación
 

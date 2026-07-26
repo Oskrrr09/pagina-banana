@@ -331,7 +331,7 @@ export function VariantPage() {
                 aria-selected={tab === t}
                 onClick={() => setTab(t)}
                 className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                  tab === t ? 'bg-ink text-white' : 'bg-surface text-ink hover:bg-white'
+                  tab === t ? 'bg-ink text-surface' : 'bg-surface text-ink hover:bg-neutral'
                 }`}
               >
                 {t}
