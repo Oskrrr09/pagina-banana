@@ -14,10 +14,11 @@ export function CartPage() {
   const {
     cart,
     setQty,
+    setLineInsurance,
     removeFromCart,
     cartSubtotal,
     cartCount,
-    insuranceSelected,
+    cartInsuranceTotal,
     insurancePrice,
   } = useStore()
   const [couponOpen, setCouponOpen] = useState(false)
@@ -42,7 +43,7 @@ export function CartPage() {
   }
 
   const shipping = delivery === 'recogida' ? 0 : 0 // envío gratis de ejemplo
-  const total = cartSubtotal + shipping + (insuranceSelected ? insurancePrice : 0)
+  const total = cartSubtotal + shipping + cartInsuranceTotal
 
   return (
     <Container className="py-10">
@@ -97,6 +98,21 @@ export function CartPage() {
                     </div>
                     <span className="font-bold text-ink">{euro(line.price * line.qty)}</span>
                   </div>
+                  <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] bg-neutral px-3 py-2 text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(line.insured)}
+                      onChange={(event) => setLineInsurance(line.id, event.target.checked)}
+                      className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
+                    />
+                    <Icon name="shield" size={18} />
+                    <span>
+                      <span className="font-semibold">Seguro a todo riesgo</span>
+                      <span className="block text-xs text-muted">
+                        +{euro(insurancePrice)}/mes* por unidad
+                      </span>
+                    </span>
+                  </label>
                 </div>
               </li>
             ))}
@@ -152,10 +168,10 @@ export function CartPage() {
                 <dt className="text-muted">Subtotal</dt>
                 <dd className="font-medium text-ink">{euro(cartSubtotal)}</dd>
               </div>
-              {insuranceSelected && (
+              {cartInsuranceTotal > 0 && (
                 <div className="flex justify-between">
                   <dt className="text-muted">Seguro a todo riesgo</dt>
-                  <dd className="font-medium text-ink">{euro(insurancePrice)}/mes*</dd>
+                  <dd className="font-medium text-ink">{euro(cartInsuranceTotal)}/mes*</dd>
                 </div>
               )}
               <div className="flex justify-between">

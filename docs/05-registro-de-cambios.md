@@ -8,6 +8,24 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-26 — Catálogo y flujo de compra, pendiente de publicación
+
+- Nueva presentación de iPhone y Mac con franja horizontal de modelos, ofertas
+  destacadas y acceso directo a variantes.
+- Categoría Mac ampliada a ocho grupos actuales de producto, con imágenes
+  locales y precios siempre marcados como demostrativos.
+- La ficha separa “Comprar” —checkout inmediato— de “Añadir al carrito” —seguir
+  comprando—.
+- El seguro se vincula a cada producto y puede modificarse en su tarjeta de
+  cesta y en “Pago y extras”; el resumen calcula el total por unidades
+  aseguradas.
+- La cabecera exclusiva del checkout adopta un amarillo suave para diferenciarse
+  de la cabecera comercial.
+- Añadido un globo amarillo global que reserva el acceso al futuro chat y
+  comunica que todavía no está disponible.
+- Verificados build, rutas principales y 375, 768, 1024 y 1440 px sin
+  desbordamiento horizontal.
+
 ## 2026-07-26 — Flujo de variantes y seguro publicado
 
 La PR [#2](https://github.com/luis-lop-nas/pagina-banana/pull/2) se fusionó en

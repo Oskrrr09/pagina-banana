@@ -125,13 +125,45 @@ No atribuye motivaciones que el repositorio no documenta.
 ## D-013 — Seguro como opción única del pedido
 
 - Fecha: 2026-07-26.
-- Estado: vigente.
+- Estado: reemplazada por D-014.
 - Decisión: tratar el seguro a todo riesgo de 8,99 € como una opción del pedido,
   no como una línea ni una unidad de producto.
 - Evidencia: `src/lib/store.tsx`, `src/pages/VariantPage.tsx`,
   `src/pages/CartPage.tsx` y `src/pages/CheckoutPage.tsx`.
 - Consecuencia: la ficha selecciona el seguro antes de comprar y carrito y
   checkout comparten el mismo estado e importe.
+
+## D-014 — Seguro asociado a cada línea del carrito
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: almacenar el seguro en la línea exacta de familia, modelo, color y
+  capacidad, con un coste demostrativo de 8,99 € por unidad.
+- Evidencia: `src/lib/store.tsx`, `src/pages/VariantPage.tsx`,
+  `src/pages/CartPage.tsx` y `src/pages/CheckoutPage.tsx`.
+- Consecuencia: el usuario puede identificar, activar o retirar el seguro para
+  cada producto desde la cesta y el checkout sin duplicar unidades.
+
+## D-015 — Acceso directo a variantes desde iPhone y Mac
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: mostrar una franja de modelos y ofertas en las familias iPhone y
+  Mac, y enlazar sus modelos directamente a la primera variante configurable.
+- Evidencia: `src/pages/FamilyPage.tsx`, `src/components/product/ProductCard.tsx`,
+  `src/data/nav.ts` y `src/data/products.ts`.
+- Consecuencia: la ruta intermedia de modelo sigue siendo válida, pero deja de
+  ser un paso obligatorio en estos escaparates.
+
+## D-016 — Entrada global al chat sin simular un servicio activo
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: mantener un botón flotante amarillo en todas las rutas que abre un
+  aviso accesible de “próximamente” y enlaza al soporte existente.
+- Evidencia: `src/components/layout/ChatBubble.tsx` y `src/App.tsx`.
+- Consecuencia: queda reservado el punto de entrada visual sin afirmar que
+  exista todavía atención por chat.
 
 ## Cómo añadir una decisión
 

@@ -11,7 +11,7 @@ import { ProvisionalBadge } from '../components/ui/Tag'
 import { Accordion } from '../components/ui/Accordion'
 import { StorePicker } from '../components/product/StorePicker'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
-import { getModel, familyInfo } from '../data/products'
+import { capacitySlug, getModel, familyInfo, variantPath } from '../data/products'
 import { serviceFaq } from '../data/content'
 import { euro } from '../lib/format'
 import { useStore } from '../lib/store'
@@ -36,19 +36,19 @@ export function VariantPage() {
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
   const navigate = useNavigate()
-  const { addToCart, insuranceSelected, setInsuranceSelected } = useStore()
-
-  // Parse "256gb-plata" → capacidad + color
-  const [capToken, ...colorParts] = (variant ?? '').split('-')
-  const colorToken = colorParts.join('-')
+  const { addToCart, insurancePrice } = useStore()
 
   const initialColor =
-    model?.colors.find((c) => c.color === colorToken) ?? model?.colors[0]
+    model?.colors.find((candidate) => variant?.endsWith(`-${candidate.color}`)) ?? model?.colors[0]
+  const initialCapacityToken =
+    initialColor && variant?.endsWith(`-${initialColor.color}`)
+      ? variant.slice(0, -(initialColor.color.length + 1))
+      : ''
   const [colorSlug, setColorSlug] = useState(initialColor?.color ?? '')
   const color = model?.colors.find((c) => c.color === colorSlug) ?? model?.colors[0]
 
   const initialCapacity =
-    color?.capacities.find((c) => c.capacity.toLowerCase() === capToken?.toLowerCase())?.capacity ??
+    color?.capacities.find((candidate) => capacitySlug(candidate.capacity) === initialCapacityToken)?.capacity ??
     color?.capacities[0].capacity
   const [capacity, setCapacity] = useState(initialCapacity ?? '')
 
@@ -60,7 +60,8 @@ export function VariantPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>('Características')
   const [storeOpen, setStoreOpen] = useState(false)
   const [financeOpen, setFinanceOpen] = useState(false)
-  const [insurance, setInsurance] = useState(insuranceSelected)
+  const [insurance, setInsurance] = useState(false)
+  const [addedMessage, setAddedMessage] = useState('')
   const [showBar, setShowBar] = useState(false)
   const buyBoxRef = useRef<HTMLDivElement>(null)
 
@@ -78,8 +79,9 @@ export function VariantPage() {
   // Actualiza la URL al cambiar de variante, sin recargar (§9.3)
   useEffect(() => {
     if (family && model && color && capacity) {
-      const slug = `${capacity.toLowerCase()}-${color.color}`
-      navigate(`/${family.slug}/${model.slug}/${slug}`, { replace: true })
+      const selectedCapacity =
+        color.capacities.find((candidate) => candidate.capacity === capacity) ?? color.capacities[0]
+      navigate(variantPath(model, color, selectedCapacity), { replace: true })
     }
   }, [family, model, color, capacity, navigate])
 
@@ -95,11 +97,15 @@ export function VariantPage() {
     capacity: current.capacity,
     price: current.price,
     previousPrice: current.previousPrice,
+    insured: insurance,
   }
   const buyNow = () => {
     addToCart(cartLine)
-    setInsuranceSelected(insurance)
-    navigate('/carrito')
+    navigate('/checkout/1')
+  }
+  const addAndContinue = () => {
+    addToCart(cartLine)
+    setAddedMessage(`${model.name} se ha añadido al carrito.`)
   }
 
   return (
@@ -244,9 +250,14 @@ export function VariantPage() {
                 </Button>
               </div>
             ) : (
-              <Button size="lg" className="w-full" onClick={buyNow}>
-                Comprar
-              </Button>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Button size="lg" className="w-full" onClick={buyNow}>
+                  Comprar
+                </Button>
+                <Button size="lg" variant="secondary" className="w-full" onClick={addAndContinue}>
+                  Añadir al carrito
+                </Button>
+              </div>
             )}
             <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[12px] border border-line px-4 py-3 text-left transition-colors hover:border-ink/30">
               <input
@@ -259,10 +270,22 @@ export function VariantPage() {
                 <Icon name="shield" size={18} />
                 <span>
                   <span className="block text-sm font-semibold text-ink">Seguro a todo riesgo</span>
-                  <span className="block text-xs text-muted">Añade 8,99 €/mes* al total</span>
+                  <span className="block text-xs text-muted">
+                    Añade {euro(insurancePrice)}/mes* por unidad
+                  </span>
                 </span>
               </span>
             </label>
+            <div aria-live="polite" className="min-h-5 text-sm text-available">
+              {addedMessage && (
+                <>
+                  {addedMessage}{' '}
+                  <button onClick={() => navigate('/carrito')} className="font-semibold underline">
+                    Ver carrito
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </Container>
@@ -363,14 +386,17 @@ export function VariantPage() {
             transition={{ type: 'spring', stiffness: 380, damping: 34 }}
             className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur-md lg:hidden"
           >
-            <div className="flex items-center justify-between gap-4 px-5 py-3">
+            <div className="flex items-center gap-2 px-4 py-3">
               <div>
                 <p className="text-lg font-bold leading-none text-ink">{euro(current.price)}</p>
                 {current.previousPrice && (
                   <p className="text-xs text-ink">antes {euro(current.previousPrice)}</p>
                 )}
               </div>
-              <Button size="lg" onClick={buyNow} className="min-w-[45%]">
+              <Button size="lg" variant="secondary" onClick={addAndContinue} className="ml-auto px-3">
+                Al carrito
+              </Button>
+              <Button size="lg" onClick={buyNow} className="px-4">
                 Comprar
               </Button>
             </div>

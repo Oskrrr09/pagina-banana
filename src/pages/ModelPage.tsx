@@ -9,7 +9,7 @@ import { StockIndicator } from '../components/ui/StockIndicator'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { StorePicker } from '../components/product/StorePicker'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
-import { getModel, familyInfo } from '../data/products'
+import { getModel, familyInfo, variantPath } from '../data/products'
 import type { ColorVariant, Model } from '../data/types'
 import { useStore } from '../lib/store'
 import { euro } from '../lib/format'
@@ -134,7 +134,7 @@ function ColorCard({
   const soldOut = current.availability === 'agotado'
 
   const openVariant = () =>
-    navigate(`/${family}/${model.slug}/${current.capacity.toLowerCase()}-${color.color}`)
+    navigate(variantPath(model, color, current))
 
   return (
     <div className="flex flex-col rounded-[12px] border border-line bg-surface p-5 shadow-[var(--shadow-rest)]">

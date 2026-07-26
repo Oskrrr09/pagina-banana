@@ -16,6 +16,7 @@ export interface CartLine {
   price: number
   previousPrice: number | null
   qty: number
+  insured?: boolean
 }
 
 export interface CompareItem {
@@ -34,11 +35,11 @@ interface StoreState {
   addToCart: (line: Omit<CartLine, 'qty'>, qty?: number) => void
   removeFromCart: (id: string) => void
   setQty: (id: string, qty: number) => void
+  setLineInsurance: (id: string, insured: boolean) => void
   clearCart: () => void
   cartCount: number
   cartSubtotal: number
-  insuranceSelected: boolean
-  setInsuranceSelected: (selected: boolean) => void
+  cartInsuranceTotal: number
   insurancePrice: number
 
   favorites: string[]
@@ -78,7 +79,6 @@ function usePersistent<T>(key: string, initial: T): [T, React.Dispatch<React.Set
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = usePersistent<CartLine[]>('banana:cart', [])
-  const [insuranceSelected, setInsuranceSelectedState] = usePersistent('banana:insurance', false)
   const [favorites, setFavorites] = usePersistent<string[]>('banana:fav', [])
   const [compare, setCompare] = usePersistent<CompareItem[]>('banana:compare', [])
 
@@ -86,22 +86,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const addToCart: StoreState['addToCart'] = (line, qty = 1) => {
       setCart((prev) => {
         const found = prev.find((l) => l.id === line.id)
-        if (found) return prev.map((l) => (l.id === line.id ? { ...l, qty: l.qty + qty } : l))
+        if (found) {
+          return prev.map((l) =>
+            l.id === line.id
+              ? { ...l, qty: l.qty + qty, insured: Boolean(l.insured || line.insured) }
+              : l,
+          )
+        }
         return [...prev, { ...line, qty }]
       })
     }
-    const removeFromCart: StoreState['removeFromCart'] = (id) => {
+    const removeFromCart: StoreState['removeFromCart'] = (id) =>
       setCart((prev) => prev.filter((l) => l.id !== id))
-      if (cart.length === 1 && cart[0].id === id) setInsuranceSelectedState(false)
-    }
     const setQty: StoreState['setQty'] = (id, qty) =>
       setCart((prev) =>
         prev.map((l) => (l.id === id ? { ...l, qty: Math.max(1, qty) } : l)),
       )
-    const clearCart = () => {
-      setCart([])
-      setInsuranceSelectedState(false)
-    }
+    const setLineInsurance: StoreState['setLineInsurance'] = (id, insured) =>
+      setCart((prev) => prev.map((line) => (line.id === id ? { ...line, insured } : line)))
+    const clearCart = () => setCart([])
 
     const toggleFavorite: StoreState['toggleFavorite'] = (id) =>
       setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]))
@@ -123,11 +126,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addToCart,
       removeFromCart,
       setQty,
+      setLineInsurance,
       clearCart,
       cartCount: cart.reduce((n, l) => n + l.qty, 0),
       cartSubtotal: cart.reduce((n, l) => n + l.price * l.qty, 0),
-      insuranceSelected,
-      setInsuranceSelected: setInsuranceSelectedState,
+      cartInsuranceTotal: cart.reduce(
+        (total, line) => total + (line.insured ? INSURANCE_PRICE * line.qty : 0),
+        0,
+      ),
       insurancePrice: INSURANCE_PRICE,
       favorites,
       toggleFavorite,
@@ -140,11 +146,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [
     cart,
-    insuranceSelected,
     favorites,
     compare,
     setCart,
-    setInsuranceSelectedState,
     setFavorites,
     setCompare,
   ])

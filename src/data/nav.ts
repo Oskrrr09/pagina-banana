@@ -1,4 +1,4 @@
-import { families, modelsByFamily } from './products'
+import { families, modelsByFamily, variantPath } from './products'
 
 // Navegación principal (§2.2). Las familias abren mega-menú (§2.4);
 // Servicios/Tiendas/Soporte son enlaces directos.
@@ -56,14 +56,14 @@ function buildFamilyNav(slug: string, name: string): FamilyNav {
     demo: false,
     mega: {
       explore: [
-        ...models.map((m) => ({ label: m.name, to: `/${slug}/${m.slug}` })),
+        ...models.map((m) => ({ label: m.name, to: variantPath(m) })),
         { label: `Comparar ${name}`, to: `/comparar?familia=${slug}` },
       ],
       buy: serviceLinks,
       featured: {
         name: featured.name,
         cta: 'Ver la novedad',
-        to: `/${slug}/${featured.slug}`,
+        to: variantPath(featured),
         tint: tints[slug] ?? '#8a8f98',
       },
     },

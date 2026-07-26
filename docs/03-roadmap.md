@@ -48,7 +48,8 @@ Solo después de acordar alcance:
 - Autenticación y cuenta.
 - Carrito y pedidos de servidor.
 - Pago, financiación, cupones y seguros.
-- Emails, newsletter, chat y formularios.
+- Emails, newsletter, implementación del chat ya reservado en la interfaz y
+  formularios.
 - Mapas, reservas y seguimiento de pedidos.
 - Estrategia de privacidad, seguridad, analítica y tratamiento de datos.
 
