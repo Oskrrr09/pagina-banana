@@ -14,9 +14,9 @@ actualizado: 2026-07-26
 ## Referencia de la auditoría
 
 - Rama: `main`.
-- Commit desplegado: `bdd7c85fd8a5a9c8da237692a21406920ba4111c`
+- Commit funcional desplegado: `a1143615cb8443ac8d62fccc694acd31337183ba`
   (merge de la PR
-  [#1](https://github.com/luis-lop-nas/pagina-banana/pull/1)).
+  [#2](https://github.com/luis-lop-nas/pagina-banana/pull/2)).
 - URL pública verificada:
   <https://luis-lop-nas.github.io/pagina-banana/>.
 - Sin diferencias en archivos versionados antes de iniciar esta estructura
@@ -84,6 +84,11 @@ El despliegue de la PR #1 finalizó correctamente el 2026-07-26 en el workflow
 [`30206642599`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30206642599).
 La URL pública devolvió HTTP 200, cargó los recursos desde
 `/pagina-banana/assets/` y mostró el bloque neutro de opiniones.
+
+El despliegue de la PR #2 finalizó correctamente en el workflow
+[`30208520075`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30208520075).
+La versión pública abrió `512gb-naranja` desde el configurador, conservó el
+`basename` y mostró el seguro como casilla.
 
 ## Verificación realizada
 

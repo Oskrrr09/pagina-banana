@@ -49,4 +49,10 @@ que el seguro funcione como opción del pedido sin añadir otra unidad.
 
 ## Siguiente paso
 
-Revisar el diff y decidir si se publica la rama `fix/product-variant-flow`.
+La PR [#2](https://github.com/luis-lop-nas/pagina-banana/pull/2) se fusionó en
+`main` como `a114361`. El workflow
+[`30208520075`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30208520075)
+terminó correctamente y la ficha publicada se verificó en GitHub Pages.
+
+Por instrucción persistente del usuario, los próximos cambios de la web deben
+publicarse también en Pages salvo indicación contraria.

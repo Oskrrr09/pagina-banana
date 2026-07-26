@@ -8,7 +8,12 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## Sin publicar
+## 2026-07-26 — Flujo de variantes y seguro publicado
+
+La PR [#2](https://github.com/luis-lop-nas/pagina-banana/pull/2) se fusionó en
+`main` y el workflow
+[`30208520075`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30208520075)
+publicó correctamente esta versión en GitHub Pages.
 
 ### Flujo de variantes y seguro
 

@@ -74,4 +74,7 @@ Antes de terminar:
 2. Revisa `git diff` y confirma que no se hayan incluido artefactos de `dist/`,
    `node_modules/` o configuración local de Obsidian.
 3. Actualiza los documentos afectados.
-4. No hagas commit ni push salvo petición explícita del usuario.
+4. Por instrucción persistente del usuario, todo cambio solicitado para la web
+   debe terminar con commit, push, integración en `main`, despliegue en GitHub
+   Pages y comprobación de la URL pública, salvo que el usuario indique
+   expresamente que quiere mantenerlo solo en local o sin publicar.
