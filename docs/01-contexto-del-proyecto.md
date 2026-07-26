@@ -94,9 +94,15 @@ Fonts.
 desde `localStorage` y se vuelven a serializar al cambiar:
 
 - El carrito agrupa por identificador de familia/modelo/color/capacidad.
+- El seguro es una opción única del pedido persistida en `banana:insurance`;
+  ficha, carrito y checkout comparten ese estado.
 - Los favoritos guardan identificadores de modelo o de variante.
 - El comparador admite un máximo de tres elementos y reinicia la selección al
   cambiar de familia.
+
+En `/:family/:model`, cada tarjeta permite elegir color y capacidad antes de
+abrir `/:family/:model/:variant`. La ficha profunda es el único punto del
+catálogo normal que añade esa variante al carrito.
 
 No hay migración ni validación del esquema almacenado.
 

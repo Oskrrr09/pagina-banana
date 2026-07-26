@@ -37,6 +37,9 @@ interface StoreState {
   clearCart: () => void
   cartCount: number
   cartSubtotal: number
+  insuranceSelected: boolean
+  setInsuranceSelected: (selected: boolean) => void
+  insurancePrice: number
 
   favorites: string[]
   toggleFavorite: (id: string) => void
@@ -52,6 +55,7 @@ interface StoreState {
 const StoreContext = createContext<StoreState | null>(null)
 
 const MAX_COMPARE = 3
+export const INSURANCE_PRICE = 8.99
 
 function usePersistent<T>(key: string, initial: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
@@ -74,6 +78,7 @@ function usePersistent<T>(key: string, initial: T): [T, React.Dispatch<React.Set
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = usePersistent<CartLine[]>('banana:cart', [])
+  const [insuranceSelected, setInsuranceSelectedState] = usePersistent('banana:insurance', false)
   const [favorites, setFavorites] = usePersistent<string[]>('banana:fav', [])
   const [compare, setCompare] = usePersistent<CompareItem[]>('banana:compare', [])
 
@@ -85,13 +90,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return [...prev, { ...line, qty }]
       })
     }
-    const removeFromCart: StoreState['removeFromCart'] = (id) =>
+    const removeFromCart: StoreState['removeFromCart'] = (id) => {
       setCart((prev) => prev.filter((l) => l.id !== id))
+      if (cart.length === 1 && cart[0].id === id) setInsuranceSelectedState(false)
+    }
     const setQty: StoreState['setQty'] = (id, qty) =>
       setCart((prev) =>
         prev.map((l) => (l.id === id ? { ...l, qty: Math.max(1, qty) } : l)),
       )
-    const clearCart = () => setCart([])
+    const clearCart = () => {
+      setCart([])
+      setInsuranceSelectedState(false)
+    }
 
     const toggleFavorite: StoreState['toggleFavorite'] = (id) =>
       setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]))
@@ -116,6 +126,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       clearCart,
       cartCount: cart.reduce((n, l) => n + l.qty, 0),
       cartSubtotal: cart.reduce((n, l) => n + l.price * l.qty, 0),
+      insuranceSelected,
+      setInsuranceSelected: setInsuranceSelectedState,
+      insurancePrice: INSURANCE_PRICE,
       favorites,
       toggleFavorite,
       isFavorite: (id) => favorites.includes(id),
@@ -125,7 +138,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       isComparing: (id) => compare.some((c) => c.id === id),
       compareFull: compare.length >= MAX_COMPARE,
     }
-  }, [cart, favorites, compare, setCart, setFavorites, setCompare])
+  }, [
+    cart,
+    insuranceSelected,
+    favorites,
+    compare,
+    setCart,
+    setInsuranceSelectedState,
+    setFavorites,
+    setCompare,
+  ])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

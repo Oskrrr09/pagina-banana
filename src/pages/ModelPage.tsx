@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
@@ -114,7 +114,8 @@ function ColorCard({
   capFilter: string | null
   inStockOnly: boolean
 }) {
-  const { toggleFavorite, isFavorite, toggleCompare, isComparing, compareFull, addToCart } = useStore()
+  const { toggleFavorite, isFavorite, toggleCompare, isComparing, compareFull } = useStore()
+  const navigate = useNavigate()
   const [storeOpen, setStoreOpen] = useState(false)
   const [financeOpen, setFinanceOpen] = useState(false)
 
@@ -132,17 +133,8 @@ function ColorCard({
   const compareId = `${family}/${model.slug}/${color.color}/${current.capacity}`
   const soldOut = current.availability === 'agotado'
 
-  const addToCartLine = () =>
-    addToCart({
-      id: compareId,
-      modelSlug: model.slug,
-      family,
-      name: model.name,
-      color: color.name,
-      capacity: current.capacity,
-      price: current.price,
-      previousPrice: current.previousPrice,
-    })
+  const openVariant = () =>
+    navigate(`/${family}/${model.slug}/${current.capacity.toLowerCase()}-${color.color}`)
 
   return (
     <div className="flex flex-col rounded-[12px] border border-line bg-surface p-5 shadow-[var(--shadow-rest)]">
@@ -201,7 +193,7 @@ function ColorCard({
             Avísame cuando esté disponible
           </Button>
         ) : (
-          <Button onClick={addToCartLine}>Comprar</Button>
+          <Button onClick={openVariant}>Comprar</Button>
         )}
         <div className="flex items-center justify-between text-sm">
           <button onClick={() => setStoreOpen(true)} className="font-semibold text-ink hover:underline">

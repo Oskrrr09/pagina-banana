@@ -39,8 +39,12 @@ actualizado: 2026-07-26
   disponibilidad de ejemplo.
 - Búsqueda sobre modelos, categorías, servicios y contenido de ayuda.
 - Favoritos, comparador de hasta tres productos de la misma familia y carrito.
-- Persistencia local en las claves `banana:cart`, `banana:fav` y
-  `banana:compare` de `localStorage`.
+- Persistencia local en las claves `banana:cart`, `banana:insurance`,
+  `banana:fav` y `banana:compare` de `localStorage`.
+- El configurador de modelo abre la ficha profunda de la variante seleccionada
+  al pulsar “Comprar”; la ficha conserva color y capacidad en la URL.
+- El seguro a todo riesgo es una opción del pedido: no añade unidades, suma
+  8,99 € al total y mantiene el mismo estado entre ficha, carrito y checkout.
 - Checkout de tres pasos con layout propio, una única cabecera simplificada y
   sin navegación o footer comerciales.
 - Directorio de cinco tiendas con direcciones y horarios contrastados con las
@@ -82,6 +86,19 @@ La URL pública devolvió HTTP 200, cargó los recursos desde
 `/pagina-banana/assets/` y mostró el bloque neutro de opiniones.
 
 ## Verificación realizada
+
+El 2026-07-26, en la rama `fix/product-variant-flow`:
+
+- `npm run build`: correcto; 420 módulos transformados.
+- Recorrido manual correcto desde modelo hasta variante, carrito y “Pago y
+  extras”.
+- La variante `512gb-naranja` conserva `/pagina-banana/` en la URL al cambiar
+  de color o capacidad.
+- Con seguro seleccionado, el carrito mantiene una unidad, muestra 8,99 € y un
+  total de 1.487,99 € para el iPhone 17 Pro 512GB de ejemplo.
+- La casilla llega marcada al checkout y conserva el mismo importe.
+- A 375 px no existe scroll horizontal y el control del seguro mide 62 px de
+  alto.
 
 El 2026-07-26, en la rama `fix/presentation-polish`:
 

@@ -8,6 +8,18 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## Sin publicar
+
+### Flujo de variantes y seguro
+
+- “Comprar” en las tarjetas de color abre ahora la ficha de la capacidad y el
+  color seleccionados.
+- Las URLs de variante respetan el `basename` `/pagina-banana/`.
+- El botón defectuoso de seguro se sustituyó por una casilla accesible.
+- El seguro se persiste como opción única del pedido, añade 8,99 € sin duplicar
+  productos y se comparte entre ficha, carrito y checkout.
+- Verificados build y recorrido manual en escritorio y a 375 px.
+
 ## 2026-07-26 — Publicado en GitHub Pages
 
 La PR [#1](https://github.com/luis-lop-nas/pagina-banana/pull/1) se fusionó en

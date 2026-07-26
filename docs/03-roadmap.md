@@ -12,9 +12,6 @@ actualizado: 2026-07-26
 
 ## 1. Estabilizar el prototipo publicado
 
-- Resolver el manejo de la URL de variante bajo el `basename` de GitHub Pages.
-- Corregir la acción “Añadir seguro a todo riesgo”, que hoy añade otra unidad del
-  producto.
 - Actualizar React Router a una versión sin los avisos moderados actuales y
   volver a ejecutar build y audit.
 

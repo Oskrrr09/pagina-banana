@@ -10,7 +10,7 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## WEB-001 — La URL de variante ignora el basename
 
-- Estado: abierto.
+- Estado: cerrado el 2026-07-26.
 - Impacto: alto en GitHub Pages; bajo en desarrollo local.
 - Evidencia: `src/pages/VariantPage.tsx` llama a
   `window.history.replaceState` con una ruta que empieza en
@@ -18,8 +18,10 @@ del repositorio. No se corrigen en la preparación documental.
   `/pagina-banana/`.
 - Riesgo: al cambiar color o capacidad, la barra de direcciones puede salir de
   la subruta publicada y una recarga puede terminar fuera del sitio.
-- Validación de cierre: navegar entre variantes en la URL publicada y recargar
-  la ruta resultante.
+- Resolución: la ficha actualiza la variante mediante `navigate(..., {
+  replace: true })`, por lo que React Router aplica su `basename`.
+- Validación: los cambios entre `512gb-naranja` y `512gb-azul` conservaron
+  `/pagina-banana/` en la URL.
 
 ## WEB-002 — El checkout duplica la estructura global
 
@@ -35,12 +37,26 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## FUNC-001 — “Añadir seguro” añade otra unidad del producto
 
-- Estado: abierto.
+- Estado: cerrado el 2026-07-26.
 - Impacto: alto dentro del flujo demostrado.
 - Evidencia: en `src/pages/VariantPage.tsx`, el botón “Añadir seguro a todo
   riesgo” ejecuta `addToCart(cartLine)`.
 - Resultado actual: incrementa el producto en el carrito; no representa un
   seguro separado.
+- Resolución: sustituido el botón por una casilla; el estado del seguro se
+  persiste como opción única del pedido y añade 8,99 € en carrito y checkout.
+- Validación: una compra con seguro mantuvo `1 ud.`, mostró el extra por separado
+  y conservó la casilla marcada en “Pago y extras”.
+
+## FUNC-003 — “Comprar” omite la ficha de variante
+
+- Estado: cerrado el 2026-07-26.
+- Impacto: alto en el recorrido de producto.
+- Evidencia: las tarjetas de `ModelPage` llamaban directamente a `addToCart`.
+- Resolución: “Comprar” navega a la ruta formada por familia, modelo, capacidad
+  y color seleccionados.
+- Validación: iPhone 17 Pro, color Naranja cósmico y 512GB abrió
+  `/pagina-banana/iphone/17-pro/512gb-naranja` sin modificar el carrito.
 
 ## DATA-001 — Tiendas inconsistentes en el checkout
 

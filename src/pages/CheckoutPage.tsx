@@ -19,14 +19,20 @@ export function CheckoutPage() {
   const { step } = useParams()
   const current = Math.min(3, Math.max(1, Number(step) || 1))
   const navigate = useNavigate()
-  const { cart, cartSubtotal, clearCart } = useStore()
+  const {
+    cart,
+    cartSubtotal,
+    clearCart,
+    insuranceSelected,
+    setInsuranceSelected,
+    insurancePrice,
+  } = useStore()
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [mode, setMode] = useState<'envio' | 'recogida'>('envio')
   const [form, setForm] = useState({ nombre: '', email: '', direccion: '', isla: 'Gran Canaria', tienda: 'triana' })
   const [pay, setPay] = useState<'tarjeta' | 'bizum' | 'financiacion'>('tarjeta')
   const [months, setMonths] = useState(24)
-  const [seguro, setSeguro] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [orderId] = useState(() => 'BC-' + Math.floor(100000 + Math.random() * 899999))
 
@@ -64,7 +70,7 @@ export function CheckoutPage() {
     navigate(`/checkout/${current + 1}`)
   }
 
-  const total = cartSubtotal + (seguro ? 8.99 : 0)
+  const total = cartSubtotal + (insuranceSelected ? insurancePrice : 0)
 
   return (
     <div>
@@ -207,7 +213,12 @@ export function CheckoutPage() {
               <div className="mt-6 border-t border-line pt-5">
                 <p className="text-sm font-semibold text-ink">Extras</p>
                 <label className="mt-2 flex items-center gap-2 text-sm text-ink">
-                  <input type="checkbox" checked={seguro} onChange={(e) => setSeguro(e.target.checked)} className="h-4 w-4 accent-[var(--color-brand)]" />
+                  <input
+                    type="checkbox"
+                    checked={insuranceSelected}
+                    onChange={(event) => setInsuranceSelected(event.target.checked)}
+                    className="h-4 w-4 accent-[var(--color-brand)]"
+                  />
                   Añadir seguro a todo riesgo (desde 8,99 €/mes*)
                 </label>
                 <div className="mt-4">
@@ -311,10 +322,10 @@ export function CheckoutPage() {
             {current < 3 && (
               <>
                 <dl className="mt-4 space-y-1 border-t border-line pt-4 text-sm">
-                  {seguro && (
+                  {insuranceSelected && (
                     <div className="flex justify-between">
                       <dt className="text-muted">Seguro</dt>
-                      <dd className="text-ink">8,99 €/mes*</dd>
+                      <dd className="text-ink">{euro(insurancePrice)}/mes*</dd>
                     </div>
                   )}
                   <div className="flex justify-between">
