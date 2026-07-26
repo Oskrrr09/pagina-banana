@@ -39,6 +39,8 @@ desde la ficha y adaptar la web al modo oscuro del dispositivo.
 - MacBook Neo: la capacidad de 16 GB conserva Cítrico y la URL `-citrico`.
 - Vista local comprobada en modo oscuro, sin degradar legibilidad de botones,
   tarjetas, cabecera o contenido amarillo.
+- La PR #4 se fusionó en `main` y el workflow `30211613240` publicó la versión
+  en GitHub Pages.
 
 ## Archivos afectados
 
@@ -50,5 +52,6 @@ desde la ficha y adaptar la web al modo oscuro del dispositivo.
 
 ## Siguiente paso
 
-Publicar la rama, esperar al workflow de Pages y comprobar la versión pública
-en claro u oscuro según el modo del navegador.
+Recoger validación visual adicional del usuario en la versión pública y mantener
+el catálogo y sus datos de demostración actualizados solo cuando haya fuentes
+confirmadas.

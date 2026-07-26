@@ -8,7 +8,13 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-26 — Consistencia visual y tema del dispositivo, pendiente de publicación
+## 2026-07-26 — Consistencia visual y tema del dispositivo, publicado
+
+La PR [#4](https://github.com/luis-lop-nas/pagina-banana/pull/4) se fusionó en
+`main`. El workflow
+[`30211613240`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30211613240)
+compiló y publicó la versión en
+<https://luis-lop-nas.github.io/pagina-banana/>.
 
 - Fijada la altura del carrusel de tiendas y del mega-menú de escritorio.
 - El mega-menú Mac usa imagen de producto, sitúa “Nuevo” sobre la tarjeta y
