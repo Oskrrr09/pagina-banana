@@ -144,7 +144,6 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                   >
                     <span
                       className="block aspect-square w-full overflow-hidden rounded-[12px] bg-surface"
-                      style={model.colors[0].imageBg ? { backgroundColor: model.colors[0].imageBg } : {}}
                     >
                       <img
                         src={model.colors[0].image}
