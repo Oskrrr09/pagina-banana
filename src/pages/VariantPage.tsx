@@ -177,7 +177,7 @@ export function VariantPage() {
 
         <div ref={buyBoxRef}>
           <h1 className="text-3xl font-extrabold text-ink">
-            {model.name} {current.capacity} {color.name}
+            {model.name} {current.capacity}
           </h1>
 
           <div className="mt-3 flex flex-wrap items-end gap-3">

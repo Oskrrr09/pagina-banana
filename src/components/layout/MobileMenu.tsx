@@ -1,13 +1,14 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { familiesNav, directLinks } from '../../data/nav'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
 
-// Menú móvil (§4.3): overlay de pantalla completa. Buscador siempre arriba.
+// Menú móvil (§4.3): overlay de pantalla completa.
 // Cada familia se expande in situ (acordeón) sin cambiar de pantalla.
+// El buscador vive en la barra de navegación como icono de lupa.
 export function MobileMenu({
   open,
   onClose,
@@ -18,8 +19,6 @@ export function MobileMenu({
   returnFocusRef: RefObject<HTMLButtonElement>
 }) {
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [q, setQ] = useState('')
-  const navigate = useNavigate()
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -73,14 +72,6 @@ export function MobileMenu({
     }
   }, [onClose, open, returnFocusRef])
 
-  function submitSearch(e: React.FormEvent) {
-    e.preventDefault()
-    if (q.trim()) {
-      navigate(`/buscar?q=${encodeURIComponent(q.trim())}`)
-      onClose()
-    }
-  }
-
   return (
     <AnimatePresence>
       {open && (
@@ -110,19 +101,6 @@ export function MobileMenu({
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-4">
-            <form onSubmit={submitSearch} className="mb-2">
-              <div className="flex items-center gap-2 rounded-full border border-line bg-neutral px-4 py-3">
-                <Icon name="search" className="text-muted" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Buscar…"
-                  aria-label="Buscar"
-                  className="w-full bg-transparent text-base outline-none placeholder:text-muted"
-                />
-              </div>
-            </form>
-
             <nav aria-label="Navegación principal móvil">
               <ul>
                 {familiesNav.map((fam) => {

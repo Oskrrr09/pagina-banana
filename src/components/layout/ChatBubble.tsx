@@ -19,7 +19,7 @@ export function ChatBubble() {
   }, [open])
 
   return (
-    <div className="fixed bottom-24 right-4 z-[70] sm:bottom-6 sm:right-6">
+    <div className="fixed bottom-6 right-4 z-[70] sm:right-6">
       {open && (
         <div
           id="chat-banana-preview"

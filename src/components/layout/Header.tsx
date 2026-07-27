@@ -55,9 +55,39 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-black/10 bg-banana">
+        {/* Barra de búsqueda en móvil: reemplaza la cabecera normal cuando está activa */}
+        {searchOpen && (
+          <div className="flex h-16 items-center gap-2 bg-surface px-4 xl:hidden">
+            <button
+              onClick={() => { setSearchOpen(false); setQ('') }}
+              aria-label="Cerrar búsqueda"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink hover:bg-neutral"
+            >
+              <Icon name="chevron-right" className="rotate-180" />
+            </button>
+            <form onSubmit={submitSearch} className="flex flex-1 items-center">
+              <input
+                autoFocus
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="¿Qué estás buscando?"
+                aria-label="Buscar"
+                className="flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
+              />
+            </form>
+            <button
+              onClick={() => { if (q.trim()) navigate(`/buscar?q=${encodeURIComponent(q.trim())}`) }}
+              aria-label="Buscar"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted hover:bg-neutral hover:text-ink"
+            >
+              <Icon name="search" />
+            </button>
+          </div>
+        )}
+
         {/* Tres bloques a todo el ancho: logo a la izquierda (con margen), menú
             centrado y accesos (buscar/favoritos/carrito…) pegados a la derecha. */}
-        <div className="banana-header-bar flex h-16 w-full items-center px-6 sm:px-8 lg:px-12">
+        <div className={`banana-header-bar flex h-16 w-full items-center px-6 sm:px-8 lg:px-12 ${searchOpen ? 'hidden xl:flex' : ''}`}>
           <Logo />
 
           {/* Escritorio: navegación centrada con mega-menú */}
@@ -105,6 +135,14 @@ export function Header() {
               <Icon name="user" />
             </button>
             <IconBadge to="/carrito" icon="cart" label="Carrito" count={cartCount} />
+            {/* Móvil: botón de búsqueda (lupa) */}
+            <button
+              onClick={() => setSearchOpen((v) => !v)}
+              aria-label="Buscar"
+              className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:hidden"
+            >
+              <Icon name="search" />
+            </button>
             {/* Móvil: botón de menú (a la derecha, con el logo fijo a la izquierda) */}
             <button
               ref={mobileMenuButtonRef}
@@ -119,9 +157,9 @@ export function Header() {
           </div>
         </div>
 
-        {/* Barra de búsqueda desplegable (escritorio) */}
+        {/* Barra de búsqueda desplegable (solo escritorio xl+) */}
         {searchOpen && (
-          <div className="border-t border-black/10 bg-surface">
+          <div className="hidden border-t border-black/10 bg-surface xl:block">
             <form onSubmit={submitSearch} className="mx-auto w-full max-w-6xl px-5 py-3 sm:px-6 lg:px-8">
               <div className="flex items-center gap-2 rounded-full border border-line bg-neutral px-4 py-2.5">
                 <Icon name="search" className="text-muted" />
