@@ -26,11 +26,11 @@ function Cell({ to, className = '', children }: CellProps) {
 
 export function BentoShowcase() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2">
+    <div className="-mx-5 flex snap-x snap-mandatory overflow-x-auto no-scrollbar gap-4 px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 sm:pb-0 lg:grid-cols-4 lg:grid-rows-2">
       {/* Producto estrella (2×2) */}
       <Cell
         to={`/iphone/${feature.slug}`}
-        className="bg-neutral sm:col-span-2 lg:col-span-2 lg:row-span-2"
+        className="w-[calc(100vw-2.5rem)] shrink-0 snap-center bg-neutral sm:w-auto sm:col-span-2 lg:col-span-2 lg:row-span-2"
       >
         <div className="flex items-start justify-between">
           <div>
@@ -56,7 +56,7 @@ export function BentoShowcase() {
       </Cell>
 
       {/* Financiación (acento amarillo) */}
-      <Cell to="/servicios#financiacion" className="bg-banana text-ink">
+      <Cell to="/servicios#financiacion" className="w-[calc(100vw-2.5rem)] shrink-0 snap-center bg-banana text-ink sm:w-auto">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
           <Icon name="credit-card" />
         </span>
@@ -66,7 +66,7 @@ export function BentoShowcase() {
       </Cell>
 
       {/* Plan Renove */}
-      <Cell to="/plan-renove" className="bg-surface">
+      <Cell to="/plan-renove" className="w-[calc(100vw-2.5rem)] shrink-0 snap-center bg-surface sm:w-auto">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-050 text-ink">
           <Icon name="refresh" />
         </span>
@@ -76,7 +76,7 @@ export function BentoShowcase() {
       </Cell>
 
       {/* Tiendas */}
-      <Cell to="/tiendas" className="bg-ink text-white">
+      <Cell to="/tiendas" className="w-[calc(100vw-2.5rem)] shrink-0 snap-center bg-ink text-white sm:w-auto">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-banana">
           <Icon name="store" />
         </span>
@@ -86,7 +86,7 @@ export function BentoShowcase() {
       </Cell>
 
       {/* Envío */}
-      <Cell to="/servicios" className="bg-surface">
+      <Cell to="/servicios" className="w-[calc(100vw-2.5rem)] shrink-0 snap-center bg-surface sm:w-auto">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-050 text-ink">
           <Icon name="truck" />
         </span>
