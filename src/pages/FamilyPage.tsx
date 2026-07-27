@@ -140,9 +140,9 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                 <li key={model.slug} className="w-32 shrink-0 sm:w-36">
                   <Link
                     to={variantPath(model)}
-                    className="group flex min-h-40 flex-col items-center rounded-[16px] border border-transparent px-3 py-3 text-center transition-[background-color,border-color,transform] hover:-translate-y-1 hover:border-line hover:bg-surface"
+                    className="group flex flex-col items-center rounded-[16px] border border-transparent px-3 py-3 text-center transition-[background-color,border-color,transform] hover:-translate-y-1 hover:border-line hover:bg-surface"
                   >
-                    <span className="grid h-24 w-full place-items-center overflow-hidden rounded-[12px] bg-surface">
+                    <span className="block aspect-square w-full overflow-hidden rounded-[12px] bg-surface">
                       <img
                         src={model.colors[0].image}
                         alt=""

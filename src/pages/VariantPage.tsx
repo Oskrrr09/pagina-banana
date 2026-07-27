@@ -47,10 +47,38 @@ export function VariantPage() {
   const [colorSlug, setColorSlug] = useState(initialColor?.color ?? '')
   const color = model?.colors.find((c) => c.color === colorSlug) ?? model?.colors[0]
 
+  // Extrae el tamaño (e.g. "13"", "15"") del inicio de una string de capacidad.
+  const getSize = (cap: string) => cap.match(/^(\d{2}")/)?.[1] ?? null
+
+  // Tamaños únicos disponibles para este color (vacío si no aplica).
+  const sizes = useMemo(() => {
+    if (!color) return []
+    const seen = new Set<string>()
+    return color.capacities.reduce<string[]>((acc, cap) => {
+      const s = getSize(cap.capacity)
+      if (s && !seen.has(s)) { seen.add(s); acc.push(s) }
+      return acc
+    }, [])
+  }, [color])
+
+  const hasSizeSelector = sizes.length > 1
+
   const initialCapacity =
     color?.capacities.find((candidate) => capacitySlug(candidate.capacity) === initialCapacityToken)?.capacity ??
     color?.capacities[0].capacity
   const [capacity, setCapacity] = useState(initialCapacity ?? '')
+
+  // Tamaño activo derivado de la capacidad seleccionada (o primero disponible).
+  const activeSize = getSize(capacity) ?? sizes[0] ?? null
+
+  // Capacidades filtradas por el tamaño activo.
+  const visibleCapacities = hasSizeSelector && activeSize
+    ? color?.capacities.filter((c) => getSize(c.capacity) === activeSize) ?? []
+    : color?.capacities ?? []
+
+  // Etiqueta de capacidad que se muestra al usuario (sin el prefijo de tamaño).
+  const displayCap = (cap: string) =>
+    hasSizeSelector ? cap.replace(/^\d{2}" · /, '') : cap
 
   const current = useMemo(
     () => color?.capacities.find((c) => c.capacity === capacity) ?? color?.capacities[0],
@@ -177,7 +205,7 @@ export function VariantPage() {
 
         <div ref={buyBoxRef}>
           <h1 className="text-3xl font-extrabold text-ink">
-            {model.name} {current.capacity}
+            {model.name}{hasSizeSelector && activeSize ? ` ${activeSize}` : ''}
           </h1>
 
           <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -202,7 +230,6 @@ export function VariantPage() {
                   selected={c.color === color.color}
                   onClick={() => {
                     setColorSlug(c.color)
-                    // mantiene capacidad si existe en el nuevo color
                     if (!c.capacities.some((cap) => cap.capacity === capacity)) {
                       setCapacity(c.capacities[0].capacity)
                     }
@@ -216,19 +243,43 @@ export function VariantPage() {
             </div>
           </div>
 
+          {/* Selector de tamaño de pantalla (solo Air y Pro) */}
+          {hasSizeSelector && (
+            <div className="mt-5">
+              <p className="mb-2 text-sm font-semibold text-ink">Tamaño: {activeSize}</p>
+              <div className="flex flex-wrap gap-2">
+                {sizes.map((s) => (
+                  <Chip
+                    key={s}
+                    selected={s === activeSize}
+                    onClick={() => {
+                      const first = color.capacities.find((c) => getSize(c.capacity) === s)
+                      if (first) setCapacity(first.capacity)
+                    }}
+                    ariaLabel={`Pantalla de ${s}`}
+                  >
+                    {s}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Selector de capacidad */}
           <div className="mt-5">
-            <p className="mb-2 text-sm font-semibold text-ink">Capacidad: {current.capacity}</p>
+            <p className="mb-2 text-sm font-semibold text-ink">
+              Capacidad: {displayCap(current.capacity)}
+            </p>
             <div className="flex flex-wrap gap-2">
-              {color.capacities.map((cap) => (
+              {visibleCapacities.map((cap) => (
                 <Chip
                   key={cap.capacity}
                   selected={cap.capacity === current.capacity}
                   onClick={() => setCapacity(cap.capacity)}
                   disabled={cap.availability === 'agotado'}
-                  ariaLabel={`${cap.capacity} · ${euro(cap.price)}${cap.availability === 'agotado' ? ' · agotado' : ''}`}
+                  ariaLabel={`${displayCap(cap.capacity)} · ${euro(cap.price)}${cap.availability === 'agotado' ? ' · agotado' : ''}`}
                 >
-                  {cap.capacity}
+                  {displayCap(cap.capacity)}
                 </Chip>
               ))}
             </div>

@@ -8,6 +8,16 @@ actualizado: 2026-07-27
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-27 — Imágenes Mac por color, publicado
+
+Workflow `30277394128` completado con `success`.
+
+- MacBook Neo actualizado a 4 colores reales (Plata, Cítrico, Rosa nube, Índigo) con imágenes PNG individuales de Banana Computer.
+- MacBook Pro M4 y M5: imágenes por color (Negro espacial / Plata) en lugar de imagen única.
+- MacBook Air M4: añadido 4.º color Azul cielo con imagen oficial.
+- MacBook Air M5: añadido color Blanco estrella (4 colores totales).
+- iMac 24" y Mac mini: imágenes redimensionadas de 2250×2250 a 1080×1080 para uniformidad visual.
+
 ## 2026-07-26 — Tema automático del dispositivo, pendiente de publicación
 
 - Retirado el botón de tema de la cabecera comercial y de checkout.
