@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-07-26
+actualizado: 2026-07-27
 ---
 
 # Estado actual
@@ -68,6 +68,14 @@ actualizado: 2026-07-26
 - La franja de modelos Mac usa fotografías oficiales de producto almacenadas
   localmente, centradas dentro de marcos de tamaño constante; su procedencia se
   registra en `public/img/products/SOURCES.md`.
+- Las imágenes del MacBook Air M4/M5 muestran el portátil abierto (pantalla y
+  teclado visibles) en los cuatro colores: Medianoche, Plata, Blanco estrella y
+  Azul cielo.
+- Las tarjetas del iMac 24" M4 usan el campo `imageBg` de cada color para que
+  el contenedor de imagen adopte el mismo tono de fondo que la foto, eliminando
+  el recuadro visible sobre el fondo neutro.
+- La página de Mac incluye una sección "Catálogo completo" que muestra todos los
+  modelos, incluidos Mac mini y Mac Studio, con acceso a compra directo.
 - Directorio de cinco tiendas con direcciones y horarios contrastados con las
   fichas oficiales el 2026-07-26. No se muestra un estado “Abierto ahora”:
   los horarios llevan fuente y aviso de posibles variaciones.

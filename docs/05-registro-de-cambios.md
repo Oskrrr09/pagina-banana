@@ -8,6 +8,14 @@ actualizado: 2026-07-27
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-27 — Imágenes Air abiertas, fondo iMac y Mac mini, publicado
+
+Workflow `30283909013` completado con `success`.
+
+- MacBook Air M4/M5: las imágenes por color (Medianoche, Plata, Blanco estrella, Azul cielo) muestran ahora el portátil abierto recortado de la imagen compuesta de Apple, rellenado a 1080×1080.
+- iMac 24" M4: añadido `imageBg` por color para que el fondo del contenedor de imagen coincida con el fondo de la foto, eliminando el recuadro visible en tarjetas y ofertas.
+- Página Mac: nueva sección "Catálogo completo" con `ProductCard` para todos los modelos, haciendo visible Mac mini y Mac Studio independientemente de si tienen oferta.
+
 ## 2026-07-27 — Imágenes Mac por color, publicado
 
 Workflow `30277394128` completado con `success`.
