@@ -1,12 +1,20 @@
 ---
 tipo: cambios
-actualizado: 2026-07-27
+actualizado: 2026-07-28
 ---
-
+	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-07-28 — Imágenes Air corregidas y Mac mini visible, publicado
+
+Workflow `30312650928` completado con `success`.
+
+- MacBook Air M4/M5: reemplazadas las imágenes anteriores (vista de perfil cerrado) por recortes correctos de la vista frontal abierta del compuesto oficial de Apple (y=60–400 sobre 504×876, escalado a 1080×1080 blanco). Cuatro colores: Medianoche, Plata, Blanco estrella y Azul cielo.
+- Catálogo Mac — nav strip: cambiado de desplazamiento horizontal (`overflow-x-auto`) a cuadrícula flexible (`flex-wrap justify-center`). Todos los modelos incluido Mac mini son visibles sin necesidad de scroll.
+- iMac 24" M4 en nav: la miniatura aplica `imageBg` como `backgroundColor` del contenedor, igual que en las tarjetas de producto.
 
 ## 2026-07-27 — Imágenes Air abiertas, fondo iMac y Mac mini, publicado
 
