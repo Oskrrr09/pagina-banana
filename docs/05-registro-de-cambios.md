@@ -8,6 +8,18 @@ actualizado: 2026-07-28
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-28 — PNGs transparentes Air+iMac, nav una sola fila, publicado
+
+Workflow `30313993859` completado con `success`.
+
+- MacBook Air (4 colores) e iMac 24" M4 (7 colores): sustituidas por PNGs
+  transparentes 1080×1080 (RGBA) descargados directamente del CDN de Apple
+  (`store.storeimages.cdn-apple.com`, `fmt=png-alpha`). Sin fondo blanco.
+  iMac mantiene `imageBg` para el fondo de color característico.
+- Nav strip Mac: una sola fila con `overflow-x-auto no-scrollbar`, items a
+  `w-24 shrink-0`, centrados en lg+. Los 9 items son visibles sin scroll en
+  escritorio y con scroll horizontal en móvil.
+
 ## 2026-07-28 — Imágenes Air/Pro corregidas y Mac mini visible, publicado
 
 Workflows `30312650928` y `30313030912` completados con `success`.
