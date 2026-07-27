@@ -65,6 +65,7 @@
 /* ---------- Base ---------- */
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 body {
   font-family: var(--font-sans);
@@ -72,6 +73,7 @@ body {
   background: var(--color-surface);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 /* El amarillo de marca es siempre una superficie clara, también cuando el
