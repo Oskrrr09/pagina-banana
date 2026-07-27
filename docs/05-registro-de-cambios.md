@@ -1,6 +1,6 @@
 ---
 tipo: cambios
-actualizado: 2026-07-26
+actualizado: 2026-07-27
 ---
 
 # Registro de cambios
@@ -143,6 +143,14 @@ publicó correctamente esta versión en
 - Registrados dos avisos moderados de seguridad de React Router.
 
 ## Historial existente
+
+### 2026-07-27
+
+- `b1dcb2e` — Centrado imagen hero (recorte negro izquierda) y corrección de
+  overflow horizontal de página (overflow-x: hidden en html/body).
+- `2a12431` — Flechas bento, lupa a la izquierda del carrito, overlay de
+  búsqueda con sugerencias por categoría y recorte de banda gris inferior del hero.
+- Push directo a `main` en ambos casos.
 
 ### 2026-07-26
 
