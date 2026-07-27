@@ -8,6 +8,15 @@ actualizado: 2026-07-26
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-26 — Tema automático del dispositivo, pendiente de publicación
+
+- Retirado el botón de tema de la cabecera comercial y de checkout.
+- Eliminados el proveedor React, la preferencia `banana:theme` y el fundido
+  asociado al cambio manual.
+- El modo oscuro se activa exclusivamente mediante
+  `prefers-color-scheme: dark` y responde a cambios del dispositivo.
+- En modo claro se conserva la presentación blanca original.
+
 ## 2026-07-26 — Selector de tema e imágenes Mac, publicado
 
 La PR [#5](https://github.com/luis-lop-nas/pagina-banana/pull/5) se fusionó en
