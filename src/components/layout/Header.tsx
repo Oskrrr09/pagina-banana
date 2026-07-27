@@ -7,9 +7,57 @@ import { Logo } from './Logo'
 import { MegaMenu } from './MegaMenu'
 import { MobileMenu } from './MobileMenu'
 
-// Cabecera fija (sticky) en escritorio y móvil (§2.8 / §5.5).
-// Escritorio: buscador, favoritos, comparador, cuenta y carrito con contadores.
-// Móvil: solo carrito y menú visibles; el resto vive en el menú.
+// Sugerencias de búsqueda organizadas por familia de producto.
+const SEARCH_SUGGESTIONS = [
+  {
+    label: 'iPhone',
+    slug: 'iphone',
+    models: [
+      { name: 'iPhone 17 Pro', slug: '17-pro' },
+      { name: 'iPhone 17 Pro Max', slug: '17-pro-max' },
+      { name: 'iPhone Air', slug: 'air' },
+      { name: 'iPhone 17', slug: '17' },
+    ],
+  },
+  {
+    label: 'Mac',
+    slug: 'mac',
+    models: [
+      { name: 'MacBook Air M5', slug: 'macbook-air-m5' },
+      { name: 'MacBook Pro M5', slug: 'macbook-pro-m5' },
+      { name: 'MacBook Air M4', slug: 'macbook-air-m4' },
+      { name: 'iMac 24" M4', slug: 'imac-24-m4' },
+    ],
+  },
+  {
+    label: 'iPad',
+    slug: 'ipad',
+    models: [
+      { name: 'iPad Pro 11" M5', slug: 'ipad-pro-11' },
+      { name: 'iPad Air 11" M4', slug: 'ipad-air-11' },
+    ],
+  },
+  {
+    label: 'Apple Watch',
+    slug: 'apple-watch',
+    models: [
+      { name: 'Apple Watch Series 11', slug: 'watch-series-11' },
+      { name: 'Apple Watch Ultra 3', slug: 'watch-ultra-3' },
+    ],
+  },
+  {
+    label: 'AirPods',
+    slug: 'airpods',
+    models: [
+      { name: 'AirPods Pro 3', slug: 'airpods-pro-3' },
+      { name: 'AirPods Max', slug: 'airpods-max' },
+    ],
+  },
+]
+
+// Cabecera fija (sticky) en escritorio y móvil.
+// Escritorio: buscador, favoritos, comparador, cuenta y carrito.
+// Móvil: lupa (abre overlay con sugerencias), carrito y menú.
 export function Header() {
   const { cartCount, favorites, compare } = useStore()
   const [activeFamily, setActiveFamily] = useState<string | null>(null)
@@ -21,19 +69,31 @@ export function Header() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Cierra menús al cambiar de ruta
   useEffect(() => {
     setActiveFamily(null)
     setMobileOpen(false)
     setSearchOpen(false)
   }, [location.pathname])
 
-  // Escape cierra el mega-menú
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setActiveFamily(null)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveFamily(null)
+        setSearchOpen(false)
+        setQ('')
+      }
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [])
+
+  // Bloquea el scroll de fondo mientras el overlay de búsqueda está activo en móvil.
+  useEffect(() => {
+    if (!searchOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [searchOpen])
 
   function openMega(slug: string) {
     if (closeTimer.current) window.clearTimeout(closeTimer.current)
@@ -55,39 +115,7 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-black/10 bg-banana">
-        {/* Barra de búsqueda en móvil: reemplaza la cabecera normal cuando está activa */}
-        {searchOpen && (
-          <div className="flex h-16 items-center gap-2 bg-surface px-4 xl:hidden">
-            <button
-              onClick={() => { setSearchOpen(false); setQ('') }}
-              aria-label="Cerrar búsqueda"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink hover:bg-neutral"
-            >
-              <Icon name="chevron-right" className="rotate-180" />
-            </button>
-            <form onSubmit={submitSearch} className="flex flex-1 items-center">
-              <input
-                autoFocus
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="¿Qué estás buscando?"
-                aria-label="Buscar"
-                className="flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
-              />
-            </form>
-            <button
-              onClick={() => { if (q.trim()) navigate(`/buscar?q=${encodeURIComponent(q.trim())}`) }}
-              aria-label="Buscar"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted hover:bg-neutral hover:text-ink"
-            >
-              <Icon name="search" />
-            </button>
-          </div>
-        )}
-
-        {/* Tres bloques a todo el ancho: logo a la izquierda (con margen), menú
-            centrado y accesos (buscar/favoritos/carrito…) pegados a la derecha. */}
-        <div className={`banana-header-bar flex h-16 w-full items-center px-6 sm:px-8 lg:px-12 ${searchOpen ? 'hidden xl:flex' : ''}`}>
+        <div className="banana-header-bar flex h-16 w-full items-center px-6 sm:px-8 lg:px-12">
           <Logo />
 
           {/* Escritorio: navegación centrada con mega-menú */}
@@ -118,6 +146,7 @@ export function Header() {
 
           {/* Accesos permanentes */}
           <div className="ml-auto flex items-center gap-1">
+            {/* Escritorio: lupa, favoritos, comparador, cuenta */}
             <button
               onClick={() => setSearchOpen((v) => !v)}
               aria-label="Buscar"
@@ -134,16 +163,21 @@ export function Header() {
             >
               <Icon name="user" />
             </button>
-            <IconBadge to="/carrito" icon="cart" label="Carrito" count={cartCount} />
-            {/* Móvil: botón de búsqueda (lupa) */}
+
+            {/* Móvil: lupa (antes del carrito) */}
             <button
               onClick={() => setSearchOpen((v) => !v)}
               aria-label="Buscar"
+              aria-expanded={searchOpen}
               className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:hidden"
             >
               <Icon name="search" />
             </button>
-            {/* Móvil: botón de menú (a la derecha, con el logo fijo a la izquierda) */}
+
+            {/* Carrito (siempre visible) */}
+            <IconBadge to="/carrito" icon="cart" label="Carrito" count={cartCount} />
+
+            {/* Móvil: botón de menú */}
             <button
               ref={mobileMenuButtonRef}
               onClick={() => setMobileOpen(true)}
@@ -183,6 +217,68 @@ export function Header() {
           </div>
         )}
       </header>
+
+      {/* Overlay de búsqueda en móvil — pantalla completa con sugerencias */}
+      {searchOpen && (
+        <div
+          role="dialog"
+          aria-label="Buscar"
+          aria-modal="true"
+          className="fixed inset-0 z-[85] flex flex-col bg-surface xl:hidden"
+        >
+          {/* Barra superior: cerrar + input + enviar */}
+          <div className="flex h-16 shrink-0 items-center gap-2 border-b border-line px-4">
+            <button
+              onClick={() => { setSearchOpen(false); setQ('') }}
+              aria-label="Cerrar búsqueda"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink hover:bg-neutral"
+            >
+              <Icon name="chevron-right" className="rotate-180" />
+            </button>
+            <form onSubmit={submitSearch} className="flex flex-1 items-center gap-2 rounded-full border border-line bg-neutral px-4 py-2">
+              <input
+                autoFocus
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="¿Qué estás buscando?"
+                aria-label="Buscar"
+                className="flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
+              />
+            </form>
+            <button
+              onClick={() => { if (q.trim()) navigate(`/buscar?q=${encodeURIComponent(q.trim())}`) }}
+              aria-label="Buscar"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted hover:bg-neutral hover:text-ink"
+            >
+              <Icon name="search" />
+            </button>
+          </div>
+
+          {/* Sugerencias por categoría */}
+          <div className="flex-1 overflow-y-auto px-5 py-5">
+            {SEARCH_SUGGESTIONS.map((section) => (
+              <div key={section.slug} className="mb-6">
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">
+                  {section.label}
+                </p>
+                <div className="flex flex-col">
+                  {section.models.map((model) => (
+                    <Link
+                      key={model.slug}
+                      to={`/${section.slug}/${model.slug}`}
+                      onClick={() => setSearchOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-neutral"
+                    >
+                      <Icon name="search" size={15} className="shrink-0 text-muted" />
+                      {model.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <MobileMenu open={mobileOpen} onClose={closeMobileMenu} returnFocusRef={mobileMenuButtonRef} />
     </>
