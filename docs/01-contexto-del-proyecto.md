@@ -134,11 +134,10 @@ No hay migración ni validación del esquema almacenado.
 - Imágenes raster locales para producto/campaña y placeholders explícitos en
   experiencias todavía simuladas. Las fotografías Mac procedentes de Apple
   Newsroom conservan su fuente en `public/img/products/SOURCES.md`.
-- Un proveedor de tema aplica el modo claro u oscuro. Usa
-  `prefers-color-scheme` como valor inicial, sigue al dispositivo mientras el
-  usuario no elija manualmente y guarda esa elección en `banana:theme`.
-- El cambio manual de tema funde colores, fondos, bordes y sombras durante
-  360 ms, respetando `prefers-reduced-motion`.
+- Los tokens oscuros se activan únicamente mediante
+  `@media (prefers-color-scheme: dark)`. La página sigue al dispositivo en
+  directo, sin selector, proveedor React ni preferencia visual en
+  `localStorage`.
 - El carrusel de tiendas y el mega-menú reservan altura fija para que el cambio
   de tienda o familia no provoque saltos de diseño.
 

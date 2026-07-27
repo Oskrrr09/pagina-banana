@@ -192,7 +192,7 @@ No atribuye motivaciones que el repositorio no documenta.
 ## D-019 — Tema manual con preferencia del sistema como punto de partida
 
 - Fecha: 2026-07-26.
-- Estado: vigente.
+- Estado: reemplazada por D-021.
 - Decisión: ofrecer un control visible de tema claro/oscuro, usar
   `prefers-color-scheme` mientras no exista una elección manual y persistirla en
   `banana:theme`.
@@ -213,6 +213,19 @@ No atribuye motivaciones que el repositorio no documenta.
   `public/img/products/*-photo.jpg` y `public/img/products/SOURCES.md`.
 - Consecuencia: las imágenes no dependen de una carga remota y se encuadran
   centradas en marcos uniformes.
+
+## D-021 — Tema controlado exclusivamente por el dispositivo
+
+- Fecha: 2026-07-26.
+- Estado: vigente.
+- Decisión: aplicar el tema oscuro únicamente con
+  `@media (prefers-color-scheme: dark)`, sin control manual ni persistencia
+  propia.
+- Evidencia: `src/index.css`; ausencia de `ThemeToggle` y del proveedor de tema
+  en `src/main.tsx`.
+- Consecuencia: la interfaz responde a la preferencia actual del sistema y a sus
+  cambios en vivo. Una antigua clave `banana:theme`, si existe en el navegador,
+  deja de influir en la página.
 
 ## Cómo añadir una decisión
 

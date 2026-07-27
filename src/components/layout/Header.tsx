@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { familiesNav, directLinks } from '../../data/nav'
 import { useStore } from '../../lib/store'
 import { Icon } from '../ui/Icon'
-import { ThemeToggle } from '../ui/ThemeToggle'
 import { Logo } from './Logo'
 import { MegaMenu } from './MegaMenu'
 import { MobileMenu } from './MobileMenu'
@@ -105,7 +104,6 @@ export function Header() {
             >
               <Icon name="user" />
             </button>
-            <ThemeToggle className="text-ink" />
             <IconBadge to="/carrito" icon="cart" label="Carrito" count={cartCount} />
             {/* Móvil: botón de menú (a la derecha, con el logo fijo a la izquierda) */}
             <button

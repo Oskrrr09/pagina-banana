@@ -61,11 +61,10 @@ actualizado: 2026-07-26
   ordena juntos los MacBook Air y los MacBook Pro.
 - La ficha permite aumentar o quitar unidades de una variante ya añadida sin
   abandonar la página; cambiar capacidad conserva el color elegido.
-- La interfaz ofrece un selector claro/oscuro, parte de
-  `prefers-color-scheme` cuando no hay preferencia guardada y persiste la
-  elección en `banana:theme`.
-- El cambio de tema usa una transición global de 360 ms y la elimina cuando el
-  dispositivo solicita reducir el movimiento.
+- La interfaz detecta automáticamente `prefers-color-scheme` y sigue el modo
+  claro u oscuro del dispositivo, incluso si cambia mientras la página está
+  abierta.
+- No existe un selector de tema ni se guarda una preferencia visual propia.
 - La franja de modelos Mac usa fotografías oficiales de producto almacenadas
   localmente, centradas dentro de marcos de tamaño constante; su procedencia se
   registra en `public/img/products/SOURCES.md`.
@@ -197,6 +196,22 @@ El 2026-07-26, en la rama `fix/theme-and-mac-images`:
   temas, sin franjas blancas laterales.
 - Los ocho modelos Mac cargan fotografías locales procedentes de Apple Newsroom
   y sus centros visuales coinciden con los centros de sus marcos.
+
+El 2026-07-26, en la rama `codex/system-theme-detection`:
+
+- `npm ci --cache /tmp/codex-npm-cache-pagina-banana-system-theme`: correcto.
+- `npm run build`: correcto; 421 módulos transformados.
+- Salida principal: CSS `49.37 kB` (`9.33 kB` gzip) y JavaScript `417.44 kB`
+  (`125.37 kB` gzip).
+- No existen scripts de test ni lint.
+- La detección queda implementada exclusivamente mediante
+  `@media (prefers-color-scheme: dark)`.
+- Eliminados el selector de tema, su proveedor React y la lectura/escritura de
+  `banana:theme`.
+- En modo claro del dispositivo, la portada usa superficie blanca y texto
+  oscuro; no se renderiza ningún control de tema.
+- El bundle de producción no contiene `data-theme`, `banana:theme` ni la
+  etiqueta accesible del antiguo botón.
 
 ## Navegación de la documentación
 
