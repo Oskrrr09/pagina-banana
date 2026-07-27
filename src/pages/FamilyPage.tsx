@@ -134,10 +134,10 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
             </p>
           </div>
 
-          <nav aria-label={`Modelos de ${family.name}`} className="mt-8 pb-2">
-            <ul className="flex flex-wrap justify-center gap-3">
+          <nav aria-label={`Modelos de ${family.name}`} className="mt-8 overflow-x-auto no-scrollbar pb-2">
+            <ul className="flex w-max min-w-full gap-2 justify-start lg:justify-center">
               {models.map((model) => (
-                <li key={model.slug} className="w-32 sm:w-36">
+                <li key={model.slug} className="w-24 shrink-0">
                   <Link
                     to={variantPath(model)}
                     className="group flex flex-col items-center rounded-[16px] border border-transparent px-3 py-3 text-center transition-[background-color,border-color,transform] hover:-translate-y-1 hover:border-line hover:bg-surface"
@@ -157,7 +157,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                   </Link>
                 </li>
               ))}
-              <li className="w-32 shrink-0 sm:w-36">
+              <li className="w-24 shrink-0">
                 <Link
                   to={`/comparar?familia=${family.slug}`}
                   className="group flex min-h-40 flex-col items-center justify-center rounded-[16px] border border-line bg-surface px-3 py-3 text-center transition-transform hover:-translate-y-1"
