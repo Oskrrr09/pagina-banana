@@ -134,15 +134,18 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
             </p>
           </div>
 
-          <nav aria-label={`Modelos de ${family.name}`} className="mt-8 overflow-x-auto pb-2 no-scrollbar">
-            <ul className="mx-auto flex w-max min-w-full justify-start gap-3 md:justify-center">
+          <nav aria-label={`Modelos de ${family.name}`} className="mt-8 pb-2">
+            <ul className="flex flex-wrap justify-center gap-3">
               {models.map((model) => (
-                <li key={model.slug} className="w-32 shrink-0 sm:w-36">
+                <li key={model.slug} className="w-32 sm:w-36">
                   <Link
                     to={variantPath(model)}
                     className="group flex flex-col items-center rounded-[16px] border border-transparent px-3 py-3 text-center transition-[background-color,border-color,transform] hover:-translate-y-1 hover:border-line hover:bg-surface"
                   >
-                    <span className="block aspect-square w-full overflow-hidden rounded-[12px] bg-surface">
+                    <span
+                      className="block aspect-square w-full overflow-hidden rounded-[12px] bg-surface"
+                      style={model.colors[0].imageBg ? { backgroundColor: model.colors[0].imageBg } : {}}
+                    >
                       <img
                         src={model.colors[0].image}
                         alt=""
