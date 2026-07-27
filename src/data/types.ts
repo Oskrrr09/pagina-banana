@@ -22,6 +22,7 @@ export interface ColorVariant {
   name: string // nombre visible, p. ej. 'Plata'
   hex: string // muestra de color (decorativa; el nombre siempre en texto)
   image: string // foto real de producto (public/img/products/…)
+  imageBg?: string // color de fondo de la imagen (cuando no es blanco/neutro)
   capacities: CapacityOption[]
 }
 

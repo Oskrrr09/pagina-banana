@@ -34,6 +34,7 @@ interface ColorSpec {
   name: string
   hex: string
   image: string
+  imageBg?: string
   caps: CapSpec[]
 }
 
@@ -43,6 +44,7 @@ function buildColors(specs: ColorSpec[]): ColorVariant[] {
     name: c.name,
     hex: c.hex,
     image: c.image,
+    ...(c.imageBg ? { imageBg: c.imageBg } : {}),
     capacities: c.caps.map(([capacity, price, prev = null, av = 'disponible', note]) =>
       cap(capacity, price, prev, av, note),
     ),
@@ -235,13 +237,13 @@ export const macModels: Model[] = [
     fromPrice: 1499,
     financeFrom: { monthly: 63, months: 24 },
     colors: buildColors([
-      { slug: 'azul', name: 'Azul', hex: '#7babcd', image: `${IMG}/imac-24-m4-azul.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-      { slug: 'verde', name: 'Verde', hex: '#6aaa8a', image: `${IMG}/imac-24-m4-verde.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-      { slug: 'rosa', name: 'Rosa', hex: '#e0929f', image: `${IMG}/imac-24-m4-rosa.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-      { slug: 'amarillo', name: 'Amarillo', hex: '#f5c842', image: `${IMG}/imac-24-m4-amarillo.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-      { slug: 'naranja', name: 'Naranja', hex: '#df7944', image: `${IMG}/imac-24-m4-naranja.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-      { slug: 'morado', name: 'Morado', hex: '#9b86bd', image: `${IMG}/imac-24-m4-morado.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/imac-24-m4-plata.png`, caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'azul', name: 'Azul', hex: '#7babcd', image: `${IMG}/imac-24-m4-azul.png`, imageBg: '#bdd5e8', caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'verde', name: 'Verde', hex: '#6aaa8a', image: `${IMG}/imac-24-m4-verde.png`, imageBg: '#b4d4c4', caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'rosa', name: 'Rosa', hex: '#e0929f', image: `${IMG}/imac-24-m4-rosa.png`, imageBg: '#efc8cf', caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'amarillo', name: 'Amarillo', hex: '#f5c842', image: `${IMG}/imac-24-m4-amarillo.png`, imageBg: '#fae3a0', caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'naranja', name: 'Naranja', hex: '#df7944', image: `${IMG}/imac-24-m4-naranja.png`, imageBg: '#efbca1', caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'morado', name: 'Morado', hex: '#9b86bd', image: `${IMG}/imac-24-m4-morado.png`, imageBg: '#cdc2de', caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/imac-24-m4-plata.png`, imageBg: '#e8e8ec', caps: [['16 GB · 256 GB', 1499], ['16 GB · 512 GB', 1749], ['24 GB · 512 GB', 1999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
     ]),
     specs: macSpecs('Apple M4', 'Todo en uno de 24"', 'Desde 16 GB'),
     highlights: ['Pantalla Retina 4,5K', 'Chip Apple M4', 'Diseño todo en uno', 'Cámara Center Stage', 'Seis altavoces'],

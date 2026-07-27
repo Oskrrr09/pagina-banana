@@ -49,7 +49,12 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
       )}
 
       <Link to={variantPath(model)} className="block focus-visible:outline-none">
-        <ProductImage src={model.colors[0].image} alt={`${model.name} ${model.colors[0].name}`} />
+        <ProductImage
+          src={model.colors[0].image}
+          alt={`${model.name} ${model.colors[0].name}`}
+          bgColor={model.colors[0].imageBg}
+          pad={!model.colors[0].imageBg}
+        />
         <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">{model.name}</h3>
       </Link>
 

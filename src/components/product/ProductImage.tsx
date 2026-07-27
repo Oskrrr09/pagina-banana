@@ -7,17 +7,19 @@ export function ProductImage({
   ratio = '1 / 1',
   className = '',
   pad = true,
+  bgColor,
 }: {
   src?: string
   alt: string
   ratio?: string
   className?: string
   pad?: boolean
+  bgColor?: string
 }) {
   return (
     <div
-      className={`relative grid place-items-center overflow-hidden rounded-[12px] bg-neutral ${className}`}
-      style={{ aspectRatio: ratio }}
+      className={`relative grid place-items-center overflow-hidden rounded-[12px] ${bgColor ? '' : 'bg-neutral'} ${className}`}
+      style={{ aspectRatio: ratio, backgroundColor: bgColor }}
     >
       {src ? (
         <img

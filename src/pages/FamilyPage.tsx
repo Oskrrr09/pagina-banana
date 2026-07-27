@@ -217,6 +217,8 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                       src={firstColor.image}
                       alt={`${model.name} ${firstColor.name}`}
                       ratio="4 / 3"
+                      bgColor={firstColor.imageBg}
+                      pad={!firstColor.imageBg}
                     />
                   </div>
                 </Link>
@@ -231,6 +233,15 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
           </div>
         </Container>
       </section>
+
+      <Container className="py-10">
+        <h2 className="mb-6 text-2xl font-extrabold text-ink">Catálogo completo {family.name}</h2>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {models.map((m) => (
+            <ProductCard key={m.slug} model={m} />
+          ))}
+        </div>
+      </Container>
     </>
   )
 }
