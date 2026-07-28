@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
-import { Placeholder } from '../components/ui/Placeholder'
 import { Button } from '../components/ui/Button'
 import { currentStoreDay, getStore, STORE_HOURS_NOTICE, UNIVERSAL_SERVICES } from '../data/stores'
 import { allModels } from '../data/products'
@@ -19,12 +18,23 @@ export function StoreDetailPage() {
   const today = currentStoreDay()
   // Todos los servicios de la tienda: los comunes + los propios (p. ej. técnico).
   const services = [...UNIVERSAL_SERVICES, ...store.services]
+  const mapSrc = `https://www.google.com/maps?q=${store.coords.lat},${store.coords.lng}(${encodeURIComponent(store.name)})&z=17&output=embed`
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${store.coords.lat},${store.coords.lng}`
 
   return (
     <Container className="py-8">
-      {/* 1 — Cabecera de tienda */}
+      {/* 1 — Cabecera de tienda con mapa */}
       <div className="grid gap-8 lg:grid-cols-2">
-        <Placeholder label={store.name} ratio="4 / 3" />
+        <div className="overflow-hidden rounded-[16px] border border-line">
+          <iframe
+            title={`Mapa de ${store.name}`}
+            src={mapSrc}
+            className="block h-[280px] w-full sm:h-[340px]"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+        </div>
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-extrabold text-ink">{store.name}</h1>
@@ -38,9 +48,14 @@ export function StoreDetailPage() {
 
           {/* 4 — Cómo llegar / reservar */}
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button>
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
+            >
               <Icon name="map-pin" size={18} /> Cómo llegar
-            </Button>
+            </a>
             <Button variant="secondary">Reservar cita</Button>
           </div>
 

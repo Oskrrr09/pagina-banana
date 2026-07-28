@@ -50,6 +50,7 @@ export interface Store {
   name: string
   island: string
   address: string
+  coords: { lat: number; lng: number }
   hours: { day: string; time: string }[]
   hoursSource: string
   hoursVerifiedOn: string
