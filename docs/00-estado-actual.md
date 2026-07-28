@@ -31,10 +31,13 @@ actualizado: 2026-07-28
 - Navegación cliente con React Router y página 404.
 - Home con campaña, bento, categorías, lanzamientos, ofertas, servicios,
   tiendas, FAQ y newsletter de demostración.
-- La portada reserva un bloque neutro para futuras opiniones verificadas, sin
-  testimonios, nombres ni valoraciones inventadas.
+- La portada muestra reseñas demostrativas visibles intencionadamente para
+  enseñar el diseño; están claramente etiquetadas como contenido de
+  demostración y se sustituirán por reseñas reales cuando Banana Computer las
+  autorice.
 - Catálogo desarrollado para cinco familias: iPhone, Mac, iPad, Apple Watch y
-  AirPods. Accesorios existe en navegación, pero redirige al catálogo de iPhone.
+  AirPods. Accesorios no tiene catálogo propio: los cinco tiles de la home
+  enlazan a `/buscar?q=<término>`.
 - Dieciocho modelos con variantes de color/capacidad, imágenes locales, precios y
   disponibilidad de ejemplo.
 - Las familias iPhone y Mac presentan un selector horizontal de modelos y una
@@ -61,10 +64,9 @@ actualizado: 2026-07-28
   ordena juntos los MacBook Air y los MacBook Pro.
 - La ficha permite aumentar o quitar unidades de una variante ya añadida sin
   abandonar la página; cambiar capacidad conserva el color elegido.
-- La interfaz detecta automáticamente `prefers-color-scheme` y sigue el modo
-  claro u oscuro del dispositivo, incluso si cambia mientras la página está
-  abierta.
-- No existe un selector de tema ni se guarda una preferencia visual propia.
+- La interfaz utiliza un modo claro fijo. No hay selector de tema, no se
+  guarda preferencia visual y `prefers-color-scheme` no cambia la apariencia
+  — sólo se respeta `prefers-reduced-motion` en reveals y transiciones.
 - La franja de modelos Mac usa fotografías oficiales de producto almacenadas
   localmente, centradas dentro de marcos de tamaño constante; su procedencia se
   registra en `public/img/products/SOURCES.md`.
@@ -120,6 +122,30 @@ actualizado: 2026-07-28
   `test:e2e`/`test:e2e:ui`/`test:e2e:headed` en `package.json`. Workflow
   `.github/workflows/e2e.yml` ejecuta build + install + tests en cada push
   y PR sobre `main` y sube el reporte HTML como artefacto si falla.
+
+## Cambios recientes (rama `fix/checkout-hooks-docs-e2e`)
+
+- **`CheckoutPage`: hooks siempre en el mismo orden.** Reordenado el
+  componente para que todos los `useState`/`useEffect`/`useMemo` se
+  ejecuten antes de cualquier retorno condicional. Las guardas de los
+  pasos 1, 2 y 3 se mantienen y siguen bloqueando accesos indebidos; la
+  confirmación sigue sobreviviendo a recargas.
+- **`ChatBubble`: trampa de foco completa.** Al abrir, el foco entra en
+  el botón "Cerrar"; Tab y Shift+Tab quedan confinados entre "Cerrar" y
+  "Ir a soporte"; Escape cierra y devuelve el foco al botón flotante;
+  el resto del documento se marca `inert` mientras el panel está
+  abierto. El botón flotante usa "Ocultar chat" al estar abierto para
+  no colisionar con el nombre accesible del botón interno de cierre.
+- **Suite Playwright ampliada a 21 pruebas** (11 nuevas): entrega
+  compartida entre carrito y checkout, seguro sin duplicar cantidad,
+  color/capacidad con basename, Apple Watch tamaño y GPS/Cellular
+  preservados, recarga de ruta profunda, ausencia de errores de hooks
+  en consola durante navegación, favoritos y comparador desde
+  `localStorage`, y trampa de foco del chat con teclado.
+- **README** con "PNGs oficiales" ⇒ "Imágenes oficiales optimizadas en
+  WebP" y bloque explícito de reseñas / textos comerciales
+  demostrativos; retirada la mención a `prefers-color-scheme` como
+  cambio de tema.
 
 ## Qué no existe
 
