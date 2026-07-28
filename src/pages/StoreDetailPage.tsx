@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
-import { Button } from '../components/ui/Button'
-import { currentStoreDay, getStore, STORE_HOURS_NOTICE, UNIVERSAL_SERVICES } from '../data/stores'
+import { currentStoreDay, getStore, isOpenNow, STORE_HOURS_NOTICE, UNIVERSAL_SERVICES } from '../data/stores'
 import { allModels } from '../data/products'
 import { NotFound } from './NotFound'
 
@@ -16,6 +15,7 @@ export function StoreDetailPage() {
   if (!store) return <NotFound />
 
   const today = currentStoreDay()
+  const open = isOpenNow(store)
   // Todos los servicios de la tienda: los comunes + los propios (p. ej. técnico).
   const services = [...UNIVERSAL_SERVICES, ...store.services]
   const mapSrc = `https://www.google.com/maps?q=${store.coords.lat},${store.coords.lng}(${encodeURIComponent(store.name)})&z=17&output=embed`
@@ -36,17 +36,22 @@ export function StoreDetailPage() {
           />
         </div>
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-extrabold text-ink">{store.name}</h1>
-            <span className="rounded-full border border-line bg-neutral px-2.5 py-0.5 text-xs font-semibold text-muted">
-              Horario orientativo
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                open ? 'bg-[#e4f5ea] text-[#2e7a4a]' : 'bg-[#fce8e8] text-[#b13333]'
+              }`}
+            >
+              <span className={`h-2 w-2 rounded-full ${open ? 'bg-[#2e9a5a]' : 'bg-[#c14545]'}`} />
+              {open ? 'Abierto ahora' : 'Cerrado'}
             </span>
           </div>
           <p className="mt-2 flex items-center gap-1.5 text-muted">
             <Icon name="map-pin" size={16} /> {store.address}
           </p>
 
-          {/* 4 — Cómo llegar / reservar */}
+          {/* 4 — Cómo llegar */}
           <div className="mt-5 flex flex-wrap gap-3">
             <a
               href={directionsUrl}
@@ -56,7 +61,6 @@ export function StoreDetailPage() {
             >
               <Icon name="map-pin" size={18} /> Cómo llegar
             </a>
-            <Button variant="secondary">Reservar cita</Button>
           </div>
 
           {/* 3 — Servicios disponibles */}

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Chip } from '../components/ui/Chip'
-import { stores, islands, ALL_SERVICES, UNIVERSAL_SERVICES, getTodayHours } from '../data/stores'
+import { stores, islands, ALL_SERVICES, UNIVERSAL_SERVICES, getTodayHours, isOpenNow } from '../data/stores'
 
 // Página de tiendas (§4.13): mapa, filtros y lista.
 export function StoresPage() {
@@ -88,6 +88,7 @@ export function StoresPage() {
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {filtered.map((store) => {
           const todayHours = getTodayHours(store)
+          const open = isOpenNow(store)
           const isActive = activeStore === store.slug
           const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${store.coords.lat},${store.coords.lng}`
 
@@ -101,11 +102,19 @@ export function StoresPage() {
               <Link to={`/tiendas/${store.slug}`} className="focus-visible:outline-none">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 className="font-bold text-ink group-hover:text-ink">{store.name}</h2>
-                  <span className="rounded-full border border-line bg-neutral px-2.5 py-0.5 text-xs font-semibold text-muted">
-                    Hoy: {todayHours?.time ?? 'Consulta el horario'}
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                      open ? 'bg-[#e4f5ea] text-[#2e7a4a]' : 'bg-[#fce8e8] text-[#b13333]'
+                    }`}
+                  >
+                    <span className={`h-2 w-2 rounded-full ${open ? 'bg-[#2e9a5a]' : 'bg-[#c14545]'}`} />
+                    {open ? 'Abierto ahora' : 'Cerrado'}
                   </span>
                 </div>
-                <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+                <p className="mt-1 text-xs text-muted">
+                  <span className="font-semibold text-ink">Hoy:</span> {todayHours?.time ?? 'Consulta el horario'}
+                </p>
+                <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
                   <Icon name="map-pin" size={15} /> {store.address}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-1.5">

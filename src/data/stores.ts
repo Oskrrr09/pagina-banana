@@ -104,3 +104,33 @@ export function getTodayHours(store: Store, date = new Date()) {
   const today = currentStoreDay(date)
   return store.hours.find((entry) => entry.day === today)
 }
+
+// Convierte "HH:MM" en minutos desde medianoche. "24:00" → 1440.
+function toMinutes(hhmm: string) {
+  const [h, m] = hhmm.trim().split(':').map(Number)
+  return h * 60 + (m || 0)
+}
+
+// Devuelve `true` si en `date` (hora de Canarias) la tienda está abierta.
+// Interpreta strings tipo "10:00–20:30" o "10:30–14:30 · 17:00–20:00" o
+// cualquiera que contenga "Cerrado".
+export function isOpenNow(store: Store, date = new Date()) {
+  const entry = getTodayHours(store, date)
+  if (!entry || /cerrado/i.test(entry.time)) return false
+
+  const nowStr = new Intl.DateTimeFormat('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: 'Atlantic/Canary',
+  }).format(date)
+  const now = toMinutes(nowStr)
+
+  // Puede haber tramos separados por " · " (mediodía). El separador de rango
+  // es un guion largo "–" o un guion normal "-".
+  return entry.time.split('·').some((chunk) => {
+    const [start, end] = chunk.split(/[–-]/).map((s) => s.trim())
+    if (!start || !end) return false
+    return now >= toMinutes(start) && now < toMinutes(end)
+  })
+}
