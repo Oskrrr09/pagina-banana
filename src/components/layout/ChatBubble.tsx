@@ -1,28 +1,45 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
 
-// Chat provisional (§8): sólo un aviso, sin conversación real ni backend.
-// - No se muestra dentro de /checkout/* para no distraer del proceso de
-//   compra ni superponerse con la CTA principal. En el checkout, `CheckoutHelp`
-//   ofrece un enlace discreto al soporte.
-// - Panel accesible: rol dialog + aria-modal, foco al primer elemento
-//   interactivo al abrir, Escape cierra y devuelve foco al botón flotante.
+// Chat provisional (§8): solo un aviso, sin conversación real ni backend.
+// - Oculto en /checkout/* para no distraer del proceso de compra.
+// - Panel accesible: role="dialog" + aria-modal, foco al primer control al
+//   abrir, trampa de foco confinada entre los controles del panel, Escape
+//   cierra y devuelve el foco al botón flotante.
+// - Mientras está abierto, el contenido de fondo se marca como `inert` para
+//   que no reciba foco ni interacción de puntero.
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
+
 export function ChatBubble() {
   const [open, setOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const headingRef = useRef<HTMLParagraphElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const location = useLocation()
 
   // Oculto durante el checkout (los tres pasos): /checkout/1|2|3.
   const inCheckout = location.pathname.startsWith('/checkout')
 
+  const close = useCallback(() => {
+    setOpen(false)
+    // El foco vuelve al botón flotante que abrió el panel.
+    buttonRef.current?.focus()
+  }, [])
+
+  // Foco inicial al abrir + trampa de Tab/Shift+Tab + Escape para cerrar.
   useEffect(() => {
     if (!open) return
+    const panel = panelRef.current
+    if (!panel) return
 
-    // Foco al abrir: el botón de cerrar es el primer control interactivo del
-    // panel; leemos el título con aria-labelledby.
     const focusFrame = window.requestAnimationFrame(() => {
       closeRef.current?.focus()
     })
@@ -30,31 +47,65 @@ export function ChatBubble() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        setOpen(false)
-        buttonRef.current?.focus()
+        close()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusables = panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      if (focusables.length === 0) {
+        event.preventDefault()
+        return
+      }
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement as HTMLElement | null
+      // Si el foco escapa del panel por cualquier motivo, lo devolvemos al
+      // primer/último control según la dirección del Tab.
+      if (!panel.contains(active)) {
+        event.preventDefault()
+        ;(event.shiftKey ? last : first).focus()
+        return
+      }
+      if (event.shiftKey && active === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
       }
     }
+
     document.addEventListener('keydown', onKeyDown)
     return () => {
       window.cancelAnimationFrame(focusFrame)
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [open])
+  }, [open, close])
 
-  // Al cerrar (por click en fondo/navegación) devolvemos el foco al botón.
+  // Marca el resto del documento como `inert` mientras el panel está abierto
+  // para que no reciba foco ni clics; se restaura al cerrar/desmontar.
   useEffect(() => {
     if (!open) return
+    const wrapper = panelRef.current?.closest('[data-chat-root]')
+    const siblings: Element[] = []
+    if (wrapper?.parentElement) {
+      for (const child of Array.from(wrapper.parentElement.children)) {
+        if (child !== wrapper) siblings.push(child)
+      }
+    }
+    for (const el of siblings) el.setAttribute('inert', '')
     return () => {
-      buttonRef.current?.focus()
+      for (const el of siblings) el.removeAttribute('inert')
     }
   }, [open])
 
   if (inCheckout) return null
 
   return (
-    <div className="fixed bottom-6 right-4 z-[75] sm:right-6">
+    <div data-chat-root className="fixed bottom-6 right-4 z-[75] sm:right-6">
       {open && (
         <div
+          ref={panelRef}
           id="chat-banana-preview"
           role="dialog"
           aria-modal="true"
@@ -63,12 +114,7 @@ export function ChatBubble() {
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p
-                id="chat-banana-title"
-                ref={headingRef}
-                className="font-bold text-ink"
-                tabIndex={-1}
-              >
+              <p id="chat-banana-title" className="font-bold text-ink">
                 Chat con Banana
               </p>
               <p className="mt-1 text-sm text-muted">
@@ -79,10 +125,7 @@ export function ChatBubble() {
             <button
               ref={closeRef}
               type="button"
-              onClick={() => {
-                setOpen(false)
-                buttonRef.current?.focus()
-              }}
+              onClick={close}
               aria-label="Cerrar información del chat"
               className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-muted hover:bg-neutral hover:text-ink"
             >
@@ -102,7 +145,7 @@ export function ChatBubble() {
       <button
         ref={buttonRef}
         type="button"
-        aria-label={open ? 'Cerrar información del chat' : 'Abrir información del chat'}
+        aria-label={open ? 'Ocultar chat' : 'Abrir información del chat'}
         aria-expanded={open}
         aria-controls="chat-banana-preview"
         aria-haspopup="dialog"

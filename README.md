@@ -46,7 +46,7 @@ Cinco familias con datos, imágenes locales y variantes reales:
 | Familia | Modelos | Nota |
 | --- | --- | --- |
 | **iPhone** | 4 (17 Pro Max, 17 Pro, Air, 17) | Fotos oficiales por color |
-| **Mac** | 8 (MacBook Neo, Air M4/M5, Pro M4/M5, iMac 24" M4, Mac Studio, Mac mini M4) | PNGs oficiales de Apple/Banana Computer |
+| **Mac** | 8 (MacBook Neo, Air M4/M5, Pro M4/M5, iMac 24" M4, Mac Studio, Mac mini M4) | Imágenes oficiales optimizadas en WebP |
 | **iPad** | 4 (Pro, Air, mini, A16) | Pulgada seleccionable dentro de la ficha |
 | **Apple Watch** | 3 (Ultra 3, Series 11, SE 3) | Tamaño y GPS/Cellular seleccionables (excepto Ultra) |
 | **AirPods** | 2 (Pro 3, Max) | 5 colores de AirPods Max |
@@ -119,15 +119,26 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 
 Todo esto es demostrativo: no hay backend, ni pagos, ni emails.
 
-## Contenido comercial
+## Contenido comercial y testimonios
 
-Las afirmaciones ("Envío 24-48 h", "Financiación al 0 %", "hasta 400 €",
-"Servicio técnico oficial"…) viven en `src/data/commercialClaims.ts` con
-`status: 'demo' | 'verified' | 'pending'`, `source`, `verifiedAt` y
-`disclaimer`. Solo se marcan como `verified` las que se han contrastado con
-la fuente oficial (por ejemplo, las 5 tiendas verificadas el 2026-07-26).
-Los bloques que las usan (franja de confianza, tarjetas de servicio, etc.)
-muestran un aviso discreto cuando el contenido es demostrativo.
+- **Afirmaciones estructuradas** — Las condiciones comerciales usadas por
+  bloques concretos ("Envío 24-48 h", "Financiación al 0 %",
+  "hasta 400 €", "Servicio técnico oficial"…) viven en
+  `src/data/commercialClaims.ts` con `status: 'demo' | 'verified' | 'pending'`,
+  `source`, `verifiedAt` y `disclaimer`. Solo se marcan como `verified`
+  las que se han contrastado con la fuente oficial (por ejemplo, las 5
+  tiendas verificadas el 2026-07-26). Los bloques que las usan muestran un
+  aviso discreto cuando el contenido es demostrativo.
+- **Textos visuales en componentes** — Algunos textos comerciales de la
+  portada permanecen intencionadamente dentro de sus componentes de UI
+  para conservar la presentación visual del prototipo. Están claramente
+  identificados como demostrativos y se mantendrán como tales hasta que
+  Banana Computer los valide; no son un pendiente que haya que "arreglar"
+  moviéndolos a `commercialClaims.ts`.
+- **Reseñas / testimonios** — Las reseñas visibles en portada son
+  contenido demostrativo creado para enseñar el diseño. Aparecen
+  claramente etiquetadas como tal y se conservan intencionadamente
+  hasta que existan reseñas reales autorizadas.
 
 ## Buscador
 
@@ -176,9 +187,12 @@ flotante.
 - Formularios con `label` asociada y `autocomplete` en el checkout.
 - `prefers-reduced-motion` respetado en reveals y transiciones.
 - Menú móvil con trampa de foco y bloqueo de scroll.
-- Chat con `aria-modal`, retorno de foco y cierre con Escape.
-- Detección de tema con `prefers-color-scheme` (no se guarda preferencia
-  propia).
+- Chat con `role="dialog"` + `aria-modal`, trampa de foco confinada al panel
+  (Tab / Shift+Tab cíclicos), Escape que cierra y devuelve el foco al botón
+  flotante, y `inert` sobre el resto del documento mientras está abierto.
+- La interfaz utiliza actualmente un modo claro fijo. No hay selector de
+  tema y `prefers-color-scheme` no cambia la apariencia — solo se respeta
+  `prefers-reduced-motion`.
 
 ## CI / CD
 

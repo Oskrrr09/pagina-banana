@@ -45,15 +45,23 @@ export function CheckoutPage() {
     demoOrderRepository.getLast(),
   )
 
-  // Guarda de paso 3: solo se muestra si hay un pedido de demostración
-  // creado en la sesión actual. Si alguien abre /checkout/3 directamente sin
-  // pedido, se le redirige al carrito o al catálogo según corresponda.
+  // Todos los hooks se llaman ANTES de cualquier return condicional para
+  // garantizar el mismo orden entre renders (Reglas de los Hooks). Las
+  // guardas viven en un bloque contiguo justo debajo.
+  const tiendaObj = useMemo(() => getStore(form.tienda), [form.tienda])
+
+  // Al terminar (paso 3) limpiamos el carrito una sola vez, pero conservamos
+  // el pedido para poder recargar la página sin perder el resumen.
+  useEffect(() => {
+    if (current === 3 && confirmedOrder && cart.length > 0) clearCart()
+  }, [current, confirmedOrder, cart.length, clearCart])
+
+  // --- Guardas de navegación (después de todos los hooks) ---
+  // Paso 3: exige un pedido demostrativo real creado en esta sesión.
   if (current === 3 && !confirmedOrder) {
     return <Navigate to={cart.length > 0 ? '/carrito' : '/iphone'} replace />
   }
-
-  // Guarda de pasos 1 y 2: no tienen sentido con la cesta vacía (salvo que ya
-  // exista un pedido confirmado, en cuyo caso el usuario debe ir al paso 3).
+  // Pasos 1 y 2: sin carrito no hay flujo (salvo que ya haya pedido).
   if ((current === 1 || current === 2) && cart.length === 0) {
     if (confirmedOrder) return <Navigate to="/checkout/3" replace />
     return (
@@ -66,17 +74,10 @@ export function CheckoutPage() {
       </Container>
     )
   }
-
-  // Guarda de paso 2: bloqueada hasta que el paso 1 sea válido.
+  // Paso 2: bloqueado hasta que el paso 1 sea válido.
   if (current === 2 && !step1Valid) {
     return <Navigate to="/checkout/1" replace />
   }
-
-  // Al terminar (paso 3) limpiamos el carrito una sola vez, pero conservamos
-  // el pedido para poder recargar la página sin perder el resumen.
-  useEffect(() => {
-    if (current === 3 && cart.length > 0) clearCart()
-  }, [current, cart.length, clearCart])
 
   function next() {
     if (current === 1) {
@@ -114,7 +115,6 @@ export function CheckoutPage() {
   const summaryLines = current === 3 && confirmedOrder ? confirmedOrder.lines : cart
   const summaryInsurance = current === 3 && confirmedOrder ? confirmedOrder.monthlyInsuranceTotal : cartInsuranceTotal
   const summaryProducts = current === 3 && confirmedOrder ? confirmedOrder.productsTotal : cartSubtotal
-  const tiendaObj = useMemo(() => getStore(form.tienda), [form.tienda])
 
   return (
     <div>

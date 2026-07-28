@@ -8,6 +8,32 @@ actualizado: 2026-07-28
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-28 — Hooks del checkout, trampa de foco del chat, docs y E2E
+
+Rama `fix/checkout-hooks-docs-e2e`.
+
+- `CheckoutPage`: todos los hooks se llaman antes de cualquier retorno
+  condicional. Las guardas de los pasos 1, 2 y 3 se mantienen; la
+  confirmación sigue sobreviviendo a recargas y el pedido demostrativo
+  sigue creándose sólo al pulsar "Confirmar pedido".
+- `ChatBubble`: trampa de foco completa (Tab / Shift+Tab cíclicos entre
+  "Cerrar" e "Ir a soporte"), Escape cierra y devuelve el foco al botón
+  flotante, y el resto del documento se marca `inert` mientras el panel
+  está abierto. El botón flotante pasa a "Ocultar chat" al estar abierto
+  para no colisionar con el nombre accesible del botón interno.
+- README: "PNGs oficiales" → "Imágenes oficiales optimizadas en WebP",
+  sección explícita de reseñas y textos comerciales demostrativos, y
+  retirada la mención a `prefers-color-scheme` (la interfaz está en
+  modo claro fijo).
+- Suite Playwright ampliada de 9 a 21 pruebas: entrega compartida
+  carrito↔checkout, seguro sin duplicar cantidad, color/capacidad con
+  basename, Apple Watch tamaño y GPS/Cellular, recarga profunda,
+  ausencia de errores de hooks en consola, favoritos, comparador y
+  trampa de foco del chat con teclado.
+- Docs actualizados: `00-estado-actual.md`,
+  `04-problemas-pendientes.md` (cierra DOC-001; abre y cierra
+  HOOKS-001 y A11Y-001; amplía QA-001).
+
 ## 2026-07-28 — PNGs transparentes Air+iMac, nav una sola fila, publicado
 
 Workflow `30313993859` completado con `success`.

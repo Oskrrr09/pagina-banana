@@ -75,12 +75,15 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## DOC-001 — README desactualizado
 
-- Estado: parcialmente actualizado el 2026-07-28.
-- Evidencia: el README sigue afirmando que solo iPhone está desarrollado a
-  fondo. El código incluye Mac (8 modelos), iPad (4), Apple Watch (3) y
-  AirPods (2), todos con fotos reales en `public/img/products/*.webp`.
-- Pendiente: reescribir README para reflejar el catálogo actual, el nuevo
-  demoOrderRepository, `commercialClaims.ts` y la suite Playwright.
+- Estado: cerrado el 2026-07-28.
+- Evolución: el README se reescribió por completo en `f1e3db7` y se
+  ajustó de nuevo en la rama `fix/checkout-hooks-docs-e2e` para reflejar
+  con precisión que las imágenes de Mac se sirven optimizadas en WebP
+  (no PNG), que la interfaz utiliza un modo claro fijo (no cambia con
+  `prefers-color-scheme`) y que las reseñas y textos comerciales
+  visibles son contenido demostrativo intencionado.
+- Fuente: `README.md` en la rama actual, secciones "Stack",
+  "Accesibilidad", "Contenido comercial y testimonios" y "Persistencia".
 
 ## FLUJO-001 — Checkout permitía saltar pasos
 
@@ -141,18 +144,27 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## QA-001 — Suite E2E mínima con Playwright
 
-- Estado: parcialmente resuelto el 2026-07-28.
-- Evidencia: nuevos scripts `test:e2e`, `test:e2e:ui`, `test:e2e:headed` en
-  `package.json`. Config en `playwright.config.ts`. Nueve pruebas en
-  `tests/e2e/` cubriendo: portada, no-scroll a 375 px, redirecciones de
-  `/checkout/2` y `/checkout/3` sin pedido, flujo demostrativo completo con
-  recarga, ausencia del chat en checkout, sincronización del buscador con la
-  URL y destinos de los accesorios.
-- CI: nuevo workflow `.github/workflows/e2e.yml` ejecuta `npm ci`, `npm run
-  build`, instala navegadores y corre las pruebas en cada push/PR sobre
-  `main`. Sube el reporte HTML como artefacto cuando fallan.
-- Pendiente: ampliar a más rutas (favoritos, comparador), cambios de color
-  y capacidad en la ficha, y comprobaciones de accesibilidad automáticas.
+- Estado: ampliado el 2026-07-28.
+- Evidencia: 21 pruebas en `tests/e2e/` distribuidas en `home.spec.ts`,
+  `checkout.spec.ts`, `checkout-flow.spec.ts`, `chat.spec.ts`,
+  `product.spec.ts`, `favorites-compare.spec.ts` y `search.spec.ts`.
+  Cubren: portada y no-scroll a 375 px; redirecciones y guardas de
+  `/checkout/2` y `/checkout/3` sin pedido; flujo demostrativo completo
+  con recarga; entrega compartida entre `/carrito` y `/checkout/1`;
+  seguro que no duplica cantidad y aparece separado en el resumen;
+  cambio de color y capacidad conservando `/pagina-banana/`; Apple
+  Watch Series 11 con tamaño y GPS/Cellular preservados al alternar;
+  recarga de ruta profunda; navegación entre pasos sin errores de
+  hooks en consola; ausencia del chat en checkout; trampa de foco del
+  chat con teclado (Enter/Tab/Shift+Tab/Escape); favoritos y
+  comparador desde `localStorage`; sincronización del buscador con la
+  URL y destinos de los tiles de accesorios.
+- CI: `.github/workflows/e2e.yml` sigue ejecutando `npm ci`,
+  `npm run build`, `npx playwright install --with-deps chromium` y
+  `npm run test:e2e` en cada push/PR sobre `main`, con el proyecto
+  móvil corriendo sobre Chromium (`Pixel 5`) para no requerir WebKit.
+- Pendiente: comprobaciones de accesibilidad automáticas (axe) y
+  cobertura de tiendas / detalle de tienda.
 
 ## SEG-001 — Avisos de seguridad en React Router
 
@@ -181,6 +193,42 @@ del repositorio. No se corrigen en la preparación documental.
 - Consecuencia actual: ninguna en el despliegue verificado.
 - Siguiente validación: actualizar de forma explícita la versión de Node del
   workflow y volver a comprobar `npm ci`, build y Pages.
+
+## HOOKS-001 — CheckoutPage llamaba hooks tras retornos condicionales
+
+- Estado: cerrado el 2026-07-28.
+- Evidencia previa: `src/pages/CheckoutPage.tsx` colocaba un `useEffect`
+  y un `useMemo` **después** de los `return <Navigate />` de guarda de
+  pasos. Al cambiar de paso en el mismo montaje del componente esto podía
+  disparar el warning "Rendered more hooks than during the previous
+  render" y romper el árbol de React.
+- Resolución: reorganizado el componente para invocar todos los hooks
+  (`useState`, `useMemo`, `useEffect`) siempre en el mismo orden antes de
+  cualquier retorno; las tres guardas quedan agrupadas debajo. La lógica
+  de limpieza del carrito al llegar al paso 3 pasa a depender de la
+  existencia del pedido confirmado, no del propio return.
+- Validación: `tests/e2e/product.spec.ts` incluye la prueba
+  "navegar entre pasos del checkout no genera errores de hooks en
+  consola", que captura los mensajes de la consola y falla si aparece
+  un warning de Rules of Hooks.
+
+## A11Y-001 — Chat sin trampa de foco completa
+
+- Estado: cerrado el 2026-07-28.
+- Evidencia previa: el panel del chat ya tenía `role="dialog"`,
+  `aria-modal`, foco al abrir y Escape, pero Tab y Shift+Tab podían
+  sacar el foco del panel y llegar a los enlaces de la página de fondo.
+- Resolución: `ChatBubble` añade un manejador de teclado que confina el
+  foco entre "Cerrar información del chat" e "Ir a soporte" (cíclico en
+  ambas direcciones), Escape cierra y devuelve el foco al botón
+  flotante, y mientras el panel está abierto el resto del documento se
+  marca como `inert` para que no reciba foco ni interacción de puntero.
+  El aria-label del botón flotante pasa de "Cerrar información del
+  chat" (colisión con el botón interno) a "Ocultar chat" mientras el
+  panel está abierto.
+- Validación: `tests/e2e/chat.spec.ts` — abre el chat con Enter, valida
+  que el foco entra en el panel, recorre Tab/Shift+Tab de forma cíclica,
+  cierra con Escape y confirma el retorno del foco al botón flotante.
 
 ## ENTORNO-001 — Configuración Obsidian preexistente en la raíz
 
