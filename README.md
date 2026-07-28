@@ -154,21 +154,26 @@ sin conexión con un sistema real de gestión de reparaciones:
 - No implementa reserva de cita, calendario, pago online de los
   35 €, seguimiento real de reparaciones ni recogida a domicilio.
 
-## Plan Renove — solo en tienda física (bloque en `/plan-renove`)
+## Plan Renove — valoración estimada online, ejecución en tienda (bloque en `/plan-renove`)
 
-- **El Plan Renove solo se gestiona en tiendas físicas de Banana
-  Computer.** No forma parte del proceso de compra online; el paso
-  por tienda es indispensable para iniciarlo y aplicarlo sobre una
-  nueva compra.
-- Timeline de cuatro pasos: visitar una tienda → estimación inicial
-  → revisión y valoración final presencial → compensación en la
-  nueva compra.
-- **Sin precios, sin ejemplos de tasación, sin tasador propio.** La
-  estimación inicial es orientativa; el valor real lo confirma un
-  especialista en tienda.
-- El texto no nombra al partner externo que realiza la tasación
-  final: cualquier integración real requiere acceso o autorización
-  oficial de Banana Computer.
+- **El Plan Renove se completa en tienda física.** En web se puede
+  consultar una valoración estimada orientativa, pero la valoración
+  real y la aplicación de la compensación requieren pasar por una
+  tienda de Banana Computer.
+- **Cuatro pasos:** 1) valoración estimada online; 2) valoración en
+  tienda (iPhone, iPad o Watch en el momento, una sola vez); 3)
+  para Mac, envío al servicio técnico para comprobar que no ha sido
+  abierto ni reparado y confirmar la valoración; 4) compensación en
+  tu nueva compra realizada en tienda.
+- **La valoración puede cambiar de un día para otro,** incluso
+  valorada en tienda. Cualquier importe mostrado online es solo
+  orientativo.
+- **Traspaso de datos:** si necesitas que Banana traspase tus
+  datos, acude a la tienda con un mínimo de **2 horas de
+  antelación** antes del cierre.
+- **Sin precios, sin ejemplos de tasación, sin tasador propio.** El
+  texto no nombra al partner externo que confirma la valoración de
+  los Mac.
 
 ## Contenido comercial y testimonios
 
@@ -264,7 +269,7 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (48 pruebas, medido con `npm run test:e2e` — 47 en
+Suites actuales (49 pruebas, medido con `npm run test:e2e` — 48 en
 `chromium` + 1 en `mobile` etiquetada `@mobile`):
 
 - `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que

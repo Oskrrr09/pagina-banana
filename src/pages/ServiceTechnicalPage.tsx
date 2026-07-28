@@ -119,9 +119,6 @@ export function ServiceTechnicalPage() {
                   </span>
                 </li>
               </ol>
-              <p className="mt-4 text-xs text-muted">
-                No te pediremos aquí contraseñas, códigos ni credenciales de tu Apple ID.
-              </p>
             </div>
 
             {/* Opciones de entrega */}

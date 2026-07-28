@@ -7,25 +7,33 @@ import { ProvisionalBadge } from '../components/ui/Tag'
 import { planRenoveDevices, planRenoveSteps, planRenoveFaq } from '../data/content'
 
 // Pasos del Plan Renove. No se muestran precios ni tasador propio, y no se
-// nombra al partner externo que realiza la valoración final. El Plan Renove
-// **solo está disponible en tiendas físicas de Banana Computer**: no forma
-// parte del flujo de compra online, así que el paso por tienda es
-// indispensable.
+// nombra al partner externo que realiza la valoración final de Mac.
+//
+// Realidad operativa:
+//  - En la web se puede consultar una valoración estimada, pero no vincula
+//    a Banana ni al cliente.
+//  - En tienda física la valoración de iPhone, iPad y Watch se realiza en
+//    el momento, de una sola vez.
+//  - Los Mac requieren un paso adicional: enviarlos al servicio técnico
+//    para comprobar que no han sido abiertos ni reparados y confirmar la
+//    valoración.
+//  - La valoración puede cambiar de un día para otro, incluso valorada en
+//    tienda.
 const RENOVE_STEPS: Array<{ title: string; body: string }> = [
   {
-    title: 'Visita una tienda Banana',
+    title: 'Consulta una valoración estimada online',
     body:
-      'El Plan Renove solo se gestiona en tienda física. Acude a cualquiera de nuestras tiendas en Canarias con el dispositivo que quieres renovar.',
+      'En web puedes obtener una valoración estimada orientativa de tu dispositivo. La estimación online no vincula: la valoración real puede variar en tienda.',
   },
   {
-    title: 'Estimación inicial',
+    title: 'Acude a una tienda Banana',
     body:
-      'En tienda se recoge la información básica del equipo y se realiza una estimación inicial orientativa.',
+      'La valoración final se hace en una tienda física de Banana Computer. Para iPhone, iPad o Apple Watch, la valoración se realiza en el momento, de una sola vez.',
   },
   {
-    title: 'Revisión y valoración final',
+    title: 'Si es un Mac, pasa por el servicio técnico',
     body:
-      'El dispositivo se revisa para confirmar su estado real. La valoración final puede ser diferente de la estimación inicial.',
+      'Los Mac se envían al servicio técnico para comprobar que no han sido abiertos ni reparados y confirmar la valoración. La confirmación se comunica después.',
   },
   {
     title: 'Compensación en tu nueva compra',
@@ -46,22 +54,30 @@ export function PlanRenovePage() {
             Tu Apple actual vale más de lo que crees. Entrégalo y ahorra en tu próxima compra.
           </p>
 
-          {/* Aviso doble: sólo en tienda física y valor final presencial */}
+          {/* Avisos destacados: sólo en tienda física, valoración
+              variable y traspaso de datos con antelación */}
           <div className="mt-6 space-y-3">
             <div className="flex items-start gap-3 rounded-[12px] border border-backorder/40 bg-backorder-050 p-4">
               <Icon name="store" className="mt-0.5 shrink-0 text-backorder" aria-hidden="true" />
               <p className="text-sm text-ink">
-                <strong>El Plan Renove solo está disponible en tienda física.</strong> No forma
-                parte del proceso de compra online; el paso por tienda es indispensable para
-                iniciarlo y aplicarlo sobre una nueva compra.
+                <strong>El Plan Renove solo se completa en tienda física.</strong> No forma parte
+                del proceso de compra online; el paso por tienda es indispensable para aplicarlo
+                sobre una nueva compra.
               </p>
             </div>
             <div className="flex items-start gap-3 rounded-[12px] border border-backorder/40 bg-backorder-050 p-4">
               <Icon name="info" className="mt-0.5 shrink-0 text-backorder" aria-hidden="true" />
               <p className="text-sm text-ink">
-                <strong>La tasación final es siempre presencial.</strong> Cualquier importe
-                mostrado online es solo orientativo; el valor real lo confirma un especialista en
-                tienda.
+                <strong>La valoración puede cambiar de un día para otro,</strong> incluso valorada
+                en tienda. Cualquier importe mostrado online es solo orientativo.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 rounded-[12px] border border-backorder/40 bg-backorder-050 p-4">
+              <Icon name="clock" className="mt-0.5 shrink-0 text-backorder" aria-hidden="true" />
+              <p className="text-sm text-ink">
+                <strong>Si necesitas traspaso de datos,</strong> acude a la tienda con un mínimo
+                de <strong>2 horas de antelación</strong> respecto al cierre. Sin ese margen no
+                podemos garantizar que el traspaso se complete el mismo día.
               </p>
             </div>
           </div>
@@ -69,14 +85,15 @@ export function PlanRenovePage() {
       </section>
 
       {/* Timeline de 4 pasos. Sin precios, sin tasador propio, sin nombre
-          del partner de tasación. El paso por tienda es obligatorio. */}
+          del partner de tasación. Puedes empezar por una valoración
+          estimada online, pero el Renove se completa siempre en tienda. */}
       <Section>
         <SectionHeader
           title="Cómo funciona"
-          desc="Cuatro pasos claros. Todos requieren pasar por tienda: el Plan Renove no se completa online."
+          desc="Empieza con una valoración estimada online y complétalo en tienda. Los Mac requieren un paso adicional por el servicio técnico."
         />
         <ol
-          aria-label="Pasos del Plan Renove en tienda"
+          aria-label="Pasos del Plan Renove"
           className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
         >
           {RENOVE_STEPS.map((step, i) => (

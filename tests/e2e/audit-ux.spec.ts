@@ -130,15 +130,18 @@ test.describe('Plan Renove — solo en tienda física, sin nombre del partner', 
     await page.goto('./plan-renove')
   })
 
-  test('aparecen los cuatro pasos y todos exigen tienda', async ({ page }) => {
+  test('aparecen los cuatro pasos con la mención específica de Mac y SAT', async ({ page }) => {
     for (const step of [
-      'Visita una tienda Banana',
-      'Estimación inicial',
-      'Revisión y valoración final',
+      'Consulta una valoración estimada online',
+      'Acude a una tienda Banana',
+      'Si es un Mac, pasa por el servicio técnico',
       'Compensación en tu nueva compra',
     ]) {
       await expect(page.getByRole('heading', { level: 3, name: step })).toBeVisible()
     }
+    await expect(
+      page.getByText('no han sido abiertos ni reparados', { exact: false }),
+    ).toBeVisible()
   })
 
   test('no se menciona al partner externo por su nombre', async ({ page }) => {
@@ -146,24 +149,26 @@ test.describe('Plan Renove — solo en tienda física, sin nombre del partner', 
     expect(body).not.toMatch(/foxway/i)
   })
 
-  test('se indica claramente que es solo en tienda física', async ({ page }) => {
+  test('se indica que el Renove solo se completa en tienda', async ({ page }) => {
     await expect(
-      page.getByText('El Plan Renove solo está disponible en tienda física', { exact: false }),
+      page.getByText('El Plan Renove solo se completa en tienda física', { exact: false }),
     ).toBeVisible()
     await expect(page.getByText(/el paso por tienda es indispensable/i)).toBeVisible()
   })
 
-  test('se explica que la estimación inicial puede cambiar', async ({ page }) => {
+  test('se advierte que la valoración puede cambiar de un día para otro', async ({ page }) => {
     await expect(
-      page.getByText(
-        'La valoración final puede ser diferente de la estimación inicial',
-        { exact: false },
-      ),
+      page.getByText('La valoración puede cambiar de un día para otro', { exact: false }),
     ).toBeVisible()
   })
 
+  test('para traspaso de datos se pide un mínimo de 2 horas antes del cierre', async ({ page }) => {
+    await expect(page.getByText('Si necesitas traspaso de datos', { exact: false })).toBeVisible()
+    await expect(page.getByText(/2 horas de antelaci/i)).toBeVisible()
+  })
+
   test('no aparecen precios ni tasador propio', async ({ page }) => {
-    const timeline = page.getByRole('list', { name: 'Pasos del Plan Renove en tienda' })
+    const timeline = page.getByRole('list', { name: 'Pasos del Plan Renove' })
     await expect(timeline).toBeVisible()
     const text = (await timeline.textContent()) ?? ''
     expect(text).not.toMatch(/\d+\s*€/)
