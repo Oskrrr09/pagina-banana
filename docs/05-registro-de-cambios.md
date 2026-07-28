@@ -8,6 +8,44 @@ actualizado: 2026-07-28
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-28 — Mejoras UX tras auditoría y cobertura axe
+
+Rama `feature/audit-ux-improvements`.
+
+- **Portada** con `<h1>` semántico único "Banana Computer — Apple en
+  Canarias". El título rotativo del `HeroCarousel` pasa a `<h2>` para
+  mantener la jerarquía.
+- **`/soporte`** amplía el bloque "Servicio Técnico Autorizado" con:
+  banner "Sin cita previa"; checklist de preparación (copia de
+  seguridad, desactivar "Buscar", desactivar la Protección del
+  dispositivo en caso de robo); opciones de entrega directa o en
+  cualquier otra tienda Banana; condiciones de garantía (envío
+  gratuito) y fuera de garantía (**35 €** con descuento si acepta la
+  reparación o no reembolsable si la rechaza); plazos orientativos
+  con mínimo de 3 días de traslado y aclaración de que ese plazo no
+  incluye diagnóstico ni reparación. Sin reserva de cita, calendario,
+  pago online, seguimiento real ni recogida a domicilio.
+- **`/plan-renove`** incorpora una timeline oficial de cuatro pasos
+  con Foxway (estimación → entrega → revisión y valoración final →
+  compensación). Sin precios, sin ejemplos y sin tasador propio. El
+  CTA "reservar cita previa" se sustituye por "Ver tiendas y
+  horarios" para no contradecir la política sin cita.
+- **`/tiendas`** deja de anidar enlaces dentro de un `div role="button"`
+  (violación axe `nested-interactive`). Se sustituye por tres controles
+  autónomos: "Ver detalles", "Cómo llegar" y un nuevo botón "Enfocar en
+  el mapa".
+- **Suite Playwright ampliada de 21 a 45 pruebas**: nuevo
+  `tests/e2e/audit-ux.spec.ts` (16) verifica cada requisito literal de
+  la mejora de SAT y Plan Renove, y nuevo
+  `tests/e2e/accessibility.spec.ts` (7) ejecuta `@axe-core/playwright`
+  con `wcag2a`, `wcag2aa` y `wcag21a` sobre portada, familia, ficha,
+  tiendas, soporte, Plan Renove y checkout paso 1.
+- `README.md` documenta las condiciones completas del servicio
+  técnico y del Plan Renove, y `docs/03-roadmap.md` marca las cuatro
+  mejoras como implementadas.
+- No se modifica ni una línea del carrito, checkout, seguro ni scripts
+  privados de la auditoría.
+
 ## 2026-07-28 — Auditoría UX de la web oficial de Banana Computer
 
 Rama `chore/auditoria-web-oficial-banana`.

@@ -116,14 +116,14 @@ export function HeroCarousel() {
               >
                 {slide.eyebrow}
               </motion.p>
-              <motion.h1
+              <motion.h2
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.1 }}
                 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-4xl md:text-5xl"
               >
                 {slide.title}
-              </motion.h1>
+              </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}

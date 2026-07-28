@@ -99,7 +99,9 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 | `/checkout/1` | Datos y entrega/recogida (obligatorio antes del 2) |
 | `/checkout/2` | Pago y extras (crea el pedido demo al confirmar) |
 | `/checkout/3` | Confirmación (solo accesible con pedido válido) |
-| `/servicios`, `/plan-renove`, `/soporte` | Contenido de marca demostrativo |
+| `/servicios` | Servicios de Banana (contenido demostrativo) |
+| `/plan-renove` | Página con timeline oficial de 4 pasos con Foxway, sin precios ni tasador propio |
+| `/soporte` | Centro de soporte + bloque **Servicio Técnico Autorizado** con condiciones operativas |
 | `/tiendas`, `/tiendas/:slug` | Google Maps embed con las 5 tiendas |
 | `/favoritos` | Favoritos del usuario |
 | `*` | 404 amable |
@@ -118,6 +120,48 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
   compartido.
 
 Todo esto es demostrativo: no hay backend, ni pagos, ni emails.
+
+## Servicio Técnico Autorizado (bloque en `/soporte`)
+
+Información operativa demostrativa facilitada para el proyecto —
+sin conexión con un sistema real de gestión de reparaciones:
+
+- **Sin cita previa.** Puedes acudir durante el horario de apertura.
+  Antes de entregar el dispositivo, realiza una copia de seguridad y
+  desactiva las funciones de seguridad necesarias.
+- **Prepara tu dispositivo:** copia de seguridad actualizada,
+  desactiva "Buscar" (mi iPhone / mi iPad / mi Mac) y desactiva la
+  Protección del dispositivo en caso de robo o el modo antirrobo
+  cuando corresponda.
+- **Lugares de entrega:** entrega directa en un establecimiento
+  Banana que gestione el servicio técnico, o dejarlo en cualquier
+  otra tienda Banana para que sea recogido y enviado al SAT.
+- **Dispositivo en garantía:** el envío al servicio técnico es
+  gratuito. La cobertura de la reparación dependerá del diagnóstico
+  y de las condiciones de garantía aplicables.
+- **Dispositivo fuera de garantía:** envío al servicio técnico
+  **35 €**. Si aceptas la reparación, esos 35 € se descuentan del
+  precio final. Si decides no reparar, el importe no será
+  reembolsable.
+- **Plazos orientativos:** el traslado desde una tienda al servicio
+  técnico suele tardar un mínimo de **3 días**. A ese plazo hay que
+  añadir el tiempo de diagnóstico y, cuando corresponda, el tiempo
+  de reparación tras la aceptación del presupuesto. Los 3 días
+  corresponden únicamente al traslado, no al plazo total. **No se
+  promete un plazo total garantizado.**
+- No implementa reserva de cita, calendario, pago online de los
+  35 €, seguimiento real de reparaciones ni recogida a domicilio.
+
+## Plan Renove — timeline oficial con Foxway (bloque en `/plan-renove`)
+
+- Timeline de cuatro pasos: estimación inicial en Foxway → entrega
+  del dispositivo → revisión y valoración final por Foxway →
+  compensación conforme a las condiciones oficiales de Banana
+  Computer y Foxway.
+- **Sin precios, sin ejemplos de tasación, sin tasador propio.** La
+  estimación inicial puede variar tras la revisión de Foxway.
+- Cualquier integración real requiere acceso o autorización oficial
+  de Banana / Foxway.
 
 ## Contenido comercial y testimonios
 
@@ -213,7 +257,7 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (21 pruebas, medido con `npm run test:e2e` — 20 en
+Suites actuales (45 pruebas, medido con `npm run test:e2e` — 44 en
 `chromium` + 1 en `mobile` etiquetada `@mobile`):
 
 - `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que
@@ -238,6 +282,20 @@ Suites actuales (21 pruebas, medido con `npm run test:e2e` — 20 en
   los botones "Quitar". **No se preselecciona nada en `localStorage`.**
 - `tests/e2e/search.spec.ts` — sincronización del input con `?q=` y
   destinos reales de los tiles de accesorios.
+- `tests/e2e/audit-ux.spec.ts` — regresión de las mejoras post-auditoría:
+  H1 semántico único en portada, banner "Sin cita previa" en `/soporte`,
+  checklist de preparación (copia, Buscar, modo antirrobo), entrega en
+  cualquier tienda Banana, garantía / fuera de garantía con **35 €** y su
+  descuento/no-reembolso, plazos orientativos con mínimo de 3 días,
+  ausencia de reserva de cita/calendario/contraseña, y timeline oficial
+  del Plan Renove con Foxway sin precios ni tasador.
+- `tests/e2e/accessibility.spec.ts` — comprobaciones con
+  [`@axe-core/playwright`](https://www.npmjs.com/package/@axe-core/playwright)
+  (etiquetas `wcag2a`, `wcag2aa`, `wcag21a`) sobre siete rutas: `/`,
+  `/iphone`, `/iphone/17-pro/256gb-plata`, `/tiendas`, `/soporte`,
+  `/plan-renove` y `/checkout/1` (con carrito sembrado). Se documentan
+  dos excepciones justificadas: `color-contrast` (paleta de marca a
+  revisar en el rediseño) y `region` (bloques decorativos del hero).
 
 ## Documentación
 
