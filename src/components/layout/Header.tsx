@@ -33,8 +33,10 @@ const SEARCH_SUGGESTIONS = [
     label: 'iPad',
     slug: 'ipad',
     models: [
-      { name: 'iPad Pro 11" M5', slug: 'ipad-pro-11' },
-      { name: 'iPad Air 11" M4', slug: 'ipad-air-11' },
+      { name: 'iPad Pro M5', slug: 'ipad-pro' },
+      { name: 'iPad Air M4', slug: 'ipad-air' },
+      { name: 'iPad mini', slug: 'ipad-mini' },
+      { name: 'iPad', slug: 'ipad-a16' },
     ],
   },
   {

@@ -277,90 +277,59 @@ export const macModels: Model[] = [
 ]
 
 // =====================  iPad  =====================
-const iPadAirCaps: CapSpec[] = [['128 GB', 719], ['256 GB', 869], ['512 GB', 1119], ['1 TB', 1619]]
-const iPadAir13Caps: CapSpec[] = [['128 GB', 969], ['256 GB', 1119], ['512 GB', 1369], ['1 TB', 1869]]
-const iPadAirColors = (size: 11 | 13) =>
-  buildColors([
-    { slug: 'azul', name: 'Azul', hex: '#a9c3d6', image: `${IMG}/ipad-air-${size}-azul.png`, caps: size === 11 ? iPadAirCaps : iPadAir13Caps },
-    { slug: 'purpura', name: 'Púrpura', hex: '#b7a7d6', image: `${IMG}/ipad-air-${size}-purpura.png`, caps: size === 11 ? iPadAirCaps : iPadAir13Caps },
-    { slug: 'blanco', name: 'Blanco estrella', hex: '#ded9cf', image: `${IMG}/ipad-air-${size}-blanco.png`, caps: size === 11 ? iPadAirCaps : iPadAir13Caps },
-    { slug: 'gris', name: 'Gris espacial', hex: '#8e8e93', image: `${IMG}/ipad-air-${size}-gris.png`, caps: (size === 11 ? iPadAirCaps : iPadAir13Caps).map<CapSpec>(([c, p]) => [c, p, null, 'disponible']) },
-  ])
+// iPad Pro y Air unifican 11"+13" en un único producto: la pulgada se
+// elige como parte de la capacidad, siguiendo el patrón de MacBook Pro.
+const iPadProCaps: CapSpec[] = [
+  ['11" · 256 GB', 1229], ['11" · 512 GB', 1479], ['11" · 1 TB', 1979], ['11" · 2 TB', 2479, null, 'bajo-pedido', 'Recíbelo en 5-7 días'],
+  ['13" · 256 GB', 1599], ['13" · 512 GB', 1849], ['13" · 1 TB', 2349], ['13" · 2 TB', 2849, null, 'bajo-pedido', 'Recíbelo en 5-7 días'],
+]
+const iPadAirCaps: CapSpec[] = [
+  ['11" · 128 GB', 719], ['11" · 256 GB', 869], ['11" · 512 GB', 1119], ['11" · 1 TB', 1619],
+  ['13" · 128 GB', 969], ['13" · 256 GB', 1119], ['13" · 512 GB', 1369], ['13" · 1 TB', 1869],
+]
 
 export const ipadModels: Model[] = [
   {
-    slug: 'ipad-pro-13',
+    slug: 'ipad-pro',
     family: 'ipad',
-    name: 'iPad Pro 13" M5',
-    tagline: 'La pantalla Ultra Retina XDR OLED más grande, con el chip M5.',
-    fromPrice: 1599,
-    financeFrom: { monthly: 67, months: 24 },
-    colors: buildColors([
-      { slug: 'negro', name: 'Negro espacial', hex: '#2a2a2c', image: `${IMG}/ipad-pro-13-negro.png`, caps: [['256 GB', 1599], ['512 GB', 1849], ['1 TB', 2349], ['2 TB', 2849, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-      { slug: 'plata', name: 'Plata', hex: '#e3e4e6', image: `${IMG}/ipad-pro-13-plata.png`, caps: [['256 GB', 1599], ['512 GB', 1849], ['1 TB', 2349], ['2 TB', 2849, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-    ]),
-    specs: [
-      { label: 'Chip', value: 'Apple M5' },
-      { label: 'Pantalla', value: 'Ultra Retina XDR OLED 13"' },
-      { label: 'Autenticación', value: 'Face ID' },
-      { label: 'Conector', value: 'Thunderbolt / USB-4' },
-      { label: 'Accesorios', value: 'Apple Pencil Pro' },
-    ],
-    highlights: ['Chip Apple M5', 'Pantalla Ultra Retina XDR OLED', 'Face ID', 'Compatible con Apple Pencil Pro', 'Thunderbolt / USB-4'],
-  },
-  {
-    slug: 'ipad-pro-11',
-    family: 'ipad',
-    name: 'iPad Pro 11" M5',
-    tagline: 'La pantalla Ultra Retina XDR OLED y el chip M5, en un iPad increíblemente fino.',
+    name: 'iPad Pro M5',
+    tagline: 'Pantalla Ultra Retina XDR OLED y chip M5. Disponible en 11" y 13".',
     fromPrice: 1229,
     financeFrom: { monthly: 51, months: 24 },
     colors: buildColors([
-      { slug: 'negro', name: 'Negro espacial', hex: '#2a2a2c', image: `${IMG}/ipad-pro-11-negro.png`, caps: [['256 GB', 1229], ['512 GB', 1479], ['1 TB', 1979], ['2 TB', 2479, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-      { slug: 'plata', name: 'Plata', hex: '#e3e4e6', image: `${IMG}/ipad-pro-11-plata.png`, caps: [['256 GB', 1229], ['512 GB', 1479], ['1 TB', 1979], ['2 TB', 2479, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'negro', name: 'Negro espacial', hex: '#2a2a2c', image: `${IMG}/ipad-pro-13-negro.png`, caps: iPadProCaps },
+      { slug: 'plata', name: 'Plata', hex: '#e3e4e6', image: `${IMG}/ipad-pro-13-plata.png`, caps: iPadProCaps },
     ]),
     specs: [
       { label: 'Chip', value: 'Apple M5' },
-      { label: 'Pantalla', value: 'Ultra Retina XDR OLED 11"' },
+      { label: 'Pantalla', value: 'Ultra Retina XDR OLED (11" o 13")' },
       { label: 'Autenticación', value: 'Face ID' },
       { label: 'Conector', value: 'Thunderbolt / USB-4' },
       { label: 'Accesorios', value: 'Apple Pencil Pro' },
     ],
-    highlights: ['Chip Apple M5', 'Pantalla Ultra Retina XDR OLED', 'Face ID', 'Compatible con Apple Pencil Pro', 'Thunderbolt / USB-4'],
+    highlights: ['Chip Apple M5', 'Ultra Retina XDR OLED', 'Dos tamaños: 11" y 13"', 'Face ID', 'Thunderbolt / USB-4'],
   },
   {
-    slug: 'ipad-air-13',
+    slug: 'ipad-air',
     family: 'ipad',
-    name: 'iPad Air 13" M4',
-    tagline: 'La versatilidad del Air en una pantalla Liquid Retina de 13".',
-    fromPrice: 969,
-    financeFrom: { monthly: 40, months: 24 },
-    colors: iPadAirColors(13),
-    specs: [
-      { label: 'Chip', value: 'Apple M4' },
-      { label: 'Pantalla', value: 'Liquid Retina 13"' },
-      { label: 'Autenticación', value: 'Touch ID' },
-      { label: 'Conector', value: 'USB-C' },
-      { label: 'Accesorios', value: 'Apple Pencil Pro' },
-    ],
-    highlights: ['Chip Apple M4', 'Pantalla Liquid Retina 13"', 'Touch ID', 'Compatible con Apple Pencil Pro', 'Cuatro colores'],
-  },
-  {
-    slug: 'ipad-air-11',
-    family: 'ipad',
-    name: 'iPad Air 11" M4',
-    tagline: 'Ligero, potente y con muchísimo color.',
+    name: 'iPad Air M4',
+    tagline: 'Ligero, potente y con muchísimo color. Disponible en 11" y 13".',
     fromPrice: 719,
     financeFrom: { monthly: 30, months: 24 },
-    colors: iPadAirColors(11),
+    colors: buildColors([
+      { slug: 'azul', name: 'Azul', hex: '#a9c3d6', image: `${IMG}/ipad-air-13-azul.png`, caps: iPadAirCaps },
+      { slug: 'purpura', name: 'Púrpura', hex: '#b7a7d6', image: `${IMG}/ipad-air-13-purpura.png`, caps: iPadAirCaps },
+      { slug: 'blanco', name: 'Blanco estrella', hex: '#ded9cf', image: `${IMG}/ipad-air-13-blanco.png`, caps: iPadAirCaps },
+      { slug: 'gris', name: 'Gris espacial', hex: '#8e8e93', image: `${IMG}/ipad-air-13-gris.png`, caps: iPadAirCaps },
+    ]),
     specs: [
       { label: 'Chip', value: 'Apple M4' },
-      { label: 'Pantalla', value: 'Liquid Retina 11"' },
+      { label: 'Pantalla', value: 'Liquid Retina (11" o 13")' },
       { label: 'Autenticación', value: 'Touch ID' },
       { label: 'Conector', value: 'USB-C' },
       { label: 'Accesorios', value: 'Apple Pencil Pro' },
     ],
-    highlights: ['Chip Apple M4', 'Pantalla Liquid Retina 11"', 'Touch ID', 'Compatible con Apple Pencil Pro', 'Cuatro colores'],
+    highlights: ['Chip Apple M4', 'Dos tamaños: 11" y 13"', 'Cuatro colores', 'Touch ID', 'Apple Pencil Pro'],
   },
   {
     slug: 'ipad-mini',
