@@ -397,9 +397,9 @@ export const watchModels: Model[] = [
     fromPrice: 909,
     financeFrom: { monthly: 38, months: 24 },
     colors: buildColors([
-      { slug: 'negro-alpine', name: 'Titanio negro · Correa Alpine', hex: '#2a2a2c', image: `${IMG}/watch-ultra-alpine.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
+      { slug: 'natural-alpine', name: 'Titanio natural · Correa Alpine', hex: '#d0cec7', image: `${IMG}/watch-ultra-alpine.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
       { slug: 'negro-ocean', name: 'Titanio negro · Correa Ocean', hex: '#1c1c1e', image: `${IMG}/watch-ultra-ocean.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
-      { slug: 'natural-alpine', name: 'Titanio natural · Correa Alpine', hex: '#d0cec7', image: `${IMG}/watch-ultra-alpine.webp`, caps: [['49 mm · GPS + Cellular', 909, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'natural-hero', name: 'Titanio natural · Correa Ocean verde', hex: '#a8d99f', image: `${IMG}/watch-ultra-3-hero.webp`, caps: [['49 mm · GPS + Cellular', 909, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
     ]),
     specs: [
       { label: 'Caja', value: 'Titanio 49 mm' },
@@ -407,9 +407,9 @@ export const watchModels: Model[] = [
       { label: 'Chip', value: 'S11 SiP' },
       { label: 'Autonomía', value: 'Hasta 42 h (72 h en bajo consumo)' },
       { label: 'Resistencia', value: 'WR100 · EN13319 · MIL-STD-810H' },
-      { label: 'Conectividad', value: 'GPS doble frecuencia · Cellular' },
+      { label: 'Conectividad', value: 'GPS doble frecuencia · Cellular · Satélite' },
     ],
-    highlights: ['Caja de titanio 49 mm', 'GPS de doble frecuencia', 'Hasta 42 h de batería', 'Botón de acción configurable', 'Sensor de profundidad'],
+    highlights: ['Caja de titanio 49 mm', 'GPS de doble frecuencia', 'Hasta 42 h de batería', 'Mensajes vía satélite', 'Botón de acción configurable'],
   },
   {
     slug: 'watch-series-11',
@@ -419,13 +419,13 @@ export const watchModels: Model[] = [
     fromPrice: 459,
     financeFrom: { monthly: 19, months: 24 },
     colors: buildColors([
-      { slug: 'alum-negro', name: 'Aluminio negro azabache', hex: '#1c1c1e', image: `${IMG}/watch-s11-negro.webp`, caps: s11AlumCaps },
-      { slug: 'alum-rosa', name: 'Aluminio oro rosa', hex: '#dbb6b0', image: `${IMG}/watch-s11-rosa.webp`, caps: s11AlumCaps },
-      { slug: 'alum-plata', name: 'Aluminio plata', hex: '#e3e4e6', image: `${IMG}/watch-s11-plata.webp`, caps: s11AlumCaps },
-      { slug: 'alum-gris', name: 'Aluminio gris espacial', hex: '#8e8e93', image: `${IMG}/watch-s11-gris.webp`, caps: s11AlumCaps },
-      { slug: 'titan-natural', name: 'Titanio natural', hex: '#d0cec7', image: `${IMG}/watch-s11-plata.webp`, caps: s11TitanCaps },
-      { slug: 'titan-oro', name: 'Titanio oro', hex: '#c4a86e', image: `${IMG}/watch-s11-rosa.webp`, caps: s11TitanCaps },
-      { slug: 'titan-slate', name: 'Titanio slate', hex: '#4a4a4c', image: `${IMG}/watch-s11-negro.webp`, caps: s11TitanCaps },
+      { slug: 'alum-jet-black', name: 'Aluminio negro azabache', hex: '#1c1c1e', image: `${IMG}/watch-s11-alum-jet-black.webp`, caps: s11AlumCaps },
+      { slug: 'alum-rose-gold', name: 'Aluminio oro rosa', hex: '#dbb6b0', image: `${IMG}/watch-s11-alum-rose-gold.webp`, caps: s11AlumCaps },
+      { slug: 'alum-silver', name: 'Aluminio plata', hex: '#e3e4e6', image: `${IMG}/watch-s11-alum-silver.webp`, caps: s11AlumCaps },
+      { slug: 'alum-space-gray', name: 'Aluminio gris espacial', hex: '#8e8e93', image: `${IMG}/watch-s11-alum-space-gray.webp`, caps: s11AlumCaps },
+      { slug: 'titan-natural', name: 'Titanio natural', hex: '#d0cec7', image: `${IMG}/watch-s11-titan-natural.webp`, caps: s11TitanCaps },
+      { slug: 'titan-gold', name: 'Titanio oro', hex: '#c4a86e', image: `${IMG}/watch-s11-titan-gold.webp`, caps: s11TitanCaps },
+      { slug: 'titan-slate', name: 'Titanio slate', hex: '#4a4a4c', image: `${IMG}/watch-s11-titan-slate.webp`, caps: s11TitanCaps },
     ]),
     specs: [
       { label: 'Caja', value: 'Aluminio o titanio (42 o 46 mm)' },
@@ -451,12 +451,7 @@ export const watchModels: Model[] = [
       ] },
       { slug: 'blanco-estrella', name: 'Aluminio blanco estrella', hex: '#ded8ca', image: `${IMG}/watch-se-3-hero.webp`, caps: [
         ['40 mm · GPS', 279], ['40 mm · GPS + Cellular', 329],
-        ['44 mm · GPS', 309], ['44 mm · GPS + Cellular', 359],
-      ] },
-      { slug: 'plata', name: 'Aluminio plata', hex: '#e3e4e6', image: `${IMG}/watch-se-3-hero.webp`, caps: [
-        ['40 mm · GPS', 279], ['40 mm · GPS + Cellular', 329],
-        ['44 mm · GPS', 309, null, 'bajo-pedido', 'Recíbelo en 5-7 días'],
-        ['44 mm · GPS + Cellular', 359, null, 'bajo-pedido', 'Recíbelo en 5-7 días'],
+        ['44 mm · GPS', 309], ['44 mm · GPS + Cellular', 359, null, 'bajo-pedido', 'Recíbelo en 5-7 días'],
       ] },
     ]),
     specs: [
