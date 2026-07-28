@@ -128,7 +128,7 @@ export function Header() {
     <>
       <header className="sticky top-0 z-40">
         {/* Barra superior de servicios — sólo escritorio; en móvil viven en el menú */}
-        <div className="hidden bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] text-ink sm:block">
+        <div className="hidden bg-[#7ba9b8] text-white sm:block">
           <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium">
             {utilityLinks.map((link) => (
               <Link
