@@ -207,7 +207,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                     <ProductImage
                       src={firstColor.image}
                       alt={`${model.name} ${firstColor.name}`}
-                      ratio="4 / 3"
+                      ratio="1 / 1"
                       bgColor={firstColor.imageBg}
                       pad={!firstColor.imageBg}
                     />
