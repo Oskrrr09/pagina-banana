@@ -356,7 +356,7 @@ export const ipadModels: Model[] = [
   {
     slug: 'ipad-a16',
     family: 'ipad',
-    name: 'iPad',
+    name: 'iPad A16',
     tagline: 'El iPad para el día a día, en cuatro colores vivos.',
     fromPrice: 409,
     financeFrom: { monthly: 17, months: 24 },
