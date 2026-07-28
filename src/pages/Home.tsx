@@ -158,7 +158,7 @@ export function Home() {
               className="col-span-2 row-start-1 aspect-square w-full object-contain drop-shadow-xl"
             />
             <img
-              src={`${import.meta.env.BASE_URL}img/products/watch-ultra-alpine.webp`}
+              src={`${import.meta.env.BASE_URL}img/products/watch-ultra-3-natural-alpine.webp`}
               alt=""
               width={1080}
               height={1080}

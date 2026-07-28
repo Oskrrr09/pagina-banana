@@ -397,9 +397,11 @@ export const watchModels: Model[] = [
     fromPrice: 909,
     financeFrom: { monthly: 38, months: 24 },
     colors: buildColors([
-      { slug: 'natural-alpine', name: 'Titanio natural · Correa Alpine', hex: '#d0cec7', image: `${IMG}/watch-ultra-alpine.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
-      { slug: 'negro-ocean', name: 'Titanio negro · Correa Ocean', hex: '#1c1c1e', image: `${IMG}/watch-ultra-ocean.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
-      { slug: 'natural-hero', name: 'Titanio natural · Correa Ocean verde', hex: '#a8d99f', image: `${IMG}/watch-ultra-3-hero.webp`, caps: [['49 mm · GPS + Cellular', 909, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'natural-alpine', name: 'Titanio natural · Correa Alpine azul', hex: '#d0cec7', image: `${IMG}/watch-ultra-3-natural-alpine.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
+      { slug: 'natural-ocean', name: 'Titanio natural · Correa Ocean azul', hex: '#a9c3d6', image: `${IMG}/watch-ultra-3-natural-ocean.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
+      { slug: 'natural-milanese', name: 'Titanio natural · Milanese Loop', hex: '#c7c4bd', image: `${IMG}/watch-ultra-3-natural-milanese.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
+      { slug: 'negro-alpine', name: 'Titanio negro · Correa Alpine negra', hex: '#3a3a3c', image: `${IMG}/watch-ultra-3-black-alpine.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
+      { slug: 'negro-ocean', name: 'Titanio negro · Correa Ocean negra', hex: '#1c1c1e', image: `${IMG}/watch-ultra-3-black-ocean.webp`, caps: [['49 mm · GPS + Cellular', 909, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
     ]),
     specs: [
       { label: 'Caja', value: 'Titanio 49 mm' },
@@ -445,11 +447,11 @@ export const watchModels: Model[] = [
     fromPrice: 279,
     financeFrom: { monthly: 12, months: 24 },
     colors: buildColors([
-      { slug: 'medianoche', name: 'Aluminio medianoche', hex: '#2c3138', image: `${IMG}/watch-se-3-hero.webp`, caps: [
+      { slug: 'medianoche', name: 'Aluminio medianoche', hex: '#2c3138', image: `${IMG}/watch-se-3-midnight.webp`, caps: [
         ['40 mm · GPS', 279], ['40 mm · GPS + Cellular', 329],
         ['44 mm · GPS', 309], ['44 mm · GPS + Cellular', 359],
       ] },
-      { slug: 'blanco-estrella', name: 'Aluminio blanco estrella', hex: '#ded8ca', image: `${IMG}/watch-se-3-hero.webp`, caps: [
+      { slug: 'blanco-estrella', name: 'Aluminio blanco estrella', hex: '#ded8ca', image: `${IMG}/watch-se-3-starlight.webp`, caps: [
         ['40 mm · GPS', 279], ['40 mm · GPS + Cellular', 329],
         ['44 mm · GPS', 309], ['44 mm · GPS + Cellular', 359, null, 'bajo-pedido', 'Recíbelo en 5-7 días'],
       ] },

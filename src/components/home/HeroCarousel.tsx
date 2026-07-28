@@ -62,7 +62,7 @@ const slides: Slide[] = [
     subtitle: 'desde 909 €',
     cta: 'Descubrir',
     to: '/apple-watch/watch-ultra-3',
-    image: `${IMG}/watch-ultra-alpine.webp`,
+    image: `${IMG}/watch-ultra-3-natural-alpine.webp`,
     bg: 'linear-gradient(135deg,#131413 0%,#25231e 50%,#3a3128 100%)',
     text: 'light',
   },
