@@ -14,6 +14,7 @@ import { HeroCarousel } from '../components/home/HeroCarousel'
 import { MobileScroller } from '../components/ui/MobileScroller'
 import { families, iphoneModels, modelsByFamily } from '../data/products'
 import { homeFaq } from '../data/content'
+import { claim } from '../data/commercialClaims'
 import { euro } from '../lib/format'
 
 export function Home() {
@@ -26,25 +27,33 @@ export function Home() {
       {/* 02 — Hero carrusel rotativo */}
       <HeroCarousel />
 
-      {/* 02a — Franja de confianza */}
+      {/* 02a — Franja de confianza. Todas las afirmaciones vienen del módulo
+             central commercialClaims.ts; las marcadas como demo llevan un
+             aviso discreto para no presentarlas como promociones activas. */}
       <section className="border-y border-line bg-neutral">
-        <Container className="grid grid-cols-2 gap-6 py-6 md:grid-cols-4">
-          {[
-            { icon: 'store', title: '5 tiendas en Canarias', note: 'Recogida gratis y taller' },
-            { icon: 'truck', title: 'Envío 24-48 h', note: 'Con seguimiento a toda Canarias' },
-            { icon: 'credit-card', title: 'Financiación al 0 %', note: 'Hasta 24 meses' },
-            { icon: 'shield', title: 'Servicio técnico oficial', note: 'Especialistas Apple' },
-          ].map((item) => (
-            <div key={item.title} className="flex items-center gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-banana text-ink">
-                <Icon name={item.icon} size={20} />
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-ink">{item.title}</p>
-                <p className="truncate text-xs text-muted">{item.note}</p>
-              </div>
-            </div>
-          ))}
+        <Container className="py-6">
+          <ul className="grid grid-cols-2 gap-6 md:grid-cols-4">
+            {[
+              claim('tiendasCanarias'),
+              claim('envio24'),
+              claim('financiacion0'),
+              claim('soporteOficial'),
+            ].map((c) => (
+              <li key={c.id} className="flex items-center gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-banana text-ink">
+                  <Icon name={c.icon ?? 'info'} size={20} />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-ink">{c.title}</p>
+                  <p className="truncate text-xs text-muted">{c.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[11px] text-muted">
+            Algunas condiciones son <span className="italic">demostrativas</span>: pendientes de
+            validación con Banana Computer.
+          </p>
         </Container>
       </section>
 
@@ -178,15 +187,15 @@ export function Home() {
           itemClass="w-[65vw] sm:w-auto"
         >
           {[
-            { label: 'Fundas iPhone', icon: 'shield', bg: '#dbeaf9', ring: '#7fb5e6' },
-            { label: 'Carga y MagSafe', icon: 'credit-card', bg: '#fff4c9', ring: '#ffd76b' },
-            { label: 'Correas Watch', icon: 'refresh', bg: '#ffe0e7', ring: '#f0a3b8' },
-            { label: 'Teclados y ratones', icon: 'compare', bg: '#e6dff8', ring: '#a992e0' },
-            { label: 'Audio y sonido', icon: 'chat', bg: '#dbf1e5', ring: '#7fc9a2' },
+            { label: 'Fundas iPhone', icon: 'shield', bg: '#dbeaf9', ring: '#7fb5e6', to: '/buscar?q=fundas' },
+            { label: 'Carga y MagSafe', icon: 'credit-card', bg: '#fff4c9', ring: '#ffd76b', to: '/buscar?q=magsafe' },
+            { label: 'Correas Watch', icon: 'refresh', bg: '#ffe0e7', ring: '#f0a3b8', to: '/buscar?q=correas' },
+            { label: 'Teclados y ratones', icon: 'compare', bg: '#e6dff8', ring: '#a992e0', to: '/buscar?q=teclados' },
+            { label: 'Audio y sonido', icon: 'chat', bg: '#dbf1e5', ring: '#7fc9a2', to: '/buscar?q=audio' },
           ].map((cat) => (
             <Link
               key={cat.label}
-              to="/iphone"
+              to={cat.to}
               className="group flex h-full flex-col items-center justify-center gap-3 rounded-[16px] border border-line bg-surface p-6 text-center transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]"
             >
               <span
