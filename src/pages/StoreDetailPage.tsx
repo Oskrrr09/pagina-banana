@@ -18,15 +18,19 @@ export function StoreDetailPage() {
   const open = isOpenNow(store)
   // Todos los servicios de la tienda: los comunes + los propios (p. ej. técnico).
   const services = [...UNIVERSAL_SERVICES, ...store.services]
-  const mapSrc = `https://www.google.com/maps?q=${store.coords.lat},${store.coords.lng}(${encodeURIComponent(store.name)})&z=17&output=embed`
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${store.coords.lat},${store.coords.lng}`
+  // Búsqueda por nombre real ("Banana Safari", "Banana Mesa y López"…) para
+  // que Google Maps resuelva la ubicación exacta del local.
+  const [zoom, setZoom] = useState(17)
+  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(store.name)}&z=${zoom}&output=embed`
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.name)}`
 
   return (
     <Container className="py-8">
       {/* 1 — Cabecera de tienda con mapa */}
       <div className="grid gap-8 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-[16px] border border-line">
+        <div className="relative overflow-hidden rounded-[16px] border border-line">
           <iframe
+            key={mapSrc}
             title={`Mapa de ${store.name}`}
             src={mapSrc}
             className="block h-[280px] w-full sm:h-[340px]"
@@ -34,6 +38,27 @@ export function StoreDetailPage() {
             referrerPolicy="no-referrer-when-downgrade"
             allowFullScreen
           />
+          <div className="absolute right-3 top-3 flex flex-col overflow-hidden rounded-[10px] border border-black/10 bg-white shadow-[var(--shadow-raised)]">
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.min(20, z + 1))}
+              aria-label="Aumentar zoom"
+              disabled={zoom >= 20}
+              className="grid h-10 w-10 place-items-center text-lg font-bold text-ink transition-colors hover:bg-neutral disabled:cursor-not-allowed disabled:text-muted/50"
+            >
+              +
+            </button>
+            <span className="h-px w-full bg-line" />
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.max(3, z - 1))}
+              aria-label="Reducir zoom"
+              disabled={zoom <= 3}
+              className="grid h-10 w-10 place-items-center text-lg font-bold text-ink transition-colors hover:bg-neutral disabled:cursor-not-allowed disabled:text-muted/50"
+            >
+              −
+            </button>
+          </div>
         </div>
         <div>
           <div className="flex flex-wrap items-center gap-3">
