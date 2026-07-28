@@ -126,17 +126,17 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-40">
-        {/* Barra promocional superior — mensajes clave del comercio */}
-        <div className="bg-ink text-white">
-          <div className="mx-auto flex h-8 max-w-7xl items-center justify-center gap-6 px-4 text-[12px] font-medium text-white/85">
+        {/* Barra promocional superior — degradado bandera de Canarias, mismo del bloque de ofertas */}
+        <div className="bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] text-ink">
+          <div className="mx-auto flex h-8 max-w-7xl items-center justify-center gap-6 px-4 text-[12px] font-medium">
             <span className="hidden items-center gap-1.5 sm:inline-flex">
-              <Icon name="truck" size={14} className="text-banana" /> Envío gratis a toda Canarias en pedidos +50 €
+              <Icon name="truck" size={14} /> Envío gratis a toda Canarias en pedidos +50 €
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Icon name="credit-card" size={14} className="text-banana" /> Financiación al 0 % hasta 24 meses
+              <Icon name="credit-card" size={14} /> Financiación al 0 % hasta 24 meses
             </span>
             <span className="hidden items-center gap-1.5 md:inline-flex">
-              <Icon name="store" size={14} className="text-banana" /> Recogida gratis en 5 tiendas
+              <Icon name="store" size={14} /> Recogida gratis en 5 tiendas
             </span>
           </div>
         </div>
