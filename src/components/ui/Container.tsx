@@ -5,6 +5,9 @@ export function Container({ children, className = '' }: { children: ReactNode; c
 }
 
 // Sección con fondo alterno opcional (§5.1: fondo neutro para secciones alternas).
+// `content-visibility: auto` permite al navegador saltarse el pintado y layout
+// de secciones fuera del viewport. `contain-intrinsic-size` reserva una altura
+// estimada para evitar saltos del scrollbar.
 export function Section({
   children,
   alt = false,
@@ -17,7 +20,11 @@ export function Section({
   id?: string
 }) {
   return (
-    <section id={id} className={`${alt ? 'bg-neutral' : 'bg-surface'} py-14 sm:py-20 ${className}`}>
+    <section
+      id={id}
+      className={`${alt ? 'bg-neutral' : 'bg-surface'} py-14 sm:py-20 ${className}`}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '800px' }}
+    >
       <Container>{children}</Container>
     </section>
   )

@@ -149,7 +149,7 @@ export function Home() {
           </div>
           <div className="relative mx-auto grid w-full max-w-md grid-cols-3 items-end gap-3">
             <img
-              src={`${import.meta.env.BASE_URL}img/products/17pro-plata.png`}
+              src={`${import.meta.env.BASE_URL}img/products/17pro-plata.webp`}
               alt=""
               width={1080}
               height={1080}
@@ -158,7 +158,7 @@ export function Home() {
               className="col-span-2 row-start-1 aspect-square w-full object-contain drop-shadow-xl"
             />
             <img
-              src={`${import.meta.env.BASE_URL}img/products/watch-ultra-alpine.png`}
+              src={`${import.meta.env.BASE_URL}img/products/watch-ultra-alpine.webp`}
               alt=""
               width={1080}
               height={1080}

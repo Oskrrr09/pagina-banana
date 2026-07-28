@@ -141,10 +141,11 @@ export function Header() {
           </div>
         </div>
 
-        {/* Cabecera principal — glass amarillo con sombra al scrollear */}
+        {/* Cabecera principal — amarillo casi opaco (más barato que backdrop-blur
+             en scroll) con sombra al scrollear */}
         <div
-          className={`bg-banana/90 backdrop-blur-md transition-shadow duration-300 ${
-            scrolled ? 'shadow-[0_6px_20px_-8px_rgba(0,0,0,0.15)]' : ''
+          className={`bg-banana/[0.97] transition-shadow duration-300 ${
+            scrolled ? 'shadow-[0_6px_20px_-8px_rgba(0,0,0,0.18)]' : ''
           }`}
         >
         <div className="banana-header-bar flex h-16 w-full items-center px-6 sm:px-8 lg:px-12">
