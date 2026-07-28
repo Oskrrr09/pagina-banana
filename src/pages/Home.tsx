@@ -75,8 +75,11 @@ export function Home() {
                       <img
                         src={cover}
                         alt={fam.name}
-                        className="block h-full w-full object-contain object-center transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.08]"
+                        width={200}
+                        height={200}
                         loading="lazy"
+                        decoding="async"
+                        className="block h-full w-full object-contain object-center transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.08]"
                       />
                     ) : (
                       <Placeholder label={fam.name} ratio="1 / 1" />
@@ -148,14 +151,20 @@ export function Home() {
             <img
               src={`${import.meta.env.BASE_URL}img/products/17pro-plata.png`}
               alt=""
-              className="col-span-2 row-start-1 aspect-square w-full object-contain drop-shadow-xl"
+              width={1080}
+              height={1080}
               loading="lazy"
+              decoding="async"
+              className="col-span-2 row-start-1 aspect-square w-full object-contain drop-shadow-xl"
             />
             <img
               src={`${import.meta.env.BASE_URL}img/products/watch-ultra-alpine.png`}
               alt=""
-              className="col-start-3 row-start-1 aspect-square w-full self-center object-contain drop-shadow-xl"
+              width={1080}
+              height={1080}
               loading="lazy"
+              decoding="async"
+              className="col-start-3 row-start-1 aspect-square w-full self-center object-contain drop-shadow-xl"
             />
           </div>
         </Container>

@@ -171,6 +171,11 @@ export function VariantPage() {
                 key={color.color}
                 src={color.image}
                 alt={`${model.name} · ${color.name}`}
+                width={1080}
+                height={1080}
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 initial={{ opacity: 0, scale: 0.94 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.04 }}

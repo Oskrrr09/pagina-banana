@@ -166,8 +166,11 @@ export function HeroCarousel() {
               <img
                 src={slide.image}
                 alt={slide.eyebrow}
+                width={1080}
+                height={1080}
                 className="h-64 max-h-[420px] w-auto object-contain sm:h-80 md:h-[400px] lg:h-[440px]"
                 loading={index === 0 ? 'eager' : 'lazy'}
+                decoding="async"
                 fetchPriority={index === 0 ? 'high' : 'auto'}
               />
             </motion.div>

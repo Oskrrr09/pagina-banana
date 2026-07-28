@@ -61,6 +61,11 @@ export function FamilyPage() {
             <img
               src={heroImage}
               alt={`Gama ${family.name} en Banana`}
+              width={1080}
+              height={1080}
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
               className="mx-auto w-full max-w-sm rounded-[20px] bg-neutral p-6"
             />
           </div>
@@ -148,6 +153,10 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                       <img
                         src={model.colors[0].image}
                         alt=""
+                        width={128}
+                        height={128}
+                        loading="lazy"
+                        decoding="async"
                         className="block h-full w-full object-contain object-center transition-transform duration-300 group-hover:scale-105"
                       />
                     </span>
