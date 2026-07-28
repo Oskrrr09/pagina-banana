@@ -15,6 +15,7 @@ import { PlanRenovePage } from './pages/PlanRenovePage'
 import { StoresPage } from './pages/StoresPage'
 import { StoreDetailPage } from './pages/StoreDetailPage'
 import { SupportPage } from './pages/SupportPage'
+import { ServiceTechnicalPage } from './pages/ServiceTechnicalPage'
 import { FavoritesPage } from './pages/FavoritesPage'
 import { NotFound } from './pages/NotFound'
 
@@ -36,6 +37,7 @@ export function App() {
           <Route path="/tiendas" element={<StoresPage />} />
           <Route path="/tiendas/:slug" element={<StoreDetailPage />} />
           <Route path="/soporte" element={<SupportPage />} />
+          <Route path="/servicio-tecnico" element={<ServiceTechnicalPage />} />
           <Route path="/favoritos" element={<FavoritesPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>

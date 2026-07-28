@@ -101,7 +101,8 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 | `/checkout/3` | Confirmación (solo accesible con pedido válido) |
 | `/servicios` | Servicios de Banana (contenido demostrativo) |
 | `/plan-renove` | Página con timeline oficial de 4 pasos con Foxway, sin precios ni tasador propio |
-| `/soporte` | Centro de soporte + bloque **Servicio Técnico Autorizado** con condiciones operativas |
+| `/soporte` | Centro de soporte (buscador, FAQ y acceso al Servicio Técnico) |
+| `/servicio-tecnico` | **Servicio Técnico Autorizado**: sin cita, checklist, entrega, garantía / fuera de garantía y plazos orientativos |
 | `/tiendas`, `/tiendas/:slug` | Google Maps embed con las 5 tiendas |
 | `/favoritos` | Favoritos del usuario |
 | `*` | 404 amable |
@@ -121,7 +122,7 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 
 Todo esto es demostrativo: no hay backend, ni pagos, ni emails.
 
-## Servicio Técnico Autorizado (bloque en `/soporte`)
+## Servicio Técnico Autorizado (página propia `/servicio-tecnico`)
 
 Información operativa demostrativa facilitada para el proyecto —
 sin conexión con un sistema real de gestión de reparaciones:
@@ -129,10 +130,11 @@ sin conexión con un sistema real de gestión de reparaciones:
 - **Sin cita previa.** Puedes acudir durante el horario de apertura.
   Antes de entregar el dispositivo, realiza una copia de seguridad y
   desactiva las funciones de seguridad necesarias.
-- **Prepara tu dispositivo:** copia de seguridad actualizada,
-  desactiva "Buscar" (mi iPhone / mi iPad / mi Mac) y desactiva la
-  Protección del dispositivo en caso de robo o el modo antirrobo
-  cuando corresponda.
+- **Prepara tu dispositivo** en este orden: 1) copia de seguridad
+  actualizada; 2) desactiva la Protección del dispositivo en caso de
+  robo o el modo antirrobo cuando corresponda; 3) desactiva "Buscar"
+  (mi iPhone / mi iPad / mi Mac). El modo antirrobo debe estar
+  desactivado antes que "Buscar".
 - **Lugares de entrega:** entrega directa en un establecimiento
   Banana que gestione el servicio técnico, o dejarlo en cualquier
   otra tienda Banana para que sea recogido y enviado al SAT.
@@ -152,16 +154,21 @@ sin conexión con un sistema real de gestión de reparaciones:
 - No implementa reserva de cita, calendario, pago online de los
   35 €, seguimiento real de reparaciones ni recogida a domicilio.
 
-## Plan Renove — timeline oficial con Foxway (bloque en `/plan-renove`)
+## Plan Renove — solo en tienda física (bloque en `/plan-renove`)
 
-- Timeline de cuatro pasos: estimación inicial en Foxway → entrega
-  del dispositivo → revisión y valoración final por Foxway →
-  compensación conforme a las condiciones oficiales de Banana
-  Computer y Foxway.
+- **El Plan Renove solo se gestiona en tiendas físicas de Banana
+  Computer.** No forma parte del proceso de compra online; el paso
+  por tienda es indispensable para iniciarlo y aplicarlo sobre una
+  nueva compra.
+- Timeline de cuatro pasos: visitar una tienda → estimación inicial
+  → revisión y valoración final presencial → compensación en la
+  nueva compra.
 - **Sin precios, sin ejemplos de tasación, sin tasador propio.** La
-  estimación inicial puede variar tras la revisión de Foxway.
-- Cualquier integración real requiere acceso o autorización oficial
-  de Banana / Foxway.
+  estimación inicial es orientativa; el valor real lo confirma un
+  especialista en tienda.
+- El texto no nombra al partner externo que realiza la tasación
+  final: cualquier integración real requiere acceso o autorización
+  oficial de Banana Computer.
 
 ## Contenido comercial y testimonios
 
@@ -257,7 +264,7 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (45 pruebas, medido con `npm run test:e2e` — 44 en
+Suites actuales (48 pruebas, medido con `npm run test:e2e` — 47 en
 `chromium` + 1 en `mobile` etiquetada `@mobile`):
 
 - `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que

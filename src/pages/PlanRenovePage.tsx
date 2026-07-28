@@ -6,30 +6,31 @@ import { Reveal } from '../components/ui/Reveal'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { planRenoveDevices, planRenoveSteps, planRenoveFaq } from '../data/content'
 
-// Pasos oficiales del flujo con Foxway. No se muestran precios, ni tasador
-// propio, ni ejemplos de tasaciones: la valoración final la realiza Foxway y
-// cualquier integración real necesita acceso o autorización oficial de
-// Banana/Foxway.
+// Pasos del Plan Renove. No se muestran precios ni tasador propio, y no se
+// nombra al partner externo que realiza la valoración final. El Plan Renove
+// **solo está disponible en tiendas físicas de Banana Computer**: no forma
+// parte del flujo de compra online, así que el paso por tienda es
+// indispensable.
 const RENOVE_STEPS: Array<{ title: string; body: string }> = [
+  {
+    title: 'Visita una tienda Banana',
+    body:
+      'El Plan Renove solo se gestiona en tienda física. Acude a cualquiera de nuestras tiendas en Canarias con el dispositivo que quieres renovar.',
+  },
   {
     title: 'Estimación inicial',
     body:
-      'Accede al proceso oficial de Foxway y completa la información solicitada para obtener una estimación inicial.',
-  },
-  {
-    title: 'Entrega del dispositivo',
-    body:
-      'Sigue las indicaciones facilitadas para enviar o entregar el dispositivo que quieres renovar.',
+      'En tienda se recoge la información básica del equipo y se realiza una estimación inicial orientativa.',
   },
   {
     title: 'Revisión y valoración final',
     body:
-      'Foxway revisará el estado real del dispositivo. La valoración final puede ser diferente de la estimación inicial.',
+      'El dispositivo se revisa para confirmar su estado real. La valoración final puede ser diferente de la estimación inicial.',
   },
   {
-    title: 'Compensación',
+    title: 'Compensación en tu nueva compra',
     body:
-      'La compensación se aplicará conforme a las condiciones oficiales de Banana Computer y Foxway.',
+      'La compensación se aplica sobre la compra de tu nuevo Apple realizada en tienda, conforme a las condiciones oficiales de Banana Computer.',
   },
 ]
 
@@ -45,26 +46,37 @@ export function PlanRenovePage() {
             Tu Apple actual vale más de lo que crees. Entrégalo y ahorra en tu próxima compra.
           </p>
 
-          {/* Aviso destacado visualmente, no solo en letra pequeña */}
-          <div className="mt-6 flex items-start gap-3 rounded-[12px] border border-backorder/40 bg-backorder-050 p-4">
-            <Icon name="info" className="mt-0.5 shrink-0 text-backorder" />
-            <p className="text-sm text-ink">
-              <strong>La tasación final es siempre presencial.</strong> Cualquier importe mostrado online es solo
-              orientativo; el valor real lo confirma un especialista en tienda.
-            </p>
+          {/* Aviso doble: sólo en tienda física y valor final presencial */}
+          <div className="mt-6 space-y-3">
+            <div className="flex items-start gap-3 rounded-[12px] border border-backorder/40 bg-backorder-050 p-4">
+              <Icon name="store" className="mt-0.5 shrink-0 text-backorder" aria-hidden="true" />
+              <p className="text-sm text-ink">
+                <strong>El Plan Renove solo está disponible en tienda física.</strong> No forma
+                parte del proceso de compra online; el paso por tienda es indispensable para
+                iniciarlo y aplicarlo sobre una nueva compra.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 rounded-[12px] border border-backorder/40 bg-backorder-050 p-4">
+              <Icon name="info" className="mt-0.5 shrink-0 text-backorder" aria-hidden="true" />
+              <p className="text-sm text-ink">
+                <strong>La tasación final es siempre presencial.</strong> Cualquier importe
+                mostrado online es solo orientativo; el valor real lo confirma un especialista en
+                tienda.
+              </p>
+            </div>
           </div>
         </Container>
       </section>
 
-      {/* Timeline oficial de 4 pasos con Foxway. Sin precios, sin tasador
-          propio y sin ejemplos de tasaciones. */}
+      {/* Timeline de 4 pasos. Sin precios, sin tasador propio, sin nombre
+          del partner de tasación. El paso por tienda es obligatorio. */}
       <Section>
         <SectionHeader
-          title="Cómo funciona con Foxway"
-          desc="Cuatro pasos claros. La tasación la gestiona Foxway; Banana Computer aplica la compensación."
+          title="Cómo funciona"
+          desc="Cuatro pasos claros. Todos requieren pasar por tienda: el Plan Renove no se completa online."
         />
         <ol
-          aria-label="Pasos del Plan Renove con Foxway"
+          aria-label="Pasos del Plan Renove en tienda"
           className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
         >
           {RENOVE_STEPS.map((step, i) => (
@@ -84,11 +96,12 @@ export function PlanRenovePage() {
           ))}
         </ol>
         <p className="mt-4 text-xs text-muted">
-          La estimación inicial puede variar tras la revisión de Foxway. La compensación se
-          aplicará conforme a las condiciones oficiales de Banana Computer y Foxway.
+          La estimación inicial puede variar tras la revisión presencial. La compensación se
+          aplicará conforme a las condiciones oficiales de Banana Computer y siempre sobre una
+          nueva compra realizada en tienda.
         </p>
         <div className="mt-3">
-          <ProvisionalBadge label="Información demostrativa · pendiente de integración oficial con Banana Computer y Foxway" />
+          <ProvisionalBadge label="Información demostrativa · condiciones sujetas a Banana Computer" />
         </div>
       </Section>
 

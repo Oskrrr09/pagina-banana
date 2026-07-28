@@ -23,9 +23,9 @@ test.describe('Portada — H1 semántico único', () => {
   })
 })
 
-test.describe('Servicio Técnico Autorizado en /soporte', () => {
+test.describe('Servicio Técnico Autorizado en /servicio-tecnico', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('./soporte')
+    await page.goto('./servicio-tecnico')
   })
 
   test('banner "Sin cita previa" visible con texto exacto', async ({ page }) => {
@@ -125,21 +125,32 @@ test.describe('Servicio Técnico Autorizado en /soporte', () => {
   })
 })
 
-test.describe('Plan Renove — timeline oficial con Foxway', () => {
+test.describe('Plan Renove — solo en tienda física, sin nombre del partner', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('./plan-renove')
   })
 
-  test('aparecen los cuatro pasos con Foxway', async ({ page }) => {
+  test('aparecen los cuatro pasos y todos exigen tienda', async ({ page }) => {
     for (const step of [
+      'Visita una tienda Banana',
       'Estimación inicial',
-      'Entrega del dispositivo',
       'Revisión y valoración final',
-      'Compensación',
+      'Compensación en tu nueva compra',
     ]) {
       await expect(page.getByRole('heading', { level: 3, name: step })).toBeVisible()
     }
-    await expect(page.getByText(/Foxway/).first()).toBeVisible()
+  })
+
+  test('no se menciona al partner externo por su nombre', async ({ page }) => {
+    const body = (await page.locator('main').textContent()) ?? ''
+    expect(body).not.toMatch(/foxway/i)
+  })
+
+  test('se indica claramente que es solo en tienda física', async ({ page }) => {
+    await expect(
+      page.getByText('El Plan Renove solo está disponible en tienda física', { exact: false }),
+    ).toBeVisible()
+    await expect(page.getByText(/el paso por tienda es indispensable/i)).toBeVisible()
   })
 
   test('se explica que la estimación inicial puede cambiar', async ({ page }) => {
@@ -152,17 +163,13 @@ test.describe('Plan Renove — timeline oficial con Foxway', () => {
   })
 
   test('no aparecen precios ni tasador propio', async ({ page }) => {
-    // Ninguna cifra con símbolo € dentro de la timeline (los precios de la
-    // paleta comercial viven en otros bloques del sitio, no aquí).
-    const timeline = page.getByRole('list', { name: 'Pasos del Plan Renove con Foxway' })
+    const timeline = page.getByRole('list', { name: 'Pasos del Plan Renove en tienda' })
     await expect(timeline).toBeVisible()
     const text = (await timeline.textContent()) ?? ''
     expect(text).not.toMatch(/\d+\s*€/)
-    // Ningún botón que sugiera calcular oferta.
     for (const forbidden of ['Calcular oferta', 'Calcular tasación', 'Tasar ahora']) {
       await expect(page.getByRole('button', { name: forbidden })).toHaveCount(0)
     }
-    // Ningún input dentro de la timeline.
     await expect(timeline.locator('input')).toHaveCount(0)
   })
 

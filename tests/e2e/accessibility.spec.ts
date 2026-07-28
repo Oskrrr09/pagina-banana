@@ -94,8 +94,12 @@ test.describe('Accesibilidad automatizada con axe-core', () => {
     await runAxe(page, '/tiendas')
   })
 
-  test('soporte /soporte (incluye Servicio Técnico)', async ({ page }) => {
+  test('soporte /soporte', async ({ page }) => {
     await runAxe(page, '/soporte')
+  })
+
+  test('servicio técnico /servicio-tecnico', async ({ page }) => {
+    await runAxe(page, '/servicio-tecnico')
   })
 
   test('plan renove /plan-renove', async ({ page }) => {

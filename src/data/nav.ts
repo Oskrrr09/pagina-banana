@@ -108,5 +108,6 @@ export const utilityLinks = [
   { label: 'Empresas', to: '/servicios', icon: 'package' },
   { label: 'Educación', to: '/servicios', icon: 'graduation' },
   { label: 'Formación', to: '/servicios', icon: 'chat' },
-  { label: 'Soporte', to: '/soporte', icon: 'wrench' },
+  { label: 'Servicio técnico', to: '/servicio-tecnico', icon: 'wrench' },
+  { label: 'Soporte', to: '/soporte', icon: 'info' },
 ]
