@@ -8,11 +8,12 @@ import { Accordion } from '../components/ui/Accordion'
 import { Icon } from '../components/ui/Icon'
 import { ProductCard } from '../components/product/ProductCard'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
-import { ProductImage } from '../components/product/ProductImage'
 import { StoreCarousel } from '../components/home/StoreCarousel'
 import { BentoShowcase } from '../components/home/BentoShowcase'
+import { HeroCarousel } from '../components/home/HeroCarousel'
 import { families, iphoneModels, modelsByFamily } from '../data/products'
-import { advantages, homeFaq } from '../data/content'
+import { homeFaq } from '../data/content'
+import { euro } from '../lib/format'
 
 export function Home() {
   const [financeOpen, setFinanceOpen] = useState(false)
@@ -21,24 +22,29 @@ export function Home() {
 
   return (
     <>
-      {/* 02 — Campaña principal (banner real de Banana) */}
-      <section className="bg-black">
-        <Link to="/iphone/17-pro" className="group relative block">
-          <picture className="block">
-            <source media="(min-width: 768px)" srcSet={`${import.meta.env.BASE_URL}img/hero-17pro-desktop.png`} />
-            <img
-              src={`${import.meta.env.BASE_URL}img/hero-17pro-mobile.png`}
-              alt="iPhone 17 Pro, ya en Banana"
-              className="block h-auto w-full"
-              fetchPriority="high"
-            />
-          </picture>
-          <span className="absolute right-4 top-4">
-            <span className="inline-flex items-center rounded-full bg-white/90 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink">
-              Contenido provisional
-            </span>
-          </span>
-        </Link>
+      {/* 02 — Hero carrusel rotativo */}
+      <HeroCarousel />
+
+      {/* 02a — Franja de confianza */}
+      <section className="border-y border-line bg-neutral">
+        <Container className="grid grid-cols-2 gap-6 py-6 md:grid-cols-4">
+          {[
+            { icon: 'store', title: '5 tiendas en Canarias', note: 'Recogida gratis y taller' },
+            { icon: 'truck', title: 'Envío 24-48 h', note: 'Con seguimiento a toda Canarias' },
+            { icon: 'credit-card', title: 'Financiación al 0 %', note: 'Hasta 24 meses' },
+            { icon: 'shield', title: 'Servicio técnico oficial', note: 'Especialistas Apple' },
+          ].map((item) => (
+            <div key={item.title} className="flex items-center gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-banana text-ink">
+                <Icon name={item.icon} size={20} />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-ink">{item.title}</p>
+                <p className="truncate text-xs text-muted">{item.note}</p>
+              </div>
+            </div>
+          ))}
+        </Container>
       </section>
 
       {/* 02b — Bento de destacados (producto estrella + servicios clave) */}
@@ -49,29 +55,44 @@ export function Home() {
         </Reveal>
       </Section>
 
-      {/* 03 — Categorías principales (carrusel) */}
+      {/* 03 — Categorías principales (tiles grandes con foto) */}
       <Section>
-        <SectionHeader title="Explora por categoría" />
-        <div className="-mx-5 flex snap-x gap-4 overflow-x-auto px-5 py-3 no-scrollbar sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
+        <SectionHeader title="Explora por categoría" desc="Toda la gama Apple organizada por familia." />
+        <StaggerGroup className="-mx-5 flex snap-x gap-4 overflow-x-auto px-5 py-3 no-scrollbar sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 sm:pb-0 md:grid-cols-3 lg:grid-cols-6">
           {families.map((fam) => {
             const cover = modelsByFamily[fam.slug]?.[0]?.colors[0].image
-            const to = modelsByFamily[fam.slug] ? `/${fam.slug}` : '/iphone'
+            const developed = Boolean(modelsByFamily[fam.slug])
+            const to = developed ? `/${fam.slug}` : '/iphone'
             return (
-              <Link
-                key={fam.slug}
-                to={to}
-                className="group w-40 shrink-0 snap-start rounded-[12px] border border-line bg-surface p-4 text-center transition-all hover:-translate-y-1 hover:border-banana hover:shadow-[var(--shadow-raised)] sm:w-auto"
-              >
-                {cover ? (
-                  <ProductImage src={cover} alt={fam.name} ratio="1 / 1" />
-                ) : (
-                  <Placeholder label={fam.name} ratio="1 / 1" />
-                )}
-                <p className="mt-3 text-sm font-semibold text-ink group-hover:text-ink">{fam.name}</p>
-              </Link>
+              <StaggerItem key={fam.slug} className="w-44 shrink-0 snap-start sm:w-auto">
+                <Link
+                  to={to}
+                  className="group flex h-full flex-col overflow-hidden rounded-[16px] border border-line bg-surface transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]"
+                >
+                  <div className="grid aspect-square place-items-center overflow-hidden bg-neutral p-4">
+                    {cover ? (
+                      <img
+                        src={cover}
+                        alt={fam.name}
+                        className="block h-full w-full object-contain object-center transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.08]"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <Placeholder label={fam.name} ratio="1 / 1" />
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col p-4 text-center">
+                    <p className="font-display text-base font-bold text-ink">{fam.name}</p>
+                    <p className="mt-0.5 text-xs text-muted">{fam.tagline}</p>
+                    <p className="mt-2 text-sm font-semibold text-ink">
+                      {developed ? `desde ${euro(fam.fromPrice)}` : 'Próximamente'}
+                    </p>
+                  </div>
+                </Link>
+              </StaggerItem>
             )
           })}
-        </div>
+        </StaggerGroup>
       </Section>
 
       {/* 04 — Lanzamientos */}
@@ -100,20 +121,42 @@ export function Home() {
         </Section>
       )}
 
-      {/* 06 — Ventajas (franja de confianza) */}
+      {/* 06 — Banner intermedio Plan Renove (acento amarillo) */}
       <section className="banana-surface bg-banana text-ink">
-        <Container className="grid grid-cols-2 gap-8 py-10 lg:grid-cols-4">
-          {advantages.map((a) => (
-            <div key={a.title} className="flex items-start gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-black/10 text-ink">
-                <Icon name={a.icon} />
-              </span>
-              <div>
-                <p className="font-semibold leading-tight">{a.title}</p>
-                <p className="mt-0.5 text-xs text-ink/70">{a.note}</p>
-              </div>
+        <Container className="grid items-center gap-8 py-12 md:grid-cols-2 md:py-16">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-ink/70">Plan Renove</p>
+            <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-4xl">
+              Hasta 400 € por tu iPhone actual.
+            </h2>
+            <p className="mt-3 max-w-md text-ink/85">
+              Trae tu dispositivo Apple a cualquier tienda Banana, un especialista lo tasa y aplicamos
+              el descuento sobre tu próxima compra. Sencillo, inmediato y con precio garantizado.
+            </p>
+            <p className="mt-2 text-xs text-ink/60">Tasación presencial · Cantidad demostrativa.</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <ButtonLink to="/plan-renove" variant="primary">
+                <Icon name="refresh" size={18} /> Valorar mi dispositivo
+              </ButtonLink>
+              <ButtonLink to="/tiendas" variant="tertiary">
+                Ver tiendas
+              </ButtonLink>
             </div>
-          ))}
+          </div>
+          <div className="relative mx-auto grid w-full max-w-md grid-cols-3 items-end gap-3">
+            <img
+              src={`${import.meta.env.BASE_URL}img/products/17pro-plata.png`}
+              alt=""
+              className="col-span-2 row-start-1 aspect-square w-full object-contain drop-shadow-xl"
+              loading="lazy"
+            />
+            <img
+              src={`${import.meta.env.BASE_URL}img/products/watch-ultra-alpine.png`}
+              alt=""
+              className="col-start-3 row-start-1 aspect-square w-full self-center object-contain drop-shadow-xl"
+              loading="lazy"
+            />
+          </div>
         </Container>
       </section>
 

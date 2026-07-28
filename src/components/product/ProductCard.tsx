@@ -42,9 +42,13 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
       </button>
 
       {hasOffer && (
-        <div className="absolute left-5 top-5 z-10 flex items-center gap-1.5">
+        <div className="absolute left-4 top-4 z-10 flex items-center gap-2">
+          {discount > 0 && (
+            <span className="rounded-[10px] bg-danger px-2.5 py-1.5 text-sm font-extrabold leading-none text-white shadow-[var(--shadow-rest)]">
+              -{discount}%
+            </span>
+          )}
           <OfferBadge>Oferta</OfferBadge>
-          {discount > 0 && <OfferBadge>-{discount}%</OfferBadge>}
         </div>
       )}
 
@@ -60,10 +64,18 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
 
       <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{model.tagline}</p>
 
-      <div className="mt-auto flex items-end gap-2 pt-3">
-        <span className="text-lg font-bold text-ink">desde {euro(model.fromPrice)}</span>
-        {hasOffer && firstCap.previousPrice && (
-          <span className="pb-0.5 text-sm text-muted line-through">{euro(firstCap.previousPrice)}</span>
+      <div className="mt-auto pt-3">
+        {hasOffer && firstCap.previousPrice ? (
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold leading-none text-danger">
+              {euro(model.fromPrice)}
+            </span>
+            <span className="text-sm font-semibold text-muted line-through decoration-2">
+              {euro(firstCap.previousPrice)}
+            </span>
+          </div>
+        ) : (
+          <span className="text-lg font-bold text-ink">desde {euro(model.fromPrice)}</span>
         )}
       </div>
       <div className="mt-2">
