@@ -84,12 +84,12 @@ export function MegaMenu({ family, onNavigate }: { family: FamilyNav; onNavigate
                 <ProductImage
                   src={family.mega.featured.image}
                   alt={family.mega.featured.name}
-                  ratio="4 / 3"
+                  ratio="1 / 1"
                   className="border border-line bg-neutral"
-                  pad={false}
+                  pad
                 />
               ) : (
-                <Placeholder label={family.mega.featured.name} tint={family.mega.featured.tint} ratio="4 / 3" />
+                <Placeholder label={family.mega.featured.name} tint={family.mega.featured.tint} ratio="1 / 1" />
               )}
             </div>
             <p className="mt-3 font-display text-lg font-bold text-ink">{family.mega.featured.name}</p>

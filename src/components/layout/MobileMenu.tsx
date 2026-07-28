@@ -139,6 +139,17 @@ export function MobileMenu({
                                   </Link>
                                 </li>
                               ))}
+                              {!fam.demo && (
+                                <li>
+                                  <Link
+                                    to={`/${fam.slug}`}
+                                    onClick={onClose}
+                                    className="block py-2.5 pl-1 text-[15px] font-semibold text-ink hover:text-ink"
+                                  >
+                                    Ver todos
+                                  </Link>
+                                </li>
+                              )}
                             </ul>
                           </motion.div>
                         )}

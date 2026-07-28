@@ -143,7 +143,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                     className="group flex flex-col items-center rounded-[16px] border border-transparent px-3 py-3 text-center transition-[background-color,border-color,transform] hover:-translate-y-1 hover:border-line hover:bg-surface"
                   >
                     <span
-                      className="block aspect-square w-full overflow-hidden rounded-[12px] bg-surface"
+                      className="grid aspect-square w-full place-items-center overflow-hidden rounded-[12px] bg-surface p-2"
                     >
                       <img
                         src={model.colors[0].image}
