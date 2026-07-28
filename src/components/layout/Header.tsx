@@ -58,14 +58,16 @@ const SEARCH_SUGGESTIONS = [
 ]
 
 // Cabecera fija (sticky) en escritorio y móvil.
-// Escritorio: buscador, favoritos, comparador, cuenta y carrito.
-// Móvil: lupa (abre overlay con sugerencias), carrito y menú.
+// Integración visual: barra promocional oscura arriba, cabecera principal en
+// glass amarillo semi-transparente con blur, y sombra que aparece al scrollear
+// (sin borde duro), evitando que corte el hero de golpe.
 export function Header() {
   const { cartCount, favorites, compare } = useStore()
   const [activeFamily, setActiveFamily] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [q, setQ] = useState('')
+  const [scrolled, setScrolled] = useState(false)
   const closeTimer = useRef<number | null>(null)
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
@@ -87,6 +89,13 @@ export function Header() {
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   // Bloquea el scroll de fondo mientras el overlay de búsqueda está activo en móvil.
@@ -116,7 +125,28 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-black/10 bg-banana">
+      <header className="sticky top-0 z-40">
+        {/* Barra promocional superior — mensajes clave del comercio */}
+        <div className="bg-ink text-white">
+          <div className="mx-auto flex h-8 max-w-7xl items-center justify-center gap-6 px-4 text-[12px] font-medium text-white/85">
+            <span className="hidden items-center gap-1.5 sm:inline-flex">
+              <Icon name="truck" size={14} className="text-banana" /> Envío gratis a toda Canarias en pedidos +50 €
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="credit-card" size={14} className="text-banana" /> Financiación al 0 % hasta 24 meses
+            </span>
+            <span className="hidden items-center gap-1.5 md:inline-flex">
+              <Icon name="store" size={14} className="text-banana" /> Recogida gratis en 5 tiendas
+            </span>
+          </div>
+        </div>
+
+        {/* Cabecera principal — glass amarillo con sombra al scrollear */}
+        <div
+          className={`bg-banana/90 backdrop-blur-md transition-shadow duration-300 ${
+            scrolled ? 'shadow-[0_6px_20px_-8px_rgba(0,0,0,0.15)]' : ''
+          }`}
+        >
         <div className="banana-header-bar flex h-16 w-full items-center px-6 sm:px-8 lg:px-12">
           <Logo />
 
@@ -218,6 +248,7 @@ export function Header() {
             <MegaMenu family={family} onNavigate={() => setActiveFamily(null)} />
           </div>
         )}
+        </div>
       </header>
 
       {/* Overlay de búsqueda en móvil — pantalla completa con sugerencias */}
