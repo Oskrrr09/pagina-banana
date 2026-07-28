@@ -27,7 +27,7 @@ export function StoresPage() {
   // Canarias con las tiendas Banana Computer.
   const focus = activeStore ? stores.find((s) => s.slug === activeStore) : null
   const mapSrc = focus
-    ? `https://www.google.com/maps?q=${encodeURIComponent(focus.name)}&z=${zoom}&output=embed`
+    ? `https://www.google.com/maps?q=${encodeURIComponent(focus.mapQuery)}&z=${zoom}&output=embed`
     : `https://www.google.com/maps?q=Banana+Computer+Canarias&z=${zoom}&output=embed`
 
   const setFocus = (slug: string | null) => {
@@ -124,7 +124,7 @@ export function StoresPage() {
           const todayHours = getTodayHours(store)
           const open = isOpenNow(store)
           const isActive = activeStore === store.slug
-          const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.name)}`
+          const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.mapQuery)}`
 
           const focusMap = () => {
             setFocus(store.slug)

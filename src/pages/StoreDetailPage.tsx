@@ -21,8 +21,8 @@ export function StoreDetailPage() {
   // Búsqueda por nombre real ("Banana Safari", "Banana Mesa y López"…) para
   // que Google Maps resuelva la ubicación exacta del local.
   const [zoom, setZoom] = useState(17)
-  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(store.name)}&z=${zoom}&output=embed`
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.name)}`
+  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(store.mapQuery)}&z=${zoom}&output=embed`
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.mapQuery)}`
 
   return (
     <Container className="py-8">

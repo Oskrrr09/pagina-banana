@@ -51,6 +51,10 @@ export interface Store {
   island: string
   address: string
   coords: { lat: number; lng: number }
+  // Búsqueda que Google Maps resuelve al local real (ficha oficial). Los locales
+  // Banana aparecen indexados como "Banana Computer Apple Premium Reseller"; el
+  // nombre visible en la app es libre y puede diferir (p. ej. "Banana Triana").
+  mapQuery: string
   hours: { day: string; time: string }[]
   hoursSource: string
   hoursVerifiedOn: string
