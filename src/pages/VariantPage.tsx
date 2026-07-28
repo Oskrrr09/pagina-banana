@@ -78,8 +78,8 @@ export function VariantPage() {
     : color?.capacities ?? []
 
   // Etiqueta de capacidad que se muestra al usuario (sin el prefijo de tamaño).
-  const displayCap = (cap: string) =>
-    hasSizeSelector ? cap.replace(/^\d{2}(?:"|\s?mm) · /, '') : cap
+  const stripSizePrefix = (cap: string) => cap.replace(/^\d{2}(?:"|\s?mm) · /, '')
+  const displayCap = (cap: string) => (hasSizeSelector ? stripSizePrefix(cap) : cap)
 
   const current = useMemo(
     () => color?.capacities.find((c) => c.capacity === capacity) ?? color?.capacities[0],
@@ -259,8 +259,16 @@ export function VariantPage() {
                     key={s}
                     selected={s === activeSize}
                     onClick={() => {
-                      const first = color.capacities.find((c) => getSize(c.capacity) === s)
-                      if (first) setCapacity(first.capacity)
+                      // Al cambiar de tamaño se preserva el sufijo actual
+                      // (p. ej. "GPS + Cellular"). Si esa variante no existe
+                      // para el nuevo tamaño, cae en la primera disponible.
+                      const desired = stripSizePrefix(capacity)
+                      const match = color.capacities.find(
+                        (c) => getSize(c.capacity) === s && stripSizePrefix(c.capacity) === desired,
+                      )
+                      const fallback = color.capacities.find((c) => getSize(c.capacity) === s)
+                      const next = match ?? fallback
+                      if (next) setCapacity(next.capacity)
                     }}
                     ariaLabel={`Pantalla de ${s}`}
                   >
