@@ -1,71 +1,233 @@
 # Banana Computer — Prototipo navegable (Fase 2)
 
-Prototipo de demostración de la nueva web de Banana Computer, construido a partir de
-_"Banana Computer — Arquitectura, flujos y wireframes (Fase 2)"_.
+Prototipo de demostración de la nueva web de Banana Computer. SPA construida
+sobre React + Vite + TypeScript y publicada en GitHub Pages.
 
-> ⚠️ **Demostración conceptual.** Todos los datos son de ejemplo y aparecen etiquetados
-> como tales (_Contenido provisional_, _Precio demostrativo_, _Condiciones pendientes de
-> validación_, _Stock de ejemplo_). Ningún precio, condición, stock o sistema es real.
+> ⚠️ **Demostración conceptual.** Ningún precio, condición, stock, pedido, pago
+> o email es real. Los datos aparecen etiquetados como _Precio demostrativo_,
+> _Pedido de demostración_, _Condición demostrativa_, _Stock de ejemplo_ o
+> _Pendiente de validación con Banana Computer_.
+
+**URL pública:** <https://luis-lop-nas.github.io/pagina-banana/>
 
 ## Stack
 
-- **Vite + React 18 + TypeScript**
-- **Tailwind CSS v4** — tokens del sistema visual (§5) en `src/index.css` (`@theme`)
-- **Motion** (`motion/react`) — reveals, acordeones, barra de compra, modales
-- **React Router** — rutas del §9.1
+| Pieza | Versión efectiva |
+| --- | --- |
+| React / React DOM | 18.3.1 |
+| React Router DOM | 6.30.4 |
+| Motion (`motion/react`) | 11.x |
+| Vite | 6.x |
+| TypeScript | 5.x |
+| Tailwind CSS (+ plugin de Vite) | 4.x |
+| Playwright | 1.62 |
 
-## Arrancar
+## Arrancar y verificar
 
 ```bash
-npm install
-npm run dev      # http://localhost:5173
-npm run build    # build de producción
+npm ci                  # instala dependencias reproducibles
+npm run dev             # http://localhost:5173/pagina-banana/
+npm run build           # comprueba tipos + genera dist/
+npm run test:e2e        # pruebas end-to-end con Playwright
+npm run test:e2e:ui     # modo UI (Playwright test explorer)
+npm run test:e2e:headed # con el navegador visible
 ```
 
-## Estructura
+Antes de ejecutar los tests por primera vez:
+
+```bash
+npx playwright install chromium
+```
+
+## Catálogo desarrollado
+
+Cinco familias con datos, imágenes locales y variantes reales:
+
+| Familia | Modelos | Nota |
+| --- | --- | --- |
+| **iPhone** | 4 (17 Pro Max, 17 Pro, Air, 17) | Fotos oficiales por color |
+| **Mac** | 8 (MacBook Neo, Air M4/M5, Pro M4/M5, iMac 24" M4, Mac Studio, Mac mini M4) | PNGs oficiales de Apple/Banana Computer |
+| **iPad** | 4 (Pro, Air, mini, A16) | Pulgada seleccionable dentro de la ficha |
+| **Apple Watch** | 3 (Ultra 3, Series 11, SE 3) | Tamaño y GPS/Cellular seleccionables (excepto Ultra) |
+| **AirPods** | 2 (Pro 3, Max) | 5 colores de AirPods Max |
+
+**Accesorios** aún no tiene catálogo propio: los cinco tiles de la home
+enlazan a `/buscar?q=<término>` (fundas, magsafe, correas, teclados, audio).
+
+## Estructura del código
 
 ```
 src/
-  data/          Contenido de ejemplo (§7): catálogo iPhone, tiendas, servicios, FAQ, nav
-  lib/           store.tsx (carrito/favoritos/comparador con localStorage), format.ts
+  data/
+    products.ts         Catálogo central (5 familias, ~20 modelos)
+    stores.ts           5 tiendas con coords + mapQuery + horarios reales
+    nav.ts              familiesNav, utilityLinks, directLinks
+    content.ts          Servicios, FAQ, ventajas
+    commercialClaims.ts Afirmaciones comerciales con status demo|verified|pending
+    types.ts
+  lib/
+    store.tsx           Carrito, favoritos y comparador (localStorage)
+    checkoutState.tsx   Estado compartido del checkout (sessionStorage)
+    demoOrderRepository.ts  Pedidos de demostración (sessionStorage)
+    format.ts
   components/
-    ui/          Botón, Chip, Modal, Accordion, Reveal, Icon, Placeholder, Tag, StockIndicator…
-    layout/      Header + MegaMenu + MobileMenu, Footer, Layout
-    product/     ProductCard, FinanceSimulator, StorePicker
-  pages/         Una página por pantalla del §8 (15 en total, incluida 404 y favoritos)
+    ui/                 Button, Chip, Modal, Accordion, Reveal, Icon,
+                        Placeholder, Tag, StockIndicator, MobileScroller…
+    layout/             Header + MegaMenu + MobileMenu, Footer, Layout,
+                        CheckoutLayout, ChatBubble, Logo
+    home/               HeroCarousel, BentoShowcase, StoreCarousel
+    product/            ProductCard, ProductImage, FinanceSimulator, StorePicker
+  pages/                Home, Family, Model, Variant, Search, Compare,
+                        Cart, Checkout, Services, PlanRenove, Stores,
+                        StoreDetail, Support, Favorites, NotFound
+tests/e2e/              Pruebas Playwright (home, checkout, search)
+docs/                   Documentación viva (00–05 + sesiones)
+public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 ```
 
-## Pantallas y su origen en la especificación
+## Rutas
 
-| Ruta | Pantalla | Doc |
-|------|----------|-----|
-| `/` | Inicio (14 bloques) | §4.1 |
-| `/iphone` | Familia iPhone | §4.5 |
-| `/iphone/:model` | Modelo (pestañas + color/capacidad) | §4.6 |
-| `/iphone/:model/:variant` | Ficha de variante (+ barra móvil fija) | §4.7 |
-| `/buscar` | Resultados del buscador | §4.4 |
-| `/comparar` | Comparador | §4.8 |
-| `/carrito` | Carrito | §4.9 |
-| `/checkout/1..3` | Checkout 3 pasos | §4.10 |
-| `/servicios` | Servicios | §4.11 |
-| `/plan-renove` | Plan Renove | §4.12 |
-| `/tiendas` · `/tiendas/:slug` | Tiendas + ficha | §4.13 / §4.14 |
-| `/soporte` | Centro de soporte | §4.15 |
+| Ruta | Pantalla |
+| --- | --- |
+| `/` | Portada (carrusel + franja de confianza + categorías + ofertas + accesorios + servicios + testimonios demo + tiendas + FAQ + newsletter) |
+| `/:family` | Familia (`iphone`, `mac`, `ipad`, `apple-watch`, `airpods` usan `ShowcaseFamilyPage`) |
+| `/:family/:model` | Modelo (redirige a la variante base) |
+| `/:family/:model/:variant` | Ficha con selectores de color, capacidad y (según modelo) tamaño |
+| `/buscar?q=…` | Buscador sincronizado con la URL |
+| `/comparar` | Comparador de hasta 3 productos de la misma familia |
+| `/carrito` | Carrito con selección de entrega compartida con checkout |
+| `/checkout/1` | Datos y entrega/recogida (obligatorio antes del 2) |
+| `/checkout/2` | Pago y extras (crea el pedido demo al confirmar) |
+| `/checkout/3` | Confirmación (solo accesible con pedido válido) |
+| `/servicios`, `/plan-renove`, `/soporte` | Contenido de marca demostrativo |
+| `/tiendas`, `/tiendas/:slug` | Google Maps embed con las 5 tiendas |
+| `/favoritos` | Favoritos del usuario |
+| `*` | 404 amable |
 
-## Decisiones y notas
+## Checkout blindado
 
-- **Mega-menú y menú móvil**: sólo la familia **iPhone** está desarrollada a fondo (§8);
-  el resto de familias muestran un aviso y enlazan a iPhone. El catálogo es editable en
-  `src/data/products.ts`, no fijo en el código de negocio.
-- **Imágenes**: marcadores de posición claramente identificados (§10), nunca fotos reales
-  de Apple. Cada muestra lleva el color de la variante como tinte.
-- **Accesibilidad (§9.4)**: foco visible siempre, `prefers-reduced-motion`, contraste,
-  áreas táctiles ≥44px, etiquetas de formulario asociadas, foco atrapado en modales.
-- **Sin backend**: carrito, favoritos y comparador funcionan de verdad (localStorage);
-  pago, stock real, financiación real, cuenta y chat están simulados (§8.3 / §9.6).
+- El paso 3 exige un pedido creado en `demoOrderRepository`. Abrir
+  `/checkout/3` sin pedido redirige a `/carrito` o `/iphone` según haya
+  productos.
+- El paso 2 exige `step1Valid`. Sin nombre + email válido + dirección o
+  tienda, redirige a `/checkout/1`.
+- El ID `BC-XXXXXX` se genera **solo** al pulsar "Confirmar pedido".
+- La confirmación sobrevive a recargas dentro de la misma sesión.
+- La selección de entrega en `/carrito` se comparte con el checkout via
+  `CheckoutProvider`. Cambiarla en cualquiera de los dos actualiza el estado
+  compartido.
 
-## Pendiente de validar con Banana (§10)
+Todo esto es demostrativo: no hay backend, ni pagos, ni emails.
 
-Manual de marca real, condiciones reales de financiación/envío/Plan Renove, reseñas
-reales (ahora hay una de ejemplo), y confirmación de que el Plan Renove sigue siendo
-presencial.
+## Contenido comercial
+
+Las afirmaciones ("Envío 24-48 h", "Financiación al 0 %", "hasta 400 €",
+"Servicio técnico oficial"…) viven en `src/data/commercialClaims.ts` con
+`status: 'demo' | 'verified' | 'pending'`, `source`, `verifiedAt` y
+`disclaimer`. Solo se marcan como `verified` las que se han contrastado con
+la fuente oficial (por ejemplo, las 5 tiendas verificadas el 2026-07-26).
+Los bloques que las usan (franja de confianza, tarjetas de servicio, etc.)
+muestran un aviso discreto cuando el contenido es demostrativo.
+
+## Buscador
+
+- El input de `SearchPage` se sincroniza con `?q=` via `useEffect`, así al
+  buscar "iPhone" y después "Mac" desde la lupa del Header, el campo y los
+  resultados quedan alineados. Adelante/atrás del navegador también lo
+  mantienen sincronizado.
+- Las sugerencias del overlay del Header se generan en runtime desde
+  `families + modelsByFamily` (`buildSearchSuggestions`), usando
+  `variantPath` para las URLs. Añadir o retirar modelos aparece o desaparece
+  automáticamente sin tocar el Header.
+
+## Chat provisional
+
+`<ChatBubble />` es solo un aviso ("El chat estará disponible próximamente").
+Se oculta durante el checkout (`/checkout/*`) para no distraer del proceso
+de compra. El panel es accesible: `role="dialog"` + `aria-modal="true"`,
+foco al botón cerrar al abrir, Escape cierra y devuelve foco al botón
+flotante.
+
+## Persistencia
+
+| Clave | Storage | Contenido |
+| --- | --- | --- |
+| `banana:cart` | localStorage | Líneas de carrito con seguro por unidad |
+| `banana:fav` | localStorage | Favoritos (IDs `family/model`) |
+| `banana:compare` | localStorage | Comparador (hasta 3, misma familia) |
+| `banana:checkout-state` | sessionStorage | Datos del paso 1 + entrega |
+| `banana:demo-orders` | sessionStorage | Diccionario de pedidos demostrativos |
+| `banana:demo-last-order-id` | sessionStorage | Último pedido creado (usado por `/checkout/3`) |
+
+## Rendimiento
+
+- **Imágenes**: todo el catálogo (~90 archivos) se sirve como WebP,
+  ~2,9 MB total (frente a los 42 MB originales en PNG). Compresión hecha
+  con `pngquant` (q 70-90) + conversión con Pillow (q 82, method 6).
+- **Preload** del primer producto del hero en `index.html`.
+- **`content-visibility: auto`** en cada `<Section>` para saltar el pintado
+  de secciones fuera del viewport.
+- **Header** sin `backdrop-blur` durante el scroll para eliminar repaints
+  costosos; `bg-banana/[0.97]` da la sensación de superposición sin coste.
+
+## Accesibilidad
+
+- Foco visible siempre; áreas táctiles ≥44 px.
+- Formularios con `label` asociada y `autocomplete` en el checkout.
+- `prefers-reduced-motion` respetado en reveals y transiciones.
+- Menú móvil con trampa de foco y bloqueo de scroll.
+- Chat con `aria-modal`, retorno de foco y cierre con Escape.
+- Detección de tema con `prefers-color-scheme` (no se guarda preferencia
+  propia).
+
+## CI / CD
+
+- `.github/workflows/deploy.yml` — build + publicación a GitHub Pages en
+  cada push a `main`.
+- `.github/workflows/e2e.yml` — `npm ci` + `npm run build` + instalación
+  de Chromium + `npm run test:e2e` en cada push/PR sobre `main`. Sube el
+  reporte HTML como artefacto si algo falla.
+
+## Pruebas Playwright
+
+`playwright.config.ts` levanta Vite automáticamente en el puerto 5173 con
+`baseURL: http://127.0.0.1:5173/pagina-banana/`. Proyectos:
+
+- `chromium` — todas las pruebas.
+- `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
+
+Suites actuales (9 pruebas):
+
+- `tests/e2e/home.spec.ts` — carga de portada, `/buscar?q=fundas` en
+  accesorios y ausencia de scroll horizontal a 375 px.
+- `tests/e2e/checkout.spec.ts` — guardas de `/checkout/2` y `/checkout/3`,
+  flujo demostrativo completo (crea `BC-\d{6}`) con recarga, chat oculto en
+  checkout.
+- `tests/e2e/search.spec.ts` — sincronización del input con `?q=` y
+  destinos de los tiles de accesorios.
+
+## Documentación
+
+Fuente de verdad viva en `docs/`:
+
+- `00-estado-actual.md` — capacidades y últimos cambios.
+- `01-contexto-del-proyecto.md` — propósito y mapa técnico.
+- `02-decisiones.md` — decisiones aceptadas con fecha y evidencia.
+- `03-roadmap.md` — trabajo previsible (no compromiso).
+- `04-problemas-pendientes.md` — bugs, deuda y validaciones.
+- `05-registro-de-cambios.md` — bitácora de entregas.
+- `sesiones/AAAA-MM-DD--tema.md` — notas de sesión.
+
+El código ejecutable es siempre la fuente de verdad cuando choque con la
+documentación.
+
+## Pendiente de validar con Banana Computer
+
+Manual de marca definitivo, precios reales, condiciones reales de
+financiación / envío / seguro / garantía / descuento educativo,
+funcionamiento del Plan Renove, reseñas reales, autorización de uso de
+recursos de marca e imágenes, y horarios/servicios de tienda en la fecha
+de validación final.
+
+Hasta esa validación, todo el contenido con etiqueta demostrativa debe
+conservarse como tal.
