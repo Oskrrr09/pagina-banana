@@ -11,6 +11,7 @@ import { FinanceSimulator } from '../components/product/FinanceSimulator'
 import { StoreCarousel } from '../components/home/StoreCarousel'
 import { BentoShowcase } from '../components/home/BentoShowcase'
 import { HeroCarousel } from '../components/home/HeroCarousel'
+import { MobileScroller } from '../components/ui/MobileScroller'
 import { families, iphoneModels, modelsByFamily } from '../data/products'
 import { homeFaq } from '../data/content'
 import { euro } from '../lib/format'
@@ -163,7 +164,10 @@ export function Home() {
       {/* 07 — Complementa tu Apple (categorías de accesorios) */}
       <Section>
         <SectionHeader eyebrow="Personaliza tu Apple" title="Complementa tu equipo" desc="Todo lo que necesitas para sacarle partido a tu Apple." />
-        <StaggerGroup className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+        <MobileScroller
+          desktopClass="sm:grid sm:grid-cols-3 sm:gap-4 lg:grid-cols-5"
+          itemClass="w-[65vw] sm:w-auto"
+        >
           {[
             { label: 'Fundas iPhone', icon: 'shield', bg: '#dbeaf9', ring: '#7fb5e6' },
             { label: 'Carga y MagSafe', icon: 'credit-card', bg: '#fff4c9', ring: '#ffd76b' },
@@ -171,107 +175,104 @@ export function Home() {
             { label: 'Teclados y ratones', icon: 'compare', bg: '#e6dff8', ring: '#a992e0' },
             { label: 'Audio y sonido', icon: 'chat', bg: '#dbf1e5', ring: '#7fc9a2' },
           ].map((cat) => (
-            <StaggerItem key={cat.label}>
-              <Link
-                to="/iphone"
-                className="group flex h-full flex-col items-center justify-center gap-3 rounded-[16px] border border-line bg-surface p-6 text-center transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]"
+            <Link
+              key={cat.label}
+              to="/iphone"
+              className="group flex h-full flex-col items-center justify-center gap-3 rounded-[16px] border border-line bg-surface p-6 text-center transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]"
+            >
+              <span
+                className="grid h-16 w-16 place-items-center rounded-full text-ink transition-transform duration-300 group-hover:scale-110"
+                style={{ backgroundColor: cat.bg, boxShadow: `inset 0 0 0 2px ${cat.ring}` }}
               >
-                <span
-                  className="grid h-16 w-16 place-items-center rounded-full text-ink transition-transform duration-300 group-hover:scale-110"
-                  style={{ backgroundColor: cat.bg, boxShadow: `inset 0 0 0 2px ${cat.ring}` }}
-                >
-                  <Icon name={cat.icon} size={28} />
-                </span>
-                <p className="text-sm font-bold text-ink">{cat.label}</p>
-                <p className="text-xs font-semibold text-muted transition-colors group-hover:text-ink">
-                  Ver todo ›
-                </p>
-              </Link>
-            </StaggerItem>
+                <Icon name={cat.icon} size={28} />
+              </span>
+              <p className="text-sm font-bold text-ink">{cat.label}</p>
+              <p className="text-xs font-semibold text-muted transition-colors group-hover:text-ink">
+                Ver todo ›
+              </p>
+            </Link>
           ))}
-        </StaggerGroup>
+        </MobileScroller>
       </Section>
 
       {/* 08 — Servicios Banana (4 tiles coloridos) */}
       <Section alt>
         <SectionHeader eyebrow="Servicios Banana" title="Más que una tienda" desc="Servicios pensados para que tu Apple funcione al 100 %." />
-        <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <StaggerItem>
-            <button
-              type="button"
-              onClick={() => setFinanceOpen(true)}
-              className="group flex h-full w-full flex-col justify-between rounded-[20px] bg-[linear-gradient(160deg,#fff4c9,#ffe08a)] p-6 text-left text-ink transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-raised)]"
-            >
-              <div>
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
-                  <Icon name="credit-card" size={20} />
-                </span>
-                <h3 className="mt-4 text-lg font-extrabold">Financiación al 0 %</h3>
-                <p className="mt-1 text-sm text-ink/80">Hasta 24 meses sin intereses.</p>
-              </div>
-              <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
-                Simular cuota <Icon name="arrow-right" size={16} />
+        <MobileScroller
+          desktopClass="sm:grid sm:grid-cols-2 sm:gap-5 lg:grid-cols-4"
+          itemClass="w-[80vw] sm:w-auto"
+        >
+          <button
+            type="button"
+            onClick={() => setFinanceOpen(true)}
+            className="group flex h-full w-full flex-col justify-between rounded-[20px] bg-[linear-gradient(160deg,#fff4c9,#ffe08a)] p-6 text-left text-ink transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-raised)]"
+          >
+            <div>
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
+                <Icon name="credit-card" size={20} />
               </span>
-            </button>
-          </StaggerItem>
-          <StaggerItem>
-            <Link
-              to="/plan-renove"
-              className="group flex h-full flex-col justify-between rounded-[20px] bg-[linear-gradient(160deg,#dbf1e5,#a3d9bd)] p-6 text-ink transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-raised)]"
-            >
-              <div>
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
-                  <Icon name="refresh" size={20} />
-                </span>
-                <h3 className="mt-4 text-lg font-extrabold">Plan Renove</h3>
-                <p className="mt-1 text-sm text-ink/80">Hasta 400 € por tu Apple actual.</p>
-              </div>
-              <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
-                Valorar mi dispositivo <Icon name="arrow-right" size={16} />
+              <h3 className="mt-4 text-lg font-extrabold">Financiación al 0 %</h3>
+              <p className="mt-1 text-sm text-ink/80">Hasta 24 meses sin intereses.</p>
+            </div>
+            <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
+              Simular cuota <Icon name="arrow-right" size={16} />
+            </span>
+          </button>
+          <Link
+            to="/plan-renove"
+            className="group flex h-full flex-col justify-between rounded-[20px] bg-[linear-gradient(160deg,#dbf1e5,#a3d9bd)] p-6 text-ink transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-raised)]"
+          >
+            <div>
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
+                <Icon name="refresh" size={20} />
               </span>
-            </Link>
-          </StaggerItem>
-          <StaggerItem>
-            <Link
-              to="/soporte"
-              className="group flex h-full flex-col justify-between rounded-[20px] bg-[linear-gradient(160deg,#dbeaf9,#8fc3ee)] p-6 text-ink transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-raised)]"
-            >
-              <div>
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
-                  <Icon name="wrench" size={20} />
-                </span>
-                <h3 className="mt-4 text-lg font-extrabold">Servicio técnico</h3>
-                <p className="mt-1 text-sm text-ink/80">Reparaciones oficiales Apple.</p>
-              </div>
-              <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
-                Ver taller <Icon name="arrow-right" size={16} />
+              <h3 className="mt-4 text-lg font-extrabold">Plan Renove</h3>
+              <p className="mt-1 text-sm text-ink/80">Hasta 400 € por tu Apple actual.</p>
+            </div>
+            <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
+              Valorar mi dispositivo <Icon name="arrow-right" size={16} />
+            </span>
+          </Link>
+          <Link
+            to="/soporte"
+            className="group flex h-full flex-col justify-between rounded-[20px] bg-[linear-gradient(160deg,#dbeaf9,#8fc3ee)] p-6 text-ink transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-raised)]"
+          >
+            <div>
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
+                <Icon name="wrench" size={20} />
               </span>
-            </Link>
-          </StaggerItem>
-          <StaggerItem>
-            <Link
-              to="/servicios"
-              className="group flex h-full flex-col justify-between rounded-[20px] bg-[linear-gradient(160deg,#e6dff8,#b8a3e6)] p-6 text-ink transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-raised)]"
-            >
-              <div>
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
-                  <Icon name="graduation" size={20} />
-                </span>
-                <h3 className="mt-4 text-lg font-extrabold">Formación Banana</h3>
-                <p className="mt-1 text-sm text-ink/80">Talleres gratis en tienda.</p>
-              </div>
-              <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
-                Ver próximos <Icon name="arrow-right" size={16} />
+              <h3 className="mt-4 text-lg font-extrabold">Servicio técnico</h3>
+              <p className="mt-1 text-sm text-ink/80">Reparaciones oficiales Apple.</p>
+            </div>
+            <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
+              Ver taller <Icon name="arrow-right" size={16} />
+            </span>
+          </Link>
+          <Link
+            to="/servicios"
+            className="group flex h-full flex-col justify-between rounded-[20px] bg-[linear-gradient(160deg,#e6dff8,#b8a3e6)] p-6 text-ink transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-raised)]"
+          >
+            <div>
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
+                <Icon name="graduation" size={20} />
               </span>
-            </Link>
-          </StaggerItem>
-        </StaggerGroup>
+              <h3 className="mt-4 text-lg font-extrabold">Formación Banana</h3>
+              <p className="mt-1 text-sm text-ink/80">Talleres gratis en tienda.</p>
+            </div>
+            <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
+              Ver próximos <Icon name="arrow-right" size={16} />
+            </span>
+          </Link>
+        </MobileScroller>
       </Section>
 
       {/* 09 — Testimonios (contenido demostrativo) */}
       <Section>
         <SectionHeader eyebrow="Lo que dicen de nosotros" title="Clientes que ya son familia" desc="Contenido demostrativo, pendiente de validar con opiniones reales." />
-        <StaggerGroup className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <MobileScroller
+          desktopClass="sm:grid sm:grid-cols-2 sm:gap-5 md:grid-cols-3"
+          itemClass="w-[calc(100vw-2.5rem)] sm:w-auto"
+        >
           {[
             {
               name: 'Elena R.',
@@ -298,31 +299,29 @@ export function Home() {
               hue: '#dbf1e5',
             },
           ].map((t) => (
-            <StaggerItem key={t.name}>
-              <div className="flex h-full flex-col rounded-[20px] border border-line bg-surface p-6 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]">
-                <div className="flex items-center gap-3">
-                  <span
-                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full font-display text-lg font-extrabold text-ink"
-                    style={{ backgroundColor: t.hue }}
-                  >
-                    {t.name.charAt(0)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-ink">{t.name}</p>
-                    <p className="truncate text-xs text-muted">{t.city} · {t.product}</p>
-                  </div>
+            <div key={t.name} className="flex h-full flex-col rounded-[20px] border border-line bg-surface p-6 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]">
+              <div className="flex items-center gap-3">
+                <span
+                  className="grid h-12 w-12 shrink-0 place-items-center rounded-full font-display text-lg font-extrabold text-ink"
+                  style={{ backgroundColor: t.hue }}
+                >
+                  {t.name.charAt(0)}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-ink">{t.name}</p>
+                  <p className="truncate text-xs text-muted">{t.city} · {t.product}</p>
                 </div>
-                <div className="mt-3 flex items-center gap-0.5 text-banana">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Icon key={i} name="star" size={16} className={i < t.stars ? 'fill-current' : 'text-muted/40'} />
-                  ))}
-                </div>
-                <p className="mt-3 flex-1 text-sm leading-relaxed text-ink/85">"{t.text}"</p>
-                <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">Reseña demostrativa</p>
               </div>
-            </StaggerItem>
+              <div className="mt-3 flex items-center gap-0.5 text-banana">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Icon key={i} name="star" size={16} className={i < t.stars ? 'fill-current' : 'text-muted/40'} />
+                ))}
+              </div>
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-ink/85">"{t.text}"</p>
+              <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">Reseña demostrativa</p>
+            </div>
           ))}
-        </StaggerGroup>
+        </MobileScroller>
       </Section>
 
       {/* 09 — Tiendas físicas (carrusel) */}

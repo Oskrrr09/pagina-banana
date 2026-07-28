@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { Link } from 'react-router-dom'
-import { familiesNav, directLinks } from '../../data/nav'
+import { familiesNav, directLinks, utilityLinks } from '../../data/nav'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
 
@@ -171,6 +171,27 @@ export function MobileMenu({
                 ))}
               </ul>
             </nav>
+
+            {/* Servicios y ayuda — mismos enlaces que la barra superior de escritorio */}
+            <div className="mt-6 rounded-[16px] bg-neutral p-4">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
+                Servicios y ayuda
+              </p>
+              <ul className="grid grid-cols-2 gap-1">
+                {utilityLinks.map((l) => (
+                  <li key={l.label}>
+                    <Link
+                      to={l.to}
+                      onClick={onClose}
+                      className="flex items-center gap-2 rounded-[10px] px-2 py-2.5 text-[14px] font-medium text-ink hover:bg-surface"
+                    >
+                      <Icon name={l.icon} size={16} className="shrink-0 text-muted" />
+                      <span className="truncate">{l.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           <div className="border-t border-line px-5 py-4 text-sm text-muted">

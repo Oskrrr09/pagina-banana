@@ -179,20 +179,20 @@ export function HeroCarousel() {
       <button
         onClick={() => goTo(index - 1)}
         aria-label="Slide anterior"
-        className={`absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full backdrop-blur transition-colors md:grid ${
-          light ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-ink/10 text-ink hover:bg-ink/20'
+        className={`absolute left-2 top-1/2 z-20 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full backdrop-blur transition-colors md:h-11 md:w-11 ${
+          light ? 'bg-white/15 text-white hover:bg-white/25' : 'bg-ink/10 text-ink hover:bg-ink/20'
         }`}
       >
-        <Icon name="chevron-right" className="rotate-180" size={20} />
+        <Icon name="chevron-right" className="rotate-180" size={18} />
       </button>
       <button
         onClick={() => goTo(index + 1)}
         aria-label="Slide siguiente"
-        className={`absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full backdrop-blur transition-colors md:grid ${
-          light ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-ink/10 text-ink hover:bg-ink/20'
+        className={`absolute right-2 top-1/2 z-20 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full backdrop-blur transition-colors md:h-11 md:w-11 ${
+          light ? 'bg-white/15 text-white hover:bg-white/25' : 'bg-ink/10 text-ink hover:bg-ink/20'
         }`}
       >
-        <Icon name="chevron-right" size={20} />
+        <Icon name="chevron-right" size={18} />
       </button>
 
       {/* Puntos */}

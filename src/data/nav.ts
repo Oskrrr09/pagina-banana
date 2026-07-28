@@ -99,3 +99,13 @@ export const directLinks = [
   { label: 'Tiendas', to: '/tiendas' },
   { label: 'Soporte', to: '/soporte' },
 ]
+
+// Enlaces institucionales que aparecen en la barra superior (escritorio) y en
+// el menú móvil como sección de servicios/ayuda.
+export const utilityLinks = [
+  { label: 'Tiendas', to: '/tiendas', icon: 'store' },
+  { label: 'Empresas', to: '/servicios', icon: 'package' },
+  { label: 'Educación', to: '/servicios', icon: 'graduation' },
+  { label: 'Formación', to: '/servicios', icon: 'chat' },
+  { label: 'Servicio técnico', to: '/soporte', icon: 'wrench' },
+]

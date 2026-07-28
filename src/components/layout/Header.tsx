@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { familiesNav, directLinks } from '../../data/nav'
+import { familiesNav, directLinks, utilityLinks } from '../../data/nav'
 import { useStore } from '../../lib/store'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
@@ -128,14 +128,8 @@ export function Header() {
       <header className="sticky top-0 z-40">
         {/* Barra superior de servicios — enlaces institucionales, estilo K-tuin */}
         <div className="bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] text-ink">
-          <div className="mx-auto flex h-9 max-w-7xl items-center justify-end gap-1 px-4 text-[13px] font-medium sm:justify-center sm:gap-2">
-            {[
-              { label: 'Tiendas', to: '/tiendas', icon: 'store' },
-              { label: 'Empresas', to: '/servicios', icon: 'package' },
-              { label: 'Educación', to: '/servicios', icon: 'graduation' },
-              { label: 'Formación', to: '/servicios', icon: 'chat' },
-              { label: 'Servicio técnico', to: '/soporte', icon: 'wrench' },
-            ].map((link) => (
+          <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-1 px-4 text-[13px] font-medium sm:gap-2">
+            {utilityLinks.map((link) => (
               <Link
                 key={link.label}
                 to={link.to}
@@ -144,7 +138,7 @@ export function Header() {
                 <Icon name={link.icon} size={14} /> {link.label}
               </Link>
             ))}
-            {/* Móvil: sólo los 2 más importantes */}
+            {/* Móvil: sólo los 2 más importantes; el resto se ven en el menú móvil */}
             <Link to="/tiendas" className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-ink/85 hover:text-ink sm:hidden">
               <Icon name="store" size={13} /> Tiendas
             </Link>
