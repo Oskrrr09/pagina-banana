@@ -126,18 +126,31 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-40">
-        {/* Barra promocional superior — degradado bandera de Canarias, mismo del bloque de ofertas */}
+        {/* Barra superior de servicios — enlaces institucionales, estilo K-tuin */}
         <div className="bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] text-ink">
-          <div className="mx-auto flex h-8 max-w-7xl items-center justify-center gap-6 px-4 text-[12px] font-medium">
-            <span className="hidden items-center gap-1.5 sm:inline-flex">
-              <Icon name="truck" size={14} /> Envío gratis a toda Canarias en pedidos +50 €
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="credit-card" size={14} /> Financiación al 0 % hasta 24 meses
-            </span>
-            <span className="hidden items-center gap-1.5 md:inline-flex">
-              <Icon name="store" size={14} /> Recogida gratis en 5 tiendas
-            </span>
+          <div className="mx-auto flex h-9 max-w-7xl items-center justify-end gap-1 px-4 text-[13px] font-medium sm:justify-center sm:gap-2">
+            {[
+              { label: 'Tiendas', to: '/tiendas', icon: 'store' },
+              { label: 'Empresas', to: '/servicios', icon: 'package' },
+              { label: 'Educación', to: '/servicios', icon: 'graduation' },
+              { label: 'Formación', to: '/servicios', icon: 'chat' },
+              { label: 'Servicio técnico', to: '/soporte', icon: 'wrench' },
+            ].map((link) => (
+              <Link
+                key={link.label}
+                to={link.to}
+                className="hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-ink/80 transition-colors hover:bg-white/40 hover:text-ink sm:inline-flex"
+              >
+                <Icon name={link.icon} size={14} /> {link.label}
+              </Link>
+            ))}
+            {/* Móvil: sólo los 2 más importantes */}
+            <Link to="/tiendas" className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-ink/85 hover:text-ink sm:hidden">
+              <Icon name="store" size={13} /> Tiendas
+            </Link>
+            <Link to="/soporte" className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-ink/85 hover:text-ink sm:hidden">
+              <Icon name="wrench" size={13} /> Soporte
+            </Link>
           </div>
         </div>
 
