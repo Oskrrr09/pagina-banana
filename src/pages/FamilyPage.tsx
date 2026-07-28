@@ -161,7 +161,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
         </Container>
       </section>
 
-      <section className="bg-[linear-gradient(135deg,#d9f1ff_0%,#eee7fa_48%,#ffe5b8_100%)] py-12 md:py-16">
+      <section className="bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] py-12 md:py-16">
         <Container>
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-danger">Oportunidades</p>
