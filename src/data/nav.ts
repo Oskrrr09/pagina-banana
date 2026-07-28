@@ -60,12 +60,15 @@ function buildFamilyNav(slug: string, name: string): FamilyNav {
     'mac-mini-m4',
   ]
   const ipadOrder = ['ipad-pro', 'ipad-air', 'ipad-mini', 'ipad-a16']
+  const watchOrder = ['watch-ultra-3', 'watch-series-11', 'watch-se-3']
   const orderedModels =
     slug === 'mac'
       ? [...models].sort((a, b) => macOrder.indexOf(a.slug) - macOrder.indexOf(b.slug))
       : slug === 'ipad'
         ? [...models].sort((a, b) => ipadOrder.indexOf(a.slug) - ipadOrder.indexOf(b.slug))
-        : models
+        : slug === 'apple-watch'
+          ? [...models].sort((a, b) => watchOrder.indexOf(a.slug) - watchOrder.indexOf(b.slug))
+          : models
   const featured = orderedModels[0]
   return {
     slug,

@@ -20,7 +20,7 @@ export const families: Family[] = [
   { slug: 'mac', name: 'Mac', tagline: 'Potencia de sobremesa y portátil', fromPrice: 719 },
   { slug: 'iphone', name: 'iPhone', tagline: 'El iPhone que buscas, al mejor precio en Canarias', fromPrice: 959 },
   { slug: 'ipad', name: 'iPad', tagline: 'Versátil, ligero, para todo', fromPrice: 409 },
-  { slug: 'apple-watch', name: 'Watch', tagline: 'Tu salud, en la muñeca', fromPrice: 459 },
+  { slug: 'apple-watch', name: 'Watch', tagline: 'Tu salud, en la muñeca', fromPrice: 279 },
   { slug: 'airpods', name: 'AirPods', tagline: 'Sonido sin cables', fromPrice: 279 },
   { slug: 'accesorios', name: 'Accesorios', tagline: 'Fundas, cargadores y más', fromPrice: 29 },
 ]
@@ -378,7 +378,39 @@ export const ipadModels: Model[] = [
 ]
 
 // =====================  Apple Watch  =====================
+// El tamaño de caja se elige como parte de la capacidad (patrón MBP/iPad).
+const s11AlumCaps: CapSpec[] = [
+  ['42 mm · GPS', 459], ['42 mm · GPS + Cellular', 559],
+  ['46 mm · GPS', 489], ['46 mm · GPS + Cellular', 589],
+]
+const s11TitanCaps: CapSpec[] = [
+  ['42 mm · GPS + Cellular', 799],
+  ['46 mm · GPS + Cellular', 849, null, 'bajo-pedido', 'Recíbelo en 5-7 días'],
+]
+
 export const watchModels: Model[] = [
+  {
+    slug: 'watch-ultra-3',
+    family: 'apple-watch',
+    name: 'Apple Watch Ultra 3',
+    tagline: 'Titanio aeronáutico, GPS de doble frecuencia y la mayor autonomía.',
+    fromPrice: 909,
+    financeFrom: { monthly: 38, months: 24 },
+    colors: buildColors([
+      { slug: 'negro-alpine', name: 'Titanio negro · Correa Alpine', hex: '#2a2a2c', image: `${IMG}/watch-ultra-alpine.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
+      { slug: 'negro-ocean', name: 'Titanio negro · Correa Ocean', hex: '#1c1c1e', image: `${IMG}/watch-ultra-ocean.webp`, caps: [['49 mm · GPS + Cellular', 909]] },
+      { slug: 'natural-alpine', name: 'Titanio natural · Correa Alpine', hex: '#d0cec7', image: `${IMG}/watch-ultra-alpine.webp`, caps: [['49 mm · GPS + Cellular', 909, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+    ]),
+    specs: [
+      { label: 'Caja', value: 'Titanio 49 mm' },
+      { label: 'Pantalla', value: 'Retina LTPO3, 3000 nits' },
+      { label: 'Chip', value: 'S11 SiP' },
+      { label: 'Autonomía', value: 'Hasta 42 h (72 h en bajo consumo)' },
+      { label: 'Resistencia', value: 'WR100 · EN13319 · MIL-STD-810H' },
+      { label: 'Conectividad', value: 'GPS doble frecuencia · Cellular' },
+    ],
+    highlights: ['Caja de titanio 49 mm', 'GPS de doble frecuencia', 'Hasta 42 h de batería', 'Botón de acción configurable', 'Sensor de profundidad'],
+  },
   {
     slug: 'watch-series-11',
     family: 'apple-watch',
@@ -387,39 +419,55 @@ export const watchModels: Model[] = [
     fromPrice: 459,
     financeFrom: { monthly: 19, months: 24 },
     colors: buildColors([
-      { slug: 'negro', name: 'Aluminio negro azabache', hex: '#1c1c1e', image: `${IMG}/watch-s11-negro.webp`, caps: [['42 mm', 459], ['46 mm', 489]] },
-      { slug: 'rosa', name: 'Aluminio oro rosa', hex: '#dbb6b0', image: `${IMG}/watch-s11-rosa.webp`, caps: [['42 mm', 459], ['46 mm', 489]] },
-      { slug: 'plata', name: 'Aluminio plata', hex: '#e3e4e6', image: `${IMG}/watch-s11-plata.webp`, caps: [['42 mm', 459], ['46 mm', 489]] },
-      { slug: 'gris', name: 'Aluminio gris espacial', hex: '#8e8e93', image: `${IMG}/watch-s11-gris.webp`, caps: [['42 mm', 459], ['46 mm', 489, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'alum-negro', name: 'Aluminio negro azabache', hex: '#1c1c1e', image: `${IMG}/watch-s11-negro.webp`, caps: s11AlumCaps },
+      { slug: 'alum-rosa', name: 'Aluminio oro rosa', hex: '#dbb6b0', image: `${IMG}/watch-s11-rosa.webp`, caps: s11AlumCaps },
+      { slug: 'alum-plata', name: 'Aluminio plata', hex: '#e3e4e6', image: `${IMG}/watch-s11-plata.webp`, caps: s11AlumCaps },
+      { slug: 'alum-gris', name: 'Aluminio gris espacial', hex: '#8e8e93', image: `${IMG}/watch-s11-gris.webp`, caps: s11AlumCaps },
+      { slug: 'titan-natural', name: 'Titanio natural', hex: '#d0cec7', image: `${IMG}/watch-s11-plata.webp`, caps: s11TitanCaps },
+      { slug: 'titan-oro', name: 'Titanio oro', hex: '#c4a86e', image: `${IMG}/watch-s11-rosa.webp`, caps: s11TitanCaps },
+      { slug: 'titan-slate', name: 'Titanio slate', hex: '#4a4a4c', image: `${IMG}/watch-s11-negro.webp`, caps: s11TitanCaps },
     ]),
     specs: [
+      { label: 'Caja', value: 'Aluminio o titanio (42 o 46 mm)' },
       { label: 'Pantalla', value: 'Retina LTPO3 siempre activa' },
       { label: 'Chip', value: 'S11 SiP' },
-      { label: 'Salud', value: 'ECG, oxígeno en sangre, temperatura' },
+      { label: 'Salud', value: 'ECG, oxígeno en sangre, temperatura, apnea del sueño' },
       { label: 'Resistencia', value: 'WR50 · IP6X' },
-      { label: 'Conectividad', value: 'GPS (opción Cellular)' },
+      { label: 'Conectividad', value: 'GPS o GPS + Cellular' },
     ],
-    highlights: ['Pantalla siempre activa', 'Chip S11', 'ECG y oxígeno en sangre', 'Resistente al agua WR50', 'GPS'],
+    highlights: ['Pantalla siempre activa', 'Chip S11', 'ECG y oxígeno en sangre', 'Detección de apnea del sueño', 'Aluminio o titanio'],
   },
   {
-    slug: 'watch-ultra-3',
+    slug: 'watch-se-3',
     family: 'apple-watch',
-    name: 'Apple Watch Ultra 3',
-    tagline: 'Titanio, GPS de doble frecuencia y la mayor autonomía.',
-    fromPrice: 909,
-    financeFrom: { monthly: 38, months: 24 },
+    name: 'Apple Watch SE 3',
+    tagline: 'Lo esencial del Apple Watch, ahora más asequible.',
+    fromPrice: 279,
+    financeFrom: { monthly: 12, months: 24 },
     colors: buildColors([
-      { slug: 'alpine', name: 'Titanio negro · Correa Alpine', hex: '#3a3a3c', image: `${IMG}/watch-ultra-alpine.webp`, caps: [['49 mm', 909]] },
-      { slug: 'ocean', name: 'Titanio negro · Correa Ocean', hex: '#2a2a2c', image: `${IMG}/watch-ultra-ocean.webp`, caps: [['49 mm', 909]] },
+      { slug: 'medianoche', name: 'Aluminio medianoche', hex: '#2c3138', image: `${IMG}/watch-se-3-hero.webp`, caps: [
+        ['40 mm · GPS', 279], ['40 mm · GPS + Cellular', 329],
+        ['44 mm · GPS', 309], ['44 mm · GPS + Cellular', 359],
+      ] },
+      { slug: 'blanco-estrella', name: 'Aluminio blanco estrella', hex: '#ded8ca', image: `${IMG}/watch-se-3-hero.webp`, caps: [
+        ['40 mm · GPS', 279], ['40 mm · GPS + Cellular', 329],
+        ['44 mm · GPS', 309], ['44 mm · GPS + Cellular', 359],
+      ] },
+      { slug: 'plata', name: 'Aluminio plata', hex: '#e3e4e6', image: `${IMG}/watch-se-3-hero.webp`, caps: [
+        ['40 mm · GPS', 279], ['40 mm · GPS + Cellular', 329],
+        ['44 mm · GPS', 309, null, 'bajo-pedido', 'Recíbelo en 5-7 días'],
+        ['44 mm · GPS + Cellular', 359, null, 'bajo-pedido', 'Recíbelo en 5-7 días'],
+      ] },
     ]),
     specs: [
-      { label: 'Pantalla', value: 'Retina LTPO3, 3000 nits' },
-      { label: 'Chip', value: 'S11 SiP' },
-      { label: 'Caja', value: 'Titanio 49 mm' },
-      { label: 'Resistencia', value: 'WR100 · EN13319' },
-      { label: 'Conectividad', value: 'GPS doble frecuencia · Cellular' },
+      { label: 'Caja', value: 'Aluminio (40 o 44 mm)' },
+      { label: 'Pantalla', value: 'Retina siempre activa' },
+      { label: 'Chip', value: 'S10 SiP' },
+      { label: 'Salud', value: 'Frecuencia cardiaca, detección de caídas' },
+      { label: 'Resistencia', value: 'WR50' },
+      { label: 'Conectividad', value: 'GPS o GPS + Cellular' },
     ],
-    highlights: ['Caja de titanio', 'GPS de doble frecuencia', 'Hasta 42 h de batería', 'Resistencia WR100', 'Botón de acción'],
+    highlights: ['Modelo más asequible', 'Pantalla siempre activa', 'Chip S10', 'Detección de caídas', 'Tres colores'],
   },
 ]
 

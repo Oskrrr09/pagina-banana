@@ -43,8 +43,9 @@ const SEARCH_SUGGESTIONS = [
     label: 'Apple Watch',
     slug: 'apple-watch',
     models: [
-      { name: 'Apple Watch Series 11', slug: 'watch-series-11' },
       { name: 'Apple Watch Ultra 3', slug: 'watch-ultra-3' },
+      { name: 'Apple Watch Series 11', slug: 'watch-series-11' },
+      { name: 'Apple Watch SE 3', slug: 'watch-se-3' },
     ],
   },
   {
