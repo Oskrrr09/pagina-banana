@@ -27,3 +27,15 @@ docs/.obsidian/
 playwright-report/
 test-results/
 blob-report/
+
+# Sesiones y artefactos privados de la auditoría manual de la web oficial
+# (nunca deben versionarse: pueden contener cookies, tokens o capturas
+# con datos personales de la cuenta de prueba)
+playwright/.auth/
+.auth/
+audit-private/
+audit-logs-private/
+audit-temp/
+storageState*.json
+*.storage-state.json
+*.session.json

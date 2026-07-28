@@ -210,6 +210,18 @@ del repositorio. No se corrigen en la preparación documental.
 - Siguiente validación: actualizar de forma explícita la versión de Node del
   workflow y volver a comprobar `npm ci`, build y Pages.
 
+## UX-BANANA-001 — Hallazgos de la auditoría de la web oficial
+
+- Estado: informativo, sin implementación pendiente en esta iteración.
+- Origen: [[auditorias/auditoria-web-oficial-banana]] (2026-07-28).
+- Motivo: la auditoría se realizó sólo con lectura, sin modificar el
+  prototipo. Las propuestas quedan como backlog en el §6 del roadmap.
+- Notas:
+  - No se implementa nada relacionado con el seguro.
+  - No se propone tasador propio ni sistema de citas.
+  - La cuenta de prueba y las capturas privadas viven en
+    `audit-private/` y `playwright/.auth/`, ambas ignoradas por Git.
+
 ## HOOKS-001 — CheckoutPage llamaba hooks tras retornos condicionales
 
 - Estado: cerrado el 2026-07-28.

@@ -60,3 +60,19 @@ Solo después de acordar alcance:
 - Añadir tests de componentes para selección, modales y validación.
 - Añadir E2E para navegación profunda en GitHub Pages, carrito y checkout.
 - Incorporar comprobaciones de accesibilidad y presupuesto de bundle al CI.
+
+## 6. Ideas surgidas de la auditoría UX de la web oficial (2026-07-28)
+
+Basado en [[auditorias/auditoria-web-oficial-banana]]. Ninguna se ha
+implementado todavía; son propuestas para valorar contigo:
+
+- Añadir `<h1>` semántico en la portada del prototipo.
+- Banner "Sin cita previa" en la sección de servicio técnico.
+- Timeline explicativa del Plan Renove (4 pasos) sin inventar precios
+  ni sustituir a Foxway.
+- Franja fija con "Total — Continuar" en checkout móvil, sin tocar la
+  lógica del seguro ni la trampa de foco existente del chat.
+- Integrar `axe-core` en la suite Playwright para cubrir accesibilidad.
+
+Descartadas expresamente (mismo informe): tasador propio del Plan
+Renove, sistema de citas para servicio técnico y chat con IA real.
