@@ -122,11 +122,17 @@ export function Header() {
             scrolled ? 'shadow-[0_6px_20px_-8px_rgba(0,0,0,0.18)]' : ''
           }`}
         >
-        <div className="banana-header-bar flex h-16 w-full items-center px-6 sm:px-8 lg:px-12">
+        <div className="banana-header-bar relative mx-auto flex h-16 w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
           <Logo />
 
-          {/* Escritorio: navegación centrada con mega-menú */}
-          <nav className="hidden flex-1 items-center justify-center gap-1 xl:flex" aria-label="Principal">
+          {/* Escritorio: navegación absolutamente centrada respecto al mismo
+              contenedor que la barra utilitaria superior, para que ambas
+              queden alineadas en el mismo eje vertical independientemente
+              del ancho del logo o de los accesos permanentes. */}
+          <nav
+            className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 xl:flex"
+            aria-label="Principal"
+          >
             {familiesNav.map((fam) => (
               <div key={fam.slug} onMouseEnter={() => openMega(fam.slug)} onMouseLeave={scheduleClose}>
                 <Link
