@@ -134,7 +134,7 @@ export function Header() {
               <Link
                 key={link.label}
                 to={link.to}
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-ink/80 transition-colors hover:bg-white/40 hover:text-ink"
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white/90 transition-colors hover:bg-white/15 hover:text-white"
               >
                 <Icon name={link.icon} size={14} /> {link.label}
               </Link>
