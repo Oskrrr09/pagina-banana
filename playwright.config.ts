@@ -31,8 +31,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // Mobile project usa un dispositivo Chromium (Pixel 5) para no exigir
+      // que WebKit esté instalado en CI. Solo corren las pruebas con marca
+      // `@mobile` o `@all`.
       name: 'mobile',
-      use: { ...devices['iPhone 12'] },
+      use: { ...devices['Pixel 5'] },
       grep: /@mobile|@all/,
     },
   ],
