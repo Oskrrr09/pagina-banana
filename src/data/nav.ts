@@ -99,8 +99,6 @@ export const familiesNav: FamilyNav[] = families
 
 export const directLinks = [
   { label: 'Servicios', to: '/servicios' },
-  { label: 'Tiendas', to: '/tiendas' },
-  { label: 'Soporte', to: '/soporte' },
 ]
 
 // Enlaces institucionales que aparecen en la barra superior (escritorio) y en
