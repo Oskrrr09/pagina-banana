@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { Link } from 'react-router-dom'
-import { familiesNav, directLinks, utilityLinks } from '../../data/nav'
+import { familiesNav, utilityLinks } from '../../data/nav'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
 
@@ -158,17 +158,6 @@ export function MobileMenu({
                   )
                 })}
 
-                {directLinks.map((l) => (
-                  <li key={l.to} className="border-b border-line">
-                    <Link
-                      to={l.to}
-                      onClick={onClose}
-                      className="block py-4 text-lg font-bold text-ink hover:text-ink"
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
               </ul>
             </nav>
 

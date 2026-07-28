@@ -126,25 +126,18 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-40">
-        {/* Barra superior de servicios — enlaces institucionales, estilo K-tuin */}
-        <div className="bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] text-ink">
-          <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-1 px-4 text-[13px] font-medium sm:gap-2">
+        {/* Barra superior de servicios — sólo escritorio; en móvil viven en el menú */}
+        <div className="hidden bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] text-ink sm:block">
+          <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium">
             {utilityLinks.map((link) => (
               <Link
                 key={link.label}
                 to={link.to}
-                className="hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-ink/80 transition-colors hover:bg-white/40 hover:text-ink sm:inline-flex"
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-ink/80 transition-colors hover:bg-white/40 hover:text-ink"
               >
                 <Icon name={link.icon} size={14} /> {link.label}
               </Link>
             ))}
-            {/* Móvil: sólo los 2 más importantes; el resto se ven en el menú móvil */}
-            <Link to="/tiendas" className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-ink/85 hover:text-ink sm:hidden">
-              <Icon name="store" size={13} /> Tiendas
-            </Link>
-            <Link to="/soporte" className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-ink/85 hover:text-ink sm:hidden">
-              <Icon name="wrench" size={13} /> Soporte
-            </Link>
           </div>
         </div>
 
