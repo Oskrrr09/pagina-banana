@@ -8,6 +8,38 @@ actualizado: 2026-07-28
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-28 — Docs actualizados y E2E reales para favoritos y comparador
+
+Rama `fix/docs-and-real-e2e`.
+
+- README: la sección "Pruebas Playwright" indica el número real de
+  suites y pruebas medido con `npm run test:e2e` (21: 20 en `chromium`
+  + 1 en `mobile`), enumera cada archivo y aclara que el workflow
+  instala Chromium y que el proyecto `mobile` usa `Pixel 5` para no
+  requerir WebKit. Se explicita que favoritos y comparador se prueban
+  ahora recorriendo la interfaz real y que no se preselecciona nada en
+  `localStorage`.
+- `docs/00-estado-actual.md`: retirada la PR #5 como versión desplegada
+  actual y sustituida por la PR #10 y esta rama; catálogo corregido a
+  21 modelos reales contados desde `src/data/products.ts`; tiendas con
+  badge "Abierto ahora" / "Cerrado" (hora de Canarias) y mapa por
+  `mapQuery`; modo claro fijo sin `prefers-color-scheme`; historial
+  de despliegues y verificaciones marcado explícitamente como
+  histórico para no confundirlo con el estado actual.
+- `docs/04-problemas-pendientes.md`: QA-001 detalla la nueva
+  metodología (interacción real, sin `setItem`); DOC-001, HOOKS-001 y
+  A11Y-001 se mantienen cerrados; no se abren problemas sobre el
+  seguro.
+- Pruebas E2E: `tests/e2e/favorites-compare.spec.ts` reescrito.
+  Favoritos ahora se prueba desde `/iphone` → botón corazón del
+  `ProductCard` → `/favoritos` → botón "Quitar" → estado vacío.
+  Comparador ahora se prueba desde `/iphone/17-pro` → dos checkboxes
+  "Añadir a comparar" → `/comparar` → botones "Quitar" → vacío. Las
+  pruebas del seguro (`checkout-flow.spec.ts` y `checkout.spec.ts`) se
+  conservan intactas.
+- Resultados: `npm run build` correcto (426 módulos); `npm run test:e2e`
+  21/21 en verde; Deploy Pages y Pruebas E2E en verde tras el merge.
+
 ## 2026-07-28 — Hooks del checkout, trampa de foco del chat, docs y E2E
 
 Rama `fix/checkout-hooks-docs-e2e`.

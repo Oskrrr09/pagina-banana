@@ -11,20 +11,23 @@ actualizado: 2026-07-28
 > checkout simulado, servicios, Plan Renove, tiendas y soporte. No existe backend
 > ni integración comercial real.
 
-## Referencia de la auditoría
+## Referencia actual
 
-- Rama: `main`.
-- Commit funcional desplegado: `03e11f13f3a3c6446382441a39a78a427332caed`
-  (merge de la PR
-  [#5](https://github.com/luis-lop-nas/pagina-banana/pull/5)).
-- URL pública verificada:
-  <https://luis-lop-nas.github.io/pagina-banana/>.
-- Sin diferencias en archivos versionados antes de iniciar esta estructura
-  documental.
-- Ya existían dos carpetas locales no versionadas: `.agents/` y `.obsidian/`.
-  `.agents/` replica los skills versionados en `.claude/skills/`; se incorpora
-  al repositorio como guía de trabajo para agentes. `.obsidian/` permanece como
-  configuración local ignorada.
+- Rama de producción: `main`.
+- Último merge relevante: PR
+  [#10](https://github.com/luis-lop-nas/pagina-banana/pull/10) —
+  "Checkout hooks, chat focus trap, README y suite E2E ampliada",
+  merge en `5430865` el 2026-07-28. Rama posterior
+  `fix/docs-and-real-e2e` actualiza README y pruebas E2E reales.
+- URL pública verificada el 2026-07-28:
+  <https://luis-lop-nas.github.io/pagina-banana/> (HTTP 200).
+- Workflows comprobados en el mismo día: Deploy a GitHub Pages
+  `30391392521` ✅ y Pruebas E2E (Playwright) `30391392484` ✅ sobre
+  el commit del merge de la PR #10.
+- Ya existían dos carpetas locales no versionadas: `.agents/` y
+  `.obsidian/`. `.agents/` replica los skills versionados en
+  `.claude/skills/` y se incorpora al repositorio como guía de trabajo
+  para agentes. `.obsidian/` permanece como configuración local ignorada.
 
 ## Qué funciona hoy
 
@@ -35,11 +38,15 @@ actualizado: 2026-07-28
   enseñar el diseño; están claramente etiquetadas como contenido de
   demostración y se sustituirán por reseñas reales cuando Banana Computer las
   autorice.
-- Catálogo desarrollado para cinco familias: iPhone, Mac, iPad, Apple Watch y
-  AirPods. Accesorios no tiene catálogo propio: los cinco tiles de la home
-  enlazan a `/buscar?q=<término>`.
-- Dieciocho modelos con variantes de color/capacidad, imágenes locales, precios y
-  disponibilidad de ejemplo.
+- Catálogo desarrollado para cinco familias, con **21 modelos** totales
+  contados sobre `src/data/products.ts`: iPhone (4: 17 Pro Max, 17 Pro,
+  Air, 17), Mac (8: MacBook Neo, MacBook Air M4, MacBook Air M5,
+  MacBook Pro M4, MacBook Pro M5, iMac 24" M4, Mac Studio, Mac mini M4),
+  iPad (4: Pro, Air, mini, A16), Apple Watch (3: Ultra 3, Series 11,
+  SE 3) y AirPods (2: Pro 3, Max). Accesorios no tiene catálogo propio:
+  los cinco tiles de la home enlazan a `/buscar?q=<término>`.
+- Cada modelo cuenta con variantes de color/capacidad, imágenes locales
+  en WebP, precios y disponibilidad de ejemplo.
 - Las familias iPhone y Mac presentan un selector horizontal de modelos y una
   zona de ofertas; cada modelo abre directamente su variante configurable.
 - La categoría Mac incluye MacBook Neo, MacBook Air M4/M5, MacBook Pro M4/M5,
@@ -78,9 +85,14 @@ actualizado: 2026-07-28
   el recuadro visible sobre el fondo neutro.
 - La página de Mac incluye una sección "Catálogo completo" que muestra todos los
   modelos, incluidos Mac mini y Mac Studio, con acceso a compra directo.
-- Directorio de cinco tiendas con direcciones y horarios contrastados con las
-  fichas oficiales el 2026-07-26. No se muestra un estado “Abierto ahora”:
-  los horarios llevan fuente y aviso de posibles variaciones.
+- Directorio de cinco tiendas con direcciones y horarios contrastados
+  con las fichas oficiales el 2026-07-26. Las tarjetas muestran un
+  badge "Abierto ahora" en verde o "Cerrado" en rojo calculado en
+  tiempo real con la hora de Canarias (`Atlantic/Canary`) mediante
+  `isOpenNow` en `src/data/stores.ts`; debajo se muestra también el
+  horario del día correspondiente. El mapa embebido usa el campo
+  `mapQuery` de cada tienda para no depender del nombre visible, y
+  no existe reserva de cita.
 - El menú móvil mueve y confina el foco, cierra con Escape, devuelve el foco al
   disparador y bloquea/restaura el scroll de fondo.
 - En móvil, los bloques del footer comienzan cerrados como acordeones; la
@@ -140,12 +152,43 @@ actualizado: 2026-07-28
   compartida entre carrito y checkout, seguro sin duplicar cantidad,
   color/capacidad con basename, Apple Watch tamaño y GPS/Cellular
   preservados, recarga de ruta profunda, ausencia de errores de hooks
-  en consola durante navegación, favoritos y comparador desde
-  `localStorage`, y trampa de foco del chat con teclado.
+  en consola durante navegación, y trampa de foco del chat con teclado.
+  (En esa primera versión los tests de favoritos/comparador insertaban
+  el estado en `localStorage`; se rehacen en la rama siguiente.)
 - **README** con "PNGs oficiales" ⇒ "Imágenes oficiales optimizadas en
   WebP" y bloque explícito de reseñas / textos comerciales
   demostrativos; retirada la mención a `prefers-color-scheme` como
   cambio de tema.
+
+## Cambios recientes (rama `fix/docs-and-real-e2e`)
+
+- **Pruebas de favoritos y comparador rehechas por interacción real.**
+  `tests/e2e/favorites-compare.spec.ts` ya no siembra `banana:fav` ni
+  `banana:compare`. En su lugar navega a `/iphone`, pulsa el corazón
+  del `ProductCard` de "iPhone 17 Pro" (`aria-pressed` cambia a
+  `true`), va a `/favoritos`, verifica que aparece la tarjeta, la
+  quita desde el mismo botón y comprueba el estado vacío. El
+  comparador entra a `/iphone/17-pro`, marca dos checkboxes "Añadir a
+  comparar" en el `ModelPage`, va a `/comparar`, comprueba que
+  aparecen dos tarjetas del modelo y las elimina una a una con los
+  botones "Quitar", quedando vacío el comparador.
+- **README** actualizado con el número real de pruebas (21) y las
+  suites reales, la aclaración de que el workflow instala Chromium
+  (por eso el proyecto `mobile` usa Pixel 5) y la nota de que
+  favoritos y comparador se prueban ahora recorriendo la interfaz.
+- **`docs/00-estado-actual.md`** limpiado: se elimina la referencia a
+  la PR #5 como versión desplegada, se separa el historial de
+  despliegues del estado actual, se corrige el catálogo a 21 modelos
+  reales contados desde `src/data/products.ts`, se describe el badge
+  "Abierto ahora/Cerrado" con hora de Canarias y `mapQuery`, y se
+  fija el modo claro sin `prefers-color-scheme`.
+- **`docs/04-problemas-pendientes.md`**: QA-001 actualizado con el
+  detalle de la nueva metodología (interacción real, sin `setItem`).
+- **No se ha modificado ninguna lógica, cálculo, componente ni prueba
+  relacionada con el seguro** (`insurancePrice`,
+  `cartInsuranceTotal`, `setLineInsurance`, tarjetas de cesta y de
+  checkout, resumen). La prueba
+  "activar el seguro no cambia la cantidad…" se conserva intacta.
 
 ## Qué no existe
 
@@ -172,17 +215,27 @@ Las versiones instaladas desde `package-lock.json` durante la auditoría fueron:
 El workflow de GitHub Actions usa Node 20, ejecuta `npm ci` y `npm run build`, y
 publica `dist/` en GitHub Pages en cada push a `main`.
 
+### Historial de despliegues verificados
+
+> Los párrafos siguientes describen versiones antiguas del prototipo
+> y **no representan el estado actual**. Se conservan como bitácora.
+> El estado vigente está descrito en "Referencia actual" al principio
+> del documento.
+
 El despliegue de la PR #1 finalizó correctamente el 2026-07-26 en el workflow
 [`30206642599`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30206642599).
 
 El despliegue de la PR #4 finalizó correctamente el 2026-07-26 en el workflow
 [`30211613240`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30211613240).
 La URL pública devolvió HTTP 200, cargó los recursos desde
-`/pagina-banana/assets/` y mostró el bloque neutro de opiniones.
+`/pagina-banana/assets/` y mostró el bloque neutro de opiniones que existía en
+esa versión antigua (hoy la portada muestra reseñas demostrativas visibles a
+propósito).
 
 El despliegue de la PR #5 finalizó correctamente el 2026-07-26 en el workflow
 [`30214178171`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30214178171).
-La versión pública conservó el tema oscuro tras navegar, mantuvo el fondo negro
+La versión pública de aquel momento conservaba el tema oscuro tras navegar
+(la interfaz **actual** utiliza un modo claro fijo), mantuvo el fondo negro
 continuo de la campaña y cargó las ocho fotografías Mac centradas.
 
 El despliegue de la PR #2 finalizó correctamente en el workflow
@@ -190,7 +243,12 @@ El despliegue de la PR #2 finalizó correctamente en el workflow
 La versión pública abrió `512gb-naranja` desde el configurador, conservó el
 `basename` y mostró el seguro como casilla.
 
-## Verificación realizada
+## Verificación realizada (histórico por rama)
+
+> Estos bloques recogen verificaciones locales anteriores realizadas en
+> ramas ya fusionadas. Se conservan como bitácora y **no describen el
+> estado actual**. La verificación vigente se resume en "Referencia
+> actual" y en la sección "Cambios recientes".
 
 El 2026-07-26, en la rama `fix/product-variant-flow`:
 

@@ -142,29 +142,45 @@ del repositorio. No se corrigen en la preparación documental.
   de la sesión y no se crea al abrir la URL. Sigue sin ser un pedido real:
   aparece marcado como "Pedido de demostración" y no dispara emails ni pagos.
 
-## QA-001 — Suite E2E mínima con Playwright
+## QA-001 — Suite E2E con Playwright
 
-- Estado: ampliado el 2026-07-28.
-- Evidencia: 21 pruebas en `tests/e2e/` distribuidas en `home.spec.ts`,
+- Estado: ampliado y consolidado el 2026-07-28.
+- Evidencia: 21 pruebas en `tests/e2e/` (20 en `chromium` + 1 en
+  `mobile` etiquetada `@mobile`), distribuidas en `home.spec.ts`,
   `checkout.spec.ts`, `checkout-flow.spec.ts`, `chat.spec.ts`,
   `product.spec.ts`, `favorites-compare.spec.ts` y `search.spec.ts`.
-  Cubren: portada y no-scroll a 375 px; redirecciones y guardas de
-  `/checkout/2` y `/checkout/3` sin pedido; flujo demostrativo completo
-  con recarga; entrega compartida entre `/carrito` y `/checkout/1`;
-  seguro que no duplica cantidad y aparece separado en el resumen;
-  cambio de color y capacidad conservando `/pagina-banana/`; Apple
-  Watch Series 11 con tamaño y GPS/Cellular preservados al alternar;
-  recarga de ruta profunda; navegación entre pasos sin errores de
-  hooks en consola; ausencia del chat en checkout; trampa de foco del
-  chat con teclado (Enter/Tab/Shift+Tab/Escape); favoritos y
-  comparador desde `localStorage`; sincronización del buscador con la
-  URL y destinos de los tiles de accesorios.
-- CI: `.github/workflows/e2e.yml` sigue ejecutando `npm ci`,
-  `npm run build`, `npx playwright install --with-deps chromium` y
-  `npm run test:e2e` en cada push/PR sobre `main`, con el proyecto
-  móvil corriendo sobre Chromium (`Pixel 5`) para no requerir WebKit.
+- Cobertura:
+  - Portada y no-scroll horizontal a 375 px.
+  - Redirecciones y guardas de `/checkout/2` y `/checkout/3` sin pedido.
+  - Flujo demostrativo completo con recarga (`BC-\d{6}`).
+  - Entrega compartida entre `/carrito` y `/checkout/1` en ambos
+    sentidos.
+  - Seguro que no duplica cantidad y aparece separado en el resumen.
+  - Cambio de color y capacidad conservando `/pagina-banana/`; Apple
+    Watch Series 11 con tamaño y GPS/Cellular preservados al alternar.
+  - Recarga de ruta profunda; navegación entre pasos sin errores de
+    hooks en consola.
+  - Ausencia del chat en `/checkout/*`; trampa de foco del chat con
+    teclado (Enter/Tab/Shift+Tab/Escape).
+  - **Favoritos y comparador probados mediante interacción real**:
+    `favorites-compare.spec.ts` navega a `/iphone`, pulsa el corazón
+    del `ProductCard` de "iPhone 17 Pro", confirma que aparece en
+    `/favoritos` y lo quita hasta ver el estado vacío. El comparador
+    entra a `/iphone/17-pro`, marca dos checkboxes "Añadir a
+    comparar", verifica que aparecen en `/comparar` y los elimina uno
+    a uno con los botones "Quitar". **No se usa
+    `localStorage.setItem('banana:fav', …)` ni
+    `localStorage.setItem('banana:compare', …)`** para preparar el
+    resultado final ni existe eliminación condicional que permita
+    pasar sin botón.
+  - Sincronización del buscador con la URL y destinos reales de los
+    tiles de accesorios.
+- CI: `.github/workflows/e2e.yml` ejecuta `npm ci`, `npm run build`,
+  `npx playwright install --with-deps chromium` y `npm run test:e2e`
+  en cada push/PR sobre `main`, con el proyecto móvil corriendo sobre
+  Chromium (`Pixel 5`) para no requerir WebKit.
 - Pendiente: comprobaciones de accesibilidad automáticas (axe) y
-  cobertura de tiendas / detalle de tienda.
+  cobertura del detalle de tienda.
 
 ## SEG-001 — Avisos de seguridad en React Router
 

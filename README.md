@@ -198,9 +198,12 @@ flotante.
 
 - `.github/workflows/deploy.yml` — build + publicación a GitHub Pages en
   cada push a `main`.
-- `.github/workflows/e2e.yml` — `npm ci` + `npm run build` + instalación
-  de Chromium + `npm run test:e2e` en cada push/PR sobre `main`. Sube el
-  reporte HTML como artefacto si algo falla.
+- `.github/workflows/e2e.yml` — `npm ci` + `npm run build` +
+  `npx playwright install --with-deps chromium` + `npm run test:e2e`
+  en cada push/PR sobre `main`. **Solo se instala Chromium**, así que
+  el proyecto `mobile` está deliberadamente configurado con `Pixel 5`
+  (Chromium) en `playwright.config.ts` para no requerir WebKit. Sube
+  el reporte HTML como artefacto si algo falla.
 
 ## Pruebas Playwright
 
@@ -210,15 +213,31 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (9 pruebas):
+Suites actuales (21 pruebas, medido con `npm run test:e2e` — 20 en
+`chromium` + 1 en `mobile` etiquetada `@mobile`):
 
-- `tests/e2e/home.spec.ts` — carga de portada, `/buscar?q=fundas` en
-  accesorios y ausencia de scroll horizontal a 375 px.
+- `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que
+  llevan a `/buscar` y ausencia de scroll horizontal a 375 px.
 - `tests/e2e/checkout.spec.ts` — guardas de `/checkout/2` y `/checkout/3`,
-  flujo demostrativo completo (crea `BC-\d{6}`) con recarga, chat oculto en
+  flujo demostrativo completo (`BC-\d{6}`) con recarga y chat oculto en
   checkout.
+- `tests/e2e/checkout-flow.spec.ts` — entrega compartida entre `/carrito`
+  y `/checkout/1` en ambos sentidos, y seguro activable/desactivable que
+  no cambia la cantidad y aparece separado en el resumen.
+- `tests/e2e/chat.spec.ts` — apertura del chat con teclado, trampa de
+  foco Tab/Shift+Tab cíclica, Escape con retorno de foco al disparador
+  y ausencia total del chat dentro de `/checkout/*`.
+- `tests/e2e/product.spec.ts` — cambio de color y capacidad conservando
+  `/pagina-banana/`, recarga de ruta profunda, Apple Watch Series 11
+  con tamaño y GPS/Cellular preservados al alternar, y navegación entre
+  pasos del checkout sin errores de hooks en consola.
+- `tests/e2e/favorites-compare.spec.ts` — flujo real de usuario: añadir
+  y quitar favoritos desde el `ProductCard` de `/iphone` y `/favoritos`,
+  y añadir dos productos al comparador desde `/iphone/17-pro` usando los
+  checkboxes "Añadir a comparar", verlos en `/comparar` y vaciarlo con
+  los botones "Quitar". **No se preselecciona nada en `localStorage`.**
 - `tests/e2e/search.spec.ts` — sincronización del input con `?q=` y
-  destinos de los tiles de accesorios.
+  destinos reales de los tiles de accesorios.
 
 ## Documentación
 
