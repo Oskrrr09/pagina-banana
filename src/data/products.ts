@@ -19,7 +19,7 @@ const cap = (
 export const families: Family[] = [
   { slug: 'mac', name: 'Mac', tagline: 'Potencia de sobremesa y portátil', fromPrice: 719 },
   { slug: 'iphone', name: 'iPhone', tagline: 'El iPhone que buscas, al mejor precio en Canarias', fromPrice: 959 },
-  { slug: 'ipad', name: 'iPad', tagline: 'Versátil, ligero, para todo', fromPrice: 719 },
+  { slug: 'ipad', name: 'iPad', tagline: 'Versátil, ligero, para todo', fromPrice: 409 },
   { slug: 'apple-watch', name: 'Watch', tagline: 'Tu salud, en la muñeca', fromPrice: 459 },
   { slug: 'airpods', name: 'AirPods', tagline: 'Sonido sin cables', fromPrice: 279 },
   { slug: 'accesorios', name: 'Accesorios', tagline: 'Fundas, cargadores y más', fromPrice: 29 },
@@ -277,17 +277,47 @@ export const macModels: Model[] = [
 ]
 
 // =====================  iPad  =====================
+const iPadAirCaps: CapSpec[] = [['128 GB', 719], ['256 GB', 869], ['512 GB', 1119], ['1 TB', 1619]]
+const iPadAir13Caps: CapSpec[] = [['128 GB', 969], ['256 GB', 1119], ['512 GB', 1369], ['1 TB', 1869]]
+const iPadAirColors = (size: 11 | 13) =>
+  buildColors([
+    { slug: 'azul', name: 'Azul', hex: '#a9c3d6', image: `${IMG}/ipad-air-${size}-azul.png`, caps: size === 11 ? iPadAirCaps : iPadAir13Caps },
+    { slug: 'purpura', name: 'Púrpura', hex: '#b7a7d6', image: `${IMG}/ipad-air-${size}-purpura.png`, caps: size === 11 ? iPadAirCaps : iPadAir13Caps },
+    { slug: 'blanco', name: 'Blanco estrella', hex: '#ded9cf', image: `${IMG}/ipad-air-${size}-blanco.png`, caps: size === 11 ? iPadAirCaps : iPadAir13Caps },
+    { slug: 'gris', name: 'Gris espacial', hex: '#8e8e93', image: `${IMG}/ipad-air-${size}-gris.png`, caps: (size === 11 ? iPadAirCaps : iPadAir13Caps).map<CapSpec>(([c, p]) => [c, p, null, 'disponible']) },
+  ])
+
 export const ipadModels: Model[] = [
+  {
+    slug: 'ipad-pro-13',
+    family: 'ipad',
+    name: 'iPad Pro 13" M5',
+    tagline: 'La pantalla Ultra Retina XDR OLED más grande, con el chip M5.',
+    fromPrice: 1599,
+    financeFrom: { monthly: 67, months: 24 },
+    colors: buildColors([
+      { slug: 'negro', name: 'Negro espacial', hex: '#2a2a2c', image: `${IMG}/ipad-pro-13-negro.png`, caps: [['256 GB', 1599], ['512 GB', 1849], ['1 TB', 2349], ['2 TB', 2849, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'plata', name: 'Plata', hex: '#e3e4e6', image: `${IMG}/ipad-pro-13-plata.png`, caps: [['256 GB', 1599], ['512 GB', 1849], ['1 TB', 2349], ['2 TB', 2849, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+    ]),
+    specs: [
+      { label: 'Chip', value: 'Apple M5' },
+      { label: 'Pantalla', value: 'Ultra Retina XDR OLED 13"' },
+      { label: 'Autenticación', value: 'Face ID' },
+      { label: 'Conector', value: 'Thunderbolt / USB-4' },
+      { label: 'Accesorios', value: 'Apple Pencil Pro' },
+    ],
+    highlights: ['Chip Apple M5', 'Pantalla Ultra Retina XDR OLED', 'Face ID', 'Compatible con Apple Pencil Pro', 'Thunderbolt / USB-4'],
+  },
   {
     slug: 'ipad-pro-11',
     family: 'ipad',
     name: 'iPad Pro 11" M5',
-    tagline: 'La pantalla Ultra Retina XDR y el chip M5, en un iPad increíblemente fino.',
+    tagline: 'La pantalla Ultra Retina XDR OLED y el chip M5, en un iPad increíblemente fino.',
     fromPrice: 1229,
     financeFrom: { monthly: 51, months: 24 },
     colors: buildColors([
-      { slug: 'plata', name: 'Plata', hex: '#e3e4e6', image: `${IMG}/ipad-pro-plata.png`, caps: [['256 GB', 1229], ['512 GB', 1479], ['1 TB', 1979]] },
-      { slug: 'negro', name: 'Negro espacial', hex: '#2a2a2c', image: `${IMG}/ipad-pro-negro.png`, caps: [['256 GB', 1229], ['512 GB', 1479], ['1 TB', 1979, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'negro', name: 'Negro espacial', hex: '#2a2a2c', image: `${IMG}/ipad-pro-11-negro.png`, caps: [['256 GB', 1229], ['512 GB', 1479], ['1 TB', 1979], ['2 TB', 2479, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+      { slug: 'plata', name: 'Plata', hex: '#e3e4e6', image: `${IMG}/ipad-pro-11-plata.png`, caps: [['256 GB', 1229], ['512 GB', 1479], ['1 TB', 1979], ['2 TB', 2479, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
     ]),
     specs: [
       { label: 'Chip', value: 'Apple M5' },
@@ -299,18 +329,30 @@ export const ipadModels: Model[] = [
     highlights: ['Chip Apple M5', 'Pantalla Ultra Retina XDR OLED', 'Face ID', 'Compatible con Apple Pencil Pro', 'Thunderbolt / USB-4'],
   },
   {
+    slug: 'ipad-air-13',
+    family: 'ipad',
+    name: 'iPad Air 13" M4',
+    tagline: 'La versatilidad del Air en una pantalla Liquid Retina de 13".',
+    fromPrice: 969,
+    financeFrom: { monthly: 40, months: 24 },
+    colors: iPadAirColors(13),
+    specs: [
+      { label: 'Chip', value: 'Apple M4' },
+      { label: 'Pantalla', value: 'Liquid Retina 13"' },
+      { label: 'Autenticación', value: 'Touch ID' },
+      { label: 'Conector', value: 'USB-C' },
+      { label: 'Accesorios', value: 'Apple Pencil Pro' },
+    ],
+    highlights: ['Chip Apple M4', 'Pantalla Liquid Retina 13"', 'Touch ID', 'Compatible con Apple Pencil Pro', 'Cuatro colores'],
+  },
+  {
     slug: 'ipad-air-11',
     family: 'ipad',
     name: 'iPad Air 11" M4',
     tagline: 'Ligero, potente y con muchísimo color.',
     fromPrice: 719,
     financeFrom: { monthly: 30, months: 24 },
-    colors: buildColors([
-      { slug: 'azul', name: 'Azul', hex: '#a9c3d6', image: `${IMG}/ipad-air-azul.png`, caps: [['128 GB', 719], ['256 GB', 869], ['512 GB', 1119]] },
-      { slug: 'purpura', name: 'Púrpura', hex: '#b7a7d6', image: `${IMG}/ipad-air-purpura.png`, caps: [['128 GB', 719], ['256 GB', 869], ['512 GB', 1119]] },
-      { slug: 'gris', name: 'Gris espacial', hex: '#8e8e93', image: `${IMG}/ipad-air-gris.png`, caps: [['128 GB', 719], ['256 GB', 869], ['512 GB', 1119]] },
-      { slug: 'blanco', name: 'Blanco estrella', hex: '#ded9cf', image: `${IMG}/ipad-air-blanco.png`, caps: [['128 GB', 719], ['256 GB', 869], ['512 GB', 1119, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
-    ]),
+    colors: iPadAirColors(11),
     specs: [
       { label: 'Chip', value: 'Apple M4' },
       { label: 'Pantalla', value: 'Liquid Retina 11"' },
@@ -318,7 +360,51 @@ export const ipadModels: Model[] = [
       { label: 'Conector', value: 'USB-C' },
       { label: 'Accesorios', value: 'Apple Pencil Pro' },
     ],
-    highlights: ['Chip Apple M4', 'Pantalla Liquid Retina', 'Touch ID', 'Compatible con Apple Pencil Pro', 'Ligero y versátil'],
+    highlights: ['Chip Apple M4', 'Pantalla Liquid Retina 11"', 'Touch ID', 'Compatible con Apple Pencil Pro', 'Cuatro colores'],
+  },
+  {
+    slug: 'ipad-mini',
+    family: 'ipad',
+    name: 'iPad mini',
+    tagline: 'Toda la potencia del iPad en un diseño superportátil de 8,3".',
+    fromPrice: 609,
+    financeFrom: { monthly: 25, months: 24 },
+    colors: buildColors([
+      { slug: 'azul', name: 'Azul', hex: '#a9c3d6', image: `${IMG}/ipad-mini-azul.png`, caps: [['128 GB', 609], ['256 GB', 739], ['512 GB', 999]] },
+      { slug: 'purpura', name: 'Púrpura', hex: '#b7a7d6', image: `${IMG}/ipad-mini-purpura.png`, caps: [['128 GB', 609], ['256 GB', 739], ['512 GB', 999]] },
+      { slug: 'blanco', name: 'Blanco estrella', hex: '#ded9cf', image: `${IMG}/ipad-mini-blanco.png`, caps: [['128 GB', 609], ['256 GB', 739], ['512 GB', 999]] },
+      { slug: 'gris', name: 'Gris espacial', hex: '#8e8e93', image: `${IMG}/ipad-mini-gris.png`, caps: [['128 GB', 609], ['256 GB', 739], ['512 GB', 999, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+    ]),
+    specs: [
+      { label: 'Chip', value: 'Apple A17 Pro' },
+      { label: 'Pantalla', value: 'Liquid Retina 8,3"' },
+      { label: 'Autenticación', value: 'Touch ID' },
+      { label: 'Conector', value: 'USB-C' },
+      { label: 'Accesorios', value: 'Apple Pencil Pro y USB-C' },
+    ],
+    highlights: ['Chip A17 Pro', 'Diseño ultracompacto', 'Apple Intelligence', 'Compatible con Apple Pencil Pro', 'Cuatro colores'],
+  },
+  {
+    slug: 'ipad-a16',
+    family: 'ipad',
+    name: 'iPad',
+    tagline: 'El iPad para el día a día, en cuatro colores vivos.',
+    fromPrice: 409,
+    financeFrom: { monthly: 17, months: 24 },
+    colors: buildColors([
+      { slug: 'azul', name: 'Azul', hex: '#8bb4d9', image: `${IMG}/ipad-11-azul.png`, caps: [['128 GB', 409], ['256 GB', 539], ['512 GB', 799]] },
+      { slug: 'rosa', name: 'Rosa', hex: '#dfb1c0', image: `${IMG}/ipad-11-rosa.png`, caps: [['128 GB', 409], ['256 GB', 539], ['512 GB', 799]] },
+      { slug: 'amarillo', name: 'Amarillo', hex: '#f0d879', image: `${IMG}/ipad-11-amarillo.png`, caps: [['128 GB', 409], ['256 GB', 539], ['512 GB', 799]] },
+      { slug: 'plata', name: 'Plata', hex: '#d8d9dc', image: `${IMG}/ipad-11-plata.png`, caps: [['128 GB', 409], ['256 GB', 539], ['512 GB', 799, null, 'bajo-pedido', 'Recíbelo en 5-7 días']] },
+    ]),
+    specs: [
+      { label: 'Chip', value: 'Apple A16' },
+      { label: 'Pantalla', value: 'Liquid Retina 11"' },
+      { label: 'Autenticación', value: 'Touch ID' },
+      { label: 'Conector', value: 'USB-C' },
+      { label: 'Accesorios', value: 'Apple Pencil (USB-C)' },
+    ],
+    highlights: ['Chip Apple A16', 'Pantalla Liquid Retina 11"', 'Touch ID', 'Cuatro colores vivos', 'Ligero y sencillo'],
   },
 ]
 

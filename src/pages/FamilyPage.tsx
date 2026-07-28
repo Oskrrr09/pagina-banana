@@ -36,7 +36,7 @@ export function FamilyPage() {
   // Familia inexistente o sin catálogo desarrollado → 404 amable.
   if (!family || models.length === 0) return <NotFound />
 
-  if (family.slug === 'iphone' || family.slug === 'mac') {
+  if (family.slug === 'iphone' || family.slug === 'mac' || family.slug === 'ipad') {
     return <ShowcaseFamilyPage family={family} models={models} />
   }
 
