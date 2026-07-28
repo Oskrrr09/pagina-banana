@@ -8,6 +8,28 @@ actualizado: 2026-07-28
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-28 — Auditoría UX de la web oficial de Banana Computer
+
+Rama `chore/auditoria-web-oficial-banana`.
+
+- Nuevos scripts locales `scripts/banana-audit/create-session.ts` y
+  `scripts/banana-audit/run-audit.ts` con dos comandos npm
+  (`audit:banana:login`, `audit:banana`). Ninguno se ejecuta en CI.
+- `.gitignore` ampliado para bloquear sesiones, capturas privadas y
+  cualquier `storageState`/`session.json` (`playwright/.auth/`,
+  `.auth/`, `audit-private/`, `audit-logs-private/`, `audit-temp/`,
+  `storageState*.json`, `*.session.json`).
+- Nuevo informe `docs/auditorias/auditoria-web-oficial-banana.md` con
+  alcance, resumen ejecutivo, análisis por sección, 15 hallazgos con
+  gravedad y aplicación al prototipo, tabla comparativa con la web
+  oficial y priorización.
+- `docs/03-roadmap.md` amplía §6 con las cinco propuestas surgidas
+  (todas pendientes de tu autorización). `docs/04-problemas-pendientes.md`
+  registra UX-BANANA-001 como informativo.
+- No se ha tocado la lógica del prototipo, ni el seguro, ni
+  componentes ni pruebas existentes. `npm run build` y
+  `npm run test:e2e` siguen en verde (21 pruebas).
+
 ## 2026-07-28 — Docs actualizados y E2E reales para favoritos y comparador
 
 Rama `fix/docs-and-real-e2e`.
