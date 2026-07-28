@@ -63,16 +63,30 @@ Solo después de acordar alcance:
 
 ## 6. Ideas surgidas de la auditoría UX de la web oficial (2026-07-28)
 
-Basado en [[auditorias/auditoria-web-oficial-banana]]. Ninguna se ha
-implementado todavía; son propuestas para valorar contigo:
+Basado en [[auditorias/auditoria-web-oficial-banana]].
 
-- Añadir `<h1>` semántico en la portada del prototipo.
-- Banner "Sin cita previa" en la sección de servicio técnico.
-- Timeline explicativa del Plan Renove (4 pasos) sin inventar precios
-  ni sustituir a Foxway.
-- Franja fija con "Total — Continuar" en checkout móvil, sin tocar la
+**Implementadas** en la rama `feature/audit-ux-improvements`
+(2026-07-28):
+
+- ✅ `<h1>` semántico único en la portada del prototipo
+  ("Banana Computer — Apple en Canarias"). El hero pasa a `<h2>`
+  para no duplicar nivel.
+- ✅ Bloque "Servicio Técnico Autorizado" en `/soporte` con banner
+  "Sin cita previa", checklist de preparación (copia de seguridad,
+  desactivar Buscar y modo antirrobo), opciones de entrega,
+  condiciones de garantía / fuera de garantía (35 € con descuento o
+  no reembolsable) y plazos orientativos con mínimo de 3 días de
+  traslado y aclaración de que ese plazo no incluye diagnóstico ni
+  reparación.
+- ✅ Timeline oficial del Plan Renove (4 pasos con Foxway) sin
+  precios, sin ejemplos de tasación y sin tasador propio.
+- ✅ Cobertura `@axe-core/playwright` sobre 7 rutas dentro de la
+  suite E2E existente.
+
+**Pendiente**:
+
+- Franja fija "Total — Continuar" en checkout móvil, sin tocar la
   lógica del seguro ni la trampa de foco existente del chat.
-- Integrar `axe-core` en la suite Playwright para cubrir accesibilidad.
 
 Descartadas expresamente (mismo informe): tasador propio del Plan
 Renove, sistema de citas para servicio técnico y chat con IA real.

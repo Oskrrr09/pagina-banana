@@ -142,13 +142,16 @@ del repositorio. No se corrigen en la preparación documental.
   de la sesión y no se crea al abrir la URL. Sigue sin ser un pedido real:
   aparece marcado como "Pedido de demostración" y no dispara emails ni pagos.
 
-## QA-001 — Suite E2E con Playwright
+## QA-001 — Suite E2E con Playwright + accesibilidad axe
 
-- Estado: ampliado y consolidado el 2026-07-28.
-- Evidencia: 21 pruebas en `tests/e2e/` (20 en `chromium` + 1 en
+- Estado: ampliado el 2026-07-28 con axe. Pendiente completar cobertura
+  de detalle de tienda.
+- Evidencia: 45 pruebas en `tests/e2e/` (44 en `chromium` + 1 en
   `mobile` etiquetada `@mobile`), distribuidas en `home.spec.ts`,
   `checkout.spec.ts`, `checkout-flow.spec.ts`, `chat.spec.ts`,
-  `product.spec.ts`, `favorites-compare.spec.ts` y `search.spec.ts`.
+  `product.spec.ts`, `favorites-compare.spec.ts`, `search.spec.ts`,
+  `audit-ux.spec.ts` (mejoras post-auditoría) y
+  `accessibility.spec.ts` (axe-core sobre 7 rutas).
 - Cobertura:
   - Portada y no-scroll horizontal a 375 px.
   - Redirecciones y guardas de `/checkout/2` y `/checkout/3` sin pedido.

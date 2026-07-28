@@ -134,16 +134,7 @@ export function StoresPage() {
           return (
             <div
               key={store.slug}
-              onClick={focusMap}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  focusMap()
-                }
-              }}
-              className={`group relative flex cursor-pointer flex-col rounded-[12px] border bg-surface p-5 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)] ${
+              className={`group relative flex flex-col rounded-[12px] border bg-surface p-5 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)] ${
                 isActive ? 'border-banana ring-2 ring-banana/30' : 'border-line'
               }`}
             >
@@ -181,8 +172,11 @@ export function StoresPage() {
                 </p>
               )}
 
-              {/* Acciones — cada botón usa stopPropagation para no re-enfocar la tienda ya activa */}
-              <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3" onClick={(e) => e.stopPropagation()}>
+              {/* Acciones — tres controles independientes (link, link externo,
+                  botón). Antes vivían dentro de un `div role="button"` que
+                  contenía enlaces (violación axe `nested-interactive`), ahora
+                  cada uno queda como control autónomo. */}
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
                 <Link
                   to={`/tiendas/${store.slug}`}
                   className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-ink/85"
@@ -195,8 +189,15 @@ export function StoresPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-full bg-neutral px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-banana/40"
                 >
-                  <Icon name="arrow-right" size={13} /> Cómo llegar
+                  <Icon name="arrow-right" size={13} aria-hidden="true" /> Cómo llegar
                 </a>
+                <button
+                  type="button"
+                  onClick={focusMap}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-brand-050 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-brand/30"
+                >
+                  <Icon name="map-pin" size={13} aria-hidden="true" /> Enfocar en el mapa
+                </button>
               </div>
             </div>
           )

@@ -24,6 +24,18 @@ export function Home() {
 
   return (
     <>
+      {/* 01 — Título semántico único de la portada. Se mantiene visible pero
+             discreto para no competir con el hero (que hoy usa <h2>). Sirve
+             como landmark inequívoco para lectores de pantalla y SEO. */}
+      <Container className="pt-4 pb-1 md:pt-6 md:pb-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+          Bienvenido
+        </p>
+        <h1 className="mt-1 font-display text-xl font-extrabold text-ink sm:text-2xl">
+          Banana Computer — Apple en Canarias
+        </h1>
+      </Container>
+
       {/* 02 — Hero carrusel rotativo */}
       <HeroCarousel />
 
