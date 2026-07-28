@@ -1,62 +1,34 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { familiesNav, directLinks, utilityLinks } from '../../data/nav'
+import { families, modelsByFamily, variantPath } from '../../data/products'
 import { useStore } from '../../lib/store'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
 import { MegaMenu } from './MegaMenu'
 import { MobileMenu } from './MobileMenu'
 
-// Sugerencias de búsqueda organizadas por familia de producto.
-const SEARCH_SUGGESTIONS = [
-  {
-    label: 'iPhone',
-    slug: 'iphone',
-    models: [
-      { name: 'iPhone 17 Pro', slug: '17-pro' },
-      { name: 'iPhone 17 Pro Max', slug: '17-pro-max' },
-      { name: 'iPhone Air', slug: 'air' },
-      { name: 'iPhone 17', slug: '17' },
-    ],
-  },
-  {
-    label: 'Mac',
-    slug: 'mac',
-    models: [
-      { name: 'MacBook Air M5', slug: 'macbook-air-m5' },
-      { name: 'MacBook Pro M5', slug: 'macbook-pro-m5' },
-      { name: 'MacBook Air M4', slug: 'macbook-air-m4' },
-      { name: 'iMac 24" M4', slug: 'imac-24-m4' },
-    ],
-  },
-  {
-    label: 'iPad',
-    slug: 'ipad',
-    models: [
-      { name: 'iPad Pro M5', slug: 'ipad-pro' },
-      { name: 'iPad Air M4', slug: 'ipad-air' },
-      { name: 'iPad mini', slug: 'ipad-mini' },
-      { name: 'iPad A16', slug: 'ipad-a16' },
-    ],
-  },
-  {
-    label: 'Apple Watch',
-    slug: 'apple-watch',
-    models: [
-      { name: 'Apple Watch Ultra 3', slug: 'watch-ultra-3' },
-      { name: 'Apple Watch Series 11', slug: 'watch-series-11' },
-      { name: 'Apple Watch SE 3', slug: 'watch-se-3' },
-    ],
-  },
-  {
-    label: 'AirPods',
-    slug: 'airpods',
-    models: [
-      { name: 'AirPods Pro 3', slug: 'airpods-pro-3' },
-      { name: 'AirPods Max', slug: 'airpods-max' },
-    ],
-  },
-]
+// Sugerencias del overlay de búsqueda derivadas del catálogo real (§4.4):
+// se generan a partir de `families` + `modelsByFamily` para que cualquier
+// modelo añadido o retirado aparezca automáticamente sin tocar el Header.
+interface SuggestionSection {
+  label: string
+  slug: string
+  models: { name: string; to: string }[]
+}
+
+function buildSearchSuggestions(): SuggestionSection[] {
+  return families
+    .filter((fam) => (modelsByFamily[fam.slug]?.length ?? 0) > 0)
+    .map((fam) => ({
+      label: fam.name,
+      slug: fam.slug,
+      models: modelsByFamily[fam.slug].map((model) => ({
+        name: model.name,
+        to: variantPath(model),
+      })),
+    }))
+}
 
 // Cabecera fija (sticky) en escritorio y móvil.
 // Integración visual: barra promocional oscura arriba, cabecera principal en
@@ -64,6 +36,7 @@ const SEARCH_SUGGESTIONS = [
 // (sin borde duro), evitando que corte el hero de golpe.
 export function Header() {
   const { cartCount, favorites, compare } = useStore()
+  const searchSuggestions = useMemo(() => buildSearchSuggestions(), [])
   const [activeFamily, setActiveFamily] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -289,9 +262,9 @@ export function Header() {
             </button>
           </div>
 
-          {/* Sugerencias por categoría */}
+          {/* Sugerencias por categoría — derivadas del catálogo real */}
           <div className="flex-1 overflow-y-auto px-5 py-5">
-            {SEARCH_SUGGESTIONS.map((section) => (
+            {searchSuggestions.map((section) => (
               <div key={section.slug} className="mb-6">
                 <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">
                   {section.label}
@@ -299,8 +272,8 @@ export function Header() {
                 <div className="flex flex-col">
                   {section.models.map((model) => (
                     <Link
-                      key={model.slug}
-                      to={`/${section.slug}/${model.slug}`}
+                      key={model.to}
+                      to={model.to}
                       onClick={() => setSearchOpen(false)}
                       className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-neutral"
                     >

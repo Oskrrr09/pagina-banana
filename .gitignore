@@ -22,3 +22,8 @@ docs/.obsidian/
 
 # Vite
 .vite/
+
+# Playwright — artefactos de pruebas E2E
+playwright-report/
+test-results/
+blob-report/

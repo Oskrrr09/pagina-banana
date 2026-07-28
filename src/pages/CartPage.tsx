@@ -7,6 +7,7 @@ import { Placeholder } from '../components/ui/Placeholder'
 import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { useStore } from '../lib/store'
+import { useCheckoutState } from '../lib/checkoutState'
 import { productImage } from '../data/products'
 import { euro } from '../lib/format'
 
@@ -21,8 +22,10 @@ export function CartPage() {
     cartInsuranceTotal,
     insurancePrice,
   } = useStore()
+  // La selección de entrega se comparte con el checkout: si el usuario elige
+  // "Recogida en tienda" aquí, el paso 1 del checkout se abrirá con esa opción.
+  const { delivery, setDelivery } = useCheckoutState()
   const [couponOpen, setCouponOpen] = useState(false)
-  const [delivery, setDelivery] = useState<'envio' | 'recogida'>('envio')
 
   if (cart.length === 0) {
     return (

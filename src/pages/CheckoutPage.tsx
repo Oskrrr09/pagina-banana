@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
@@ -7,18 +7,26 @@ import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { Chip } from '../components/ui/Chip'
 import { useStore } from '../lib/store'
+import { useCheckoutState } from '../lib/checkoutState'
+import { demoOrderRepository, type DemoOrder } from '../lib/demoOrderRepository'
 import { productImage } from '../data/products'
-import { stores } from '../data/stores'
+import { stores, getStore } from '../data/stores'
 import { euro, monthlyQuote } from '../lib/format'
 
-// Checkout de 3 pasos (§4.10). Cabecera simplificada (sin menú, para reducir
-// fugas). Resumen del pedido siempre visible. Validación antes de avanzar (§9.3).
+// Checkout de 3 pasos (§4.10).
+// - Paso 1 y 2 dependen del carrito. Paso 3 depende de un pedido real creado
+//   en demoOrderRepository al pulsar "Confirmar pedido"; no basta con abrir
+//   la URL.
+// - El estado de entrega y los datos de contacto viven en CheckoutProvider
+//   (sessionStorage) para no perderlos al navegar hacia atrás.
 const STEPS = ['Entrega', 'Pago y extras', 'Confirmación']
 
 export function CheckoutPage() {
   const { step } = useParams()
-  const current = Math.min(3, Math.max(1, Number(step) || 1))
+  const parsedStep = Number(step)
+  const current = (parsedStep === 1 || parsedStep === 2 || parsedStep === 3 ? parsedStep : 1) as 1 | 2 | 3
   const navigate = useNavigate()
+
   const {
     cart,
     cartSubtotal,
@@ -27,19 +35,31 @@ export function CheckoutPage() {
     setLineInsurance,
     insurancePrice,
   } = useStore()
+  const { delivery, setDelivery, form, setForm, step1Valid, validateStep1 } = useCheckoutState()
 
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [mode, setMode] = useState<'envio' | 'recogida'>('envio')
-  const [form, setForm] = useState({ nombre: '', email: '', direccion: '', isla: 'Gran Canaria', tienda: 'triana' })
   const [pay, setPay] = useState<'tarjeta' | 'bizum' | 'financiacion'>('tarjeta')
   const [months, setMonths] = useState(24)
   const [processing, setProcessing] = useState(false)
-  const [orderId] = useState(() => 'BC-' + Math.floor(100000 + Math.random() * 899999))
+  const [confirmedOrder, setConfirmedOrder] = useState<DemoOrder | null>(() =>
+    demoOrderRepository.getLast(),
+  )
 
-  if (cart.length === 0 && current < 3) {
+  // Guarda de paso 3: solo se muestra si hay un pedido de demostración
+  // creado en la sesión actual. Si alguien abre /checkout/3 directamente sin
+  // pedido, se le redirige al carrito o al catálogo según corresponda.
+  if (current === 3 && !confirmedOrder) {
+    return <Navigate to={cart.length > 0 ? '/carrito' : '/iphone'} replace />
+  }
+
+  // Guarda de pasos 1 y 2: no tienen sentido con la cesta vacía (salvo que ya
+  // exista un pedido confirmado, en cuyo caso el usuario debe ir al paso 3).
+  if ((current === 1 || current === 2) && cart.length === 0) {
+    if (confirmedOrder) return <Navigate to="/checkout/3" replace />
     return (
       <Container className="py-20 text-center">
         <h1 className="text-2xl font-bold text-ink">No hay nada que comprar</h1>
+        <p className="mt-2 text-muted">Añade productos al carrito para iniciar el checkout.</p>
         <Link to="/iphone" className="mt-4 inline-block font-semibold text-ink hover:underline">
           Ver productos
         </Link>
@@ -47,33 +67,65 @@ export function CheckoutPage() {
     )
   }
 
-  function validateStep1() {
-    const e: Record<string, string> = {}
-    if (!form.nombre.trim()) e.nombre = 'Introduce tu nombre.'
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) e.email = 'Introduce un email válido.'
-    if (mode === 'envio' && !form.direccion.trim()) e.direccion = 'Introduce la dirección de envío.'
-    setErrors(e)
-    return Object.keys(e).length === 0
+  // Guarda de paso 2: bloqueada hasta que el paso 1 sea válido.
+  if (current === 2 && !step1Valid) {
+    return <Navigate to="/checkout/1" replace />
   }
 
+  // Al terminar (paso 3) limpiamos el carrito una sola vez, pero conservamos
+  // el pedido para poder recargar la página sin perder el resumen.
+  useEffect(() => {
+    if (current === 3 && cart.length > 0) clearCart()
+  }, [current, cart.length, clearCart])
+
   function next() {
-    if (current === 1 && !validateStep1()) return
-    if (current === 2) {
-      setProcessing(true)
-      setTimeout(() => {
-        setProcessing(false)
-        clearCart()
-        navigate('/checkout/3')
-      }, 1400)
+    if (current === 1) {
+      const e = validateStep1()
+      setErrors(e)
+      if (Object.keys(e).length > 0) return
+      navigate('/checkout/2')
       return
     }
-    navigate(`/checkout/${current + 1}`)
+    if (current === 2) {
+      setProcessing(true)
+      window.setTimeout(() => {
+        const order = demoOrderRepository.createFromCart({
+          cart,
+          delivery,
+          customer: {
+            nombre: form.nombre,
+            email: form.email,
+            direccion: delivery === 'envio' ? form.direccion : undefined,
+            isla: delivery === 'envio' ? form.isla : undefined,
+            tienda: delivery === 'recogida' ? form.tienda : undefined,
+          },
+          paymentMethod: pay,
+          financingMonths: pay === 'financiacion' ? months : undefined,
+        })
+        setConfirmedOrder(order)
+        setProcessing(false)
+        navigate('/checkout/3')
+      }, 900)
+      return
+    }
   }
 
   const total = cartSubtotal + cartInsuranceTotal
+  const summaryLines = current === 3 && confirmedOrder ? confirmedOrder.lines : cart
+  const summaryInsurance = current === 3 && confirmedOrder ? confirmedOrder.monthlyInsuranceTotal : cartInsuranceTotal
+  const summaryProducts = current === 3 && confirmedOrder ? confirmedOrder.productsTotal : cartSubtotal
+  const tiendaObj = useMemo(() => getStore(form.tienda), [form.tienda])
 
   return (
     <div>
+      {/* Aviso demostrativo global — evita que el flujo se confunda con una compra real */}
+      <Container className="pt-6">
+        <div className="rounded-[12px] border border-line bg-neutral px-4 py-2 text-xs text-muted">
+          <strong className="text-ink">Pedido de demostración.</strong> No se cobra ni se envía nada;
+          los datos se guardan solo en tu navegador.
+        </div>
+      </Container>
+
       {/* Indicador de pasos */}
       <Container className="py-6">
         <ol className="flex items-center justify-between gap-2 sm:justify-start sm:gap-4">
@@ -113,53 +165,59 @@ export function CheckoutPage() {
             <div>
               <h1 className="text-xl font-bold text-ink">Entrega o recogida</h1>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                <ModeButton active={mode === 'envio'} onClick={() => setMode('envio')} icon="truck" label="Envío a domicilio" />
-                <ModeButton active={mode === 'recogida'} onClick={() => setMode('recogida')} icon="store" label="Recogida en tienda" />
+                <ModeButton active={delivery === 'envio'} onClick={() => setDelivery('envio')} icon="truck" label="Envío a domicilio" />
+                <ModeButton active={delivery === 'recogida'} onClick={() => setDelivery('recogida')} icon="store" label="Recogida en tienda" />
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <Field label="Nombre y apellidos" error={errors.nombre}>
                   <input
                     value={form.nombre}
-                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                    onChange={(e) => setForm({ nombre: e.target.value })}
                     className="field"
+                    autoComplete="name"
                   />
                 </Field>
                 <Field label="Email" error={errors.email}>
                   <input
                     type="email"
                     value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    onChange={(e) => setForm({ email: e.target.value })}
                     className="field"
+                    autoComplete="email"
                   />
                 </Field>
-                {mode === 'envio' ? (
+                {delivery === 'envio' ? (
                   <>
                     <Field label="Dirección" error={errors.direccion} full>
                       <input
                         value={form.direccion}
-                        onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+                        onChange={(e) => setForm({ direccion: e.target.value })}
                         className="field"
+                        autoComplete="street-address"
                       />
                     </Field>
                     <Field label="Isla" full>
                       <select
                         value={form.isla}
-                        onChange={(e) => setForm({ ...form, isla: e.target.value })}
+                        onChange={(e) => setForm({ isla: e.target.value })}
                         className="field"
                       >
                         <option>Gran Canaria</option>
                         <option>Tenerife</option>
                         <option>Lanzarote</option>
                         <option>Fuerteventura</option>
+                        <option>La Palma</option>
+                        <option>La Gomera</option>
+                        <option>El Hierro</option>
                       </select>
                     </Field>
                   </>
                 ) : (
-                  <Field label="Tienda de recogida" full>
+                  <Field label="Tienda de recogida" error={errors.tienda} full>
                     <select
                       value={form.tienda}
-                      onChange={(e) => setForm({ ...form, tienda: e.target.value })}
+                      onChange={(e) => setForm({ tienda: e.target.value })}
                       className="field"
                     >
                       {stores.map((store) => (
@@ -172,7 +230,7 @@ export function CheckoutPage() {
                 )}
               </div>
               <p className="mt-3 text-xs text-muted">
-                Plazo estimado según isla · <span className="italic">Condiciones pendientes de validación</span>
+                Plazo estimado según isla · <span className="italic">Condición demostrativa.</span>
               </p>
             </div>
           )}
@@ -188,11 +246,14 @@ export function CheckoutPage() {
                   </Chip>
                 ))}
               </div>
+              <p className="mt-2 text-xs text-muted">
+                Pago demostrativo · <span className="italic">no se realizan cargos reales.</span>
+              </p>
 
               {pay === 'financiacion' && (
                 <div className="mt-4 rounded-[12px] border border-line bg-neutral p-4">
                   <p className="text-sm font-semibold text-ink">Simulador de cuotas</p>
-                  <p className="mb-3 text-xs text-muted">Condiciones pendientes de validación.</p>
+                  <p className="mb-3 text-xs text-muted">Condición demostrativa — pendiente de validación con Banana Computer.</p>
                   <div className="flex flex-wrap gap-2">
                     {[12, 24, 36].map((m) => (
                       <Chip key={m} selected={months === m} onClick={() => setMonths(m)}>
@@ -205,7 +266,7 @@ export function CheckoutPage() {
                     <span className="text-xs font-normal text-muted">(orientativo)</span>
                   </p>
                   <p className="mt-2 text-xs text-muted">
-                    La contratación se completa hoy de forma presencial en tienda.
+                    La contratación se completaría de forma presencial en tienda.
                   </p>
                 </div>
               )}
@@ -242,7 +303,7 @@ export function CheckoutPage() {
               <div className="mt-6 border-t border-line pt-5">
                 <p className="text-sm font-semibold text-ink">Nota Plan Renove</p>
                 <p className="mt-1 text-sm text-muted">
-                  Servicio presencial: la tasación se gestiona en tienda, no forma parte de este paso online.{' '}
+                  Servicio presencial: la tasación se gestionaría en tienda, no en este paso online.{' '}
                   <Link to="/plan-renove" className="font-semibold text-ink hover:underline">
                     Ver Plan Renove ›
                   </Link>
@@ -251,26 +312,50 @@ export function CheckoutPage() {
             </div>
           )}
 
-          {current === 3 && (
-            <div className="text-center">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-available-050 text-available">
-                <Icon name="check" size={30} />
+          {current === 3 && confirmedOrder && (
+            <div>
+              <div className="text-center">
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-available-050 text-available">
+                  <Icon name="check" size={30} />
+                </div>
+                <h1 className="mt-4 text-2xl font-bold text-ink">¡Pedido confirmado!</h1>
+                <p className="mt-2 text-muted">
+                  Número de pedido: <strong className="text-ink">{confirmedOrder.id}</strong>
+                </p>
+                <div className="mt-3 flex justify-center">
+                  <ProvisionalBadge label="Pedido de demostración" />
+                </div>
               </div>
-              <h1 className="mt-4 text-2xl font-bold text-ink">¡Pedido confirmado!</h1>
-              <p className="mt-2 text-muted">
-                Número de pedido: <strong className="text-ink">{orderId}</strong>
-              </p>
-              <div className="mt-3 flex justify-center">
-                <ProvisionalBadge label="Stock de ejemplo" />
-              </div>
-              <div className="mx-auto mt-6 max-w-sm rounded-[12px] bg-neutral p-5 text-left text-sm text-muted">
-                <p className="font-semibold text-ink">Próximos pasos</p>
+
+              <div className="mt-6 rounded-[12px] bg-neutral p-5 text-sm text-muted">
+                <p className="font-semibold text-ink">Datos del pedido</p>
                 <ul className="mt-2 space-y-1">
-                  <li>· Recibirás un email de confirmación (demostración).</li>
-                  <li>· Si elegiste financiación o Plan Renove, se completan en tienda.</li>
-                  <li>· Puedes seguir tu pedido desde el centro de soporte.</li>
+                  <li><span className="font-medium text-ink">Fecha:</span> {new Date(confirmedOrder.createdAt).toLocaleString('es-ES', { timeZone: 'Atlantic/Canary' })}</li>
+                  <li><span className="font-medium text-ink">Entrega:</span> {confirmedOrder.delivery === 'envio' ? 'Envío a domicilio' : 'Recogida en tienda'}</li>
+                  {confirmedOrder.delivery === 'envio' && confirmedOrder.customer.direccion && (
+                    <li><span className="font-medium text-ink">Dirección:</span> {confirmedOrder.customer.direccion} ({confirmedOrder.customer.isla})</li>
+                  )}
+                  {confirmedOrder.delivery === 'recogida' && (
+                    <li>
+                      <span className="font-medium text-ink">Tienda:</span>{' '}
+                      {getStore(confirmedOrder.customer.tienda ?? '')?.name ?? confirmedOrder.customer.tienda}
+                    </li>
+                  )}
+                  <li>
+                    <span className="font-medium text-ink">Método de pago:</span>{' '}
+                    {confirmedOrder.paymentMethod === 'tarjeta' ? 'Tarjeta' : confirmedOrder.paymentMethod === 'bizum' ? 'Bizum' : `Financiación (${confirmedOrder.financingMonths} meses)`}
+                    {' '}<span className="italic">(demostrativo)</span>
+                  </li>
+                  <li>
+                    <span className="font-medium text-ink">Estado:</span> demo · pendiente de validación
+                  </li>
                 </ul>
+                <p className="mt-3 text-xs">
+                  No se ha enviado ningún email real ni se ha realizado ningún cargo. Este resumen queda
+                  en tu navegador durante esta sesión.
+                </p>
               </div>
+
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <Link to="/" className="font-semibold text-ink hover:underline">
                   Volver al inicio
@@ -313,7 +398,7 @@ export function CheckoutPage() {
           <div className="rounded-[12px] border border-line bg-surface p-6">
             <h2 className="font-bold text-ink">Resumen del pedido</h2>
             <ul className="mt-4 space-y-3">
-              {(cart.length ? cart : []).map((line) => (
+              {summaryLines.map((line) => (
                 <li key={line.id} className="flex gap-3">
                   <div className="w-14 shrink-0">
                     <ProductImage src={productImage(line.modelSlug, line.color)} alt={`${line.name} ${line.color}`} ratio="1 / 1" />
@@ -335,31 +420,43 @@ export function CheckoutPage() {
                   </div>
                 </li>
               ))}
-              {current === 3 && cart.length === 0 && <li className="text-sm text-muted">Pedido {orderId}</li>}
             </ul>
-            {current < 3 && (
-              <>
-                <dl className="mt-4 space-y-1 border-t border-line pt-4 text-sm">
-                  {cartInsuranceTotal > 0 && (
-                    <div className="flex justify-between">
-                      <dt className="text-muted">Seguro</dt>
-                      <dd className="text-ink">{euro(cartInsuranceTotal)}/mes*</dd>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <dt className="text-muted">Envío</dt>
-                    <dd className="font-medium text-available">Gratis*</dd>
-                  </div>
-                  <div className="flex justify-between border-t border-line pt-2">
-                    <dt className="font-bold text-ink">Total</dt>
-                    <dd className="font-bold text-ink">{euro(total)}</dd>
-                  </div>
-                </dl>
-                <div className="mt-3">
-                  <ProvisionalBadge label="Precio demostrativo" />
+
+            <dl className="mt-4 space-y-1 border-t border-line pt-4 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-muted">Productos</dt>
+                <dd className="text-ink">{euro(summaryProducts)}</dd>
+              </div>
+              {summaryInsurance > 0 && (
+                <div className="flex justify-between">
+                  <dt className="text-muted">Seguro</dt>
+                  <dd className="text-ink">{euro(summaryInsurance)}/mes*</dd>
                 </div>
-              </>
-            )}
+              )}
+              <div className="flex justify-between">
+                <dt className="text-muted">Envío</dt>
+                <dd className="font-medium text-available">Gratis*</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Entrega</dt>
+                <dd className="text-ink">
+                  {current === 3 && confirmedOrder
+                    ? confirmedOrder.delivery === 'envio'
+                      ? 'Envío a domicilio'
+                      : `Recogida — ${getStore(confirmedOrder.customer.tienda ?? '')?.name ?? confirmedOrder.customer.tienda}`
+                    : delivery === 'envio'
+                      ? 'Envío a domicilio'
+                      : `Recogida — ${tiendaObj?.name ?? form.tienda}`}
+                </dd>
+              </div>
+              <div className="flex justify-between border-t border-line pt-2">
+                <dt className="font-bold text-ink">Total productos</dt>
+                <dd className="font-bold text-ink">{euro(current === 3 ? summaryProducts : total)}</dd>
+              </div>
+            </dl>
+            <div className="mt-3">
+              <ProvisionalBadge label="Precio demostrativo" />
+            </div>
           </div>
         </aside>
       </Container>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
@@ -9,10 +9,19 @@ import { services } from '../data/content'
 import { supportTopics } from '../data/content'
 
 // Resultados del buscador (§4.4): productos, categorías/servicios y ayuda.
+// El campo se sincroniza siempre con el parámetro `q` de la URL: si se navega
+// desde la lupa del Header a "Mac" estando ya en /buscar?q=iPhone, el input
+// pasa a "Mac" y los resultados a "Mac". Adelante/atrás del navegador también
+// mantienen el input alineado con la URL.
 export function SearchPage() {
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
   const [input, setInput] = useState(q)
+  useEffect(() => {
+    // Cuando la URL cambia (nueva búsqueda desde la lupa, back/forward…) el
+    // input debe reflejar el término activo.
+    setInput(q)
+  }, [q])
   const term = q.trim().toLowerCase()
 
   const productResults = useMemo(
@@ -57,7 +66,8 @@ export function SearchPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Buscar productos, categorías, ayuda…"
-            aria-label="Buscar"
+            aria-label="Buscar en el catálogo"
+            data-testid="search-input"
             className="w-full bg-transparent text-base outline-none placeholder:text-muted"
           />
         </div>

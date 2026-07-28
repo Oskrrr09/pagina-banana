@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-07-27
+actualizado: 2026-07-28
 ---
 
 # Estado actual
@@ -85,13 +85,50 @@ actualizado: 2026-07-27
   newsletter mantiene controles de al menos 48 px y texto de 16 px.
 - Motion para transiciones/reveals y reglas globales para reducir movimiento.
 
+## Cambios recientes (2026-07-28)
+
+- **Checkout blindado**: `/checkout/2` exige paso 1 válido y `/checkout/3`
+  exige un pedido demostrativo real. El ID se genera únicamente al pulsar
+  "Confirmar pedido"; abrir la URL directamente redirige a `/carrito` o
+  `/iphone`. La confirmación sobrevive a recargas dentro de la sesión.
+- **Nuevo `demoOrderRepository`** (`src/lib/demoOrderRepository.ts`):
+  guarda pedidos en `sessionStorage` con ID, fecha, líneas, entrega, tienda,
+  método de pago (demostrativo), totales, unidades aseguradas y `status:
+  'demo'`. Preparado para reemplazarse por un servicio real más adelante.
+- **Estado de checkout compartido** (`src/lib/checkoutState.tsx`): la
+  selección de entrega y los datos del paso 1 viven en un `Context` con
+  persistencia por sesión, evitando duplicar estado entre `CartPage` y
+  `CheckoutPage`.
+- **Accesorios enlazan a `/buscar?q=…`** en vez de a `/iphone`. Cinco tiles
+  (fundas, MagSafe, correas, teclados, audio) reutilizan el buscador.
+- **Afirmaciones comerciales centralizadas**
+  (`src/data/commercialClaims.ts`) con `status: demo|verified|pending`,
+  `source`, `verifiedAt` y `disclaimer`. La franja de confianza del home y
+  otros bloques leen desde ahí.
+- **Buscador sincronizado con la URL**: `SearchPage` usa un `useEffect` sobre
+  el parámetro `q`, así el input siempre refleja el término actual (nuevas
+  búsquedas desde la lupa del Header, adelante/atrás del navegador…).
+- **Sugerencias del Header derivadas del catálogo**: se generan a partir de
+  `families` + `modelsByFamily`; los modelos añadidos o retirados aparecen
+  o desaparecen automáticamente sin tocar el Header.
+- **Chat oculto en checkout**: `ChatBubble` devuelve `null` cuando el
+  pathname empieza por `/checkout/`. El panel gana `aria-modal`,
+  `aria-haspopup`, foco al botón de cerrar al abrir y retorno de foco al
+  botón flotante al cerrar.
+- **Suite E2E con Playwright**: `playwright.config.ts` + `tests/e2e/`
+  (home, checkout, search) con 9 pruebas iniciales. Scripts
+  `test:e2e`/`test:e2e:ui`/`test:e2e:headed` en `package.json`. Workflow
+  `.github/workflows/e2e.yml` ejecuta build + install + tests en cada push
+  y PR sobre `main` y sube el reporte HTML como artefacto si falla.
+
 ## Qué no existe
 
 - Backend, API, base de datos, autenticación o cuenta de usuario.
-- Pago, pedidos, emails, cupones, newsletter, chat, formulario de contacto,
-  reservas, mapas, stock, financiación o Plan Renove reales.
-- Tests automatizados, script de lint o comprobación E2E.
-- Catálogo desarrollado para accesorios.
+- Pago, pedidos reales, emails, cupones, newsletter, chat real, formulario
+  de contacto, reservas, stock, financiación o Plan Renove reales.
+- Catálogo desarrollado para accesorios (siguen enlazando al buscador con
+  un término que puede no tener resultados aún).
+- Tests unitarios ni lint automáticos (solo E2E con Playwright).
 
 ## Stack efectivo
 

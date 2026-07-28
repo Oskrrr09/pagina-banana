@@ -1,6 +1,6 @@
 ---
 tipo: problemas
-actualizado: 2026-07-26
+actualizado: 2026-07-28
 ---
 
 # Problemas pendientes
@@ -75,15 +75,53 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## DOC-001 — README desactualizado
 
-- Estado: abierto.
-- Impacto: medio para incorporación de colaboradores.
-- Evidencia:
-  - Indica que solo iPhone está desarrollado a fondo; el código incluye Mac,
-    iPad, Apple Watch y AirPods.
-  - Describe marcadores sin fotos reales, mientras `src/data/products.ts` y
-    `public/img/products/` usan imágenes locales de producto.
-  - El árbol resumido y el número de pantallas no reflejan todas las páginas
-    actuales.
+- Estado: parcialmente actualizado el 2026-07-28.
+- Evidencia: el README sigue afirmando que solo iPhone está desarrollado a
+  fondo. El código incluye Mac (8 modelos), iPad (4), Apple Watch (3) y
+  AirPods (2), todos con fotos reales en `public/img/products/*.webp`.
+- Pendiente: reescribir README para reflejar el catálogo actual, el nuevo
+  demoOrderRepository, `commercialClaims.ts` y la suite Playwright.
+
+## FLUJO-001 — Checkout permitía saltar pasos
+
+- Estado: cerrado el 2026-07-28.
+- Evidencia: `/checkout/3` se abría con solo cambiar la URL, generando un
+  número de pedido "BC-XXXXXX" en `useState(() => ...)`. `/checkout/2` no
+  validaba que el paso 1 estuviera completo.
+- Resolución: introducidos `src/lib/checkoutState.tsx` (contexto con
+  sessionStorage) y `src/lib/demoOrderRepository.ts` (crea el pedido sólo al
+  pulsar "Confirmar pedido"). `CheckoutPage` redirige a `/checkout/1` si el
+  paso 1 no es válido y a `/carrito` (o `/iphone` si está vacío) cuando se
+  abre `/checkout/3` sin pedido en la sesión. La selección de entrega se
+  comparte entre `CartPage` y `CheckoutPage`.
+
+## LINKS-001 — Accesorios envían siempre al catálogo de iPhone
+
+- Estado: cerrado el 2026-07-28.
+- Evidencia previa: los cinco tiles de "Complementa tu equipo" usaban
+  `to="/iphone"`.
+- Resolución: cada tile enlaza a `/buscar?q=<término>` (fundas, magsafe,
+  correas, teclados, audio). El buscador ya muestra un estado vacío útil si
+  no hay coincidencias en el catálogo.
+
+## CLAIMS-001 — Afirmaciones comerciales dispersas
+
+- Estado: cerrado el 2026-07-28.
+- Evidencia: textos como "Envío 24-48 h", "Financiación al 0 %" o "hasta
+  400 €" aparecían literales en varios componentes sin marca de estado.
+- Resolución: nuevo módulo `src/data/commercialClaims.ts` con
+  `status: 'demo' | 'verified' | 'pending'`, `source`, `verifiedAt` y
+  `disclaimer`. La franja de confianza y otros bloques leen desde ahí; el
+  home muestra un aviso discreto de que las condiciones son demostrativas.
+
+## CHAT-001 — Chat flotante visible en el checkout
+
+- Estado: cerrado el 2026-07-28.
+- Evidencia: `<ChatBubble />` se renderizaba dentro de `/checkout/*`.
+- Resolución: `ChatBubble` detecta la ruta con `useLocation` y devuelve
+  `null` cuando el pathname empieza por `/checkout`. Además se añadieron
+  `aria-modal`, `aria-haspopup`, foco al botón de cerrar al abrir y retorno
+  de foco al botón flotante al cerrar (además del Escape ya existente).
 
 ## FUNC-002 — Controles deliberadamente simulados sin resultado
 
@@ -92,20 +130,29 @@ del repositorio. No se corrigen en la preparación documental.
 - Evidencia:
   - Cuenta, idioma y tienda favorita no tienen acción.
   - Newsletter impide el envío.
-  - Chat, formulario, accesos rápidos de soporte, cómo llegar y reservar cita no
-    están conectados.
+  - Chat provisional (aviso "próximamente"), formulario, accesos rápidos de
+    soporte y "Cómo llegar" siguen sin conectarse a un backend real.
   - Cupones no se aplican.
   - Avisos de reposición usan `alert`.
-  - La confirmación de checkout genera un identificador local y vacía el
-    carrito, sin crear un pedido.
+- Evolución 2026-07-28: la confirmación de checkout ya genera un pedido en
+  `demoOrderRepository` con ID/fecha/productos, sobrevive a recargas dentro
+  de la sesión y no se crea al abrir la URL. Sigue sin ser un pedido real:
+  aparece marcado como "Pedido de demostración" y no dispara emails ni pagos.
 
-## QA-001 — No hay suite de calidad automatizada
+## QA-001 — Suite E2E mínima con Playwright
 
-- Estado: abierto.
-- Impacto: medio.
-- Evidencia: `package.json` solo define `dev`, `build` y `preview`.
-- Consecuencia: el build comprueba tipos y empaquetado, pero no comportamiento,
-  regresiones visuales, accesibilidad ni rutas publicadas.
+- Estado: parcialmente resuelto el 2026-07-28.
+- Evidencia: nuevos scripts `test:e2e`, `test:e2e:ui`, `test:e2e:headed` en
+  `package.json`. Config en `playwright.config.ts`. Nueve pruebas en
+  `tests/e2e/` cubriendo: portada, no-scroll a 375 px, redirecciones de
+  `/checkout/2` y `/checkout/3` sin pedido, flujo demostrativo completo con
+  recarga, ausencia del chat en checkout, sincronización del buscador con la
+  URL y destinos de los accesorios.
+- CI: nuevo workflow `.github/workflows/e2e.yml` ejecuta `npm ci`, `npm run
+  build`, instala navegadores y corre las pruebas en cada push/PR sobre
+  `main`. Sube el reporte HTML como artefacto cuando fallan.
+- Pendiente: ampliar a más rutas (favoritos, comparador), cambios de color
+  y capacidad en la ficha, y comprobaciones de accesibilidad automáticas.
 
 ## SEG-001 — Avisos de seguridad en React Router
 
