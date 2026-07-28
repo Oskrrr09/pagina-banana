@@ -47,8 +47,9 @@ export function VariantPage() {
   const [colorSlug, setColorSlug] = useState(initialColor?.color ?? '')
   const color = model?.colors.find((c) => c.color === colorSlug) ?? model?.colors[0]
 
-  // Extrae el tamaño (e.g. "13"", "15"") del inicio de una string de capacidad.
-  const getSize = (cap: string) => cap.match(/^(\d{2}")/)?.[1] ?? null
+  // Extrae el tamaño (e.g. "13"", "15"", "42 mm", "44 mm") del inicio de una
+  // string de capacidad. Sirve para MBP/iPad (pulgadas) y Watch (mm).
+  const getSize = (cap: string) => cap.match(/^(\d{2}(?:"|\s?mm))/)?.[1] ?? null
 
   // Tamaños únicos disponibles para este color (vacío si no aplica).
   const sizes = useMemo(() => {
@@ -78,7 +79,7 @@ export function VariantPage() {
 
   // Etiqueta de capacidad que se muestra al usuario (sin el prefijo de tamaño).
   const displayCap = (cap: string) =>
-    hasSizeSelector ? cap.replace(/^\d{2}" · /, '') : cap
+    hasSizeSelector ? cap.replace(/^\d{2}(?:"|\s?mm) · /, '') : cap
 
   const current = useMemo(
     () => color?.capacities.find((c) => c.capacity === capacity) ?? color?.capacities[0],
