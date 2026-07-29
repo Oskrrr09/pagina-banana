@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { familiesNav, directLinks, utilityLinks } from '../../data/nav'
-import { families, modelsByFamily, variantPath } from '../../data/products'
 import { useStore } from '../../lib/store'
 import { useStorePreference } from '../../lib/storePreference'
 import { useFavoriteAlerts } from '../../lib/favoriteAlerts'
@@ -10,28 +9,7 @@ import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
 import { MegaMenu } from './MegaMenu'
 import { MobileMenu } from './MobileMenu'
-
-// Sugerencias del overlay de búsqueda derivadas del catálogo real (§4.4):
-// se generan a partir de `families` + `modelsByFamily` para que cualquier
-// modelo añadido o retirado aparezca automáticamente sin tocar el Header.
-interface SuggestionSection {
-  label: string
-  slug: string
-  models: { name: string; to: string }[]
-}
-
-function buildSearchSuggestions(): SuggestionSection[] {
-  return families
-    .filter((fam) => (modelsByFamily[fam.slug]?.length ?? 0) > 0)
-    .map((fam) => ({
-      label: fam.name,
-      slug: fam.slug,
-      models: modelsByFamily[fam.slug].map((model) => ({
-        name: model.name,
-        to: variantPath(model),
-      })),
-    }))
-}
+import { HeaderSearch } from '../search/HeaderSearch'
 
 // Cabecera fija (sticky) en escritorio y móvil.
 // Integración visual: barra promocional oscura arriba, cabecera principal en
@@ -39,15 +17,14 @@ function buildSearchSuggestions(): SuggestionSection[] {
 // (sin borde duro), evitando que corte el hero de golpe.
 export function Header() {
   const { cartCount, favorites, compare } = useStore()
-  const searchSuggestions = useMemo(() => buildSearchSuggestions(), [])
   const [activeFamily, setActiveFamily] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [q, setQ] = useState('')
   const [scrolled, setScrolled] = useState(false)
   const closeTimer = useRef<number | null>(null)
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null)
-  const navigate = useNavigate()
+  const desktopSearchButtonRef = useRef<HTMLButtonElement>(null)
+  const mobileSearchButtonRef = useRef<HTMLButtonElement>(null)
   const location = useLocation()
 
   useEffect(() => {
@@ -60,8 +37,6 @@ export function Header() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setActiveFamily(null)
-        setSearchOpen(false)
-        setQ('')
       }
     }
     document.addEventListener('keydown', onKey)
@@ -92,11 +67,6 @@ export function Header() {
   }
 
   const closeMobileMenu = useCallback(() => setMobileOpen(false), [])
-
-  function submitSearch(e: React.FormEvent) {
-    e.preventDefault()
-    if (q.trim()) navigate(`/buscar?q=${encodeURIComponent(q.trim())}`)
-  }
 
   const family = familiesNav.find((f) => f.slug === activeFamily)
 
@@ -174,6 +144,7 @@ export function Header() {
           <div className="ml-auto flex items-center gap-1">
             {/* Escritorio: lupa, favoritos, comparador, cuenta */}
             <button
+              ref={desktopSearchButtonRef}
               onClick={() => setSearchOpen((v) => !v)}
               aria-label="Buscar"
               aria-expanded={searchOpen}
@@ -193,6 +164,7 @@ export function Header() {
 
             {/* Móvil: lupa (antes del carrito) */}
             <button
+              ref={mobileSearchButtonRef}
               onClick={() => setSearchOpen((v) => !v)}
               aria-label="Buscar"
               aria-expanded={searchOpen}
@@ -218,22 +190,16 @@ export function Header() {
           </div>
         </div>
 
-        {/* Barra de búsqueda desplegable (solo escritorio xl+) */}
+        {/* Barra de búsqueda desplegable (solo escritorio xl+) — usa el
+             mismo motor que /buscar y renderiza autocompletado agrupado con
+             navegación por teclado. */}
         {searchOpen && (
           <div className="hidden border-t border-black/10 bg-surface xl:block">
-            <form onSubmit={submitSearch} className="mx-auto w-full max-w-6xl px-5 py-3 sm:px-6 lg:px-8">
-              <div className="flex items-center gap-2 rounded-full border border-line bg-neutral px-4 py-2.5">
-                <Icon name="search" className="text-muted" />
-                <input
-                  autoFocus
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Buscar productos, categorías, ayuda…"
-                  aria-label="Buscar"
-                  className="w-full bg-transparent text-[15px] outline-none placeholder:text-muted"
-                />
-              </div>
-            </form>
+            <HeaderSearch
+              mode="desktop"
+              onClose={() => setSearchOpen(false)}
+              restoreFocusTo={desktopSearchButtonRef}
+            />
           </div>
         )}
 
@@ -246,7 +212,8 @@ export function Header() {
         </div>
       </header>
 
-      {/* Overlay de búsqueda en móvil — pantalla completa con sugerencias */}
+      {/* Overlay de búsqueda en móvil — pantalla completa. Usa el mismo motor
+           y componente que la barra desplegable de escritorio. */}
       {searchOpen && (
         <div
           role="dialog"
@@ -254,57 +221,11 @@ export function Header() {
           aria-modal="true"
           className="fixed inset-0 z-[85] flex flex-col bg-surface xl:hidden"
         >
-          {/* Barra superior: cerrar + input + enviar */}
-          <div className="flex h-16 shrink-0 items-center gap-2 border-b border-line px-4">
-            <button
-              onClick={() => { setSearchOpen(false); setQ('') }}
-              aria-label="Cerrar búsqueda"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink hover:bg-neutral"
-            >
-              <Icon name="chevron-right" className="rotate-180" />
-            </button>
-            <form onSubmit={submitSearch} className="flex flex-1 items-center gap-2 rounded-full border border-line bg-neutral px-4 py-2">
-              <input
-                autoFocus
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="¿Qué estás buscando?"
-                aria-label="Buscar"
-                className="flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
-              />
-            </form>
-            <button
-              onClick={() => { if (q.trim()) navigate(`/buscar?q=${encodeURIComponent(q.trim())}`) }}
-              aria-label="Buscar"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted hover:bg-neutral hover:text-ink"
-            >
-              <Icon name="search" />
-            </button>
-          </div>
-
-          {/* Sugerencias por categoría — derivadas del catálogo real */}
-          <div className="flex-1 overflow-y-auto px-5 py-5">
-            {searchSuggestions.map((section) => (
-              <div key={section.slug} className="mb-6">
-                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">
-                  {section.label}
-                </p>
-                <div className="flex flex-col">
-                  {section.models.map((model) => (
-                    <Link
-                      key={model.to}
-                      to={model.to}
-                      onClick={() => setSearchOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-neutral"
-                    >
-                      <Icon name="search" size={15} className="shrink-0 text-muted" />
-                      {model.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <HeaderSearch
+            mode="mobile"
+            onClose={() => setSearchOpen(false)}
+            restoreFocusTo={mobileSearchButtonRef}
+          />
         </div>
       )}
 

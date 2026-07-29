@@ -8,9 +8,64 @@ actualizado: 2026-07-30
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-30 — Últimos ajustes del recomendador (PR pendiente)
+## 2026-07-30 — Buscador inteligente por secciones (PR pendiente)
 
-Rama `fix/finder-final-polish`.
+Rama `feat/grouped-semantic-search`.
+
+- **Nuevo motor determinista** `src/lib/catalogSearch.ts`. Puro,
+  reutilizable, sin dependencias externas, sin backend, sin IA. Exporta
+  `normalizeSearchText`, `tokenizeSearchQuery`, `inferSearchIntent`,
+  `buildSearchIndex`, `scoreSearchItem`, `searchCatalog`,
+  `limitSearchResults` y `suggestCorrection`.
+- **Nuevo índice** `src/data/searchIndex.ts`. Estructura tipada
+  (`SearchItem` con `kind`, `family`, `category`, `aliases`,
+  `keywords`, `relatedTo`, `compatibleWith`, `demo`, `source`). Se
+  construye automáticamente desde `families`, `allModels`, `services`
+  y `supportTopics`; los productos relacionados y accesorios
+  compatibles viven en `SEARCH_DEMO_ITEMS`, marcados como
+  demostrativos.
+- **Sinónimos** compactos: "air pods"→"airpods", "cascos"→"headphones",
+  "funda"→"case", "cargador"→"charging"… Sin transformaciones agresivas.
+- **Fuzzy matching** propio (Levenshtein sin dependencias). Palabras
+  <= 4 sin fuzzy; 5..7 distancia 1; >= 8 distancia 2.
+- **Intención** (`device` / `accessory` / `service` / `help` /
+  `generic`) determinada por vocabulario. En intención `accessory` las
+  secciones se reordenan para mostrar accesorios antes que dispositivos.
+- **Puntuación por prioridad** documentada: exacto en nombre > exacto
+  en alias > empieza por > todos los tokens > familia/categoría exacta
+  > palabras clave > relacionado > compatible > descripción > ayuda.
+  Los desempates no son alfabéticos: sección → marca Apple → orden
+  estable.
+- **/buscar** rediseñado: coincidencia principal + secciones agrupadas
+  (Dispositivos Apple, Productos relacionados, Accesorios Apple,
+  Accesorios compatibles, Servicios, Ayuda) + sugerencia "Quizá
+  querías decir…" + estado vacío con categorías, asistente y soporte.
+- **Header** con nuevo autocompletado accesible
+  (`src/components/search/HeaderSearch.tsx`) compartido por escritorio
+  y móvil. Combobox con `aria-expanded`, `aria-controls`,
+  `aria-activedescendant`, `role="listbox"` + `role="option"`.
+  Navegación ↓/↑/Enter/Escape; foco devuelto a la lupa al cerrar. Con
+  campo vacío se muestran accesos rápidos, no todo el catálogo. Al
+  final del panel, "Ver todos los resultados para «…»" enlaza a
+  /buscar.
+- **Contenido demostrativo** siempre etiquetado con
+  `ProvisionalBadge`; sin precio, stock, financiación, botón Comprar
+  ni enlace roto. Cuando no existe destino, la tarjeta es informativa.
+- **Tests**: `tests/e2e/search.spec.ts` reescrito con 20 escenarios
+  (AirPods, funda AirPods, cargador, cascos, air pods, airpds,
+  consulta vacía, URL, back/forward, teclado del Header, Ver todos,
+  overlay móvil, axe). Regresión: `apple-finder` (31) y
+  `accessibility` (9) siguen verdes. Total: **141/141** (122 → 141).
+- Sin cambios en carrito, checkout, seguro (`INSURANCE_PRICE`,
+  `insurancePrice`, `cartInsuranceTotal`, `setLineInsurance`), Plan
+  Renove, Servicio Técnico, tienda favorita, favoritos+avisos,
+  inventario, comparador, recomendador, catálogo real, precios,
+  imágenes ni workflows. Sin dependencias nuevas.
+
+## 2026-07-30 — Últimos ajustes del recomendador (PR #24)
+
+Rama `fix/finder-final-polish`. Commit funcional `88049b2`. Merge
+`9fde8cf`.
 
 - **Texto genérico para 0 candidatas**. `FamilyConfirmStep` distingue
   ahora dos casos: fotografía + complemento mantiene la explicación

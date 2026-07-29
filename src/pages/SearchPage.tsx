@@ -4,55 +4,28 @@ import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ProductCard } from '../components/product/ProductCard'
 import { ButtonLink } from '../components/ui/Button'
-import { allModels, families, modelsByFamily } from '../data/products'
-import { services } from '../data/content'
-import { supportTopics } from '../data/content'
+import { families, allModels, modelsByFamily } from '../data/products'
+import { searchCatalog, type SearchResults } from '../lib/catalogSearch'
+import type { SearchItem } from '../data/searchIndex'
+import { CompactSearchCard, SearchSectionHeading } from '../components/search/SearchResultCards'
 
-// Resultados del buscador (§4.4): productos, categorías/servicios y ayuda.
-// El campo se sincroniza siempre con el parámetro `q` de la URL: si se navega
-// desde la lupa del Header a "Mac" estando ya en /buscar?q=iPhone, el input
-// pasa a "Mac" y los resultados a "Mac". Adelante/atrás del navegador también
-// mantienen el input alineado con la URL.
+// Resultados del buscador (§4.4bis). Usa `searchCatalog` — el mismo motor
+// determinista y agrupado que el autocompletado del Header. Sincroniza el
+// input con `q` en la URL.
 export function SearchPage() {
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
   const [input, setInput] = useState(q)
-  useEffect(() => {
-    // Cuando la URL cambia (nueva búsqueda desde la lupa, back/forward…) el
-    // input debe reflejar el término activo.
-    setInput(q)
-  }, [q])
-  const term = q.trim().toLowerCase()
+  useEffect(() => setInput(q), [q])
 
-  const productResults = useMemo(
-    () =>
-      term
-        ? allModels.filter(
-            (m) => m.name.toLowerCase().includes(term) || m.tagline.toLowerCase().includes(term),
-          )
-        : allModels,
-    [term],
-  )
+  const results = useMemo<SearchResults>(() => searchCatalog(q), [q])
 
-  const categoryResults = useMemo(
-    () =>
-      term
-        ? [...families, ...services].filter((x) => x.name.toLowerCase().includes(term))
-        : [],
-    [term],
-  )
-
-  const helpResults = useMemo(() => {
-    if (!term) return []
-    return supportTopics
-      .flatMap((t) => t.items)
-      .filter((i) => i.q.toLowerCase().includes(term) || i.a.toLowerCase().includes(term))
-  }, [term])
-
-  const nothing = term && productResults.length === 0 && categoryResults.length === 0 && helpResults.length === 0
+  const hasQuery = q.trim().length > 0
+  const nothing = hasQuery && results.total === 0
 
   return (
     <Container className="py-10">
+      <h1 className="sr-only">Buscar en Banana Computer</h1>
       {/* 1 — Campo de búsqueda */}
       <form
         onSubmit={(e) => {
@@ -73,89 +46,221 @@ export function SearchPage() {
         </div>
       </form>
 
-      {q && (
+      {hasQuery && (
         <p className="mt-4 text-sm text-muted">
           Resultados para <span className="font-semibold text-ink">“{q}”</span>
         </p>
       )}
 
-      {nothing ? (
-        <div className="mt-10 rounded-[12px] border border-dashed border-line py-16 text-center">
-          <p className="text-lg font-semibold text-ink">No hemos encontrado resultados para “{q}”</p>
-          <p className="mt-2 text-muted">Prueba con otro término o explora las categorías populares.</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            {families.slice(0, 4).map((f) => (
-              <Link
-                key={f.slug}
-                to={modelsByFamily[f.slug] ? `/${f.slug}` : '/iphone'}
-                className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:border-brand hover:text-ink"
-              >
-                {f.name}
-              </Link>
-            ))}
-          </div>
-          <ButtonLink to="/soporte" variant="tertiary" className="mt-6">
-            ¿Necesitas ayuda? Ve al centro de soporte ›
-          </ButtonLink>
-        </div>
-      ) : (
-        <>
-          {/* 2 — Resultados de producto */}
-          {productResults.length > 0 && (
-            <section className="mt-8">
-              <h2 className="mb-4 text-lg font-bold text-ink">Productos</h2>
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {productResults.map((m) => (
-                  <ProductCard key={m.slug} model={m} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* 3 — Categorías y servicios */}
-          {categoryResults.length > 0 && (
-            <section className="mt-10">
-              <h2 className="mb-4 text-lg font-bold text-ink">Categorías y servicios</h2>
-              <ul className="space-y-1">
-                {categoryResults.map((c) => (
-                  <li key={c.name}>
-                    <Link
-                      to={
-                        'slug' in c && modelsByFamily[c.slug]
-                          ? `/${c.slug}`
-                          : 'line' in c
-                            ? '/servicios'
-                            : '/iphone'
-                      }
-                      className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-ink hover:bg-neutral hover:text-ink"
-                    >
-                      <Icon name="chevron-right" size={16} className="text-muted" />
-                      {c.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {/* 4 — Ayuda */}
-          {helpResults.length > 0 && (
-            <section className="mt-10">
-              <h2 className="mb-4 text-lg font-bold text-ink">Ayuda</h2>
-              <ul className="divide-y divide-line border-y border-line">
-                {helpResults.map((h) => (
-                  <li key={h.q} className="py-3">
-                    <Link to="/soporte" className="font-medium text-ink hover:text-ink">
-                      {h.q}
-                    </Link>
-                    <p className="mt-0.5 text-sm text-muted">{h.a}</p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </>
+      {/* 3 — Sugerencia de corrección */}
+      {hasQuery && results.correction && (
+        <p className="mt-3 rounded-[12px] border border-line bg-neutral px-4 py-2 text-sm text-ink">
+          Quizá querías decir{' '}
+          <button
+            type="button"
+            className="font-semibold text-ink underline underline-offset-2"
+            onClick={() => setParams({ q: results.correction as string })}
+          >
+            {results.correction}
+          </button>
+        </p>
       )}
+
+      {nothing ? <EmptyState query={q} /> : <ResultsSections results={results} />}
     </Container>
+  )
+}
+
+function ResultsSections({ results }: { results: SearchResults }) {
+  const { exactMatch, appleDevices, relatedProducts, appleAccessories, compatibleAccessories, services, help, intent } = results
+
+  const devicesBlock = appleDevices.length > 0 && (
+    <section key="devices" className="mt-10" aria-labelledby="search-devices">
+      <SearchSectionHeading title="Dispositivos Apple" count={appleDevices.length} />
+      <DeviceGrid items={appleDevices} />
+    </section>
+  )
+  const relatedBlock = relatedProducts.length > 0 && (
+    <section key="related" className="mt-10" aria-labelledby="search-related">
+      <SearchSectionHeading title="Productos relacionados" count={relatedProducts.length} />
+      <CompactGrid items={relatedProducts} />
+    </section>
+  )
+  const appleAccBlock = appleAccessories.length > 0 && (
+    <section key="apple-acc" className="mt-10" aria-labelledby="search-apple-acc">
+      <SearchSectionHeading title="Accesorios Apple" count={appleAccessories.length} />
+      <CompactGrid items={appleAccessories} />
+    </section>
+  )
+  const compatBlock = compatibleAccessories.length > 0 && (
+    <section key="compat" className="mt-10" aria-labelledby="search-compat-acc">
+      <SearchSectionHeading title="Accesorios compatibles" count={compatibleAccessories.length} />
+      <CompactGrid items={compatibleAccessories} />
+    </section>
+  )
+
+  // Orden por intención (§4.4bis):
+  //   - device (por defecto): Dispositivos → Relacionados → Acc Apple → Acc compatibles.
+  //   - accessory: Acc Apple → Acc compatibles → Dispositivos → Relacionados.
+  const ordered =
+    intent === 'accessory'
+      ? [appleAccBlock, compatBlock, devicesBlock, relatedBlock]
+      : [devicesBlock, relatedBlock, appleAccBlock, compatBlock]
+
+  return (
+    <>
+      {exactMatch && (
+        <section className="mt-8" aria-labelledby="search-exact">
+          <SearchSectionHeading title="Coincidencia principal" />
+          <ExactMatchCard item={exactMatch} />
+        </section>
+      )}
+
+      {ordered}
+
+      {services.length > 0 && (
+        <section className="mt-10" aria-labelledby="search-services">
+          <SearchSectionHeading title="Servicios" count={services.length} />
+          <ul className="space-y-1">
+            {services.map((s) => (
+              <li key={s.id}>
+                <Link
+                  to={s.route ?? '/servicios'}
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-ink hover:bg-neutral"
+                >
+                  <Icon name="chevron-right" size={16} className="text-muted" />
+                  <span>{s.name}</span>
+                  {s.description && (
+                    <span className="text-sm text-muted">— {s.description}</span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {help.length > 0 && (
+        <section className="mt-10" aria-labelledby="search-help">
+          <SearchSectionHeading title="Ayuda" count={help.length} />
+          <ul className="divide-y divide-line border-y border-line">
+            {help.map((h) => (
+              <li key={h.id} className="py-3">
+                <Link to={h.route ?? '/soporte'} className="font-medium text-ink hover:text-ink">
+                  {h.name}
+                </Link>
+                {h.description && <p className="mt-0.5 text-sm text-muted">{h.description}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
+  )
+}
+
+function ExactMatchCard({ item }: { item: SearchItem }) {
+  // Familias y dispositivos usan tarjeta enriquecida cuando existe modelo real.
+  if (item.kind === 'apple-device') {
+    const model = allModels.find((m) => `device:${m.family}/${m.slug}` === item.id)
+    if (model) {
+      return (
+        <div className="grid gap-4 sm:grid-cols-2 md:max-w-3xl">
+          <ProductCard model={model} />
+        </div>
+      )
+    }
+  }
+  if (item.kind === 'apple-family' && item.route) {
+    return (
+      <Link
+        to={item.route}
+        className="block rounded-[16px] border border-line bg-surface p-5 hover:border-ink/30"
+      >
+        <p className="text-xs font-bold uppercase tracking-widest text-muted">Familia Apple</p>
+        <p className="mt-1 text-xl font-extrabold text-ink">{item.name}</p>
+        {item.description && <p className="mt-1 text-sm text-muted">{item.description}</p>}
+        <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-ink">
+          Ver todos los modelos <Icon name="chevron-right" size={14} />
+        </span>
+      </Link>
+    )
+  }
+  return <CompactSearchCard item={item} />
+}
+
+function DeviceGrid({ items }: { items: SearchItem[] }) {
+  // Dispositivos Apple: si la entrada es familia, tarjeta destacada; si es
+  // modelo real, ProductCard.
+  const cards: JSX.Element[] = []
+  for (const item of items) {
+    if (item.kind === 'apple-family' && item.route) {
+      cards.push(
+        <Link
+          key={item.id}
+          to={item.route}
+          className="block rounded-[16px] border border-line bg-surface p-5 hover:border-ink/30"
+        >
+          <p className="text-xs font-bold uppercase tracking-widest text-muted">Familia Apple</p>
+          <p className="mt-1 text-xl font-extrabold text-ink">{item.name}</p>
+          {item.description && <p className="mt-1 text-sm text-muted">{item.description}</p>}
+          <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-ink">
+            Ver todos los modelos <Icon name="chevron-right" size={14} />
+          </span>
+        </Link>,
+      )
+      continue
+    }
+    if (item.kind === 'apple-device') {
+      const model = allModels.find((m) => `device:${m.family}/${m.slug}` === item.id)
+      if (model) {
+        cards.push(<ProductCard key={item.id} model={model} />)
+        continue
+      }
+    }
+    cards.push(<CompactSearchCard key={item.id} item={item} />)
+  }
+  return <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">{cards}</div>
+}
+
+function CompactGrid({ items }: { items: SearchItem[] }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((i) => (
+        <CompactSearchCard key={i.id} item={i} />
+      ))}
+    </div>
+  )
+}
+
+function EmptyState({ query }: { query: string }) {
+  return (
+    <div className="mt-10 rounded-[12px] border border-dashed border-line py-16 text-center">
+      <p className="text-lg font-semibold text-ink">
+        No hemos encontrado resultados para “{query}”
+      </p>
+      <p className="mt-2 text-muted">
+        Prueba con otro término o explora las categorías principales.
+      </p>
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
+        {families.slice(0, 5).map((f) => (
+          <Link
+            key={f.slug}
+            to={modelsByFamily[f.slug] ? `/${f.slug}` : `/buscar?q=${encodeURIComponent(f.name)}`}
+            className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:border-brand hover:text-ink"
+          >
+            {f.name}
+          </Link>
+        ))}
+      </div>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <ButtonLink to="/elige-tu-apple" variant="secondary">
+          Prueba el asistente Encuentra tu Apple
+        </ButtonLink>
+        <ButtonLink to="/soporte" variant="tertiary">
+          Ir al centro de soporte ›
+        </ButtonLink>
+      </div>
+    </div>
   )
 }
