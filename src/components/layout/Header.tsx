@@ -109,10 +109,10 @@ export function Header() {
              clara del degradado. Enlaces centrados; "Mi tienda" a la derecha
              usando posicionamiento absoluto para que la lista principal
              quede alineada con el eje central del layout. */}
-        {/* Cian brillante estilo "cielo" (#27E7F5). Con texto oscuro (`text-ink`)
+        {/* Cian brillante estilo "cielo" (#05E0ED). Con texto oscuro (`text-ink`)
              se cumple WCAG AA cómodamente (ratio ~11:1). Los enlaces mantienen
              el hover sutil con un negro translúcido para no perder legibilidad. */}
-        <div className="relative hidden bg-[#27e7f5] text-ink sm:block">
+        <div className="relative hidden bg-[#05e0ed] text-ink sm:block">
           <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium">
             {utilityLinks.map((link) => (
               <Link
