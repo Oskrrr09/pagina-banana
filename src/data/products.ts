@@ -499,7 +499,7 @@ export const airpodsModels: Model[] = [
     // PNG 1080×1080 RGBA descargado desde el CDN de Apple
     // (as-images.apple.com/is/airpods-4-up-compare-202409, fmt=png-alpha).
     colors: buildColors([
-      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-4-anc.png`, caps: [['USB-C', 199]] },
+      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-4-anc.webp`, caps: [['USB-C', 199]] },
     ]),
     specs: [
       { label: 'Chip', value: 'Apple H2' },
@@ -520,7 +520,7 @@ export const airpodsModels: Model[] = [
     // PNG 1080×1080 RGBA descargado desde el CDN de Apple
     // (as-images.apple.com/is/airpods-4-down-compare-202409, fmt=png-alpha).
     colors: buildColors([
-      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-4.png`, caps: [['USB-C', 149]] },
+      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-4.webp`, caps: [['USB-C', 149]] },
     ]),
     specs: [
       { label: 'Chip', value: 'Apple H2' },
