@@ -100,6 +100,16 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
 - ✅ Corrección real de contraste (paleta muted / cian utilitaria /
   verde disponibilidad).
 
+**Añadido el 2026-07-29** en `feature/comparator-essential`:
+
+- ✅ Rediseño del comparador esencial en `/comparar` inspirado en
+  la claridad del comparador oficial de Apple (columnas +
+  diferencias esenciales), sin copiar CSS ni textos: nuevo
+  módulo `src/data/productDecisionData.ts` con los campos
+  esenciales por familia y utilidades para "Solo diferencias" /
+  "Mostrar todas", resumen orientativo y sustitución en columna.
+  Compatibilidad con `banana:compare` existente sin migración.
+
 **Añadido el 2026-07-29** en `chore/release-candidate-cleanup`:
 
 - ✅ Node.js 24 en `.github/workflows/e2e.yml` y

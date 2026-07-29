@@ -100,7 +100,7 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 | `/:family/:model` | Modelo (redirige a la variante base) |
 | `/:family/:model/:variant` | Ficha con selectores de color, capacidad y (según modelo) tamaño |
 | `/buscar?q=…` | Buscador sincronizado con la URL |
-| `/comparar` | Comparador de hasta 3 productos de la misma familia |
+| `/comparar` | Comparador esencial (hasta 3 productos, misma familia) con "Solo diferencias" y resumen orientativo |
 | `/carrito` | Carrito con selección de entrega compartida con checkout |
 | `/checkout/1` | Datos y entrega/recogida (obligatorio antes del 2) |
 | `/checkout/2` | Pago y extras (crea el pedido demo al confirmar) |
@@ -127,6 +127,27 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
   compartido.
 
 Todo esto es demostrativo: no hay backend, ni pagos, ni emails.
+
+## Comparador esencial (`/comparar`)
+
+- Título "Compara tus opciones" + descripción: *"Consulta solo las
+  diferencias que realmente pueden ayudarte a elegir."*
+- Cada columna muestra imagen, nombre, variante, capacidad, precio
+  demostrativo, un `<select>` "Sustituir por" con los modelos
+  restantes de la misma familia, y botones de "Ver producto",
+  "Favorito" y "Comprar".
+- Chip toggle **"Solo diferencias" (activo por defecto)** vs
+  **"Mostrar todas"**. Con dos o más productos, un resumen
+  superior indica "Opción más económica de esta comparación",
+  "Mayor capacidad inicial", "Mayor pantalla entre los modelos
+  seleccionados" y "Más ligero de la comparación" cuando existen
+  datos comparables — marcado como *Orientación demostrativa*.
+- Los campos esenciales y su mapeo desde `model.specs` viven en
+  `src/data/productDecisionData.ts`. Nunca se inventan
+  especificaciones: si el catálogo no tiene el dato, la celda
+  muestra "No especificado" o se omite toda la fila.
+- Los usuarios con `banana:compare` previo siguen viendo la nueva
+  UI sin migración (el shape de `CompareItem` no cambia).
 
 ## Servicio Técnico Autorizado (página propia `/servicio-tecnico`)
 
@@ -275,7 +296,7 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (64 pruebas, medido con `npm run test:e2e` — 62 en
+Suites actuales (73 pruebas, medido con `npm run test:e2e` — 71 en
 `chromium` + 2 en `mobile` etiquetadas `@mobile`):
 
 - `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que
@@ -300,6 +321,13 @@ Suites actuales (64 pruebas, medido con `npm run test:e2e` — 62 en
   los botones "Quitar". **No se preselecciona nada en `localStorage`.**
 - `tests/e2e/search.spec.ts` — sincronización del input con `?q=` y
   destinos reales de los tiles de accesorios.
+- `tests/e2e/comparator.spec.ts` — rediseño del comparador esencial:
+  encabezado nuevo ("Compara tus opciones"), estado vacío con CTA del
+  asistente pendiente, "Solo diferencias" activo por defecto vs
+  "Mostrar todas", resumen con "Opción más económica", sustitución de
+  modelo desde el `<select>` "Sustituir por", añadir a favoritos y
+  cesta desde la columna, persistencia tras recargar, sin scroll
+  horizontal a 375 px y axe limpio.
 - `tests/e2e/audit-ux.spec.ts` — regresión de las mejoras post-auditoría:
   ahora la portada **no** contiene ningún `<h1>` (decisión visual
   consciente); banner "Sin cita previa" en `/servicio-tecnico`,

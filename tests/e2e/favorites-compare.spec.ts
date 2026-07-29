@@ -52,18 +52,22 @@ test('comparador: añadir dos productos desde /iphone/17-pro y vaciarlo', async 
 
   await page.goto('./comparar')
 
-  // Aparecen exactamente dos tarjetas de "iPhone 17 Pro" en la tabla.
-  await expect(page.getByText('iPhone 17 Pro', { exact: true })).toHaveCount(2)
+  // Aparecen exactamente dos columnas con "iPhone 17 Pro" en la cabecera
+  // de la tabla (el resumen superior también menciona el modelo, así que
+  // acotamos la búsqueda al <thead>).
+  const thead = page.locator('table thead')
+  await expect(thead.getByText('iPhone 17 Pro', { exact: true })).toHaveCount(2)
 
-  // El botón "Quitar iPhone 17 Pro" existe (uno por cada tarjeta). Se elimina
-  // la primera; queda solo una.
-  const remove = page.getByRole('button', { name: 'Quitar iPhone 17 Pro' })
+  // El botón "Quitar iPhone 17 Pro de la comparación" existe una vez por
+  // columna. Se elimina el primero; queda uno.
+  const removeLabel = /Quitar iPhone 17 Pro de la comparación/
+  const remove = page.getByRole('button', { name: removeLabel })
   await expect(remove).toHaveCount(2)
   await remove.first().click()
-  await expect(page.getByRole('button', { name: 'Quitar iPhone 17 Pro' })).toHaveCount(1)
+  await expect(page.getByRole('button', { name: removeLabel })).toHaveCount(1)
 
   // Se elimina la última; la tabla desaparece y vuelve el selector de familia.
-  await page.getByRole('button', { name: 'Quitar iPhone 17 Pro' }).click()
+  await page.getByRole('button', { name: removeLabel }).click()
   await expect(page.getByText('Tipo de producto:')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Quitar iPhone 17 Pro' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: removeLabel })).toHaveCount(0)
 })
