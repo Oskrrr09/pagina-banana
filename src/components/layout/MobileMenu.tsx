@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { Link } from 'react-router-dom'
 import { familiesNav, utilityLinks } from '../../data/nav'
+import { useStorePreference } from '../../lib/storePreference'
+import { stores } from '../../data/stores'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
 
@@ -161,6 +163,8 @@ export function MobileMenu({
               </ul>
             </nav>
 
+            <FavoriteStoreMobileBlock onClose={onClose} />
+
             {/* Servicios y ayuda — mismos enlaces que la barra superior de escritorio */}
             <div className="mt-6 rounded-[16px] bg-neutral p-4">
               <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
@@ -197,5 +201,71 @@ export function MobileMenu({
         </motion.div>
       )}
     </AnimatePresence>
+  )
+}
+
+function FavoriteStoreMobileBlock({ onClose }: { onClose: () => void }) {
+  const { favoriteStore, setFavorite, clearFavorite } = useStorePreference()
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div className="mt-6 rounded-[16px] bg-neutral p-4">
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
+        Tu tienda
+      </p>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="flex w-full items-center justify-between rounded-[10px] bg-surface px-3 py-2.5 text-left text-sm font-semibold text-ink"
+      >
+        <span className="flex items-center gap-2">
+          <Icon name="star" size={16} className="shrink-0 text-muted" />
+          {favoriteStore ? `Mi tienda: ${favoriteStore.name}` : 'Elegir tienda favorita'}
+        </span>
+        <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size={14} className="text-muted" />
+      </button>
+      {expanded && (
+        <ul className="mt-2 space-y-1">
+          {stores.map((store) => {
+            const active = favoriteStore?.slug === store.slug
+            return (
+              <li key={store.slug}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFavorite(store.slug)
+                    setExpanded(false)
+                    onClose()
+                  }}
+                  className={`flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-left text-sm hover:bg-surface ${
+                    active ? 'bg-brand-050 font-semibold' : ''
+                  }`}
+                >
+                  <Icon name={active ? 'star' : 'store'} size={14} className="text-muted" />
+                  <span>
+                    {store.name}
+                    <span className="ml-1 text-xs text-muted">{store.island}</span>
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+          {favoriteStore && (
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  clearFavorite()
+                  setExpanded(false)
+                }}
+                className="w-full rounded-[8px] px-3 py-2 text-left text-sm text-danger hover:bg-surface"
+              >
+                Quitar tienda favorita
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
   )
 }

@@ -129,6 +129,29 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 
 Todo esto es demostrativo: no hay backend, ni pagos, ni emails.
 
+## Tienda favorita (`storePreference.tsx`)
+
+- Estado global en `src/lib/storePreference.tsx` con dos claves de
+  `localStorage`: `banana:favorite-store` (slug de tienda) y
+  `banana:favorite-store-prompt` (`dismissed` cuando el usuario
+  cierra el prompt inicial). **No se guarda ubicación,
+  coordenadas, IP, email ni ningún dato personal.**
+- Bottom sheet accesible (`FavoriteStoreDialogs`) que aparece a
+  los ~800 ms en la primera visita si no hay tienda ni prompt
+  descartado. Nunca se muestra en `/checkout/*` y no bloquea la
+  navegación.
+- Selector "Mi tienda" en la barra utilitaria (`FavoriteStoreMenu`)
+  y en el menú móvil (`FavoriteStoreMobileBlock`) para elegir,
+  cambiar o quitar la tienda.
+- Personalización: en `/tiendas` la tienda favorita aparece
+  primero con badge *Tu tienda*; en el detalle de tienda hay un
+  CTA "Marcar como mi tienda" / "Esta es tu tienda"; el
+  `StorePicker` de las fichas de producto también prioriza la
+  tienda favorita.
+- Los horarios siguen calculados con `getTodayHours`, `isOpenNow`
+  y `Atlantic/Canary`; se mantiene el aviso de que pueden variar
+  en festivos.
+
 ## Asistente "Encuentra tu Apple" (`/elige-tu-apple`)
 
 - Recorrido guiado con estado 100 % en React: intro → pregunta de
@@ -320,7 +343,7 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (82 pruebas, medido con `npm run test:e2e` — 80 en
+Suites actuales (90 pruebas, medido con `npm run test:e2e` — 88 en
 `chromium` + 2 en `mobile` etiquetadas `@mobile`):
 
 - `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que

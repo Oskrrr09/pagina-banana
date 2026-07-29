@@ -4,6 +4,8 @@ import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Chip } from '../components/ui/Chip'
 import { stores, islands, ALL_SERVICES, UNIVERSAL_SERVICES, getTodayHours, isOpenNow } from '../data/stores'
+import type { Store } from '../data/types'
+import { useStorePreference, sortStoresWithFavoriteFirst } from '../lib/storePreference'
 
 // Página de tiendas (§4.13): mapa, filtros y lista.
 export function StoresPage() {
@@ -13,13 +15,13 @@ export function StoresPage() {
   // Zoom del mapa (rango Google Maps: 3–20). Se resetea al cambiar de tienda.
   const [zoom, setZoom] = useState(8)
 
-  const filtered = useMemo(
-    () =>
-      stores.filter(
-        (s) => (island === 'Todas' || s.island === island) && (!service || s.services.includes(service)),
-      ),
-    [island, service],
-  )
+  const { favoriteSlug } = useStorePreference()
+  const filtered = useMemo<Store[]>(() => {
+    const list: Store[] = stores.filter(
+      (s) => (island === 'Todas' || s.island === island) && (!service || s.services.includes(service)),
+    )
+    return sortStoresWithFavoriteFirst(list, favoriteSlug)
+  }, [island, service, favoriteSlug])
 
   // URL del mapa. Si hay tienda activa, se busca por su nombre real
   // ("Banana Safari", "Banana Mesa y López"…) para que Google Maps
@@ -149,6 +151,11 @@ export function StoresPage() {
                   {open ? 'Abierto ahora' : 'Cerrado'}
                 </span>
               </div>
+              {favoriteSlug === store.slug && (
+                <p className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-brand-050 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink">
+                  <Icon name="star" size={10} aria-hidden="true" /> Tu tienda
+                </p>
+              )}
               <p className="mt-1 text-xs text-muted">
                 <span className="font-semibold text-ink">Hoy:</span> {todayHours?.time ?? 'Consulta el horario'}
               </p>

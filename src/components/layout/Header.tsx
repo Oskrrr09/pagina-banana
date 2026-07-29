@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { familiesNav, directLinks, utilityLinks } from '../../data/nav'
 import { families, modelsByFamily, variantPath } from '../../data/products'
 import { useStore } from '../../lib/store'
+import { useStorePreference } from '../../lib/storePreference'
+import { stores } from '../../data/stores'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
 import { MegaMenu } from './MegaMenu'
@@ -102,16 +104,19 @@ export function Header() {
       <header className="sticky top-0 z-40">
         {/* Barra superior de servicios — sólo escritorio; en móvil viven en el menú */}
         <div className="hidden bg-[#1f6e83] text-white sm:block">
-          <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium">
-            {utilityLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.to}
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
-              >
-                <Icon name={link.icon} size={14} /> {link.label}
-              </Link>
-            ))}
+          <div className="mx-auto flex h-9 max-w-7xl items-center justify-between gap-2 px-4 text-[13px] font-medium">
+            <div className="flex items-center gap-1">
+              {utilityLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  to={link.to}
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
+                >
+                  <Icon name={link.icon} size={14} /> {link.label}
+                </Link>
+              ))}
+            </div>
+            <FavoriteStoreMenu />
           </div>
         </div>
 
@@ -327,5 +332,123 @@ function IconBadge({
         </span>
       )}
     </Link>
+  )
+}
+
+// Selector "Mi tienda" en la barra utilitaria. Sin tienda muestra
+// "Elegir tienda"; con tienda muestra "Mi tienda: X" y despliega un menú
+// accesible para cambiarla o quitarla. La lógica de persistencia vive en
+// `useStorePreference`.
+function FavoriteStoreMenu() {
+  const { favoriteStore, setFavorite, clearFavorite } = useStorePreference()
+  const [open, setOpen] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setOpen(false)
+        buttonRef.current?.focus()
+      }
+    }
+    function onClickOutside(event: MouseEvent) {
+      if (!menuRef.current || !buttonRef.current) return
+      if (
+        !menuRef.current.contains(event.target as Node) &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onClickOutside)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onClickOutside)
+    }
+  }, [open])
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={
+          favoriteStore
+            ? `Mi tienda: ${favoriteStore.name}. Cambiar o quitar.`
+            : 'Elegir tienda favorita'
+        }
+        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
+      >
+        <Icon name="star" size={14} aria-hidden="true" />
+        {favoriteStore ? `Mi tienda: ${favoriteStore.name}` : 'Elegir tienda'}
+      </button>
+      {open && (
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label="Selector de tienda favorita"
+          className="absolute right-0 top-full z-30 mt-1 w-72 rounded-[12px] border border-line bg-surface p-2 text-left text-ink shadow-[var(--shadow-raised)]"
+        >
+          <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+            Tu tienda Banana
+          </p>
+          <ul className="mt-1 space-y-1">
+            {stores.map((store) => {
+              const active = favoriteStore?.slug === store.slug
+              return (
+                <li key={store.slug}>
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={active}
+                    onClick={() => {
+                      setFavorite(store.slug)
+                      setOpen(false)
+                      buttonRef.current?.focus()
+                    }}
+                    className={`flex w-full items-center gap-2 rounded-[8px] px-2 py-1.5 text-left text-sm hover:bg-neutral ${
+                      active ? 'bg-brand-050 font-semibold' : ''
+                    }`}
+                  >
+                    <Icon
+                      name={active ? 'star' : 'store'}
+                      size={14}
+                      aria-hidden="true"
+                    />
+                    <span>
+                      {store.name}
+                      <span className="ml-1 text-xs text-muted">{store.island}</span>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+          {favoriteStore && (
+            <>
+              <hr className="my-2 border-line" />
+              <button
+                type="button"
+                onClick={() => {
+                  clearFavorite()
+                  setOpen(false)
+                  buttonRef.current?.focus()
+                }}
+                className="w-full rounded-[8px] px-2 py-1.5 text-left text-sm text-danger hover:bg-neutral"
+              >
+                Quitar tienda favorita
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

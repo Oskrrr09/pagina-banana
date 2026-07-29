@@ -68,6 +68,37 @@ Rama `chore/auditoria-web-oficial-banana`.
   componentes ni pruebas existentes. `npm run build` y
   `npm run test:e2e` siguen en verde (21 pruebas).
 
+## 2026-07-29 — Tienda favorita (PR3 del bloque diferencial)
+
+Rama `feature/favorite-store`.
+
+- Nuevo `src/lib/storePreference.tsx` con contexto React y
+  claves `banana:favorite-store` y
+  `banana:favorite-store-prompt`. Sólo se guarda el slug de
+  tienda; nunca ubicación, coordenadas ni PII.
+- Nuevo `src/components/layout/FavoriteStoreDialogs.tsx` con
+  bottom sheet no bloqueante que se muestra en la primera
+  visita (~800 ms) fuera del checkout. Confirmación discreta
+  al elegir.
+- Nuevo `FavoriteStoreMenu` en la barra utilitaria (Header) y
+  `FavoriteStoreMobileBlock` en el menú móvil, ambos con
+  radiogroup accesible para elegir/cambiar/quitar tienda.
+- Personalización:
+  * `/tiendas` ordena con la tienda favorita primero y muestra
+    badge "Tu tienda".
+  * `/tiendas/:slug` incluye CTA "Marcar como mi tienda" /
+    "Esta es tu tienda" con opción "Quitar".
+  * `StorePicker` prioriza la tienda favorita con badge y
+    nota "Consultar en tu tienda".
+- Nueva suite `tests/e2e/favorite-store.spec.ts` (7): prompt
+  inicial no bloqueante, "Ahora no", elegir tienda + persistencia,
+  cabecera actualizada, badge en `/tiendas`, marcar/quitar
+  desde detalle, sin PII, 375 px sin scroll y prompt oculto
+  en checkout. Total suite: 82 → 90.
+- Sin cambios en checkout: se respeta cualquier selección
+  explícita del usuario. Sin tocar seguro, catálogo, Plan
+  Renove ni Servicio Técnico.
+
 ## 2026-07-29 — Asistente "Encuentra tu Apple" (PR2 del bloque diferencial)
 
 Rama `feature/apple-finder-assistant`.
