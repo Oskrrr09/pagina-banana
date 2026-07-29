@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
@@ -545,6 +545,15 @@ function FamilyConfirmStep({
   const secondary = candidates[1]
 
   // Estado sin coincidencias: 0 candidatas.
+  const emptyHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const noCandidates = !primary
+  useEffect(() => {
+    if (!noCandidates) return
+    const node = emptyHeadingRef.current
+    if (!node) return
+    node.focus({ preventScroll: true })
+  }, [noCandidates])
+
   if (!primary) {
     const isPhotoAccessory =
       general.use === 'foto' && general.productRole === 'accessory'
@@ -554,7 +563,12 @@ function FamilyConfirmStep({
         className="mt-8"
         aria-live="polite"
       >
-        <h2 id="family-confirm" className="text-xl font-bold text-ink">
+        <h2
+          id="family-confirm"
+          ref={emptyHeadingRef}
+          tabIndex={-1}
+          className="text-xl font-bold text-ink outline-none"
+        >
           No encontramos una categoría que encaje con todo
         </h2>
         <p className="mt-2 text-sm text-ink">
@@ -563,9 +577,9 @@ function FamilyConfirmStep({
             : 'Con las respuestas indicadas no hemos podido sugerir una categoría del catálogo.'}
         </p>
         <p className="mt-2 text-sm text-muted">
-          Este prototipo recomienda dispositivos Apple y complementos de audio o
-          salud, pero no incluye una categoría específica de accesorios para
-          fotografía.
+          {isPhotoAccessory
+            ? 'Este prototipo recomienda dispositivos Apple y complementos de audio o salud, pero no incluye una categoría específica de accesorios para fotografía.'
+            : 'Puedes revisar tus respuestas o elegir manualmente una categoría para continuar.'}
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <button

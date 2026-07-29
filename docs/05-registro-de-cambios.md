@@ -1,6 +1,6 @@
 ---
 tipo: cambios
-actualizado: 2026-07-29
+actualizado: 2026-07-30
 ---
 	
 # Registro de cambios
@@ -8,9 +8,42 @@ actualizado: 2026-07-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-29 — Casos límite del recomendador (PR pendiente)
+## 2026-07-30 — Últimos ajustes del recomendador (PR pendiente)
 
-Rama `fix/finder-edge-cases-cleanup`.
+Rama `fix/finder-final-polish`.
+
+- **Texto genérico para 0 candidatas**. `FamilyConfirmStep` distingue
+  ahora dos casos: fotografía + complemento mantiene la explicación
+  específica del prototipo; cualquier otra combinación sin candidatas
+  usa un mensaje genérico ("Con las respuestas indicadas no hemos
+  podido sugerir una categoría del catálogo" + "Puedes revisar tus
+  respuestas o elegir manualmente una categoría para continuar"). Ya
+  no se menciona fotografía cuando la ruta no es foto+accessory.
+- **Foco al entrar en el estado sin coincidencias**. El encabezado
+  principal recibe `tabIndex={-1}` y un `useEffect` mueve el foco al
+  entrar en el estado (`focus({ preventScroll: true })`). Se mantiene
+  `aria-live="polite"`. Se preserva el botón Atrás y el foco no se
+  restaura en cada render.
+- **Docs de la PR #23**. La entrada del registro deja de aparecer
+  como "PR pendiente" y se enlaza al merge
+  `67d26b9f5e5065a1e30d04e5c49f2e91c42996a8`. La nota de sesión
+  correspondiente añade el bloque "Cierre" con PR, commit funcional y
+  merge.
+- **Tests**: se amplía "workType se limpia" para recorrer también el
+  segundo resumen (Trabajo → Mac → resumen → cambio a Estudio → iPad
+  → segundo resumen sin workType → resultados). Se añade un test que
+  verifica el foco en el encabezado del estado sin coincidencias.
+  Total: **122/122** (121 → 122).
+
+Sin cambios en buscador, comparador, catálogo, precios, carrito,
+seguro, checkout, Plan Renove, Servicio Técnico, tienda favorita,
+favoritos+avisos, inventario ni imágenes.
+
+## 2026-07-29 — Casos límite del recomendador (PR #23)
+
+Rama `fix/finder-edge-cases-cleanup`. Commit funcional
+`fe07b40d8bcd2b2a38430c24fb9cc68902297158`. Merge
+`67d26b9f5e5065a1e30d04e5c49f2e91c42996a8`.
 
 - **`workType` se limpia automáticamente** cuando `general.use` deja de ser
   "trabajo". `setGeneral` retira la clave del objeto (no la deja como
