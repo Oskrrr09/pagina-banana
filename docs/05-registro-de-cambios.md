@@ -8,6 +8,62 @@ actualizado: 2026-07-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-29 — Calidad de las recomendaciones del asistente (PR pendiente)
+
+Rama `fix/apple-finder-recommendation-quality`.
+
+- **Nueva arquitectura de respuestas** con namespaces en
+  [[../src/data/productDecisionData]]: `FinderAnswers { general, family,
+  specific }`. Los IDs específicos llevan prefijo por familia
+  (`iphone.use`, `mac.form`, `airpods.fit`, `watch.cellular`, …). Ya no
+  hay solapamiento de claves entre general y específica.
+- **Flujo "No lo tengo claro"** con confirmación: preguntas generales →
+  `computeFamilyCandidates` calcula 2 familias probables → pantalla
+  "Por lo que nos cuentas, creemos que estas categorías pueden encajar"
+  con recomendación principal, segunda posibilidad y "Ver todas las
+  categorías". Volver atrás conserva respuestas generales.
+- **Filtros duros** (`filterEligibleModels`) frente a preferencias
+  blandas (`scoreEligibleModel`). Un modelo que incumple una
+  restricción dura NUNCA se recomienda:
+  - Mac portátil/sobremesa imprescindible;
+  - AirPods `open` / `in-ear` / `over-ear` estricto;
+  - iPad Pencil / Magic Keyboard imprescindible;
+  - Apple Watch Cellular imprescindible;
+  - presupuesto estricto o con margen del 15 %.
+- **Taxonomía AirPods v2** — `airpodsFit: 'open' | 'in-ear' | 'over-ear'`
+  reemplaza al antiguo `fitType`. Clasificación: AirPods 4 y 4 con ANC
+  → `open`; AirPods Pro → `in-ear`; AirPods Max → `over-ear`.
+- **Presupuesto por familia** — `getBudgetOptionsForFamily(family, models)`
+  calcula tramos sensatos a partir de los precios reales del catálogo,
+  con paso 25/50/100 € según familia. Nueva pregunta de
+  **flexibilidad** (`strict` / `flex` / `reference`) que se combina con
+  el filtro duro o con una penalización proporcional en el score.
+- **Roles de resultado nuevos** — `best-fit` / `best-value` / `other`.
+  Umbrales: best-value con score ≥ 70 % del mejor; other con score
+  ≥ 75 % del mejor. Se retiran "Alternativa más económica" y
+  "Alternativa más avanzada".
+- **Relajación transparente** — si `filterEligibleModels` no deja
+  ningún modelo, `FinderComputation.noMatch = true` y la UI muestra
+  "No encontramos una opción que cumpla todo", con la lista de
+  descartes, y ofrece "Ampliar presupuesto y probar" y "Revisar
+  respuestas".
+- **Razones y compromisos personalizados** — `buildRecommendationReasons`
+  y `buildRecommendationCaveats` derivan las líneas "Encaja contigo
+  porque" y "Ten en cuenta" a partir de las respuestas concretas
+  (formato, prioridad, tamaño, Pencil/Cellular, presupuesto). Ya no
+  se rellenan con `strengths` genéricos.
+- **Resumen editable** ("Esto es lo que buscas") antes de calcular:
+  Producto, respuestas generales, específicas, presupuesto y
+  flexibilidad, con un botón "Cambiar" en cada línea.
+- **Tests** — `tests/e2e/apple-finder.spec.ts` reescrito (16
+  escenarios: flujo iPhone completo, confirmación de familia, filtros
+  duros por familia, presupuesto estricto, resumen editable, roles
+  nuevos, comparar, axe). Suite: **107/107** (99 → 107).
+
+Sin cambios en carrito, seguro, checkout, Plan Renove, Servicio
+Técnico, tienda favorita, favoritos+avisos, inventario demostrativo,
+precios ni imágenes del catálogo.
+
 ## 2026-07-29 — Simplificación visual del comparador (PR pendiente)
 
 Rama `fix/comparator-visual-simplification`.

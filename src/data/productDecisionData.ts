@@ -188,6 +188,12 @@ const FIELD_ALIASES: Record<string, string[]> = {
  */
 export type Level = 1 | 2 | 3
 
+/** Formato físico de los AirPods (taxonomía v2 del asistente). */
+export type AirPodsFit = 'open' | 'in-ear' | 'over-ear'
+
+/** Formato de un Mac. */
+export type MacFormFactor = 'portable' | 'desktop'
+
 export interface ModelDecisionMeta {
   usoRecomendado?: string
   fields?: Record<string, string>
@@ -202,7 +208,14 @@ export interface ModelDecisionMeta {
   supportsKeyboard?: boolean
   hasNoiseCancellation?: boolean
   hasCellular?: boolean
+  /** @deprecated Use `airpodsFit`. Mantiene textos antiguos. */
   fitType?: 'intraural' | 'circumaural'
+  /** Nueva taxonomía AirPods (v2). */
+  airpodsFit?: AirPodsFit
+  /** Formato de Mac (portable/desktop) para filtros duros. */
+  macFormFactor?: MacFormFactor
+  /** Tamaño físico aproximado (para restricciones de tamaño iPhone/iPad). */
+  sizeCategory?: 'compact' | 'balanced' | 'large'
 }
 
 const MODEL_META: Record<string, ModelDecisionMeta> = {
@@ -216,6 +229,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     batteryLevel: 3,
     valueLevel: 1,
     professionalLevel: 3,
+    sizeCategory: 'large',
     fields: {
       Pantalla: 'Super Retina XDR 6,9"',
       Chip: 'A19 Pro',
@@ -238,6 +252,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     batteryLevel: 2,
     valueLevel: 1,
     professionalLevel: 3,
+    sizeCategory: 'balanced',
     fields: {
       Pantalla: 'Super Retina XDR 6,3"',
       Chip: 'A19 Pro',
@@ -260,6 +275,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     batteryLevel: 2,
     valueLevel: 2,
     professionalLevel: 2,
+    sizeCategory: 'compact',
     fields: {
       Pantalla: 'Super Retina XDR 6,5"',
       Chip: 'A19',
@@ -282,6 +298,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     batteryLevel: 2,
     valueLevel: 3,
     professionalLevel: 1,
+    sizeCategory: 'balanced',
     fields: {
       Pantalla: 'Super Retina XDR 6,3"',
       Chip: 'A19',
@@ -305,6 +322,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     batteryLevel: 2,
     valueLevel: 3,
     professionalLevel: 1,
+    macFormFactor: 'portable',
     fields: {
       Chip: 'Apple M-series',
       'CPU / GPU': '8 núcleos CPU · 8 núcleos GPU',
@@ -325,6 +343,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     batteryLevel: 3,
     valueLevel: 2,
     professionalLevel: 2,
+    macFormFactor: 'portable',
     fields: {
       Chip: 'M5',
       'CPU / GPU': '10 núcleos CPU · 10 núcleos GPU',
@@ -345,6 +364,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     batteryLevel: 3,
     valueLevel: 2,
     professionalLevel: 2,
+    macFormFactor: 'portable',
     fields: {
       Chip: 'M4',
       'CPU / GPU': '10 núcleos CPU · 10 núcleos GPU',
@@ -365,6 +385,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     batteryLevel: 3,
     valueLevel: 1,
     professionalLevel: 3,
+    macFormFactor: 'portable',
     fields: {
       Chip: 'M5 Pro',
       'CPU / GPU': 'Hasta 12 núcleos CPU · 18 núcleos GPU',
@@ -385,6 +406,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     batteryLevel: 3,
     valueLevel: 1,
     professionalLevel: 3,
+    macFormFactor: 'portable',
     fields: {
       Chip: 'M4 Pro',
       'CPU / GPU': 'Hasta 14 núcleos CPU · 20 núcleos GPU',
@@ -404,6 +426,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     performanceLevel: 2,
     valueLevel: 2,
     professionalLevel: 2,
+    macFormFactor: 'desktop',
     fields: {
       Chip: 'M4',
       'CPU / GPU': '8-10 núcleos CPU · 8-10 núcleos GPU',
@@ -423,6 +446,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     performanceLevel: 2,
     valueLevel: 3,
     professionalLevel: 2,
+    macFormFactor: 'desktop',
     fields: {
       Chip: 'M4 / M4 Pro',
       'CPU / GPU': 'Hasta 12 núcleos CPU · 16 núcleos GPU',
@@ -442,6 +466,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     performanceLevel: 3,
     valueLevel: 1,
     professionalLevel: 3,
+    macFormFactor: 'desktop',
     fields: {
       Chip: 'M4 Max / M4 Ultra',
       'CPU / GPU': 'Hasta 32 núcleos CPU · 80 núcleos GPU',
@@ -648,7 +673,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     valueLevel: 2,
     professionalLevel: 3,
     hasNoiseCancellation: true,
-    fitType: 'intraural',
+    airpodsFit: 'in-ear',
     fields: {
       'Cancelación de ruido': 'Activa adaptativa · modo Transparencia',
       Chip: 'H2',
@@ -668,7 +693,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     valueLevel: 3,
     professionalLevel: 2,
     hasNoiseCancellation: true,
-    fitType: 'intraural',
+    airpodsFit: 'open',
     fields: {
       'Cancelación de ruido': 'Activa · modo Transparencia',
       Chip: 'H2',
@@ -688,7 +713,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     valueLevel: 3,
     professionalLevel: 1,
     hasNoiseCancellation: false,
-    fitType: 'intraural',
+    airpodsFit: 'open',
     fields: {
       'Cancelación de ruido': 'No incluye',
       Chip: 'H2',
@@ -708,7 +733,7 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
     valueLevel: 1,
     professionalLevel: 2,
     hasNoiseCancellation: true,
-    fitType: 'circumaural',
+    airpodsFit: 'over-ear',
     fields: {
       'Cancelación de ruido': 'Activa · modo Transparencia',
       Chip: 'H1',
@@ -1004,12 +1029,26 @@ function formatEuros(value: number): string {
 }
 
 // =======================================================================
-// Asistente "Encuentra tu Apple"
+// =======================================================================
+// Asistente "Encuentra tu Apple" (arquitectura v2).
 // =======================================================================
 //
-// Preguntas por familia + función `scoreModel` para el asistente.
-// Todo es determinista: las mismas respuestas producen siempre las mismas
-// recomendaciones. No usa aleatoriedad ni backend.
+// Estructura explícita de respuestas: general / family / specific — evita
+// que las claves de las preguntas específicas pisen a las generales.
+// Los cálculos se separan en:
+//   1. filterEligibleModels() — restricciones DURAS (portátil vs sobremesa,
+//      formato AirPods, Pencil/teclado obligatorio, Cellular obligatorio,
+//      presupuesto estricto…). Un modelo que no pasa este filtro NUNCA se
+//      recomienda.
+//   2. scoreEligibleModel() — preferencias BLANDAS (uso, prioridad, valor,
+//      autonomía, presupuesto flexible o de referencia).
+//   3. buildRecommendationReasons() / buildRecommendationCaveats() — razones
+//      y compromisos DERIVADOS de las respuestas concretas (no de los
+//      `strengths` genéricos).
+//   4. computeFinderResults() — elige "Mejor encaje", "Mejor relación
+//      calidad-precio" y "Otra opción que también encaja" con umbrales; o
+//      devuelve un resultado "no-match" cuando ninguna opción cumple.
+// Todo es determinista: mismos inputs → mismos resultados.
 
 export interface FinderOption {
   value: string
@@ -1020,30 +1059,60 @@ export interface FinderQuestion {
   id: string
   prompt: string
   help?: string
-  multi?: boolean
   options: FinderOption[]
 }
 
-/** Presupuesto orientativo. `null` en `budget` = sin límite. */
-export const BUDGET_OPTIONS: readonly { value: string; label: string; max: number | null }[] = [
-  { value: 'entrada', label: 'Hasta 500 €', max: 500 },
-  { value: 'medio', label: 'Hasta 1.000 €', max: 1000 },
-  { value: 'alto', label: 'Hasta 1.500 €', max: 1500 },
-  { value: 'sin-limite', label: 'Sin límite', max: null },
-]
+/** Flexibilidad del presupuesto (elegida como respuesta general aparte). */
+export type BudgetFlex = 'strict' | 'flex' | 'reference'
 
-const BUDGET_QUESTION: FinderQuestion = {
-  id: 'budget',
-  prompt: '¿Qué presupuesto orientativo tienes?',
-  help: 'Recomendaciones demostrativas: los precios reales pueden variar en Banana Computer.',
-  options: BUDGET_OPTIONS.map(({ value, label }) => ({ value, label })),
+/** Un tramo de presupuesto. `max: null` = sin límite. */
+export interface BudgetOption {
+  value: string
+  label: string
+  max: number | null
 }
 
-/** Preguntas específicas por familia (4-6 relevantes). */
+/**
+ * Devuelve las bandas de presupuesto sugeridas para una familia. Se
+ * construyen a partir de los `fromPrice` reales de los modelos: mínimo,
+ * mediana redondeada y máximo redondeado + tramo "sin límite". Sensato para
+ * AirPods, Watch, iPad, iPhone y Mac sin necesidad de hard-codearlo.
+ */
+export function getBudgetOptionsForFamily(
+  family: FamilySlug,
+  models: readonly Model[],
+): BudgetOption[] {
+  const prices = models
+    .map((m) => m.fromPrice)
+    .filter((n): n is number => Number.isFinite(n))
+    .sort((a, b) => a - b)
+  if (prices.length === 0) {
+    return [{ value: 'sin-limite', label: 'Sin límite', max: null }]
+  }
+  const min = prices[0]
+  const max = prices[prices.length - 1]
+  const mid = prices[Math.floor((prices.length - 1) / 2)]
+  const bands = new Set<number>()
+  const roundUp = (n: number, step: number) => Math.ceil(n / step) * step
+  const step = family === 'airpods' ? 25 : family === 'apple-watch' ? 50 : 100
+  bands.add(roundUp(min, step))
+  bands.add(roundUp(mid, step))
+  bands.add(roundUp(max, step))
+  const sortedBands = Array.from(bands).sort((a, b) => a - b)
+  const opts: BudgetOption[] = sortedBands.map((v) => ({
+    value: `hasta-${v}`,
+    label: `Hasta ${formatEuros(v)}`,
+    max: v,
+  }))
+  opts.push({ value: 'sin-limite', label: 'Sin límite', max: null })
+  return opts
+}
+
+/** Preguntas específicas por familia. IDs prefijados por familia (namespace). */
 export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
   iphone: [
     {
-      id: 'use',
+      id: 'iphone.use',
       prompt: '¿Para qué usas más el iPhone?',
       options: [
         { value: 'diario', label: 'Uso cotidiano' },
@@ -1054,16 +1123,17 @@ export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
       ],
     },
     {
-      id: 'size',
+      id: 'iphone.size',
       prompt: '¿Qué tamaño prefieres?',
       options: [
         { value: 'compacto', label: 'Compacto' },
         { value: 'equilibrado', label: 'Equilibrado' },
         { value: 'grande', label: 'Grande' },
+        { value: 'flex', label: 'Me da igual' },
       ],
     },
     {
-      id: 'priority',
+      id: 'iphone.priority',
       prompt: '¿Qué es lo que más te importa?',
       options: [
         { value: 'camera', label: 'Cámara' },
@@ -1073,11 +1143,10 @@ export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
         { value: 'value', label: 'Precio' },
       ],
     },
-    BUDGET_QUESTION,
   ],
   mac: [
     {
-      id: 'use',
+      id: 'mac.use',
       prompt: '¿Cuál es el uso principal del Mac?',
       options: [
         { value: 'estudio', label: 'Estudio y ofimática' },
@@ -1088,16 +1157,17 @@ export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
       ],
     },
     {
-      id: 'form',
+      id: 'mac.form',
       prompt: '¿Prefieres portátil o sobremesa?',
+      help: 'Si es imprescindible, filtramos: portátil no propone iMac/Mac mini/Studio y viceversa.',
       options: [
-        { value: 'portable', label: 'Portátil' },
-        { value: 'desktop', label: 'Sobremesa' },
+        { value: 'portable', label: 'Portátil (imprescindible)' },
+        { value: 'desktop', label: 'Sobremesa (imprescindible)' },
         { value: 'flex', label: 'Me da igual' },
       ],
     },
     {
-      id: 'priority',
+      id: 'mac.priority',
       prompt: '¿Qué prima?',
       options: [
         { value: 'portability', label: 'Ligereza y batería' },
@@ -1105,11 +1175,10 @@ export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
         { value: 'value', label: 'Precio' },
       ],
     },
-    BUDGET_QUESTION,
   ],
   ipad: [
     {
-      id: 'use',
+      id: 'ipad.use',
       prompt: '¿Para qué lo vas a usar principalmente?',
       options: [
         { value: 'estudio', label: 'Estudio' },
@@ -1120,28 +1189,29 @@ export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
       ],
     },
     {
-      id: 'pencil',
+      id: 'ipad.pencil',
       prompt: '¿Vas a usar Apple Pencil?',
+      help: '"Sí" descarta modelos sin compatibilidad Pencil.',
       options: [
-        { value: 'si', label: 'Sí, Apple Pencil Pro' },
+        { value: 'si', label: 'Sí (imprescindible)' },
         { value: 'quizas', label: 'Quizás' },
         { value: 'no', label: 'No lo necesito' },
       ],
     },
     {
-      id: 'keyboard',
-      prompt: '¿Y teclado?',
+      id: 'ipad.keyboard',
+      prompt: '¿Y teclado (Magic Keyboard)?',
+      help: '"Sí" descarta modelos sin teclado compatible.',
       options: [
-        { value: 'si', label: 'Sí, Magic Keyboard' },
+        { value: 'si', label: 'Sí (imprescindible)' },
         { value: 'quizas', label: 'Quizás' },
         { value: 'no', label: 'No' },
       ],
     },
-    BUDGET_QUESTION,
   ],
   'apple-watch': [
     {
-      id: 'use',
+      id: 'watch.use',
       prompt: '¿Para qué lo vas a usar?',
       options: [
         { value: 'salud', label: 'Salud' },
@@ -1151,15 +1221,16 @@ export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
       ],
     },
     {
-      id: 'cellular',
+      id: 'watch.cellular',
       prompt: '¿Necesitas conexión sin llevar el iPhone?',
+      help: '"Sí" filtra los modelos que no ofrecen variante Cellular en el prototipo.',
       options: [
-        { value: 'si', label: 'Sí, quiero Cellular' },
+        { value: 'si', label: 'Sí, Cellular imprescindible' },
         { value: 'no', label: 'No, con GPS me vale' },
       ],
     },
     {
-      id: 'priority',
+      id: 'watch.priority',
       prompt: '¿Qué prima?',
       options: [
         { value: 'battery', label: 'Autonomía' },
@@ -1167,11 +1238,10 @@ export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
         { value: 'value', label: 'Precio' },
       ],
     },
-    BUDGET_QUESTION,
   ],
   airpods: [
     {
-      id: 'use',
+      id: 'airpods.use',
       prompt: '¿Cuál es el uso principal?',
       options: [
         { value: 'musica', label: 'Música' },
@@ -1181,22 +1251,23 @@ export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
       ],
     },
     {
-      id: 'fit',
-      prompt: '¿Qué ajuste prefieres?',
+      id: 'airpods.fit',
+      prompt: '¿Qué tipo de ajuste prefieres?',
+      help: '"Abiertos" descarta Pro/Max; "In-ear" descarta AirPods 4 y Max; "De diadema" solo permite AirPods Max.',
       options: [
-        { value: 'intraural', label: 'Intraurales (in-ear)' },
-        { value: 'circumaural', label: 'De diadema (over-ear)' },
+        { value: 'open', label: 'Abiertos, sin almohadilla' },
+        { value: 'in-ear', label: 'In-ear, con almohadillas' },
+        { value: 'over-ear', label: 'De diadema' },
         { value: 'flex', label: 'Me da igual' },
       ],
     },
-    BUDGET_QUESTION,
   ],
 }
 
-/** Preguntas generales cuando el usuario elige "No lo tengo claro". */
+/** Preguntas generales para el flujo "No lo tengo claro". IDs con prefijo. */
 export const GENERAL_QUESTIONS: readonly FinderQuestion[] = [
   {
-    id: 'use',
+    id: 'general.use',
     prompt: '¿Para qué lo utilizarás principalmente?',
     options: [
       { value: 'trabajo', label: 'Trabajo' },
@@ -1208,34 +1279,262 @@ export const GENERAL_QUESTIONS: readonly FinderQuestion[] = [
     ],
   },
   {
-    id: 'priority',
+    id: 'general.priority',
     prompt: '¿Qué valoras más?',
     options: [
       { value: 'portability', label: 'Portabilidad' },
       { value: 'performance', label: 'Potencia' },
       { value: 'camera', label: 'Cámara' },
+      { value: 'battery', label: 'Batería' },
       { value: 'value', label: 'Precio' },
     ],
   },
-  BUDGET_QUESTION,
+  {
+    id: 'general.portability',
+    prompt: '¿Necesitas que sea muy portable?',
+    options: [
+      { value: 'high', label: 'Sí, lo llevaré siempre encima' },
+      { value: 'low', label: 'No, será para casa/oficina' },
+      { value: 'flex', label: 'Me da igual' },
+    ],
+  },
 ]
 
-/** Mapa uso general → familia sugerida. */
-const GENERAL_USE_TO_FAMILY: Record<string, FamilySlug> = {
-  trabajo: 'mac',
-  estudio: 'ipad',
-  foto: 'iphone',
-  audio: 'airpods',
-  salud: 'apple-watch',
-  diario: 'iphone',
+/** Pregunta de flexibilidad de presupuesto. */
+export const BUDGET_FLEX_QUESTION: FinderQuestion = {
+  id: 'general.budgetFlex',
+  prompt: '¿Qué tan estricto es ese presupuesto?',
+  options: [
+    { value: 'strict', label: 'Es mi máximo' },
+    { value: 'flex', label: 'Podría subir un poco (10–15 %)' },
+    { value: 'reference', label: 'Solo es una referencia' },
+  ],
 }
 
-export function inferFamilyFromGeneral(answers: Record<string, string>): FamilySlug {
-  const use = answers.use
-  return (use && GENERAL_USE_TO_FAMILY[use]) || 'iphone'
+// -----------------------------------------------------------------------
+// Estructura de respuestas (namespaced).
+// -----------------------------------------------------------------------
+
+export interface FinderAnswers {
+  general: {
+    use?: string
+    priority?: string
+    portability?: string
+    budget?: string
+    budgetFlex?: BudgetFlex
+  }
+  family: FamilySlug | null
+  specific: Record<string, string>
 }
 
-/** Resultado del scoring: puntuación + razones + posibles compromisos. */
+export function emptyAnswers(): FinderAnswers {
+  return { general: {}, family: null, specific: {} }
+}
+
+// -----------------------------------------------------------------------
+// Sugerencia de familia ("No lo tengo claro").
+// -----------------------------------------------------------------------
+
+export interface FamilyCandidate {
+  family: FamilySlug
+  score: number
+  reasons: string[]
+}
+
+/**
+ * Devuelve las dos familias más probables dadas las respuestas generales,
+ * ordenadas por score. Combina uso + prioridad + portabilidad + presupuesto.
+ * No elige silenciosamente: el usuario tendrá que confirmar.
+ */
+export function computeFamilyCandidates(general: FinderAnswers['general']): FamilyCandidate[] {
+  const scores: Record<FamilySlug, { score: number; reasons: string[] }> = {
+    iphone: { score: 0, reasons: [] },
+    mac: { score: 0, reasons: [] },
+    ipad: { score: 0, reasons: [] },
+    'apple-watch': { score: 0, reasons: [] },
+    airpods: { score: 0, reasons: [] },
+  }
+  const add = (f: FamilySlug, n: number, r: string) => {
+    scores[f].score += n
+    if (r) scores[f].reasons.push(r)
+  }
+
+  const use = general.use
+  if (use === 'trabajo') {
+    add('mac', 5, 'Has indicado que lo usarás para trabajo.')
+    add('ipad', 2, 'Los iPad también encajan para trabajo móvil.')
+  }
+  if (use === 'estudio') {
+    add('ipad', 5, 'El estudio combina bien con iPad.')
+    add('mac', 3, 'Un Mac también funciona para estudiar.')
+  }
+  if (use === 'foto') {
+    add('iphone', 5, 'La cámara del iPhone es tu prioridad.')
+    add('mac', 2, 'Para editar en escritorio, un Mac ayuda.')
+  }
+  if (use === 'audio') {
+    add('airpods', 6, 'Para música o podcasts, AirPods.')
+  }
+  if (use === 'salud') {
+    add('apple-watch', 6, 'Salud y deporte encajan con Apple Watch.')
+  }
+  if (use === 'diario') {
+    add('iphone', 4, 'Para uso cotidiano, el iPhone es la base.')
+    add('airpods', 2, 'Los AirPods complementan bien el día a día.')
+  }
+
+  const priority = general.priority
+  if (priority === 'portability') {
+    add('iphone', 2, 'La portabilidad es una prioridad para ti.')
+    add('airpods', 2, 'Los AirPods son máximamente portátiles.')
+    add('ipad', 1, '')
+  }
+  if (priority === 'performance') {
+    add('mac', 3, 'Para potencia, Mac es donde más margen hay.')
+    add('iphone', 1, '')
+    add('ipad', 1, '')
+  }
+  if (priority === 'camera') {
+    add('iphone', 4, 'La cámara del iPhone es tu prioridad.')
+  }
+  if (priority === 'battery') {
+    add('apple-watch', 2, '')
+    add('iphone', 1, '')
+    add('mac', 1, '')
+  }
+  if (priority === 'value') {
+    add('airpods', 2, 'AirPods es la familia con mejor precio de entrada.')
+    add('ipad', 1, '')
+  }
+
+  const port = general.portability
+  if (port === 'high') {
+    add('iphone', 2, 'Buscas algo muy portable.')
+    add('airpods', 2, '')
+    add('apple-watch', 2, '')
+    add('mac', -1, '')
+  }
+  if (port === 'low') {
+    add('mac', 3, 'Preferirás algo de escritorio.')
+    add('iphone', -1, '')
+  }
+
+  const sorted = (Object.keys(scores) as FamilySlug[])
+    .map((f) => ({ family: f, score: scores[f].score, reasons: scores[f].reasons.slice(0, 3) }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return a.family.localeCompare(b.family)
+    })
+    .filter((c) => c.score > 0)
+  return sorted.slice(0, 2)
+}
+
+// -----------------------------------------------------------------------
+// Filtros duros y scoring.
+// -----------------------------------------------------------------------
+
+const MAC_PORTABLE_SLUGS = new Set([
+  'macbook-neo',
+  'macbook-air-13-m5',
+  'macbook-air-15-m4',
+  'macbook-pro-14-m5',
+  'macbook-pro-16-m4',
+])
+const MAC_DESKTOP_SLUGS = new Set(['imac-m4', 'mac-mini-m4', 'mac-studio-m4'])
+
+export interface HardFilterFailure {
+  slug: string
+  reason: string
+}
+
+/** Restricciones duras — un modelo que las incumple NO se recomienda. */
+export function filterEligibleModels(
+  models: readonly Model[],
+  answers: FinderAnswers,
+): { eligible: Model[]; excluded: HardFilterFailure[] } {
+  const eligible: Model[] = []
+  const excluded: HardFilterFailure[] = []
+  const budget = resolveBudgetMax(answers)
+  for (const m of models) {
+    const meta = MODEL_META[m.slug] ?? {}
+    let reason: string | null = null
+
+    if (answers.family === 'mac') {
+      const form = answers.specific['mac.form']
+      if (form === 'portable' && !MAC_PORTABLE_SLUGS.has(m.slug)) {
+        reason = 'Formato: has pedido portátil.'
+      } else if (form === 'desktop' && !MAC_DESKTOP_SLUGS.has(m.slug)) {
+        reason = 'Formato: has pedido sobremesa.'
+      }
+    }
+
+    if (!reason && answers.family === 'airpods') {
+      const fit = answers.specific['airpods.fit'] as AirPodsFit | 'flex' | undefined
+      if (fit && fit !== 'flex' && meta.airpodsFit && fit !== meta.airpodsFit) {
+        reason = 'Formato de ajuste distinto al indicado.'
+      }
+    }
+
+    if (!reason && answers.family === 'ipad') {
+      if (answers.specific['ipad.pencil'] === 'si' && meta.supportsPencil === false) {
+        reason = 'No es compatible con Apple Pencil.'
+      }
+      if (!reason && answers.specific['ipad.keyboard'] === 'si' && meta.supportsKeyboard === false) {
+        reason = 'No es compatible con Magic Keyboard.'
+      }
+    }
+
+    if (!reason && answers.family === 'apple-watch') {
+      if (answers.specific['watch.cellular'] === 'si' && meta.hasCellular === false) {
+        reason = 'No ofrece variante Cellular en el prototipo.'
+      }
+    }
+
+    if (
+      !reason &&
+      budget != null &&
+      answers.general.budgetFlex === 'strict' &&
+      m.fromPrice > budget
+    ) {
+      reason = `Precio ${formatEuros(m.fromPrice)} por encima del presupuesto (${formatEuros(budget)}).`
+    }
+    if (
+      !reason &&
+      budget != null &&
+      answers.general.budgetFlex === 'flex' &&
+      m.fromPrice > Math.ceil(budget * 1.15)
+    ) {
+      reason = `Precio por encima incluso del margen del 15 % (${formatEuros(Math.ceil(budget * 1.15))}).`
+    }
+
+    if (reason) excluded.push({ slug: m.slug, reason })
+    else eligible.push(m)
+  }
+  return { eligible, excluded }
+}
+
+function resolveBudgetMax(answers: FinderAnswers): number | null {
+  if (!answers.family || !answers.general.budget) return null
+  // Reconstruimos las opciones y buscamos el valor elegido.
+  return budgetMaxFromValue(answers.family, answers.general.budget)
+}
+
+function budgetMaxFromValue(family: FamilySlug, value: string): number | null {
+  if (value === 'sin-limite') return null
+  const match = value.match(/^hasta-(\d+)$/)
+  if (match) return parseInt(match[1], 10)
+  // Fallback compat: valores antiguos tipo 'entrada'/'medio'/'alto'.
+  const legacy: Record<string, number | null> = {
+    entrada: 500,
+    medio: 1000,
+    alto: 1500,
+    'sin-limite': null,
+  }
+  return legacy[value] ?? null
+  // El uso concreto de `family` queda para futuras bandas por familia.
+  void family
+}
+
 export interface ScoreResult {
   score: number
   positives: string[]
@@ -1243,201 +1542,256 @@ export interface ScoreResult {
 }
 
 /**
- * Puntúa un modelo frente a un conjunto de respuestas. Determinista: mismos
- * inputs → mismo output. No usa aleatoriedad. La escala de score es interna
- * (relativa a los demás modelos de la misma familia); las razones y los
- * compromisos son cadenas orientadas al usuario.
+ * Puntúa un modelo YA elegible frente a las respuestas del usuario.
+ * Determinista. Rango orientativo 0–100 (aunque no se muestra al usuario).
  */
-export function scoreModel(
-  model: Model,
-  answers: Record<string, string>,
-): ScoreResult {
+export function scoreEligibleModel(model: Model, answers: FinderAnswers): ScoreResult {
   const meta = MODEL_META[model.slug] ?? {}
   let score = 0
-  const positives: string[] = []
+
+  const priority = answers.specific[`${answers.family}.priority`] ?? answers.general.priority
+  if (priority === 'camera' && meta.cameraLevel) score += meta.cameraLevel * 10
+  if (priority === 'battery' && meta.batteryLevel) score += meta.batteryLevel * 10
+  if (priority === 'performance' && meta.performanceLevel) score += meta.performanceLevel * 10
+  if (priority === 'portability' && meta.portabilityLevel) score += meta.portabilityLevel * 10
+  if (priority === 'value' && meta.valueLevel) score += meta.valueLevel * 10
+
+  const familyUse = answers.family ? answers.specific[`${answers.family}.use`] : undefined
+  const use = familyUse ?? answers.general.use
+  if (use === 'foto' && meta.cameraLevel) score += meta.cameraLevel * 6
+  if (use === 'foto-video' && meta.performanceLevel) score += meta.performanceLevel * 6
+  if (use === 'juegos' && meta.performanceLevel) score += meta.performanceLevel * 5
+  if (use === 'trabajo' && meta.professionalLevel) score += meta.professionalLevel * 6
+  if (use === 'pro' && meta.professionalLevel) score += meta.professionalLevel * 8
+  if (use === 'estudio' && meta.valueLevel) score += meta.valueLevel * 5
+  if (use === 'diario' && meta.valueLevel) score += meta.valueLevel * 3
+  if (use === 'diseno' && meta.performanceLevel) score += meta.performanceLevel * 6
+  if (use === 'programacion' && meta.performanceLevel) score += meta.performanceLevel * 6
+  if (use === 'aventura' && meta.batteryLevel) score += meta.batteryLevel * 8
+  if (use === 'deporte' && meta.portabilityLevel) score += meta.portabilityLevel * 4
+  if (use === 'salud' && meta.performanceLevel) score += meta.performanceLevel * 4
+  if (use === 'edicion' && meta.performanceLevel) score += meta.performanceLevel * 6
+  if (use === 'viajes' && meta.hasNoiseCancellation) score += 10
+
+  // iPhone: tamaño blando.
+  if (answers.family === 'iphone') {
+    const size = answers.specific['iphone.size']
+    if (size && size !== 'flex' && meta.sizeCategory) {
+      const wanted = size === 'grande' ? 'large' : size === 'compacto' ? 'compact' : 'balanced'
+      if (meta.sizeCategory === wanted) score += 8
+      else score -= 2
+    }
+  }
+
+  // Watch cellular bonus si sí lo quería.
+  if (answers.family === 'apple-watch' && answers.specific['watch.cellular'] === 'si' && meta.hasCellular) {
+    score += 8
+  }
+
+  // AirPods ANC preferido si el uso es viajes.
+  if (answers.family === 'airpods' && use === 'viajes' && meta.hasNoiseCancellation) score += 6
+
+  // Presupuesto de referencia: penalización proporcional.
+  const budget = resolveBudgetMax(answers)
+  if (budget != null && answers.general.budgetFlex === 'reference' && model.fromPrice > budget) {
+    const over = model.fromPrice - budget
+    score -= Math.min(15, Math.round((over / budget) * 25))
+  }
+  // Estricto/flex: los que sobrepasan ya fueron filtrados.
+  if (budget != null && model.fromPrice <= budget) score += 2
+
+  return { score, positives: [], caveats: [] }
+}
+
+// -----------------------------------------------------------------------
+// Razones y compromisos derivados de las respuestas.
+// -----------------------------------------------------------------------
+
+export function buildRecommendationReasons(model: Model, answers: FinderAnswers): string[] {
+  const meta = MODEL_META[model.slug] ?? {}
+  const reasons: string[] = []
+  const family = answers.family
+  const familyUse = family ? answers.specific[`${family}.use`] : undefined
+  const use = familyUse ?? answers.general.use
+  const priority = (family ? answers.specific[`${family}.priority`] : undefined) ?? answers.general.priority
+  const budget = resolveBudgetMax(answers)
+
+  if (family === 'mac' && answers.specific['mac.form'] === 'portable' && MAC_PORTABLE_SLUGS.has(model.slug))
+    reasons.push('Encaja con el formato portátil que pediste.')
+  if (family === 'mac' && answers.specific['mac.form'] === 'desktop' && MAC_DESKTOP_SLUGS.has(model.slug))
+    reasons.push('Encaja con el formato sobremesa que pediste.')
+  if (family === 'airpods' && meta.airpodsFit && answers.specific['airpods.fit'] === meta.airpodsFit)
+    reasons.push(`Ajuste ${airpodsFitLabel(meta.airpodsFit)} coincide con tu preferencia.`)
+  if (family === 'ipad' && answers.specific['ipad.pencil'] === 'si' && meta.supportsPencil)
+    reasons.push('Compatible con Apple Pencil, como pediste.')
+  if (family === 'ipad' && answers.specific['ipad.keyboard'] === 'si' && meta.supportsKeyboard)
+    reasons.push('Compatible con Magic Keyboard, como pediste.')
+  if (family === 'apple-watch' && answers.specific['watch.cellular'] === 'si' && meta.hasCellular)
+    reasons.push('Incluye variante Cellular disponible.')
+
+  if (priority === 'camera' && meta.cameraLevel === 3)
+    reasons.push('Cámara destacada, tu prioridad principal.')
+  if (priority === 'battery' && meta.batteryLevel === 3)
+    reasons.push('Muy buena autonomía, tu prioridad principal.')
+  if (priority === 'performance' && meta.performanceLevel === 3)
+    reasons.push('Máxima potencia de la familia.')
+  if (priority === 'portability' && meta.portabilityLevel === 3)
+    reasons.push('Muy portátil, como pediste.')
+  if (priority === 'value' && meta.valueLevel === 3)
+    reasons.push('Excelente relación calidad-precio.')
+
+  if (family === 'iphone' && answers.specific['iphone.size'] && meta.sizeCategory) {
+    const want = answers.specific['iphone.size']
+    if (
+      (want === 'grande' && meta.sizeCategory === 'large') ||
+      (want === 'compacto' && meta.sizeCategory === 'compact') ||
+      (want === 'equilibrado' && meta.sizeCategory === 'balanced')
+    ) {
+      reasons.push(`Tamaño ${want} como preferiste.`)
+    }
+  }
+
+  if (use === 'aventura' && meta.batteryLevel === 3) reasons.push('Batería para deportes largos.')
+  if (use === 'viajes' && meta.hasNoiseCancellation) reasons.push('Cancelación de ruido para viajes.')
+  if (use === 'estudio' && meta.valueLevel && meta.valueLevel >= 2)
+    reasons.push('Buena opción para estudio.')
+
+  if (budget != null && model.fromPrice <= budget)
+    reasons.push(`Entra en tu presupuesto (${formatEuros(budget)}).`)
+
+  return dedupe(reasons).slice(0, 3)
+}
+
+export function buildRecommendationCaveats(model: Model, answers: FinderAnswers): string[] {
+  const meta = MODEL_META[model.slug] ?? {}
   const caveats: string[] = []
+  const budget = resolveBudgetMax(answers)
 
-  const priority = answers.priority
-  const use = answers.use
-
-  // --- Prioridad genérica ---
-  if (priority === 'camera' && meta.cameraLevel) {
-    score += meta.cameraLevel * 3
-    if (meta.cameraLevel === 3) positives.push('Cámara destacada')
-  }
-  if (priority === 'battery' && meta.batteryLevel) {
-    score += meta.batteryLevel * 3
-    if (meta.batteryLevel === 3) positives.push('Muy buena autonomía')
-  }
-  if (priority === 'performance' && meta.performanceLevel) {
-    score += meta.performanceLevel * 3
-    if (meta.performanceLevel === 3) positives.push('Máxima potencia disponible')
-  }
-  if (priority === 'portability' && meta.portabilityLevel) {
-    score += meta.portabilityLevel * 3
-    if (meta.portabilityLevel === 3) positives.push('Muy portátil')
-  }
-  if (priority === 'value' && meta.valueLevel) {
-    score += meta.valueLevel * 3
-    if (meta.valueLevel === 3) positives.push('Excelente relación calidad-precio')
-  }
-
-  // --- Uso ---
-  if (use === 'foto' && meta.cameraLevel) score += meta.cameraLevel * 2
-  if (use === 'foto-video' && meta.performanceLevel) score += meta.performanceLevel * 2
-  if (use === 'juegos' && meta.performanceLevel) score += meta.performanceLevel * 2
-  if (use === 'trabajo' && meta.professionalLevel) score += meta.professionalLevel * 2
-  if (use === 'pro' && meta.professionalLevel) score += meta.professionalLevel * 3
-  if (use === 'estudio' && meta.valueLevel) score += meta.valueLevel * 2
-  if (use === 'diario' && meta.valueLevel) score += meta.valueLevel * 1
-  if (use === 'diseno' && meta.performanceLevel) score += meta.performanceLevel * 2
-  if (use === 'programacion' && meta.performanceLevel) score += meta.performanceLevel * 2
-  if (use === 'aventura' && meta.batteryLevel) score += meta.batteryLevel * 3
-  if (use === 'deporte' && meta.portabilityLevel) score += meta.portabilityLevel * 2
-  if (use === 'salud' && meta.performanceLevel) score += meta.performanceLevel * 2
-  if (use === 'edicion' && meta.performanceLevel) score += meta.performanceLevel * 2
-  if (use === 'viajes' && meta.hasNoiseCancellation) {
-    score += 3
-    positives.push('Cancelación de ruido para viajes')
-  }
-
-  // --- iPhone: tamaño ---
-  if (answers.size) {
-    const large = ['17-pro-max']
-    const compact = ['air', '17-pro']
-    const eq = ['17', '17-pro']
-    if (answers.size === 'grande' && large.includes(model.slug)) score += 4
-    if (answers.size === 'compacto' && compact.includes(model.slug)) score += 3
-    if (answers.size === 'equilibrado' && eq.includes(model.slug)) score += 3
-  }
-
-  // --- Mac: forma ---
-  if (answers.form) {
-    const desktop = ['imac-m4', 'mac-mini-m4', 'mac-studio-m4']
-    const portable = [
-      'macbook-neo',
-      'macbook-air-13-m5',
-      'macbook-air-15-m4',
-      'macbook-pro-14-m5',
-      'macbook-pro-16-m4',
-    ]
-    if (answers.form === 'desktop' && desktop.includes(model.slug)) score += 4
-    if (answers.form === 'portable' && portable.includes(model.slug)) score += 4
-  }
-
-  // --- iPad: pencil / keyboard ---
-  if (answers.pencil === 'si' && meta.supportsPencil) {
-    score += 3
-    positives.push('Compatible con Apple Pencil')
-  } else if (answers.pencil === 'si' && !meta.supportsPencil) {
-    caveats.push('No incluye compatibilidad completa con Apple Pencil Pro')
-  }
-  if (answers.keyboard === 'si' && meta.supportsKeyboard) {
-    score += 3
-    positives.push('Compatible con Magic Keyboard')
-  } else if (answers.keyboard === 'si' && meta.supportsKeyboard === false) {
-    caveats.push('No es compatible con Magic Keyboard')
-  }
-
-  // --- Watch: cellular ---
-  if (answers.cellular === 'si') {
-    if (meta.hasCellular) {
-      score += 4
-      positives.push('Modelo con Cellular incluido')
-    } else {
-      caveats.push('Requiere elegir variante GPS + Cellular')
+  if (answers.family === 'iphone') {
+    const size = answers.specific['iphone.size']
+    if (size && size !== 'flex' && meta.sizeCategory) {
+      const wanted = size === 'grande' ? 'large' : size === 'compacto' ? 'compact' : 'balanced'
+      if (meta.sizeCategory !== wanted) caveats.push('Tamaño distinto al que preferías.')
     }
   }
-
-  // --- AirPods: ajuste ---
-  if (answers.fit && meta.fitType) {
-    if (answers.fit === meta.fitType) {
-      score += 4
-      positives.push(
-        meta.fitType === 'intraural' ? 'Ajuste intraural cómodo' : 'Ajuste circumaural cómodo',
-      )
-    } else if (answers.fit !== 'flex') {
-      score -= 2
-    }
+  if (answers.family === 'apple-watch' && answers.specific['watch.cellular'] === 'si' && !meta.hasCellular) {
+    caveats.push('Requiere elegir explícitamente la variante Cellular al comprar.')
   }
-
-  // --- Fortalezas declaradas ---
-  if (meta.strengths && positives.length < 3) {
-    for (const s of meta.strengths) {
-      if (positives.length >= 3) break
-      if (!positives.includes(s)) positives.push(s)
-    }
+  if (answers.family === 'ipad' && answers.specific['ipad.pencil'] === 'si' && meta.supportsPencil === false) {
+    caveats.push('No es compatible con Apple Pencil.')
   }
-
-  // --- Presupuesto ---
-  const budget = answers.budget ? BUDGET_OPTIONS.find((b) => b.value === answers.budget) : null
-  if (budget?.max != null) {
-    const price = model.fromPrice
-    if (price > budget.max) {
-      score -= 5
-      caveats.push(`Precio orientativo por encima del presupuesto (${formatEuros(budget.max)}).`)
-    } else if (price <= budget.max) {
-      score += 1
-    }
+  if (budget != null && model.fromPrice > budget && answers.general.budgetFlex === 'flex') {
+    caveats.push(
+      `Ligeramente por encima del presupuesto (${formatEuros(model.fromPrice)} vs ${formatEuros(budget)}).`,
+    )
   }
-
-  return {
-    score,
-    positives: dedupe(positives).slice(0, 3),
-    caveats: dedupe(caveats).slice(0, 2),
+  if (budget != null && model.fromPrice > budget && answers.general.budgetFlex === 'reference') {
+    caveats.push(
+      `Por encima de tu referencia (${formatEuros(model.fromPrice)} vs ${formatEuros(budget)}).`,
+    )
   }
+  return dedupe(caveats).slice(0, 2)
 }
 
-function dedupe<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr))
+function airpodsFitLabel(fit: AirPodsFit): string {
+  return fit === 'open' ? 'abierto' : fit === 'in-ear' ? 'in-ear' : 'de diadema'
 }
 
-/** Resultado ordenado con etiquetas: recomendación, más económico, más avanzado. */
+// -----------------------------------------------------------------------
+// Resultado final: roles + relajación transparente.
+// -----------------------------------------------------------------------
+
+export type FinderRole = 'best-fit' | 'best-value' | 'other'
+
 export interface FinderResult {
   model: Model
-  role: 'recommendation' | 'cheaper' | 'advanced'
+  role: FinderRole
   score: number
   positives: string[]
   caveats: string[]
 }
 
-export function computeFinderResults(
-  models: Model[],
-  answers: Record<string, string>,
-): FinderResult[] {
-  const scored = models
-    .map((model) => ({ model, ...scoreModel(model, answers) }))
-    // Desempate estable: score desc → fromPrice asc → slug asc.
+export interface FinderComputation {
+  results: FinderResult[]
+  eligibleCount: number
+  excluded: HardFilterFailure[]
+  // Si `noMatch` es true, ningún modelo cumple las restricciones duras.
+  noMatch: boolean
+}
+
+/**
+ * Ejecuta el pipeline completo. Reglas:
+ *  - "best-fit" = mayor score entre los elegibles.
+ *  - "best-value" = mejor cociente score/precio entre los elegibles, con
+ *    score ≥ 70 % del best-fit y distinto slug al best-fit.
+ *  - "other" = otro modelo elegible con score ≥ 75 % del best-fit y una
+ *    fortaleza diferente al best-fit (o simplemente el siguiente).
+ *  - Nunca incluir modelos filtrados por restricción dura.
+ */
+export function computeFinderResults(models: readonly Model[], answers: FinderAnswers): FinderComputation {
+  const { eligible, excluded } = filterEligibleModels(models, answers)
+  if (eligible.length === 0) {
+    return { results: [], eligibleCount: 0, excluded, noMatch: true }
+  }
+  const scored = eligible
+    .map((m) => ({ model: m, ...scoreEligibleModel(m, answers) }))
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score
       if (a.model.fromPrice !== b.model.fromPrice) return a.model.fromPrice - b.model.fromPrice
       return a.model.slug.localeCompare(b.model.slug)
     })
 
-  const results: FinderResult[] = []
-  if (scored.length === 0) return results
+  const best = scored[0]
+  const bestFit: FinderResult = {
+    model: best.model,
+    role: 'best-fit',
+    score: best.score,
+    positives: buildRecommendationReasons(best.model, answers),
+    caveats: buildRecommendationCaveats(best.model, answers),
+  }
+  const results: FinderResult[] = [bestFit]
 
-  results.push({ ...scored[0], role: 'recommendation' })
-  const usedSlugs = new Set([scored[0].model.slug])
+  const bestScore = Math.max(best.score, 1)
 
-  // Más económico entre los que puntúan ≥ 0 y no son el ya elegido.
-  const cheaper = scored
-    .filter((s) => !usedSlugs.has(s.model.slug))
-    .slice()
-    .sort((a, b) => a.model.fromPrice - b.model.fromPrice)[0]
-  if (cheaper) {
-    results.push({ ...cheaper, role: 'cheaper' })
-    usedSlugs.add(cheaper.model.slug)
+  // Best-value: score/precio máximo entre los que llegan al 70 % del top.
+  const valueCandidates = scored
+    .filter((s) => s.model.slug !== best.model.slug && s.score >= bestScore * 0.7)
+    .map((s) => ({
+      ...s,
+      ratio: s.model.fromPrice > 0 ? s.score / s.model.fromPrice : s.score,
+    }))
+    .sort((a, b) => {
+      if (b.ratio !== a.ratio) return b.ratio - a.ratio
+      return a.model.fromPrice - b.model.fromPrice
+    })
+  const bestValue = valueCandidates[0]
+  if (bestValue && bestValue.model.slug !== best.model.slug && bestValue.model.fromPrice <= best.model.fromPrice) {
+    results.push({
+      model: bestValue.model,
+      role: 'best-value',
+      score: bestValue.score,
+      positives: buildRecommendationReasons(bestValue.model, answers),
+      caveats: buildRecommendationCaveats(bestValue.model, answers),
+    })
   }
 
-  // Más avanzado: mayor precio entre los restantes.
-  const advanced = scored
-    .filter((s) => !usedSlugs.has(s.model.slug))
-    .slice()
-    .sort((a, b) => b.model.fromPrice - a.model.fromPrice)[0]
-  if (advanced) {
-    results.push({ ...advanced, role: 'advanced' })
+  // "Otra opción" — el siguiente en score sin coincidir con los ya elegidos y
+  // con score ≥ 75 % del top.
+  const usedSlugs = new Set(results.map((r) => r.model.slug))
+  const other = scored.find((s) => !usedSlugs.has(s.model.slug) && s.score >= bestScore * 0.75)
+  if (other) {
+    results.push({
+      model: other.model,
+      role: 'other',
+      score: other.score,
+      positives: buildRecommendationReasons(other.model, answers),
+      caveats: buildRecommendationCaveats(other.model, answers),
+    })
   }
 
-  return results
+  return { results, eligibleCount: eligible.length, excluded, noMatch: false }
+}
+
+function dedupe<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr))
 }
