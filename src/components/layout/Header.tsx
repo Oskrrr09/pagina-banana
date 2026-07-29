@@ -4,6 +4,7 @@ import { familiesNav, directLinks, utilityLinks } from '../../data/nav'
 import { families, modelsByFamily, variantPath } from '../../data/products'
 import { useStore } from '../../lib/store'
 import { useStorePreference } from '../../lib/storePreference'
+import { useFavoriteAlerts } from '../../lib/favoriteAlerts'
 import { stores } from '../../data/stores'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
@@ -175,6 +176,7 @@ export function Header() {
             </button>
             <IconBadge to="/favoritos" icon="heart" label="Favoritos" count={favorites.length} desktopOnly />
             <IconBadge to="/comparar" icon="compare" label="Comparador" count={compare.length} desktopOnly />
+            <NotificationsBell />
             <button
               aria-label="Cuenta"
               className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
@@ -447,6 +449,119 @@ function FavoriteStoreMenu() {
               </button>
             </>
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NotificationsBell() {
+  const { notifications, unreadCount, markRead, markAllRead } = useFavoriteAlerts()
+  const [open, setOpen] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const rafId = window.requestAnimationFrame(() => panelRef.current?.focus())
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault()
+        setOpen(false)
+        btnRef.current?.focus()
+      }
+    }
+    function onClick(event: MouseEvent) {
+      if (!panelRef.current || !btnRef.current) return
+      if (
+        !panelRef.current.contains(event.target as Node) &&
+        !btnRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("keydown", onKey)
+    document.addEventListener("mousedown", onClick)
+    return () => {
+      window.cancelAnimationFrame(rafId)
+      document.removeEventListener("keydown", onKey)
+      document.removeEventListener("mousedown", onClick)
+    }
+  }, [open])
+
+  return (
+    <div className="relative">
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={unreadCount > 0 ? `Avisos (${unreadCount} sin leer)` : "Avisos"}
+        className="relative hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
+      >
+        <Icon name="info" />
+        {unreadCount > 0 && (
+          <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+            {unreadCount}
+          </span>
+        )}
+      </button>
+      {open && (
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="notif-title"
+          tabIndex={-1}
+          className="absolute right-0 top-full z-30 mt-1 w-80 rounded-[12px] border border-line bg-surface p-3 text-left text-ink shadow-[var(--shadow-raised)] outline-none"
+        >
+          <div className="flex items-center justify-between gap-2 px-1 pb-2">
+            <p id="notif-title" className="text-sm font-bold text-ink">
+              Avisos
+            </p>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={markAllRead}
+                className="text-xs font-semibold text-ink underline underline-offset-2"
+              >
+                Marcar todos como leídos
+              </button>
+            )}
+          </div>
+          {notifications.length === 0 ? (
+            <p className="px-1 py-3 text-sm text-muted">
+              No tienes avisos por ahora. Actívalos desde /favoritos.
+            </p>
+          ) : (
+            <ul className="max-h-80 overflow-y-auto">
+              {notifications.map((n) => (
+                <li key={n.id} className={`rounded-[8px] p-2 text-sm ${n.read ? "text-muted" : "bg-brand-050 text-ink"}`}>
+                  <p className="font-semibold">{n.message}</p>
+                  <p className="mt-1 text-[11px] text-muted">{new Date(n.createdAt).toLocaleString("es-ES")}</p>
+                  {!n.read && (
+                    <button
+                      type="button"
+                      onClick={() => markRead(n.id)}
+                      className="mt-1 text-xs font-semibold text-ink underline underline-offset-2"
+                    >
+                      Marcar como leído
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-2 border-t border-line pt-2">
+            <Link
+              to="/favoritos"
+              onClick={() => setOpen(false)}
+              className="block rounded-[8px] px-2 py-1.5 text-sm font-semibold text-ink hover:bg-neutral"
+            >
+              Ir a favoritos ›
+            </Link>
+          </div>
         </div>
       )}
     </div>

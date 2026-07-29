@@ -129,6 +129,31 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 
 Todo esto es demostrativo: no hay backend, ni pagos, ni emails.
 
+## Favoritos con seguimiento de disponibilidad (`/favoritos`)
+
+- Página rediseñada con tres bloques: **Mis productos** (cada
+  favorito con imagen, precio, estado en la tienda favorita y
+  acciones "Ver producto" / "Quitar" / "Seguir disponibilidad"),
+  **Mis avisos** (seguimiento activo por producto con "Simular
+  llegada", cambio de tienda y "Desactivar") y **Notificaciones**
+  internas.
+- Estado en `src/lib/favoriteAlerts.tsx` con dos claves nuevas:
+  `banana:favorite-alerts` y `banana:favorite-notifications`.
+  Compatible con `banana:fav` existente sin migración.
+- Nueva **campana** en la barra del Header (`NotificationsBell`)
+  con contador de no leídos, panel accesible (Escape cierra),
+  "Marcar todos como leídos" y enlace a `/favoritos`.
+- Inventario demostrativo en `src/data/demoStoreInventory.ts`
+  (determinista por tienda × modelo) con overrides en memoria
+  para la simulación. Etiquetado siempre como "Disponibilidad
+  de ejemplo" / "Simulación de stock".
+- **Sin emails, sin peticiones de red, sin PII.** Nota
+  explícita en la página: *"En una versión conectada al
+  inventario y al sistema de comunicaciones, este aviso también
+  podría enviarse por email."*
+- Al quitar un favorito con seguimiento activo, el alert y sus
+  notificaciones se borran para no dejar huérfanos.
+
 ## Tienda favorita (`storePreference.tsx`)
 
 - Estado global en `src/lib/storePreference.tsx` con dos claves de
@@ -343,7 +368,7 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (90 pruebas, medido con `npm run test:e2e` — 88 en
+Suites actuales (93 pruebas, medido con `npm run test:e2e` — 91 en
 `chromium` + 2 en `mobile` etiquetadas `@mobile`):
 
 - `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que
