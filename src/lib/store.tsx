@@ -49,6 +49,13 @@ interface StoreState {
   compare: CompareItem[]
   toggleCompare: (item: CompareItem) => void
   removeCompare: (id: string) => void
+  /**
+   * Sustituye en la misma posición el item con id `currentId` por `next`.
+   * Preserva el orden de columnas y evita duplicados: si `next.id` ya está
+   * en otra posición, no hace nada. Si el nuevo pertenece a otra familia,
+   * tampoco (mantiene la restricción de familia única).
+   */
+  replaceCompareItem: (currentId: string, next: CompareItem) => void
   isComparing: (id: string) => boolean
   compareFull: boolean
 }
@@ -120,6 +127,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })
     const removeCompare: StoreState['removeCompare'] = (id) =>
       setCompare((prev) => prev.filter((c) => c.id !== id))
+    const replaceCompareItem: StoreState['replaceCompareItem'] = (currentId, next) =>
+      setCompare((prev) => {
+        const idx = prev.findIndex((c) => c.id === currentId)
+        if (idx === -1) return prev
+        // Familia distinta: ignoramos la sustitución (no mezclamos familias).
+        if (prev[0] && prev[0].family !== next.family) return prev
+        // Ya está en otra columna: no duplicamos.
+        if (prev.some((c, i) => i !== idx && c.id === next.id)) return prev
+        const copy = prev.slice()
+        copy[idx] = next
+        return copy
+      })
 
     return {
       cart,
@@ -141,6 +160,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       compare,
       toggleCompare,
       removeCompare,
+      replaceCompareItem,
       isComparing: (id) => compare.some((c) => c.id === id),
       compareFull: compare.length >= MAX_COMPARE,
     }

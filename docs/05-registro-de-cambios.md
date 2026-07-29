@@ -1,12 +1,50 @@
 ---
 tipo: cambios
-actualizado: 2026-07-28
+actualizado: 2026-07-29
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-07-29 — Simplificación visual del comparador (PR pendiente)
+
+Rama `fix/comparator-visual-simplification`.
+
+- **Selección por diálogo** (`ModelPickerDialog`): tres "espacios" en la
+  parte superior con "Elegir modelo" y "Cambiar modelo". Se retira la
+  rejilla inferior con todos los modelos y el bloque "Diferencias entre
+  las opciones". El diálogo reutiliza `<Modal />` (focus trap, Escape,
+  restauración de foco, `aria-modal`).
+- **Sustitución atómica** con `replaceCompareItem(currentId, next)` en
+  `src/lib/store.tsx`: preserva orden de columnas, evita duplicados y
+  respeta la restricción de familia única. El shape de `CompareItem` y la
+  clave `banana:compare` no cambian.
+- **Campos esenciales reducidos** en
+  [[../src/data/productDecisionData]]: iPhone 8, Mac 8, iPad 7,
+  Apple Watch 7, AirPods 6. Nueva lista `EXTENDED_FIELDS` sólo para el
+  modo "Mostrar todas".
+- **Agrupación semántica** con `FIELD_SECTIONS`: filas agrupadas en
+  Precio, Pantalla/Diseño, Rendimiento, Cámara, Autonomía, etc. La tabla
+  usa `<tr scope="colgroup">` con títulos de sección.
+- **Regla del ganador único** en `buildDecisionSummary`: se declara
+  ganador sólo cuando (a) todos los contextos tienen dato y (b) existe
+  un extremo estricto. Un empate deja el badge sin asignar. Se retira el
+  fondo amarillo global (`bg-brand-050`) de las celdas distintas.
+- **Cabecera sticky real**: `<thead>` sticky, sin la copia
+  `aria-hidden` que duplicaba productos.
+- **Móvil 375 px**: sólo el contenedor de la tabla desplaza horizontal
+  con `scroll-snap-type: x proximity` y `scroll-snap-align: start` por
+  columna. Sin scroll horizontal en `<html>`/`<body>`.
+- **Tests**: `tests/e2e/comparator.spec.ts` reescrito (14 escenarios,
+  incluye ausencia de rejilla/resumen antiguos, sustitución en la misma
+  columna, empate sin badge, sticky sin duplicados y axe del diálogo).
+  Suite: 99/99 (chromium + mobile).
+
+Sin cambios en carrito, seguro, checkout, Plan Renove, Servicio Técnico,
+tienda favorita, favoritos+avisos, inventario demostrativo, precios ni
+imágenes del catálogo.
 
 ## 2026-07-28 — Mejoras UX tras auditoría y cobertura axe
 

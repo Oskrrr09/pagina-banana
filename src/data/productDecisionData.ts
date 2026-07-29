@@ -19,8 +19,9 @@ import type { Model } from './types'
 
 export type FamilySlug = 'iphone' | 'mac' | 'ipad' | 'apple-watch' | 'airpods'
 
-// Campos esenciales por familia (orden de fila cuando "Mostrar todas").
-// Se han elegido pensando en las decisiones más habituales del usuario.
+// Campos esenciales por familia (versión reducida — máx. 8).
+// Regla: son las decisiones más habituales del usuario. Se muestran en la
+// vista "Solo diferencias" y en la primera pasada de "Mostrar todas".
 export const ESSENTIAL_FIELDS: Record<FamilySlug, readonly string[]> = {
   iphone: [
     'Precio',
@@ -28,14 +29,9 @@ export const ESSENTIAL_FIELDS: Record<FamilySlug, readonly string[]> = {
     'Chip',
     'Cámara principal',
     'Zoom óptico',
-    'Selfie',
     'Autonomía de vídeo',
     'Peso',
-    'Materiales',
-    'Resistencia',
-    'Puerto',
     'Capacidad inicial',
-    'Uso recomendado',
   ],
   mac: [
     'Precio',
@@ -46,9 +42,6 @@ export const ESSENTIAL_FIELDS: Record<FamilySlug, readonly string[]> = {
     'Pantalla',
     'Autonomía',
     'Peso',
-    'Puertos',
-    'Cámara',
-    'Uso recomendado',
   ],
   ipad: [
     'Precio',
@@ -56,33 +49,76 @@ export const ESSENTIAL_FIELDS: Record<FamilySlug, readonly string[]> = {
     'Chip',
     'Apple Pencil',
     'Teclado compatible',
-    'Cámara trasera',
     'Almacenamiento inicial',
     'Peso',
-    'Autonomía',
-    'Uso recomendado',
   ],
   'apple-watch': [
     'Precio',
     'Tamaño de caja',
-    'Materiales',
     'Autonomía',
     'Conectividad',
     'Sensores principales',
     'Resistencia',
-    'Chip',
-    'Uso recomendado',
+    'Materiales',
   ],
   airpods: [
     'Precio',
+    'Ajuste',
     'Cancelación de ruido',
-    'Chip',
     'Autonomía',
     'Autonomía con estuche',
-    'Ajuste',
     'Controles',
-    'Resistencia',
-    'Uso recomendado',
+  ],
+}
+
+// Campos adicionales que aparecen sólo en la vista "Mostrar todas".
+// Se añaden a `ESSENTIAL_FIELDS` en ese orden. Máx. 4 extra por familia para
+// no volver a inflar la tabla.
+export const EXTENDED_FIELDS: Record<FamilySlug, readonly string[]> = {
+  iphone: ['Selfie', 'Materiales', 'Resistencia', 'Puerto', 'Uso recomendado'],
+  mac: ['Puertos', 'Cámara', 'Uso recomendado'],
+  ipad: ['Cámara trasera', 'Autonomía', 'Uso recomendado'],
+  'apple-watch': ['Chip', 'Uso recomendado'],
+  airpods: ['Chip', 'Resistencia', 'Uso recomendado'],
+}
+
+// Agrupación semántica de filas → sección visible en la tabla.
+export const FIELD_SECTIONS: Record<FamilySlug, { title: string; fields: readonly string[] }[]> = {
+  iphone: [
+    { title: 'Precio', fields: ['Precio'] },
+    { title: 'Pantalla y diseño', fields: ['Pantalla', 'Materiales', 'Peso'] },
+    { title: 'Rendimiento', fields: ['Chip'] },
+    { title: 'Cámara', fields: ['Cámara principal', 'Zoom óptico', 'Selfie'] },
+    { title: 'Autonomía y capacidad', fields: ['Autonomía de vídeo', 'Capacidad inicial'] },
+    { title: 'Otros', fields: ['Resistencia', 'Puerto', 'Uso recomendado'] },
+  ],
+  mac: [
+    { title: 'Precio', fields: ['Precio'] },
+    { title: 'Rendimiento', fields: ['Chip', 'CPU / GPU', 'Memoria unificada', 'Almacenamiento inicial'] },
+    { title: 'Pantalla', fields: ['Pantalla'] },
+    { title: 'Autonomía y portabilidad', fields: ['Autonomía', 'Peso'] },
+    { title: 'Otros', fields: ['Puertos', 'Cámara', 'Uso recomendado'] },
+  ],
+  ipad: [
+    { title: 'Precio', fields: ['Precio'] },
+    { title: 'Pantalla y peso', fields: ['Pantalla', 'Peso'] },
+    { title: 'Rendimiento y capacidad', fields: ['Chip', 'Almacenamiento inicial'] },
+    { title: 'Accesorios', fields: ['Apple Pencil', 'Teclado compatible'] },
+    { title: 'Otros', fields: ['Cámara trasera', 'Autonomía', 'Uso recomendado'] },
+  ],
+  'apple-watch': [
+    { title: 'Precio', fields: ['Precio'] },
+    { title: 'Diseño', fields: ['Tamaño de caja', 'Materiales'] },
+    { title: 'Autonomía y conectividad', fields: ['Autonomía', 'Conectividad'] },
+    { title: 'Salud y resistencia', fields: ['Sensores principales', 'Resistencia'] },
+    { title: 'Otros', fields: ['Chip', 'Uso recomendado'] },
+  ],
+  airpods: [
+    { title: 'Precio', fields: ['Precio'] },
+    { title: 'Ajuste y controles', fields: ['Ajuste', 'Controles'] },
+    { title: 'Sonido', fields: ['Cancelación de ruido'] },
+    { title: 'Autonomía', fields: ['Autonomía', 'Autonomía con estuche'] },
+    { title: 'Otros', fields: ['Chip', 'Resistencia', 'Uso recomendado'] },
   ],
 }
 
@@ -809,7 +845,9 @@ export function buildDecisionRows(
   family: FamilySlug,
   { onlyDifferences }: { onlyDifferences: boolean },
 ): DecisionRow[] {
-  const fields = ESSENTIAL_FIELDS[family] ?? []
+  const essential = ESSENTIAL_FIELDS[family] ?? []
+  const extended = EXTENDED_FIELDS[family] ?? []
+  const fields = onlyDifferences ? essential : [...essential, ...extended]
   const rows: DecisionRow[] = fields.map((field) => {
     const values = contexts.map((ctx) => getEssentialValue(ctx, field))
     const nonNull = values.filter((v): v is string => v != null)
@@ -828,6 +866,38 @@ export function buildDecisionRows(
   })
 }
 
+/**
+ * Devuelve las filas agrupadas por sección (para la vista con títulos de
+ * sección). Solo incluye secciones que tengan al menos una fila visible.
+ */
+export interface DecisionSection {
+  title: string
+  rows: DecisionRow[]
+}
+
+export function buildDecisionSections(
+  contexts: DecisionContext[],
+  family: FamilySlug,
+  { onlyDifferences }: { onlyDifferences: boolean },
+): DecisionSection[] {
+  const visible = buildDecisionRows(contexts, family, { onlyDifferences })
+  const byField = new Map(visible.map((r) => [r.field, r]))
+  const sections = FIELD_SECTIONS[family] ?? []
+  const out: DecisionSection[] = []
+  const usedFields = new Set<string>()
+  for (const sec of sections) {
+    const rows = sec.fields
+      .map((f) => byField.get(f))
+      .filter((r): r is DecisionRow => Boolean(r))
+    rows.forEach((r) => usedFields.add(r.field))
+    if (rows.length > 0) out.push({ title: sec.title, rows })
+  }
+  // Cualquier fila no cubierta por FIELD_SECTIONS termina en "Otros".
+  const leftover = visible.filter((r) => !usedFields.has(r.field))
+  if (leftover.length > 0) out.push({ title: 'Otros', rows: leftover })
+  return out
+}
+
 // -----------------------------------------------------------------------
 // Resumen ("Más económico", "Más ligero"…)
 // -----------------------------------------------------------------------
@@ -839,6 +909,25 @@ export interface DecisionSummary {
   largestScreenSlug: string | null
 }
 
+/**
+ * Devuelve el slug del "ganador único" solo si:
+ *   - hay >= 2 contextos,
+ *   - todos los contextos tienen dato numérico (nunca declaramos un ganador
+ *     si a algún candidato le falta el dato),
+ *   - existe un valor extremo estricto (no hay empate en la posición ganadora).
+ * En cualquier otro caso devuelve `null` — el usuario prefiere que no
+ * marquemos ningún ganador antes que marcar uno arbitrario.
+ */
+function uniqueExtreme<T extends { slug: string; value: number }>(
+  items: T[],
+  mode: 'min' | 'max',
+): string | null {
+  if (items.length < 2) return null
+  const sorted = [...items].sort((a, b) => (mode === 'min' ? a.value - b.value : b.value - a.value))
+  if (sorted[0].value === sorted[1].value) return null
+  return sorted[0].slug
+}
+
 export function buildDecisionSummary(contexts: DecisionContext[]): DecisionSummary {
   const result: DecisionSummary = {
     cheapestSlug: null,
@@ -848,47 +937,57 @@ export function buildDecisionSummary(contexts: DecisionContext[]): DecisionSumma
   }
   if (contexts.length < 2) return result
 
-  let minPrice = Infinity
-  for (const ctx of contexts) {
-    const p = resolvePrice(ctx)
-    if (p != null && p < minPrice) {
-      minPrice = p
-      result.cheapestSlug = ctx.model.slug
-    }
+  // Precio: todos deben tenerlo.
+  const prices = contexts.map((ctx) => ({
+    slug: ctx.model.slug,
+    value: resolvePrice(ctx),
+  }))
+  if (prices.every((p) => p.value != null)) {
+    result.cheapestSlug = uniqueExtreme(
+      prices as { slug: string; value: number }[],
+      'min',
+    )
   }
 
-  let maxCap = -Infinity
-  for (const ctx of contexts) {
-    const cap = parseCapacityGB(
+  // Capacidad: todos deben tenerla.
+  const caps = contexts.map((ctx) => ({
+    slug: ctx.model.slug,
+    value: parseCapacityGB(
       getEssentialValue(ctx, 'Capacidad inicial') ??
         getEssentialValue(ctx, 'Almacenamiento inicial'),
+    ),
+  }))
+  if (caps.every((c) => c.value != null)) {
+    result.largestCapacitySlug = uniqueExtreme(
+      caps as { slug: string; value: number }[],
+      'max',
     )
-    if (cap != null && cap > maxCap) {
-      maxCap = cap
-      result.largestCapacitySlug = ctx.model.slug
-    }
   }
 
+  // Peso: todos deben tenerlo.
   const weights = contexts.map((ctx) => ({
     slug: ctx.model.slug,
-    grams: parseWeightGrams(getEssentialValue(ctx, 'Peso')),
+    value: parseWeightGrams(getEssentialValue(ctx, 'Peso')),
   }))
-  const weightsWithData = weights.filter((w) => w.grams != null) as { slug: string; grams: number }[]
-  if (weightsWithData.length >= 2) {
-    weightsWithData.sort((a, b) => a.grams - b.grams)
-    result.lightestSlug = weightsWithData[0].slug
+  if (weights.every((w) => w.value != null)) {
+    result.lightestSlug = uniqueExtreme(
+      weights as { slug: string; value: number }[],
+      'min',
+    )
   }
 
+  // Pantalla: todos deben tenerla.
   const screens = contexts.map((ctx) => ({
     slug: ctx.model.slug,
-    inches: parseScreenInches(
+    value: parseScreenInches(
       getEssentialValue(ctx, 'Pantalla') ?? getEssentialValue(ctx, 'Tamaño de caja'),
     ),
   }))
-  const screensWithData = screens.filter((s) => s.inches != null) as { slug: string; inches: number }[]
-  if (screensWithData.length >= 2) {
-    screensWithData.sort((a, b) => b.inches - a.inches)
-    result.largestScreenSlug = screensWithData[0].slug
+  if (screens.every((s) => s.value != null)) {
+    result.largestScreenSlug = uniqueExtreme(
+      screens as { slug: string; value: number }[],
+      'max',
+    )
   }
 
   return result
