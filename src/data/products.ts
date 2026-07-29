@@ -496,11 +496,10 @@ export const airpodsModels: Model[] = [
     tagline: 'Ajuste abierto con cancelación activa de ruido y Audio Espacial.',
     fromPrice: 199,
     financeFrom: { monthly: 8, months: 24 },
-    // Imagen pendiente de recurso oficial: dejamos vacío para que el
-    // ProductImage muestre el nombre como placeholder textual en vez de
-    // usar la foto de AirPods Pro (formato distinto).
+    // PNG 1080×1080 RGBA descargado desde el CDN de Apple
+    // (as-images.apple.com/is/airpods-4-up-compare-202409, fmt=png-alpha).
     colors: buildColors([
-      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: '', caps: [['USB-C', 199]] },
+      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-4-anc.png`, caps: [['USB-C', 199]] },
     ]),
     specs: [
       { label: 'Chip', value: 'Apple H2' },
@@ -518,10 +517,10 @@ export const airpodsModels: Model[] = [
     tagline: 'La nueva generación con Chip H2 y Audio Espacial personalizado.',
     fromPrice: 149,
     financeFrom: { monthly: 6, months: 24 },
-    // Sin imagen oficial disponible del modelo abierto — se usa el
-    // placeholder de ProductImage.
+    // PNG 1080×1080 RGBA descargado desde el CDN de Apple
+    // (as-images.apple.com/is/airpods-4-down-compare-202409, fmt=png-alpha).
     colors: buildColors([
-      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: '', caps: [['USB-C', 149]] },
+      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-4.png`, caps: [['USB-C', 149]] },
     ]),
     specs: [
       { label: 'Chip', value: 'Apple H2' },
