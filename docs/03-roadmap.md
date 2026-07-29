@@ -100,6 +100,15 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
 - ✅ Corrección real de contraste (paleta muted / cian utilitaria /
   verde disponibilidad).
 
+**Añadido el 2026-07-29** en `feature/favorites-availability-alerts`:
+
+- ✅ Favoritos ampliados con seguimiento demostrativo de
+  disponibilidad, centro de notificaciones interno y campana
+  en la cabecera. Inventario determinista en
+  `src/data/demoStoreInventory.ts`, contexto en
+  `src/lib/favoriteAlerts.tsx`. Sin emails, sin peticiones de
+  red, sin PII.
+
 **Añadido el 2026-07-29** en `feature/favorite-store`:
 
 - ✅ Tienda favorita local (`src/lib/storePreference.tsx`) con

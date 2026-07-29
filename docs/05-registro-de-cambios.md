@@ -68,6 +68,39 @@ Rama `chore/auditoria-web-oficial-banana`.
   componentes ni pruebas existentes. `npm run build` y
   `npm run test:e2e` siguen en verde (21 pruebas).
 
+## 2026-07-29 — Favoritos + avisos de disponibilidad (PR4 del bloque diferencial)
+
+Rama `feature/favorites-availability-alerts`.
+
+- Nuevo `src/data/demoStoreInventory.ts` con estado
+  determinista por tienda × modelo (4 estados: disponible /
+  pocas unidades / no disponible / bajo pedido) + overrides en
+  memoria para la simulación de llegada.
+- Nuevo `src/lib/favoriteAlerts.tsx` con contexto React y
+  persistencia mediante `banana:favorite-alerts` y
+  `banana:favorite-notifications`. Compatible con `banana:fav`
+  sin migración; guardar favorito y activar aviso son acciones
+  distintas.
+- `src/pages/FavoritesPage.tsx` rediseñada con tres bloques:
+  * **Mis productos** con estado en la tienda favorita, "Ver
+    producto", "Quitar" y `<details>` "Seguir disponibilidad"
+    para elegir tienda (opcionalmente también como favorita).
+  * **Mis avisos** con "Simular llegada", cambio de tienda y
+    "Desactivar".
+  * **Notificaciones** internas con "Marcar como leído" /
+    "Marcar todas como leídas".
+- Nueva `NotificationsBell` en la cabecera con contador de no
+  leídos, panel accesible (Escape, click-out) y enlace a
+  favoritos.
+- Al quitar un favorito con seguimiento activo, el alert y
+  sus notificaciones se borran para no dejar huérfanos.
+- Nueva `tests/e2e/favorites-alerts.spec.ts` (3): flujo
+  completo con notificación + campana, huérfanos al quitar
+  favorito y ausencia de PII / peticiones de red externas.
+- Total suite: 90 → 93.
+- Sin cambios en seguro, checkout, catálogo, Plan Renove,
+  Servicio Técnico ni scripts privados.
+
 ## 2026-07-29 — Tienda favorita (PR3 del bloque diferencial)
 
 Rama `feature/favorite-store`.
