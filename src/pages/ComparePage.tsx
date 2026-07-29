@@ -102,17 +102,6 @@ export function ComparePage() {
     setParams(slug === 'iphone' ? {} : { familia: slug })
   }
 
-  function replaceInColumn(currentId: string, newSlug: string) {
-    const target = models.find((m) => m.slug === newSlug)
-    if (!target) return
-    removeCompare(currentId)
-    const item = compareItemFor(target)
-    // Sólo si aún no está en la comparación (no duplicar).
-    if (!addedModelSlugs.has(item.modelSlug) || item.id === currentId) {
-      toggleCompare(item)
-    }
-  }
-
   return (
     <Container className="py-10">
       <header className="max-w-2xl">
@@ -127,8 +116,9 @@ export function ComparePage() {
         </p>
       </header>
 
-      {/* Estado vacío: selector de familia + primer <select> para añadir
-          un modelo sin salir de la página + CTA del futuro asistente. */}
+      {/* Estado vacío: selector de familia + CTA al futuro asistente.
+          Los modelos disponibles se muestran como tarjetas en la sección
+          inferior de la página (más visual). */}
       {compare.length === 0 && (
         <div className="mt-6 rounded-[16px] border border-line bg-neutral p-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -140,32 +130,9 @@ export function ComparePage() {
             ))}
           </div>
           <p className="mt-3 text-sm text-muted">
-            Elige uno o más modelos abajo para empezar. Cada columna incluye su propio selector
-            para sustituir o añadir más productos.
+            El comparador acepta hasta tres modelos del mismo tipo. Elige modelos desde la lista
+            de abajo o deja que el asistente te oriente.
           </p>
-          <label className="mt-4 block max-w-sm text-sm text-ink">
-            <span className="mb-1 block font-semibold">Primer modelo a comparar</span>
-            <select
-              aria-label={`Añadir un ${family?.name} a la comparación`}
-              className="w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-sm text-ink"
-              value=""
-              onChange={(event) => {
-                const slug = event.target.value
-                if (!slug) return
-                const target = models.find((m) => m.slug === slug)
-                if (target) toggleCompare(compareItemFor(target))
-              }}
-            >
-              <option value="" disabled>
-                Elige un {family?.name}…
-              </option>
-              {models.map((m) => (
-                <option key={m.slug} value={m.slug}>
-                  {m.name} — desde {euro(m.fromPrice)}
-                </option>
-              ))}
-            </select>
-          </label>
           <div className="mt-4">
             <button
               type="button"
@@ -337,31 +304,6 @@ export function ComparePage() {
                               <ProvisionalBadge label="Precio demostrativo" />
                             </div>
 
-                            {/* Selector de sustitución dentro de la columna */}
-                            {pickable.length > 0 && (
-                              <label className="mt-3 block text-xs text-muted">
-                                <span className="mb-1 block">Sustituir por:</span>
-                                <select
-                                  aria-label={`Sustituir ${c.name} por otro modelo`}
-                                  className="w-full rounded-[8px] border border-line bg-surface px-2 py-1.5 text-xs text-ink"
-                                  value=""
-                                  onChange={(event) => {
-                                    const slug = event.target.value
-                                    if (slug) replaceInColumn(c.id, slug)
-                                  }}
-                                >
-                                  <option value="" disabled>
-                                    Elegir modelo…
-                                  </option>
-                                  {pickable.map((m) => (
-                                    <option key={m.slug} value={m.slug}>
-                                      {m.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                            )}
-
                             <div className="mt-3 flex flex-wrap gap-2">
                               <Link
                                 to={variantPath(
@@ -413,31 +355,8 @@ export function ComparePage() {
                   </AnimatePresence>
                   {compare.length < 3 && pickable.length > 0 && (
                     <th className="w-64 p-3 align-middle">
-                      <div className="flex h-full min-h-[220px] flex-col items-stretch justify-center gap-3 rounded-[12px] border border-dashed border-line bg-neutral p-4 text-center text-sm text-muted">
-                        <span className="font-semibold text-ink">Añadir otro modelo</span>
-                        <label className="block text-left text-xs text-muted">
-                          <span className="mb-1 block">Elige un {family?.name}:</span>
-                          <select
-                            aria-label={`Añadir un ${family?.name} a la comparación`}
-                            className="w-full rounded-[8px] border border-line bg-surface px-2 py-1.5 text-xs text-ink"
-                            value=""
-                            onChange={(event) => {
-                              const slug = event.target.value
-                              if (!slug) return
-                              const target = models.find((m) => m.slug === slug)
-                              if (target) toggleCompare(compareItemFor(target))
-                            }}
-                          >
-                            <option value="" disabled>
-                              Elegir modelo…
-                            </option>
-                            {pickable.map((m) => (
-                              <option key={m.slug} value={m.slug}>
-                                {m.name} — desde {euro(m.fromPrice)}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                      <div className="grid h-full min-h-[220px] place-items-center rounded-[12px] border border-dashed border-line px-3 text-center text-sm text-muted">
+                        Añade otro modelo desde la lista de abajo ↓
                       </div>
                     </th>
                   )}
@@ -491,17 +410,64 @@ export function ComparePage() {
         </div>
       )}
 
-      {/* Pie con nota provisional y contador — la selección de productos se
-          hace directamente desde el <select> de cada columna. */}
-      {compare.length > 0 && (
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-          <span className="text-xs text-muted">
-            {compare.length}/3 · {family?.name}
-            {compareFull ? ' · Has alcanzado el máximo.' : ''}
-          </span>
-          <ProvisionalBadge label="Especificaciones demostrativas" />
+      {/* Selector inferior: añadir más modelos de la familia activa */}
+      <section
+        aria-label={`Modelos disponibles de ${family?.name ?? ''}`}
+        className="mt-10 border-t border-line pt-8"
+      >
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-bold text-ink">
+              {compare.length === 0 ? `Elige modelos de ${family?.name}` : `Añadir otro ${family?.name}`}
+            </h2>
+            <p className="text-sm text-muted">
+              {compare.length >= 3
+                ? 'Has alcanzado el máximo de 3 productos.'
+                : 'Toca un modelo para añadirlo a la comparación.'}
+            </p>
+          </div>
+          {compare.length > 0 && (
+            <span className="text-sm text-muted">
+              {compare.length}/3 · {family?.name}
+            </span>
+          )}
         </div>
-      )}
+
+        {pickable.length === 0 ? (
+          <p className="mt-6 rounded-[12px] bg-neutral p-4 text-sm text-muted">
+            No quedan más modelos de {family?.name} para añadir.
+          </p>
+        ) : (
+          <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <AnimatePresence mode="popLayout" initial={false}>
+              {pickable.map((m) => {
+                const disabled = compareFull
+                return (
+                  <motion.button
+                    key={m.slug}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    onClick={() => !disabled && toggleCompare(compareItemFor(m))}
+                    disabled={disabled}
+                    aria-label={`Añadir ${m.name} al comparador`}
+                    className="group flex flex-col rounded-[12px] border border-line bg-surface p-3 text-left transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-1 hover:border-banana hover:shadow-[var(--shadow-raised)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ProductImage src={m.colors[0].image} alt={m.name} ratio="4 / 3" />
+                    <p className="mt-2 text-sm font-semibold text-ink">{m.name}</p>
+                    <p className="text-xs text-muted">desde {euro(m.fromPrice)}</p>
+                    <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-ink">
+                      <Icon name="plus" size={14} aria-hidden="true" /> Añadir a comparar
+                    </span>
+                  </motion.button>
+                )
+              })}
+            </AnimatePresence>
+          </div>
+        )}
+      </section>
     </Container>
   )
 }

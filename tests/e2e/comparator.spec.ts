@@ -62,22 +62,22 @@ test('el resumen indica "Opción más económica" con dos productos', async ({ p
   await expect(page.getByText(/Opción más económica/i)).toBeVisible()
 })
 
-test('el <select> "Sustituir por" cambia el modelo de una columna', async ({ page }) => {
+test('desde el bloque inferior se puede añadir otro modelo a la comparación', async ({ page }) => {
   await seedCompareIphonePro(page)
   await page.goto('./comparar')
 
-  // Sustituimos la primera columna por otro modelo disponible; capturamos su
-  // texto desde el propio select para no depender de una opción concreta.
-  const firstSelect = page.getByRole('combobox').first()
-  await expect(firstSelect).toBeVisible()
-  const options = firstSelect.locator('option:not([disabled])')
-  const targetName = (await options.first().textContent())?.trim()
-  expect(targetName).toBeTruthy()
-  await firstSelect.selectOption({ label: targetName as string })
+  // El bloque inferior lista los modelos restantes con `aria-label="Añadir X al comparador"`.
+  const addAnother = page.getByRole('button', { name: /Añadir .* al comparador/ }).first()
+  await expect(addAnother).toBeVisible()
+  const addedName = (await addAnother.getAttribute('aria-label'))
+    ?.replace(/^Añadir\s+/, '')
+    .replace(/\s+al comparador$/, '')
+  expect(addedName).toBeTruthy()
+  await addAnother.click()
 
-  // El nuevo nombre aparece como título de una columna (no dentro de un option).
+  // El nombre añadido aparece como título de columna (no dentro del bloque inferior).
   const columnTitles = page.locator('table thead p.font-bold')
-  await expect(columnTitles.filter({ hasText: targetName as string })).toHaveCount(1)
+  await expect(columnTitles.filter({ hasText: addedName as string })).toHaveCount(1)
 })
 
 test('desde una columna se puede añadir a favoritos y al carrito', async ({ page }) => {
