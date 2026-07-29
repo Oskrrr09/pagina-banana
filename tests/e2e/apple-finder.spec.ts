@@ -84,20 +84,43 @@ test('no se puede avanzar sin responder + Anterior conserva la respuesta', async
 
 // ---------------------------- "No lo tengo claro" -----------------------
 
+// Helper: recorre las preguntas generales del flujo "No lo tengo claro".
+// Incluye la nueva pregunta productRole (siempre) y workType (solo si el
+// uso principal es "Trabajo").
+async function answerGeneralFlow(
+  page: Page,
+  opts: {
+    use: string
+    productRole: string
+    workType?: string
+    priority: string
+    portability: string
+  },
+) {
+  await answerAndNext(page, opts.use)
+  await answerAndNext(page, opts.productRole)
+  if (opts.use === 'Trabajo' && opts.workType) {
+    await answerAndNext(page, opts.workType)
+  }
+  await answerAndNext(page, opts.priority)
+  await answerAndNext(page, opts.portability, /Continuar|Siguiente/)
+}
+
 test('"No lo tengo claro" muestra confirmación de familia con dos candidatas', async ({ page }) => {
   await start(page)
   await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
-  await answerAndNext(page, 'Salud y deporte')
-  await answerAndNext(page, 'Portabilidad')
-  await answerAndNext(page, 'Sí, lo llevaré siempre encima', /Continuar|Siguiente/)
-  // Pantalla de confirmación con dos categorías.
+  await answerGeneralFlow(page, {
+    use: 'Salud y deporte',
+    productRole: 'Un complemento, como auriculares o reloj.',
+    priority: 'Portabilidad',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
   await expect(
     page.getByRole('heading', {
       name: /Por lo que nos cuentas, creemos que estas categorías pueden encajar/,
     }),
   ).toBeVisible()
   await expect(page.getByText('Recomendación principal')).toBeVisible()
-  // Salud y deporte → Watch primero (familyInfo.name = "Watch").
   const primaryCard = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
   await expect(primaryCard.getByRole('heading', { name: 'Watch' })).toBeVisible()
 })
@@ -105,13 +128,180 @@ test('"No lo tengo claro" muestra confirmación de familia con dos candidatas', 
 test('desde la confirmación se puede "Ver todas las categorías" sin perder respuestas', async ({ page }) => {
   await start(page)
   await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
-  await answerAndNext(page, 'Trabajo')
-  await answerAndNext(page, 'Potencia')
-  await answerAndNext(page, 'Sí, lo llevaré siempre encima', /Continuar|Siguiente/)
+  await answerGeneralFlow(page, {
+    use: 'Trabajo',
+    productRole: 'Un equipo principal para realizar mis tareas.',
+    workType: 'Ofimática, correo y videollamadas.',
+    priority: 'Potencia',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
   await page.getByRole('button', { name: 'Ver todas las categorías' }).click()
   await expect(
     page.getByRole('heading', { name: '¿Qué producto estás buscando?' }),
   ).toBeVisible()
+})
+
+// --------------------- ranking de familias (bug reportado) ---------------
+
+async function readFamilyConfirmCards(page: Page): Promise<string[]> {
+  // Devuelve los nombres de las familias en las tarjetas (por orden).
+  await expect(
+    page.getByRole('heading', {
+      name: /Por lo que nos cuentas, creemos que estas categorías pueden encajar/,
+    }),
+  ).toBeVisible()
+  return await page.locator('h3').allTextContents()
+}
+
+test('BUG: trabajo + primary + portabilidad → Mac primero, iPad segundo (NO AirPods/Watch)', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Trabajo',
+    productRole: 'Un equipo principal para realizar mis tareas.',
+    workType: 'Ofimática, correo y videollamadas.',
+    priority: 'Portabilidad',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const names = await readFamilyConfirmCards(page)
+  const joined = names.join('|')
+  expect(joined).toContain('Mac')
+  expect(joined).toContain('iPad')
+  expect(joined).not.toContain('AirPods')
+  expect(joined).not.toContain('Watch')
+  // Recomendación principal = Mac.
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primary.getByRole('heading', { name: 'Mac' })).toBeVisible()
+})
+
+test('trabajo + primary + desktop-apps → Mac como primera opción', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Trabajo',
+    productRole: 'Un equipo principal para realizar mis tareas.',
+    workType: 'Programación o aplicaciones de escritorio.',
+    priority: 'Potencia',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primary.getByRole('heading', { name: 'Mac' })).toBeVisible()
+  const names = (await page.locator('h3').allTextContents()).join('|')
+  expect(names).not.toContain('AirPods')
+  expect(names).not.toContain('Watch')
+  expect(names).not.toContain('iPhone')
+})
+
+test('trabajo + mobile + mobile-tasks → iPad + iPhone (Mac queda fuera del top 2)', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Trabajo',
+    productRole: 'Un dispositivo móvil para llevar siempre conmigo.',
+    workType: 'Gestiones rápidas mientras me desplazo.',
+    priority: 'Portabilidad',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const names = (await page.locator('h3').allTextContents()).join('|')
+  expect(names).toContain('iPad')
+  expect(names).toContain('iPhone')
+  expect(names).not.toContain('AirPods')
+  expect(names).not.toContain('Watch')
+})
+
+test('estudio + primary + portabilidad → iPad + Mac', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Estudio',
+    productRole: 'Un equipo principal para realizar mis tareas.',
+    priority: 'Portabilidad',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const names = (await page.locator('h3').allTextContents()).join('|')
+  expect(names).toContain('iPad')
+  expect(names).toContain('Mac')
+  expect(names).not.toContain('AirPods')
+  expect(names).not.toContain('Watch')
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primary.getByRole('heading', { name: 'iPad' })).toBeVisible()
+})
+
+test('foto + primary + cámara → iPhone primero, Mac o iPad segundo', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Fotografía y vídeo',
+    productRole: 'Un equipo principal para realizar mis tareas.',
+    priority: 'Cámara',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primary.getByRole('heading', { name: 'iPhone' })).toBeVisible()
+  const names = (await page.locator('h3').allTextContents()).join('|')
+  expect(names).not.toContain('AirPods')
+  expect(names).not.toContain('Watch')
+})
+
+test('audio + accessory → AirPods primero', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Escuchar música o podcasts',
+    productRole: 'Un complemento, como auriculares o reloj.',
+    priority: 'Portabilidad',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primary.getByRole('heading', { name: 'AirPods' })).toBeVisible()
+})
+
+test('salud + accessory → Apple Watch primero', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Salud y deporte',
+    productRole: 'Un complemento, como auriculares o reloj.',
+    priority: 'Portabilidad',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primary.getByRole('heading', { name: 'Watch' })).toBeVisible()
+})
+
+test('uso cotidiano + mobile → iPhone primero', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Uso cotidiano',
+    productRole: 'Un dispositivo móvil para llevar siempre conmigo.',
+    priority: 'Portabilidad',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primary.getByRole('heading', { name: 'iPhone' })).toBeVisible()
+})
+
+test('desempate NO alfabético: para trabajo AirPods no desplaza a Mac aunque empatasen', async ({ page }) => {
+  // Con role=unknown y sin workType, con priority "Precio" y portabilidad
+  // "Sí" — antes del fix: Mac(12) empataba con AirPods e iPhone en 4/12
+  // y el desempate alfabético dejaba AirPods delante. Ahora Mac tiene
+  // score claramente mayor y AirPods queda fuera del top 2.
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Trabajo',
+    productRole: 'No estoy seguro.',
+    workType: 'Todavía no lo sé.',
+    priority: 'Precio',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primary.getByRole('heading', { name: 'Mac' })).toBeVisible()
+  const names = (await page.locator('h3').allTextContents()).join('|')
+  // AirPods NO puede quedar por delante de iPad para trabajo aunque
+  // alfabéticamente sea antes.
+  expect(names).not.toContain('AirPods')
 })
 
 // ---------------------------- filtros duros --------------------------------
