@@ -4,6 +4,7 @@ import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { currentStoreDay, getStore, isOpenNow, STORE_HOURS_NOTICE, UNIVERSAL_SERVICES } from '../data/stores'
 import { allModels } from '../data/products'
+import { useStorePreference } from '../lib/storePreference'
 import { NotFound } from './NotFound'
 
 // Ficha de una tienda (§4.14).
@@ -76,7 +77,7 @@ export function StoreDetailPage() {
             <Icon name="map-pin" size={16} /> {store.address}
           </p>
 
-          {/* 4 — Cómo llegar */}
+          {/* 4 — Cómo llegar + marcar como tu tienda */}
           <div className="mt-5 flex flex-wrap gap-3">
             <a
               href={directionsUrl}
@@ -86,6 +87,7 @@ export function StoreDetailPage() {
             >
               <Icon name="map-pin" size={18} /> Cómo llegar
             </a>
+            <FavoriteStoreControl storeSlug={store.slug} storeName={store.name} />
           </div>
 
           {/* 3 — Servicios disponibles */}
@@ -171,5 +173,35 @@ export function StoreDetailPage() {
         </div>
       </div>
     </Container>
+  )
+}
+
+function FavoriteStoreControl({ storeSlug, storeName }: { storeSlug: string; storeName: string }) {
+  const { favoriteSlug, setFavorite, clearFavorite } = useStorePreference()
+  const isFavorite = favoriteSlug === storeSlug
+
+  if (isFavorite) {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-brand bg-brand-050 px-4 py-2 text-sm font-semibold text-ink">
+        <Icon name="star" size={16} aria-hidden="true" /> Esta es tu tienda
+        <button
+          type="button"
+          onClick={clearFavorite}
+          className="ml-1 text-xs font-semibold text-ink underline underline-offset-2"
+        >
+          Quitar
+        </button>
+      </div>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setFavorite(storeSlug)}
+      className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink hover:border-ink/30"
+    >
+      <Icon name="star" size={16} aria-hidden="true" /> Marcar como mi tienda
+      <span className="sr-only"> ({storeName})</span>
+    </button>
   )
 }

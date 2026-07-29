@@ -100,6 +100,13 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
 - ✅ Corrección real de contraste (paleta muted / cian utilitaria /
   verde disponibilidad).
 
+**Añadido el 2026-07-29** en `feature/favorite-store`:
+
+- ✅ Tienda favorita local (`src/lib/storePreference.tsx`) con
+  bottom sheet inicial no bloqueante, selector "Mi tienda" en
+  cabecera y menú móvil, priorización en `/tiendas`,
+  `StoreDetail` y `StorePicker`. Sin datos personales.
+
 **Añadido el 2026-07-29** en `feature/apple-finder-assistant`:
 
 - ✅ Asistente "Encuentra tu Apple" en `/elige-tu-apple` con
