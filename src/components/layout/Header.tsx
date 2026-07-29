@@ -109,13 +109,16 @@ export function Header() {
              clara del degradado. Enlaces centrados; "Mi tienda" a la derecha
              usando posicionamiento absoluto para que la lista principal
              quede alineada con el eje central del layout. */}
-        <div className="relative hidden bg-[#2e7d9b] text-white sm:block">
+        {/* Cian brillante estilo "cielo" (#27E7F5). Con texto oscuro (`text-ink`)
+             se cumple WCAG AA cómodamente (ratio ~11:1). Los enlaces mantienen
+             el hover sutil con un negro translúcido para no perder legibilidad. */}
+        <div className="relative hidden bg-[#27e7f5] text-ink sm:block">
           <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium">
             {utilityLinks.map((link) => (
               <Link
                 key={link.label}
                 to={link.to}
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-ink transition-colors hover:bg-black/10"
               >
                 <Icon name={link.icon} size={14} /> {link.label}
               </Link>
@@ -390,7 +393,7 @@ function FavoriteStoreMenu() {
             ? `Mi tienda: ${favoriteStore.name}. Cambiar o quitar.`
             : 'Elegir tienda favorita'
         }
-        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
+        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-ink transition-colors hover:bg-black/10"
       >
         <Icon name="star" size={14} aria-hidden="true" />
         {favoriteStore ? `Mi tienda: ${favoriteStore.name}` : 'Elegir tienda'}

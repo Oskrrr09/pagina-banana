@@ -496,8 +496,11 @@ export const airpodsModels: Model[] = [
     tagline: 'Ajuste abierto con cancelación activa de ruido y Audio Espacial.',
     fromPrice: 199,
     financeFrom: { monthly: 8, months: 24 },
+    // Imagen pendiente de recurso oficial: dejamos vacío para que el
+    // ProductImage muestre el nombre como placeholder textual en vez de
+    // usar la foto de AirPods Pro (formato distinto).
     colors: buildColors([
-      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-pro-hero.webp`, caps: [['USB-C', 199]] },
+      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: '', caps: [['USB-C', 199]] },
     ]),
     specs: [
       { label: 'Chip', value: 'Apple H2' },
@@ -515,8 +518,10 @@ export const airpodsModels: Model[] = [
     tagline: 'La nueva generación con Chip H2 y Audio Espacial personalizado.',
     fromPrice: 149,
     financeFrom: { monthly: 6, months: 24 },
+    // Sin imagen oficial disponible del modelo abierto — se usa el
+    // placeholder de ProductImage.
     colors: buildColors([
-      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-pro-hero.webp`, caps: [['USB-C', 149]] },
+      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: '', caps: [['USB-C', 149]] },
     ]),
     specs: [
       { label: 'Chip', value: 'Apple H2' },
@@ -526,44 +531,6 @@ export const airpodsModels: Model[] = [
       { label: 'Conector', value: 'USB-C' },
     ],
     highlights: ['Chip H2', 'Audio Espacial personalizado', 'Ajuste rediseñado', 'Estuche USB-C', 'Formato abierto'],
-  },
-  {
-    slug: 'airpods-3',
-    family: 'airpods',
-    name: 'AirPods (3.ª generación)',
-    tagline: 'Diseño en formato abierto con Audio Espacial y Lightning.',
-    fromPrice: 179,
-    financeFrom: { monthly: 8, months: 24 },
-    colors: buildColors([
-      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-pro-hero.webp`, caps: [['Lightning', 179]] },
-    ]),
-    specs: [
-      { label: 'Chip', value: 'Apple H1' },
-      { label: 'Cancelación de ruido', value: 'No incluye' },
-      { label: 'Audio', value: 'Espacial con seguimiento de la cabeza' },
-      { label: 'Batería', value: 'Hasta 6 h (30 h con estuche)' },
-      { label: 'Conector', value: 'Lightning' },
-    ],
-    highlights: ['Audio Espacial con seguimiento de la cabeza', 'Sensor de piel', 'Estuche MagSafe con Lightning', 'Formato abierto', 'Chip H1'],
-  },
-  {
-    slug: 'airpods-2',
-    family: 'airpods',
-    name: 'AirPods (2.ª generación)',
-    tagline: 'La opción más asequible con "Oye Siri" y Chip H1.',
-    fromPrice: 149,
-    financeFrom: { monthly: 6, months: 24 },
-    colors: buildColors([
-      { slug: 'blanco', name: 'Blanco', hex: '#ececec', image: `${IMG}/airpods-pro-hero.webp`, caps: [['Lightning', 149]] },
-    ]),
-    specs: [
-      { label: 'Chip', value: 'Apple H1' },
-      { label: 'Cancelación de ruido', value: 'No incluye' },
-      { label: 'Audio', value: 'Estéreo' },
-      { label: 'Batería', value: 'Hasta 5 h (24 h con estuche)' },
-      { label: 'Conector', value: 'Lightning' },
-    ],
-    highlights: ['Chip H1', 'Configuración instantánea', '"Oye Siri" con manos libres', 'Estuche Lightning', 'Formato abierto'],
   },
   {
     slug: 'airpods-max',
