@@ -68,6 +68,48 @@ Rama `chore/auditoria-web-oficial-banana`.
   componentes ni pruebas existentes. `npm run build` y
   `npm run test:e2e` siguen en verde (21 pruebas).
 
+## 2026-07-29 — Comparador esencial (PR1 del bloque diferencial)
+
+Rama `feature/comparator-essential`.
+
+- Nuevo módulo `src/data/productDecisionData.ts`: campos
+  esenciales por familia (iPhone/Mac/iPad/Watch/AirPods),
+  utilidades de normalización (`getEssentialValue`,
+  `buildDecisionRows`, `buildDecisionSummary`,
+  `parseWeightGrams`, `parseScreenInches`,
+  `parseCapacityGB`). Metadata interna `usoRecomendado` por
+  modelo, marcada como orientación demostrativa.
+- Rediseño de `src/pages/ComparePage.tsx`:
+  - Encabezado "Compara tus opciones" + descripción explicando
+    el foco en diferencias.
+  - Estado vacío con selector de familia y CTA "Necesito ayuda
+    para elegir" (deshabilitado hasta la PR 2 del asistente).
+  - Columnas con imagen, nombre, variante, capacidad, precio
+    demostrativo, botones "Ver producto" / "Favorito" /
+    "Comprar" / "Quitar" y `<select>` "Sustituir por" con los
+    modelos restantes de la familia.
+  - Cabecera sticky reducida en escritorio con las tarjetas
+    activas.
+  - Switch **"Solo diferencias" (por defecto)** vs "Mostrar
+    todas" con `aria-live="polite"`; ambos aplican sobre la
+    reducción de `buildDecisionRows`.
+  - Resumen superior calculado con `buildDecisionSummary`:
+    "Opción más económica", "Mayor capacidad inicial", "Mayor
+    pantalla" y "Más ligero" — sólo cuando hay dos productos y
+    los datos son comparables. Etiquetado como *Orientación
+    demostrativa*.
+- Compatibilidad total con `banana:compare` existente: no se
+  cambia el shape de `CompareItem` (los datos esenciales se
+  derivan al vuelo a partir del catálogo por `modelSlug`).
+- Suite Playwright: nueva `tests/e2e/comparator.spec.ts` (8
+  pruebas: encabezado, estado vacío, switch, resumen,
+  sustitución, favoritos/carrito, persistencia, 375 px, axe) y
+  actualización de `favorites-compare.spec.ts` para el nuevo
+  `aria-label` "Quitar iPhone 17 Pro de la comparación" y el
+  scope del `<thead>`. Total: 64 → 73 pruebas.
+- Sin cambios en seguro, checkout, precios, Plan Renove,
+  Servicio Técnico ni scripts privados.
+
 ## 2026-07-29 — Limpieza release candidate y mantenimiento técnico
 
 Rama `chore/release-candidate-cleanup`.
