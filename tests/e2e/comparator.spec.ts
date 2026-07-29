@@ -20,15 +20,15 @@ async function seedCompareIphonePro(page: Page) {
   await compareChecks.nth(1).check()
 }
 
-test('encabezado nuevo + estado vacío con CTA del asistente pendiente', async ({ page }) => {
+test('encabezado nuevo + estado vacío con enlace al asistente', async ({ page }) => {
   await page.goto('./comparar')
   await expect(page.getByRole('heading', { name: 'Compara tus opciones', level: 1 })).toBeVisible()
   await expect(
     page.getByText('Consulta solo las diferencias que realmente pueden ayudarte a elegir.'),
   ).toBeVisible()
-  const asistente = page.getByRole('button', { name: /Necesito ayuda para elegir/ })
+  const asistente = page.getByRole('link', { name: /Necesito ayuda para elegir/ })
   await expect(asistente).toBeVisible()
-  await expect(asistente).toBeDisabled()
+  await expect(asistente).toHaveAttribute('href', /\/elige-tu-apple$/)
 })
 
 test('"Solo diferencias" está activo por defecto y "Mostrar todas" pinta más filas', async ({ page }) => {

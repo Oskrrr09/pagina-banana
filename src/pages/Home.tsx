@@ -59,6 +59,30 @@ export function Home() {
         </Container>
       </section>
 
+      {/* 02c — CTA discreto al asistente "Encuentra tu Apple". Sirve como
+             puerta al recorrido guiado sin competir visualmente con los
+             CTAs de compra del hero. */}
+      <section aria-label="Asistente Encuentra tu Apple" className="border-b border-line bg-surface">
+        <Container className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+              ¿No sabes cuál elegir?
+            </p>
+            <h2 className="text-lg font-bold text-ink">Encuentra tu Apple</h2>
+            <p className="text-sm text-muted">
+              Responde unas preguntas y te sugerimos opciones del catálogo. Orientación
+              demostrativa.
+            </p>
+          </div>
+          <Link
+            to="/elige-tu-apple"
+            className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink hover:border-ink/30"
+          >
+            Empezar <Icon name="arrow-right" size={14} aria-hidden="true" />
+          </Link>
+        </Container>
+      </section>
+
       {/* 02b — Bento de destacados (producto estrella + servicios clave) */}
       <Section>
         <SectionHeader eyebrow="Banana Computer" title="Todo lo Apple, cerca de ti" />

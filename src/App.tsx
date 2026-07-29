@@ -17,6 +17,7 @@ import { StoreDetailPage } from './pages/StoreDetailPage'
 import { SupportPage } from './pages/SupportPage'
 import { ServiceTechnicalPage } from './pages/ServiceTechnicalPage'
 import { FavoritesPage } from './pages/FavoritesPage'
+import { AppleFinderPage } from './pages/AppleFinderPage'
 import { NotFound } from './pages/NotFound'
 
 // Rutas del apartado 9.1.
@@ -39,6 +40,7 @@ export function App() {
           <Route path="/soporte" element={<SupportPage />} />
           <Route path="/servicio-tecnico" element={<ServiceTechnicalPage />} />
           <Route path="/favoritos" element={<FavoritesPage />} />
+          <Route path="/elige-tu-apple" element={<AppleFinderPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route element={<CheckoutLayout />}>

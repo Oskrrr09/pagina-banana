@@ -100,6 +100,14 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
 - ✅ Corrección real de contraste (paleta muted / cian utilitaria /
   verde disponibilidad).
 
+**Añadido el 2026-07-29** en `feature/apple-finder-assistant`:
+
+- ✅ Asistente "Encuentra tu Apple" en `/elige-tu-apple` con
+  recorrido determinista (intro → familia → generales opcionales →
+  específicas → resultados). Sin IA real, sin backend, sin
+  persistencia obligatoria. `scoreModel` puro. Accesos desde
+  portada, barra utilitaria, comparador y favoritos.
+
 **Añadido el 2026-07-29** en `feature/comparator-essential`:
 
 - ✅ Rediseño del comparador esencial en `/comparar` inspirado en

@@ -140,15 +140,46 @@ const FIELD_ALIASES: Record<string, string[]> = {
 // una futura integración Banana Computer confirma cifras oficiales, este
 // mapa es el único punto a actualizar.
 
+/**
+ * Metadata de decisión por modelo. Todos los `*Level` son cualitativos
+ * (1 = básico · 2 = intermedio · 3 = avanzado) y sirven al asistente
+ * "Encuentra tu Apple" para ordenar recomendaciones. NO son puntuaciones
+ * oficiales y se muestran siempre etiquetados como demostrativos.
+ *
+ * Los booleanos (`supportsPencil`, `supportsKeyboard`, `hasNoiseCancellation`,
+ * `hasCellular`) reflejan capacidades declaradas del prototipo. `fitType`
+ * describe el ajuste (intraural / circumaural) para AirPods.
+ */
+export type Level = 1 | 2 | 3
+
 export interface ModelDecisionMeta {
   usoRecomendado?: string
   fields?: Record<string, string>
+  strengths?: string[]
+  portabilityLevel?: Level
+  performanceLevel?: Level
+  cameraLevel?: Level
+  batteryLevel?: Level
+  valueLevel?: Level
+  professionalLevel?: Level
+  supportsPencil?: boolean
+  supportsKeyboard?: boolean
+  hasNoiseCancellation?: boolean
+  hasCellular?: boolean
+  fitType?: 'intraural' | 'circumaural'
 }
 
 const MODEL_META: Record<string, ModelDecisionMeta> = {
   // -------------------- iPhone --------------------
   '17-pro-max': {
     usoRecomendado: 'Fotografía profesional y máxima autonomía.',
+    strengths: ['Cámara pro con zoom largo', 'Batería para todo el día', 'Pantalla grande y brillante'],
+    portabilityLevel: 1,
+    performanceLevel: 3,
+    cameraLevel: 3,
+    batteryLevel: 3,
+    valueLevel: 1,
+    professionalLevel: 3,
     fields: {
       Pantalla: 'Super Retina XDR 6,9"',
       Chip: 'A19 Pro',
@@ -164,6 +195,13 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   '17-pro': {
     usoRecomendado: 'Uso pro compacto con cámaras avanzadas.',
+    strengths: ['Cámaras avanzadas en formato compacto', 'A19 Pro potente', 'Buena autonomía'],
+    portabilityLevel: 2,
+    performanceLevel: 3,
+    cameraLevel: 3,
+    batteryLevel: 2,
+    valueLevel: 1,
+    professionalLevel: 3,
     fields: {
       Pantalla: 'Super Retina XDR 6,3"',
       Chip: 'A19 Pro',
@@ -179,6 +217,13 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   air: {
     usoRecomendado: 'Diseño ligero y batería equilibrada para uso diario.',
+    strengths: ['El más ligero de la gama', 'Diseño premium en titanio', 'Chip A19'],
+    portabilityLevel: 3,
+    performanceLevel: 2,
+    cameraLevel: 2,
+    batteryLevel: 2,
+    valueLevel: 2,
+    professionalLevel: 2,
     fields: {
       Pantalla: 'Super Retina XDR 6,5"',
       Chip: 'A19',
@@ -194,6 +239,13 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   '17': {
     usoRecomendado: 'Uso cotidiano con muy buena relación calidad-precio.',
+    strengths: ['Excelente relación calidad-precio', 'Chip A19', 'Pantalla Super Retina XDR'],
+    portabilityLevel: 2,
+    performanceLevel: 2,
+    cameraLevel: 2,
+    batteryLevel: 2,
+    valueLevel: 3,
+    professionalLevel: 1,
     fields: {
       Pantalla: 'Super Retina XDR 6,3"',
       Chip: 'A19',
@@ -211,6 +263,12 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   // -------------------- Mac --------------------
   'macbook-neo': {
     usoRecomendado: 'Portátil ligero para estudio y ofimática.',
+    strengths: ['Precio de entrada', 'Chip Apple', 'Peso contenido'],
+    portabilityLevel: 3,
+    performanceLevel: 1,
+    batteryLevel: 2,
+    valueLevel: 3,
+    professionalLevel: 1,
     fields: {
       Chip: 'Apple M-series',
       'CPU / GPU': '8 núcleos CPU · 8 núcleos GPU',
@@ -225,6 +283,12 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'macbook-air-13-m5': {
     usoRecomendado: 'Portabilidad y uso diario.',
+    strengths: ['Muy ligero', 'M5 eficiente', 'Autonomía alta'],
+    portabilityLevel: 3,
+    performanceLevel: 2,
+    batteryLevel: 3,
+    valueLevel: 2,
+    professionalLevel: 2,
     fields: {
       Chip: 'M5',
       'CPU / GPU': '10 núcleos CPU · 10 núcleos GPU',
@@ -239,6 +303,12 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'macbook-air-15-m4': {
     usoRecomendado: 'Pantalla grande y ligereza para trabajo.',
+    strengths: ['Pantalla 15" ligera', 'Buena autonomía', 'M4 eficiente'],
+    portabilityLevel: 2,
+    performanceLevel: 2,
+    batteryLevel: 3,
+    valueLevel: 2,
+    professionalLevel: 2,
     fields: {
       Chip: 'M4',
       'CPU / GPU': '10 núcleos CPU · 10 núcleos GPU',
@@ -253,6 +323,12 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'macbook-pro-14-m5': {
     usoRecomendado: 'Trabajo creativo exigente y portable.',
+    strengths: ['M5 Pro potente', 'Pantalla mini-LED XDR', 'Buena portabilidad'],
+    portabilityLevel: 2,
+    performanceLevel: 3,
+    batteryLevel: 3,
+    valueLevel: 1,
+    professionalLevel: 3,
     fields: {
       Chip: 'M5 Pro',
       'CPU / GPU': 'Hasta 12 núcleos CPU · 18 núcleos GPU',
@@ -267,6 +343,12 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'macbook-pro-16-m4': {
     usoRecomendado: 'Máxima potencia en formato portátil.',
+    strengths: ['Pantalla 16" XDR', 'M4 Pro potente', 'Autonomía muy larga'],
+    portabilityLevel: 1,
+    performanceLevel: 3,
+    batteryLevel: 3,
+    valueLevel: 1,
+    professionalLevel: 3,
     fields: {
       Chip: 'M4 Pro',
       'CPU / GPU': 'Hasta 14 núcleos CPU · 20 núcleos GPU',
@@ -281,6 +363,11 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'imac-m4': {
     usoRecomendado: 'Ordenador de sobremesa con pantalla integrada.',
+    strengths: ['Todo en uno', 'Pantalla 4,5K integrada', 'Diseño delgado'],
+    portabilityLevel: 1,
+    performanceLevel: 2,
+    valueLevel: 2,
+    professionalLevel: 2,
     fields: {
       Chip: 'M4',
       'CPU / GPU': '8-10 núcleos CPU · 8-10 núcleos GPU',
@@ -295,6 +382,11 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'mac-mini-m4': {
     usoRecomendado: 'Mac compacto para escritorio ampliable.',
+    strengths: ['Muy compacto', 'Precio ajustado para la potencia', 'Ampliable con tu monitor'],
+    portabilityLevel: 1,
+    performanceLevel: 2,
+    valueLevel: 3,
+    professionalLevel: 2,
     fields: {
       Chip: 'M4 / M4 Pro',
       'CPU / GPU': 'Hasta 12 núcleos CPU · 16 núcleos GPU',
@@ -309,6 +401,11 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'mac-studio-m4': {
     usoRecomendado: 'Estudio profesional exigente.',
+    strengths: ['Máxima potencia', 'M4 Max/Ultra', 'Muchos puertos Thunderbolt'],
+    portabilityLevel: 1,
+    performanceLevel: 3,
+    valueLevel: 1,
+    professionalLevel: 3,
     fields: {
       Chip: 'M4 Max / M4 Ultra',
       'CPU / GPU': 'Hasta 32 núcleos CPU · 80 núcleos GPU',
@@ -325,6 +422,14 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   // -------------------- iPad --------------------
   'ipad-pro-11-6gen-2025': {
     usoRecomendado: 'Trabajo creativo y dibujo avanzado.',
+    strengths: ['Pantalla OLED XDR', 'M5 potente', 'Apple Pencil Pro'],
+    portabilityLevel: 3,
+    performanceLevel: 3,
+    batteryLevel: 2,
+    valueLevel: 1,
+    professionalLevel: 3,
+    supportsPencil: true,
+    supportsKeyboard: true,
     fields: {
       Pantalla: 'Ultra Retina XDR OLED 11" o 13"',
       Chip: 'M5',
@@ -338,6 +443,14 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'ipad-air-11-m4-3gen-2026': {
     usoRecomendado: 'Estudio, dibujo y edición ligera.',
+    strengths: ['M4 en formato Air', 'Compatible con Apple Pencil Pro', 'Buena relación calidad-precio'],
+    portabilityLevel: 3,
+    performanceLevel: 2,
+    batteryLevel: 2,
+    valueLevel: 2,
+    professionalLevel: 2,
+    supportsPencil: true,
+    supportsKeyboard: true,
     fields: {
       Pantalla: 'Liquid Retina 11" o 13"',
       Chip: 'M4',
@@ -351,6 +464,14 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'ipad-mini-7-2024': {
     usoRecomendado: 'Portabilidad extrema y lectura.',
+    strengths: ['Muy compacto', 'Ideal para lectura y viajes', 'Chip A17 Pro'],
+    portabilityLevel: 3,
+    performanceLevel: 2,
+    batteryLevel: 2,
+    valueLevel: 2,
+    professionalLevel: 1,
+    supportsPencil: true,
+    supportsKeyboard: false,
     fields: {
       Pantalla: 'Liquid Retina 8,3"',
       Chip: 'A17 Pro',
@@ -364,6 +485,14 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'ipad-11-11gen-2025': {
     usoRecomendado: 'Uso diario y consumo multimedia.',
+    strengths: ['Precio ajustado', 'Buena pantalla', 'Ideal para estudio'],
+    portabilityLevel: 2,
+    performanceLevel: 2,
+    batteryLevel: 2,
+    valueLevel: 3,
+    professionalLevel: 1,
+    supportsPencil: true,
+    supportsKeyboard: true,
     fields: {
       Pantalla: 'Liquid Retina 11"',
       Chip: 'A16',
@@ -379,6 +508,13 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   // -------------------- Apple Watch --------------------
   'watch-ultra-3-2025': {
     usoRecomendado: 'Deporte extremo, buceo y aventura con máxima autonomía.',
+    strengths: ['42 h de autonomía', 'Titanio y WR100', 'Sensor de profundidad'],
+    portabilityLevel: 3,
+    performanceLevel: 3,
+    batteryLevel: 3,
+    valueLevel: 1,
+    professionalLevel: 3,
+    hasCellular: true,
     fields: {
       'Tamaño de caja': '49 mm',
       Materiales: 'Titanio',
@@ -391,6 +527,13 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'watch-serie-11-gps': {
     usoRecomendado: 'Salud, deporte y uso cotidiano.',
+    strengths: ['ECG y oxígeno en sangre', 'Detección de apnea del sueño', 'Diseño ligero'],
+    portabilityLevel: 3,
+    performanceLevel: 3,
+    batteryLevel: 2,
+    valueLevel: 2,
+    professionalLevel: 2,
+    hasCellular: false,
     fields: {
       'Tamaño de caja': '42 o 46 mm',
       Materiales: 'Aluminio o titanio',
@@ -403,6 +546,13 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'watch-series-11': {
     usoRecomendado: 'Salud, deporte y uso cotidiano.',
+    strengths: ['ECG y oxígeno en sangre', 'Detección de apnea del sueño', 'Diseño ligero'],
+    portabilityLevel: 3,
+    performanceLevel: 3,
+    batteryLevel: 2,
+    valueLevel: 2,
+    professionalLevel: 2,
+    hasCellular: false,
     fields: {
       'Tamaño de caja': '42 o 46 mm',
       Materiales: 'Aluminio o titanio',
@@ -415,6 +565,13 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'watch-serie-se-3g-gps': {
     usoRecomendado: 'Iniciación al Apple Watch a mejor precio.',
+    strengths: ['Precio de entrada', 'Sensor de frecuencia cardiaca', 'Detección de caídas'],
+    portabilityLevel: 3,
+    performanceLevel: 2,
+    batteryLevel: 2,
+    valueLevel: 3,
+    professionalLevel: 1,
+    hasCellular: false,
     fields: {
       'Tamaño de caja': '40 o 44 mm',
       Materiales: 'Aluminio',
@@ -427,6 +584,13 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'watch-se-3': {
     usoRecomendado: 'Iniciación al Apple Watch a mejor precio.',
+    strengths: ['Precio de entrada', 'Sensor de frecuencia cardiaca', 'Detección de caídas'],
+    portabilityLevel: 3,
+    performanceLevel: 2,
+    batteryLevel: 2,
+    valueLevel: 3,
+    professionalLevel: 1,
+    hasCellular: false,
     fields: {
       'Tamaño de caja': '40 o 44 mm',
       Materiales: 'Aluminio',
@@ -441,6 +605,14 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   // -------------------- AirPods --------------------
   'airpods-pro-3': {
     usoRecomendado: 'Cancelación de ruido para viajes y trabajo.',
+    strengths: ['ANC adaptativa', 'IP54 resistencia', 'Ajuste intraural'],
+    portabilityLevel: 3,
+    performanceLevel: 3,
+    batteryLevel: 2,
+    valueLevel: 2,
+    professionalLevel: 3,
+    hasNoiseCancellation: true,
+    fitType: 'intraural',
     fields: {
       'Cancelación de ruido': 'Activa adaptativa · modo Transparencia',
       Chip: 'H2',
@@ -453,6 +625,14 @@ const MODEL_META: Record<string, ModelDecisionMeta> = {
   },
   'airpods-max': {
     usoRecomendado: 'Audio premium para casa y música.',
+    strengths: ['Audio de alta calidad', 'Ajuste circumaural cómodo', 'Digital Crown de precisión'],
+    portabilityLevel: 1,
+    performanceLevel: 3,
+    batteryLevel: 3,
+    valueLevel: 1,
+    professionalLevel: 2,
+    hasNoiseCancellation: true,
+    fitType: 'circumaural',
     fields: {
       'Cancelación de ruido': 'Activa · modo Transparencia',
       Chip: 'H1',
@@ -682,4 +862,443 @@ function formatEuros(value: number): string {
     currency: 'EUR',
     maximumFractionDigits: 0,
   }).format(value)
+}
+
+// =======================================================================
+// Asistente "Encuentra tu Apple"
+// =======================================================================
+//
+// Preguntas por familia + función `scoreModel` para el asistente.
+// Todo es determinista: las mismas respuestas producen siempre las mismas
+// recomendaciones. No usa aleatoriedad ni backend.
+
+export interface FinderOption {
+  value: string
+  label: string
+}
+
+export interface FinderQuestion {
+  id: string
+  prompt: string
+  help?: string
+  multi?: boolean
+  options: FinderOption[]
+}
+
+/** Presupuesto orientativo. `null` en `budget` = sin límite. */
+export const BUDGET_OPTIONS: readonly { value: string; label: string; max: number | null }[] = [
+  { value: 'entrada', label: 'Hasta 500 €', max: 500 },
+  { value: 'medio', label: 'Hasta 1.000 €', max: 1000 },
+  { value: 'alto', label: 'Hasta 1.500 €', max: 1500 },
+  { value: 'sin-limite', label: 'Sin límite', max: null },
+]
+
+const BUDGET_QUESTION: FinderQuestion = {
+  id: 'budget',
+  prompt: '¿Qué presupuesto orientativo tienes?',
+  help: 'Recomendaciones demostrativas: los precios reales pueden variar en Banana Computer.',
+  options: BUDGET_OPTIONS.map(({ value, label }) => ({ value, label })),
+}
+
+/** Preguntas específicas por familia (4-6 relevantes). */
+export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
+  iphone: [
+    {
+      id: 'use',
+      prompt: '¿Para qué usas más el iPhone?',
+      options: [
+        { value: 'diario', label: 'Uso cotidiano' },
+        { value: 'foto', label: 'Fotografía y vídeo' },
+        { value: 'trabajo', label: 'Trabajo' },
+        { value: 'juegos', label: 'Juegos' },
+        { value: 'redes', label: 'Redes sociales' },
+      ],
+    },
+    {
+      id: 'size',
+      prompt: '¿Qué tamaño prefieres?',
+      options: [
+        { value: 'compacto', label: 'Compacto' },
+        { value: 'equilibrado', label: 'Equilibrado' },
+        { value: 'grande', label: 'Grande' },
+      ],
+    },
+    {
+      id: 'priority',
+      prompt: '¿Qué es lo que más te importa?',
+      options: [
+        { value: 'camera', label: 'Cámara' },
+        { value: 'battery', label: 'Batería' },
+        { value: 'performance', label: 'Potencia' },
+        { value: 'portability', label: 'Ligereza' },
+        { value: 'value', label: 'Precio' },
+      ],
+    },
+    BUDGET_QUESTION,
+  ],
+  mac: [
+    {
+      id: 'use',
+      prompt: '¿Cuál es el uso principal del Mac?',
+      options: [
+        { value: 'estudio', label: 'Estudio y ofimática' },
+        { value: 'programacion', label: 'Programación' },
+        { value: 'diseno', label: 'Diseño' },
+        { value: 'foto-video', label: 'Fotografía y vídeo' },
+        { value: 'pro', label: 'Trabajo profesional exigente' },
+      ],
+    },
+    {
+      id: 'form',
+      prompt: '¿Prefieres portátil o sobremesa?',
+      options: [
+        { value: 'portable', label: 'Portátil' },
+        { value: 'desktop', label: 'Sobremesa' },
+        { value: 'flex', label: 'Me da igual' },
+      ],
+    },
+    {
+      id: 'priority',
+      prompt: '¿Qué prima?',
+      options: [
+        { value: 'portability', label: 'Ligereza y batería' },
+        { value: 'performance', label: 'Potencia' },
+        { value: 'value', label: 'Precio' },
+      ],
+    },
+    BUDGET_QUESTION,
+  ],
+  ipad: [
+    {
+      id: 'use',
+      prompt: '¿Para qué lo vas a usar principalmente?',
+      options: [
+        { value: 'estudio', label: 'Estudio' },
+        { value: 'multimedia', label: 'Consumo multimedia' },
+        { value: 'dibujo', label: 'Dibujo' },
+        { value: 'trabajo', label: 'Trabajo' },
+        { value: 'edicion', label: 'Edición' },
+      ],
+    },
+    {
+      id: 'pencil',
+      prompt: '¿Vas a usar Apple Pencil?',
+      options: [
+        { value: 'si', label: 'Sí, Apple Pencil Pro' },
+        { value: 'quizas', label: 'Quizás' },
+        { value: 'no', label: 'No lo necesito' },
+      ],
+    },
+    {
+      id: 'keyboard',
+      prompt: '¿Y teclado?',
+      options: [
+        { value: 'si', label: 'Sí, Magic Keyboard' },
+        { value: 'quizas', label: 'Quizás' },
+        { value: 'no', label: 'No' },
+      ],
+    },
+    BUDGET_QUESTION,
+  ],
+  'apple-watch': [
+    {
+      id: 'use',
+      prompt: '¿Para qué lo vas a usar?',
+      options: [
+        { value: 'salud', label: 'Salud' },
+        { value: 'deporte', label: 'Deporte' },
+        { value: 'diario', label: 'Uso cotidiano' },
+        { value: 'aventura', label: 'Aventura y deporte extremo' },
+      ],
+    },
+    {
+      id: 'cellular',
+      prompt: '¿Necesitas conexión sin llevar el iPhone?',
+      options: [
+        { value: 'si', label: 'Sí, quiero Cellular' },
+        { value: 'no', label: 'No, con GPS me vale' },
+      ],
+    },
+    {
+      id: 'priority',
+      prompt: '¿Qué prima?',
+      options: [
+        { value: 'battery', label: 'Autonomía' },
+        { value: 'performance', label: 'Sensores y salud' },
+        { value: 'value', label: 'Precio' },
+      ],
+    },
+    BUDGET_QUESTION,
+  ],
+  airpods: [
+    {
+      id: 'use',
+      prompt: '¿Cuál es el uso principal?',
+      options: [
+        { value: 'musica', label: 'Música' },
+        { value: 'llamadas', label: 'Llamadas' },
+        { value: 'viajes', label: 'Viajes y trabajo (ANC)' },
+        { value: 'deporte', label: 'Deporte' },
+      ],
+    },
+    {
+      id: 'fit',
+      prompt: '¿Qué ajuste prefieres?',
+      options: [
+        { value: 'intraural', label: 'Intraurales (in-ear)' },
+        { value: 'circumaural', label: 'De diadema (over-ear)' },
+        { value: 'flex', label: 'Me da igual' },
+      ],
+    },
+    BUDGET_QUESTION,
+  ],
+}
+
+/** Preguntas generales cuando el usuario elige "No lo tengo claro". */
+export const GENERAL_QUESTIONS: readonly FinderQuestion[] = [
+  {
+    id: 'use',
+    prompt: '¿Para qué lo utilizarás principalmente?',
+    options: [
+      { value: 'trabajo', label: 'Trabajo' },
+      { value: 'estudio', label: 'Estudio' },
+      { value: 'foto', label: 'Fotografía y vídeo' },
+      { value: 'audio', label: 'Escuchar música o podcasts' },
+      { value: 'salud', label: 'Salud y deporte' },
+      { value: 'diario', label: 'Uso cotidiano' },
+    ],
+  },
+  {
+    id: 'priority',
+    prompt: '¿Qué valoras más?',
+    options: [
+      { value: 'portability', label: 'Portabilidad' },
+      { value: 'performance', label: 'Potencia' },
+      { value: 'camera', label: 'Cámara' },
+      { value: 'value', label: 'Precio' },
+    ],
+  },
+  BUDGET_QUESTION,
+]
+
+/** Mapa uso general → familia sugerida. */
+const GENERAL_USE_TO_FAMILY: Record<string, FamilySlug> = {
+  trabajo: 'mac',
+  estudio: 'ipad',
+  foto: 'iphone',
+  audio: 'airpods',
+  salud: 'apple-watch',
+  diario: 'iphone',
+}
+
+export function inferFamilyFromGeneral(answers: Record<string, string>): FamilySlug {
+  const use = answers.use
+  return (use && GENERAL_USE_TO_FAMILY[use]) || 'iphone'
+}
+
+/** Resultado del scoring: puntuación + razones + posibles compromisos. */
+export interface ScoreResult {
+  score: number
+  positives: string[]
+  caveats: string[]
+}
+
+/**
+ * Puntúa un modelo frente a un conjunto de respuestas. Determinista: mismos
+ * inputs → mismo output. No usa aleatoriedad. La escala de score es interna
+ * (relativa a los demás modelos de la misma familia); las razones y los
+ * compromisos son cadenas orientadas al usuario.
+ */
+export function scoreModel(
+  model: Model,
+  answers: Record<string, string>,
+): ScoreResult {
+  const meta = MODEL_META[model.slug] ?? {}
+  let score = 0
+  const positives: string[] = []
+  const caveats: string[] = []
+
+  const priority = answers.priority
+  const use = answers.use
+
+  // --- Prioridad genérica ---
+  if (priority === 'camera' && meta.cameraLevel) {
+    score += meta.cameraLevel * 3
+    if (meta.cameraLevel === 3) positives.push('Cámara destacada')
+  }
+  if (priority === 'battery' && meta.batteryLevel) {
+    score += meta.batteryLevel * 3
+    if (meta.batteryLevel === 3) positives.push('Muy buena autonomía')
+  }
+  if (priority === 'performance' && meta.performanceLevel) {
+    score += meta.performanceLevel * 3
+    if (meta.performanceLevel === 3) positives.push('Máxima potencia disponible')
+  }
+  if (priority === 'portability' && meta.portabilityLevel) {
+    score += meta.portabilityLevel * 3
+    if (meta.portabilityLevel === 3) positives.push('Muy portátil')
+  }
+  if (priority === 'value' && meta.valueLevel) {
+    score += meta.valueLevel * 3
+    if (meta.valueLevel === 3) positives.push('Excelente relación calidad-precio')
+  }
+
+  // --- Uso ---
+  if (use === 'foto' && meta.cameraLevel) score += meta.cameraLevel * 2
+  if (use === 'foto-video' && meta.performanceLevel) score += meta.performanceLevel * 2
+  if (use === 'juegos' && meta.performanceLevel) score += meta.performanceLevel * 2
+  if (use === 'trabajo' && meta.professionalLevel) score += meta.professionalLevel * 2
+  if (use === 'pro' && meta.professionalLevel) score += meta.professionalLevel * 3
+  if (use === 'estudio' && meta.valueLevel) score += meta.valueLevel * 2
+  if (use === 'diario' && meta.valueLevel) score += meta.valueLevel * 1
+  if (use === 'diseno' && meta.performanceLevel) score += meta.performanceLevel * 2
+  if (use === 'programacion' && meta.performanceLevel) score += meta.performanceLevel * 2
+  if (use === 'aventura' && meta.batteryLevel) score += meta.batteryLevel * 3
+  if (use === 'deporte' && meta.portabilityLevel) score += meta.portabilityLevel * 2
+  if (use === 'salud' && meta.performanceLevel) score += meta.performanceLevel * 2
+  if (use === 'edicion' && meta.performanceLevel) score += meta.performanceLevel * 2
+  if (use === 'viajes' && meta.hasNoiseCancellation) {
+    score += 3
+    positives.push('Cancelación de ruido para viajes')
+  }
+
+  // --- iPhone: tamaño ---
+  if (answers.size) {
+    const large = ['17-pro-max']
+    const compact = ['air', '17-pro']
+    const eq = ['17', '17-pro']
+    if (answers.size === 'grande' && large.includes(model.slug)) score += 4
+    if (answers.size === 'compacto' && compact.includes(model.slug)) score += 3
+    if (answers.size === 'equilibrado' && eq.includes(model.slug)) score += 3
+  }
+
+  // --- Mac: forma ---
+  if (answers.form) {
+    const desktop = ['imac-m4', 'mac-mini-m4', 'mac-studio-m4']
+    const portable = [
+      'macbook-neo',
+      'macbook-air-13-m5',
+      'macbook-air-15-m4',
+      'macbook-pro-14-m5',
+      'macbook-pro-16-m4',
+    ]
+    if (answers.form === 'desktop' && desktop.includes(model.slug)) score += 4
+    if (answers.form === 'portable' && portable.includes(model.slug)) score += 4
+  }
+
+  // --- iPad: pencil / keyboard ---
+  if (answers.pencil === 'si' && meta.supportsPencil) {
+    score += 3
+    positives.push('Compatible con Apple Pencil')
+  } else if (answers.pencil === 'si' && !meta.supportsPencil) {
+    caveats.push('No incluye compatibilidad completa con Apple Pencil Pro')
+  }
+  if (answers.keyboard === 'si' && meta.supportsKeyboard) {
+    score += 3
+    positives.push('Compatible con Magic Keyboard')
+  } else if (answers.keyboard === 'si' && meta.supportsKeyboard === false) {
+    caveats.push('No es compatible con Magic Keyboard')
+  }
+
+  // --- Watch: cellular ---
+  if (answers.cellular === 'si') {
+    if (meta.hasCellular) {
+      score += 4
+      positives.push('Modelo con Cellular incluido')
+    } else {
+      caveats.push('Requiere elegir variante GPS + Cellular')
+    }
+  }
+
+  // --- AirPods: ajuste ---
+  if (answers.fit && meta.fitType) {
+    if (answers.fit === meta.fitType) {
+      score += 4
+      positives.push(
+        meta.fitType === 'intraural' ? 'Ajuste intraural cómodo' : 'Ajuste circumaural cómodo',
+      )
+    } else if (answers.fit !== 'flex') {
+      score -= 2
+    }
+  }
+
+  // --- Fortalezas declaradas ---
+  if (meta.strengths && positives.length < 3) {
+    for (const s of meta.strengths) {
+      if (positives.length >= 3) break
+      if (!positives.includes(s)) positives.push(s)
+    }
+  }
+
+  // --- Presupuesto ---
+  const budget = answers.budget ? BUDGET_OPTIONS.find((b) => b.value === answers.budget) : null
+  if (budget?.max != null) {
+    const price = model.fromPrice
+    if (price > budget.max) {
+      score -= 5
+      caveats.push(`Precio orientativo por encima del presupuesto (${formatEuros(budget.max)}).`)
+    } else if (price <= budget.max) {
+      score += 1
+    }
+  }
+
+  return {
+    score,
+    positives: dedupe(positives).slice(0, 3),
+    caveats: dedupe(caveats).slice(0, 2),
+  }
+}
+
+function dedupe<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr))
+}
+
+/** Resultado ordenado con etiquetas: recomendación, más económico, más avanzado. */
+export interface FinderResult {
+  model: Model
+  role: 'recommendation' | 'cheaper' | 'advanced'
+  score: number
+  positives: string[]
+  caveats: string[]
+}
+
+export function computeFinderResults(
+  models: Model[],
+  answers: Record<string, string>,
+): FinderResult[] {
+  const scored = models
+    .map((model) => ({ model, ...scoreModel(model, answers) }))
+    // Desempate estable: score desc → fromPrice asc → slug asc.
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      if (a.model.fromPrice !== b.model.fromPrice) return a.model.fromPrice - b.model.fromPrice
+      return a.model.slug.localeCompare(b.model.slug)
+    })
+
+  const results: FinderResult[] = []
+  if (scored.length === 0) return results
+
+  results.push({ ...scored[0], role: 'recommendation' })
+  const usedSlugs = new Set([scored[0].model.slug])
+
+  // Más económico entre los que puntúan ≥ 0 y no son el ya elegido.
+  const cheaper = scored
+    .filter((s) => !usedSlugs.has(s.model.slug))
+    .slice()
+    .sort((a, b) => a.model.fromPrice - b.model.fromPrice)[0]
+  if (cheaper) {
+    results.push({ ...cheaper, role: 'cheaper' })
+    usedSlugs.add(cheaper.model.slug)
+  }
+
+  // Más avanzado: mayor precio entre los restantes.
+  const advanced = scored
+    .filter((s) => !usedSlugs.has(s.model.slug))
+    .slice()
+    .sort((a, b) => b.model.fromPrice - a.model.fromPrice)[0]
+  if (advanced) {
+    results.push({ ...advanced, role: 'advanced' })
+  }
+
+  return results
 }

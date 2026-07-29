@@ -21,9 +21,12 @@ export function FavoritesPage() {
             <Icon name="heart" size={26} />
           </div>
           <p className="mt-4 text-muted">Aún no has guardado ningún producto.</p>
-          <ButtonLink to="/iphone" className="mt-6">
-            Explorar iPhone
-          </ButtonLink>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <ButtonLink to="/iphone">Explorar iPhone</ButtonLink>
+            <ButtonLink to="/elige-tu-apple" variant="secondary">
+              ¿No sabes cuál elegir? Encuentra tu Apple
+            </ButtonLink>
+          </div>
         </div>
       ) : (
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

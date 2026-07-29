@@ -68,6 +68,40 @@ Rama `chore/auditoria-web-oficial-banana`.
   componentes ni pruebas existentes. `npm run build` y
   `npm run test:e2e` siguen en verde (21 pruebas).
 
+## 2026-07-29 — Asistente "Encuentra tu Apple" (PR2 del bloque diferencial)
+
+Rama `feature/apple-finder-assistant`.
+
+- Amplía `src/data/productDecisionData.ts`:
+  * `ModelDecisionMeta` gana niveles cualitativos (1-3):
+    `portabilityLevel`, `performanceLevel`, `cameraLevel`,
+    `batteryLevel`, `valueLevel`, `professionalLevel` +
+    banderas `supportsPencil`, `supportsKeyboard`,
+    `hasNoiseCancellation`, `hasCellular`, `fitType` y
+    `strengths` como orientación demostrativa.
+  * `FINDER_QUESTIONS` por familia (3-4 preguntas + presupuesto),
+    `GENERAL_QUESTIONS` para el flujo "No lo tengo claro" y
+    `inferFamilyFromGeneral()` para mapear uso → familia.
+  * `scoreModel(model, answers)` puro y determinista con
+    razones positivas y posibles compromisos. Desempate
+    estable: score desc → precio asc → slug asc.
+  * `computeFinderResults()` produce 3 resultados etiquetados
+    ("Nuestra recomendación", "Alternativa más económica",
+    "Alternativa más avanzada"), sin duplicados.
+- Nueva página `src/pages/AppleFinderPage.tsx` en
+  `/elige-tu-apple` con estado 100 % React, radiogroups
+  accesibles, "Anterior/Siguiente", "Empezar de nuevo" y
+  "Cambiar respuestas".
+- Accesos:
+  * Nueva entrada "Encuentra tu Apple" en `utilityLinks`.
+  * Franja discreta en la portada.
+  * CTA activo en el estado vacío del comparador.
+  * CTA secundario en el estado vacío de favoritos.
+- Suite Playwright: nueva `tests/e2e/apple-finder.spec.ts` (8
+  pruebas). Actualizado el test del comparador para el CTA
+  activo. Total: 73 → 82 pruebas.
+- Sin cambios en seguro, checkout, catálogo ni scripts privados.
+
 ## 2026-07-29 — Comparador esencial (PR1 del bloque diferencial)
 
 Rama `feature/comparator-essential`.

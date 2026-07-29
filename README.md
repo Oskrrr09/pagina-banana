@@ -101,6 +101,7 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 | `/:family/:model/:variant` | Ficha con selectores de color, capacidad y (según modelo) tamaño |
 | `/buscar?q=…` | Buscador sincronizado con la URL |
 | `/comparar` | Comparador esencial (hasta 3 productos, misma familia) con "Solo diferencias" y resumen orientativo |
+| `/elige-tu-apple` | Asistente "Encuentra tu Apple" con recomendación determinista basada en las respuestas del usuario |
 | `/carrito` | Carrito con selección de entrega compartida con checkout |
 | `/checkout/1` | Datos y entrega/recogida (obligatorio antes del 2) |
 | `/checkout/2` | Pago y extras (crea el pedido demo al confirmar) |
@@ -127,6 +128,29 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
   compartido.
 
 Todo esto es demostrativo: no hay backend, ni pagos, ni emails.
+
+## Asistente "Encuentra tu Apple" (`/elige-tu-apple`)
+
+- Recorrido guiado con estado 100 % en React: intro → pregunta de
+  familia → (opcional) preguntas generales cuando el usuario elige
+  "No lo tengo claro" → 3-4 preguntas específicas por familia →
+  hasta 3 resultados etiquetados como *Nuestra recomendación*,
+  *Alternativa más económica* y *Alternativa más avanzada*.
+- **No usa IA real ni backend.** `scoreModel` es una función pura
+  determinista que combina las respuestas con la metadata de
+  `MODEL_META` (`portabilityLevel`, `performanceLevel`,
+  `cameraLevel`, `batteryLevel`, `valueLevel`, `professionalLevel`,
+  `supportsPencil`, `supportsKeyboard`, `hasNoiseCancellation`,
+  `hasCellular`, `fitType`) — todos declarados como orientación
+  demostrativa del prototipo.
+- Presupuesto orientativo: hasta 500 €, 1.000 €, 1.500 € o sin
+  límite. Productos por encima del presupuesto quedan penalizados
+  pero aparecen como *Alternativa más avanzada* con una advertencia.
+- Cada resultado ofrece "Ver producto", añadir a favoritos, añadir
+  al comparador y "Comparar estas opciones" (envía los 3 resultados
+  a `/comparar` respetando el máximo de 3 y misma familia).
+- Accesos: barra utilitaria superior, franja discreta en la portada,
+  estado vacío del comparador y estado vacío de favoritos.
 
 ## Comparador esencial (`/comparar`)
 
@@ -296,7 +320,7 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (73 pruebas, medido con `npm run test:e2e` — 71 en
+Suites actuales (82 pruebas, medido con `npm run test:e2e` — 80 en
 `chromium` + 2 en `mobile` etiquetadas `@mobile`):
 
 - `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que
@@ -321,6 +345,13 @@ Suites actuales (73 pruebas, medido con `npm run test:e2e` — 71 en
   los botones "Quitar". **No se preselecciona nada en `localStorage`.**
 - `tests/e2e/search.spec.ts` — sincronización del input con `?q=` y
   destinos reales de los tiles de accesorios.
+- `tests/e2e/apple-finder.spec.ts` — asistente "Encuentra tu Apple":
+  acceso desde portada, flujo iPhone completo (4 preguntas + resultados
+  + reiniciar), imposibilidad de avanzar sin respuesta, "Anterior",
+  "No lo tengo claro" (preguntas generales → familia inferida →
+  preguntas específicas), resultado determinista (mismas respuestas →
+  mismos productos), envío al comparador con "Comparar estas opciones",
+  sin scroll horizontal a 375 px y axe limpio.
 - `tests/e2e/comparator.spec.ts` — rediseño del comparador esencial:
   encabezado nuevo ("Compara tus opciones"), estado vacío con CTA del
   asistente pendiente, "Solo diferencias" activo por defecto vs
