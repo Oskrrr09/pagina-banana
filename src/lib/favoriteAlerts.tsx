@@ -122,17 +122,11 @@ export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
 
   const simulateArrival = useCallback(
     (productId: string, productName: string) => {
-      // Buscamos la alerta actual dentro del propio setter para evitar
-      // closures obsoletas: si no existe, no hacemos nada.
-      let currentAlert: FavoriteAlert | null = null
-      setAlerts((prev) => {
-        currentAlert = prev.find((a) => a.productId === productId) ?? null
-        return prev
-      })
-      if (!currentAlert) return
+      const alert = alerts.find((a) => a.productId === productId)
+      if (!alert) return
       // Efecto secundario en el inventario en memoria: marcamos disponible.
       setInventoryOverride(
-        currentAlert.storeSlug,
+        alert.storeSlug,
         productId.split('/')[1] ?? productId,
         'disponible',
       )
@@ -140,7 +134,7 @@ export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
       const notification: AlertNotification = {
         id: `${Date.now()}-${notificationCounter}`,
         productId,
-        storeSlug: currentAlert.storeSlug,
+        storeSlug: alert.storeSlug,
         state: 'disponible',
         message: `Simulación: ${productName} figura como disponible en la tienda seleccionada.`,
         createdAt: new Date().toISOString(),
@@ -148,7 +142,7 @@ export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
       }
       setNotifications((prev) => [notification, ...prev])
     },
-    [],
+    [alerts],
   )
 
   const markRead = useCallback((notificationId: string) => {
