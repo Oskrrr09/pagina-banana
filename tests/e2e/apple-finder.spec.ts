@@ -304,6 +304,149 @@ test('desempate NO alfabético: para trabajo AirPods no desplaza a Mac aunque em
   expect(names).not.toContain('AirPods')
 })
 
+// ------------------------- casos límite -----------------------------------
+
+test('workType se limpia al cambiar el uso a un valor distinto de Trabajo', async ({ page }) => {
+  // Flujo: Trabajo → programación (workType) → resumen → cambiar uso a
+  // Estudio. El resumen no debe conservar la pregunta ni el valor de
+  // workType.
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Trabajo',
+    productRole: 'Un equipo principal para realizar mis tareas.',
+    workType: 'Programación o aplicaciones de escritorio.',
+    priority: 'Potencia',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  // Confirma familia principal (Mac) para llegar al flujo completo.
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await primary.getByRole('button', { name: /Continuar con esta categoría/ }).click()
+  // Responder las preguntas específicas de Mac.
+  await answerAndNext(page, 'Estudio y ofimática')
+  await answerAndNext(page, 'Portátil (imprescindible)')
+  await answerAndNext(page, 'Ligereza y batería', /Continuar|Siguiente/)
+  await page.getByRole('radio', { name: 'Sin límite' }).click()
+  await page.getByRole('button', { name: /^Siguiente/ }).click()
+  await page.getByRole('radio', { name: 'Solo es una referencia' }).click()
+  await page.getByRole('button', { name: /Continuar|Siguiente/ }).click()
+  await expect(page.getByRole('heading', { name: 'Esto es lo que buscas' })).toBeVisible()
+  // El resumen antes de editar contiene el tipo de trabajo.
+  await expect(page.getByText('Programación o aplicaciones de escritorio.')).toBeVisible()
+  // Cambiamos el uso a Estudio.
+  await page
+    .getByRole('button', { name: /Cambiar: ¿Para qué lo utilizarás principalmente\?/ })
+    .click()
+  await page.getByRole('radio', { name: 'Estudio' }).click()
+  // El flujo general para "Estudio" tiene 4 preguntas (use, productRole,
+  // priority, portability — sin workType). Avanzamos hasta llegar al
+  // family-confirm. Cada respuesta previa se conserva.
+  for (let i = 0; i < 4; i++) {
+    await page.getByRole('button', { name: /Continuar|Siguiente/ }).first().click()
+  }
+  // Ha vuelto a la pantalla de confirmación de familia (Estudio → iPad/Mac).
+  await expect(
+    page.getByRole('heading', {
+      name: /Por lo que nos cuentas, creemos que/,
+    }),
+  ).toBeVisible()
+})
+
+test('SummaryStep no muestra "¿Qué tipo de trabajo?" cuando el uso no es Trabajo', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  // Con Estudio + primary + Portabilidad, la primera familia es iPad.
+  await answerGeneralFlow(page, {
+    use: 'Estudio',
+    productRole: 'Un equipo principal para realizar mis tareas.',
+    priority: 'Portabilidad',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await primary.getByRole('button', { name: /Continuar con esta categoría/ }).click()
+  // Responder específicas de iPad.
+  await answerAndNext(page, 'Estudio')
+  await answerAndNext(page, 'Sí (imprescindible)')
+  await answerAndNext(page, 'Sí (imprescindible)', /Continuar|Siguiente/)
+  await page.getByRole('radio', { name: 'Sin límite' }).click()
+  await page.getByRole('button', { name: /^Siguiente/ }).click()
+  await page.getByRole('radio', { name: 'Solo es una referencia' }).click()
+  await page.getByRole('button', { name: /Continuar|Siguiente/ }).click()
+  await expect(page.getByRole('heading', { name: 'Esto es lo que buscas' })).toBeVisible()
+  // No hay fila de tipo de trabajo.
+  await expect(page.getByText('¿Qué tipo de trabajo realizarás principalmente?')).toHaveCount(0)
+  await expect(page.getByText('Programación o aplicaciones de escritorio.')).toHaveCount(0)
+})
+
+test('Fotografía + complemento muestra estado sin coincidencias (sin recomendaciones)', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Fotografía y vídeo',
+    productRole: 'Un complemento, como auriculares o reloj.',
+    priority: 'Cámara',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  await expect(
+    page.getByRole('heading', { name: 'No encontramos una categoría que encaje con todo' }),
+  ).toBeVisible()
+  await expect(
+    page.getByText(/No encontramos una categoría de accesorio fotográfico/),
+  ).toBeVisible()
+  // No hay recomendación principal ni tarjetas candidatas.
+  await expect(page.getByText('Recomendación principal')).toHaveCount(0)
+  await expect(page.getByText('Segunda posibilidad')).toHaveCount(0)
+  // Los CTA de revisar y ver todas están presentes.
+  await expect(page.getByRole('button', { name: /Revisar respuestas/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ver todas las categorías' })).toBeVisible()
+})
+
+test('Revisar respuestas: conserva respuestas y permite cambiar el rol para volver a tener candidatas', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Fotografía y vídeo',
+    productRole: 'Un complemento, como auriculares o reloj.',
+    priority: 'Cámara',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  await page.getByRole('button', { name: /Revisar respuestas/ }).click()
+  // Estamos de vuelta en la pregunta de productRole con "complemento" marcado.
+  await expect(page.getByText('¿Qué tipo de producto necesitas?')).toBeVisible()
+  await expect(
+    page.getByRole('radio', { name: 'Un complemento, como auriculares o reloj.' }),
+  ).toHaveAttribute('aria-checked', 'true')
+  // Cambiamos a "Un dispositivo móvil...".
+  await page.getByRole('radio', { name: 'Un dispositivo móvil para llevar siempre conmigo.' }).click()
+  // Continuamos el flujo hasta llegar de nuevo a la confirmación de familia.
+  for (let i = 0; i < 3; i++) {
+    await page.getByRole('button', { name: /Continuar|Siguiente/ }).first().click()
+  }
+  // Con foto + mobile SÍ hay familias válidas (iPhone al menos).
+  await expect(page.getByText('Recomendación principal')).toBeVisible()
+})
+
+test('Ver todas las categorías desde estado sin coincidencias abre el selector manual', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Fotografía y vídeo',
+    productRole: 'Un complemento, como auriculares o reloj.',
+    priority: 'Cámara',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  await page.getByRole('button', { name: 'Ver todas las categorías' }).click()
+  await expect(
+    page.getByRole('heading', { name: '¿Qué producto estás buscando?' }),
+  ).toBeVisible()
+  // Ninguna familia está pre-seleccionada (todas los radios aria-checked=false).
+  const radios = page.getByRole('radio')
+  const total = await radios.count()
+  for (let i = 0; i < total; i++) {
+    await expect(radios.nth(i)).toHaveAttribute('aria-checked', 'false')
+  }
+})
+
 // ---------------------------- filtros duros --------------------------------
 
 test('Mac portátil estricto: nunca devuelve iMac, Mac mini ni Mac Studio', async ({ page }) => {

@@ -8,7 +8,45 @@ actualizado: 2026-07-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-29 — Ranking de familias del recomendador (PR pendiente)
+## 2026-07-29 — Casos límite del recomendador (PR pendiente)
+
+Rama `fix/finder-edge-cases-cleanup`.
+
+- **`workType` se limpia automáticamente** cuando `general.use` deja de ser
+  "trabajo". `setGeneral` retira la clave del objeto (no la deja como
+  `undefined`) para que ni el resumen ni el motor de ranking la vean como
+  respuesta activa.
+- **`SummaryStep` solo muestra preguntas aplicables**. Las filas
+  generales se construyen a partir de `getGeneralQuestionFlow(general)`,
+  respetando el orden real del recorrido y ocultando filas sin respuesta.
+- **Fotografía + complemento** ya no recomienda nada. `isFamilyEligibleForIntent`
+  devuelve `false` para las cinco familias cuando `use === 'foto'` y
+  `role === 'accessory'`, porque el prototipo no tiene una categoría de
+  accesorios fotográficos.
+- **Sin fallback a iPhone**. Cuando `computeFamilyCandidates` devuelve
+  `[]`, ya no se inyecta `[{ family: 'iphone', score: 0, reasons: [] }]`.
+- **Estado sin coincidencias** en `FamilyConfirmStep` con título "No
+  encontramos una categoría que encaje con todo" (mensaje específico
+  para fotografía+complemento), acciones "Revisar respuestas" (vuelve a
+  `general.productRole`) y "Ver todas las categorías" (selector manual).
+  `aria-live="polite"`.
+- **Soporte 0/1/2 candidatas**: con una sola candidata se renderiza una
+  única tarjeta como "Recomendación principal", sin placeholder.
+- **Código muerto retirado**: `FAMILY_ROLE_TAGS` y su `void` inalcanzable
+  tras `return`.
+- **Docs**: PRs #20, #21 y #22 ya no aparecen como "PR pendiente".
+- **Tests**: 5 nuevos escenarios en `apple-finder.spec.ts`: limpieza de
+  workType al cambiar de uso; SummaryStep no muestra workType; foto+
+  accessory muestra estado sin coincidencias; "Revisar respuestas"
+  conserva respuestas y permite cambiar el rol; "Ver todas las
+  categorías" abre el selector manual. Regresión: trabajo + primary +
+  portable sigue devolviendo Mac + iPad. Total: 121/121 (116 → 121).
+
+Sin cambios en comparador, catálogo, precios, carrito, seguro,
+checkout, Plan Renove, Servicio Técnico, tienda favorita,
+favoritos+avisos, inventario ni imágenes.
+
+## 2026-07-29 — Ranking de familias del recomendador (PR #22)
 
 Rama `fix/finder-family-intent-ranking`.
 
@@ -49,7 +87,7 @@ Sin cambios en comparador, catálogo, precios, carrito, seguro, checkout,
 Plan Renove, Servicio Técnico, tienda favorita, favoritos+avisos ni
 imágenes.
 
-## 2026-07-29 — Calidad de las recomendaciones del asistente (PR pendiente)
+## 2026-07-29 — Calidad de las recomendaciones del asistente (PR #21)
 
 Rama `fix/apple-finder-recommendation-quality`.
 
@@ -105,7 +143,7 @@ Sin cambios en carrito, seguro, checkout, Plan Renove, Servicio
 Técnico, tienda favorita, favoritos+avisos, inventario demostrativo,
 precios ni imágenes del catálogo.
 
-## 2026-07-29 — Simplificación visual del comparador (PR pendiente)
+## 2026-07-29 — Simplificación visual del comparador (PR #20)
 
 Rama `fix/comparator-visual-simplification`.
 

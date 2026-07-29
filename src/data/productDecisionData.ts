@@ -1397,20 +1397,6 @@ const DEFAULT_PRIORITY: FamilySlug[] = [
 ]
 
 /**
- * Clasificación semántica del papel de cada familia. Se usa para elegibilidad
- * por `productRole` y para razones. No es una restricción dura absoluta:
- * `use === 'audio' | 'salud'` puede reelegir AirPods/Watch aunque el rol no
- * sea "accessory".
- */
-const FAMILY_ROLE_TAGS: Record<FamilySlug, ProductRole[]> = {
-  mac: ['primary'],
-  ipad: ['primary', 'mobile'],
-  iphone: ['mobile'],
-  airpods: ['accessory'],
-  'apple-watch': ['accessory'],
-}
-
-/**
  * ¿Es semánticamente compatible la familia con las respuestas generales?
  * Cuando devuelve `false`, la familia NO aparecerá entre las candidatas —
  * puntúe lo que puntúe.
@@ -1459,6 +1445,13 @@ export function isFamilyEligibleForIntent(
   if (use === 'foto') {
     if (role === 'primary' || role === 'mobile') {
       return family !== 'airpods' && family !== 'apple-watch'
+    }
+    if (role === 'accessory') {
+      // El prototipo no tiene una categoría de "accesorio fotográfico".
+      // Ninguna familia debe ser recomendada como accesorio para fotografía
+      // — ni convertimos AirPods/Watch en complementos fotográficos ni
+      // proponemos dispositivos principales ignorando la respuesta.
+      return false
     }
     return true
   }
@@ -1684,9 +1677,6 @@ export function computeFamilyCandidates(general: FinderAnswers['general']): Fami
     score: s.score,
     reasons: s.reasons,
   }))
-  // La bandera role queda implícita: no la exponemos aquí para no
-  // acoplar la UI a decisiones internas.
-  void FAMILY_ROLE_TAGS
 }
 
 // -----------------------------------------------------------------------
