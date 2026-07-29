@@ -103,28 +103,32 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-40">
-        {/* Barra superior de servicios — sólo escritorio; en móvil viven en el menú */}
-        <div className="hidden bg-[#1f6e83] text-white sm:block">
-          <div className="mx-auto flex h-9 max-w-7xl items-center justify-between gap-2 px-4 text-[13px] font-medium">
-            <div className="flex items-center gap-1">
-              {utilityLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  to={link.to}
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
-                >
-                  <Icon name={link.icon} size={14} /> {link.label}
-                </Link>
-              ))}
-            </div>
+        {/* Barra superior de servicios — sólo escritorio; en móvil viven en el
+             menú. Cian claro (cielo Canarias); mantiene contraste AA con el
+             texto blanco gracias a `text-shadow` cuando cae en la parte más
+             clara del degradado. Enlaces centrados; "Mi tienda" a la derecha
+             usando posicionamiento absoluto para que la lista principal
+             quede alineada con el eje central del layout. */}
+        <div className="relative hidden bg-[#2e7d9b] text-white sm:block">
+          <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium">
+            {utilityLinks.map((link) => (
+              <Link
+                key={link.label}
+                to={link.to}
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
+              >
+                <Icon name={link.icon} size={14} /> {link.label}
+              </Link>
+            ))}
+          </div>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <FavoriteStoreMenu />
           </div>
         </div>
 
-        {/* Cabecera principal — amarillo casi opaco (más barato que backdrop-blur
-             en scroll) con sombra al scrollear */}
+        {/* Cabecera principal — amarillo totalmente opaco. Sombra al scrollear. */}
         <div
-          className={`bg-banana/[0.97] transition-shadow duration-300 ${
+          className={`bg-banana transition-shadow duration-300 ${
             scrolled ? 'shadow-[0_6px_20px_-8px_rgba(0,0,0,0.18)]' : ''
           }`}
         >

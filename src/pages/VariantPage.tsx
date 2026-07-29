@@ -36,7 +36,7 @@ export function VariantPage() {
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
   const navigate = useNavigate()
-  const { addToCart, cart, insurancePrice, removeFromCart, setQty } = useStore()
+  const { addToCart, cart, insurancePrice, removeFromCart, setQty, toggleFavorite, isFavorite } = useStore()
 
   const initialColor =
     model?.colors.find((candidate) => variant?.endsWith(`-${candidate.color}`)) ?? model?.colors[0]
@@ -210,9 +210,17 @@ export function VariantPage() {
         </div>
 
         <div ref={buyBoxRef}>
-          <h1 className="text-3xl font-extrabold text-ink">
-            {model.name}{hasSizeSelector && activeSize ? ` ${activeSize}` : ''}
-          </h1>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h1 className="text-3xl font-extrabold text-ink">
+              {model.name}{hasSizeSelector && activeSize ? ` ${activeSize}` : ''}
+            </h1>
+            <FavoriteToggle
+              favId={`${model.family}/${model.slug}`}
+              name={model.name}
+              isFavorite={isFavorite(`${model.family}/${model.slug}`)}
+              onToggle={() => toggleFavorite(`${model.family}/${model.slug}`)}
+            />
+          </div>
 
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <span className="text-3xl font-bold text-ink">{euro(current.price)}</span>
@@ -566,5 +574,36 @@ function QuantityControl({
         <Icon name="plus" size={16} />
       </button>
     </div>
+  )
+}
+
+function FavoriteToggle({
+  favId,
+  name,
+  isFavorite,
+  onToggle,
+}: {
+  favId: string
+  name: string
+  isFavorite: boolean
+  onToggle: () => void
+}) {
+  void favId
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={isFavorite}
+      aria-label={isFavorite ? `Quitar ${name} de favoritos` : `Añadir ${name} a favoritos`}
+      className="mt-1 inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-danger hover:text-danger"
+    >
+      <Icon
+        name="heart"
+        size={16}
+        className={isFavorite ? 'fill-danger text-danger' : ''}
+        aria-hidden="true"
+      />
+      {isFavorite ? 'En favoritos' : 'Añadir a favoritos'}
+    </button>
   )
 }
