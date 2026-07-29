@@ -7,7 +7,6 @@ import { ProvisionalBadge } from '../components/ui/Tag'
 import { useStore } from '../lib/store'
 import {
   FINDER_QUESTIONS,
-  GENERAL_QUESTIONS,
   BUDGET_FLEX_QUESTION,
   computeFinderResults,
   computeFamilyCandidates,
@@ -109,7 +108,17 @@ export function AppleFinderPage() {
   }
 
   function setGeneral(key: keyof FinderAnswers['general'], value: string) {
-    setAnswers((a) => ({ ...a, general: { ...a.general, [key]: value } }))
+    setAnswers((current) => {
+      const nextGeneral: FinderAnswers['general'] = { ...current.general, [key]: value }
+      // Limpieza de dependencias: workType solo tiene sentido cuando el uso
+      // principal es "trabajo". Al cambiar el uso a cualquier otro valor
+      // retiramos la clave del objeto (no dejarla como undefined) para que
+      // ni el resumen ni el motor de ranking la vean como respuesta activa.
+      if (key === 'use' && value !== 'trabajo') {
+        delete nextGeneral.workType
+      }
+      return { ...current, general: nextGeneral }
+    })
   }
   function setSpecific(id: string, value: string) {
     setAnswers((a) => ({ ...a, specific: { ...a.specific, [id]: value } }))
@@ -141,9 +150,9 @@ export function AppleFinderPage() {
       return
     }
     if (stage === 'general') {
-      // Calculamos candidatos y pedimos confirmación.
-      const cands = computeFamilyCandidates(answers.general)
-      setCandidates(cands.length > 0 ? cands : [{ family: 'iphone', score: 0, reasons: [] }])
+      // Sin fallback: si no hay ninguna familia candidata, mostramos el
+      // estado sin coincidencias (no inyectamos iPhone con score 0).
+      setCandidates(computeFamilyCandidates(answers.general))
       setStage('family-confirm')
       setStep(0)
       return
@@ -274,9 +283,19 @@ export function AppleFinderPage() {
       {stage === 'family-confirm' && (
         <FamilyConfirmStep
           candidates={candidates}
+          general={answers.general}
           onConfirm={confirmFamily}
           onSeeAll={() => setStage('family')}
           onBack={goPrev}
+          onReviewAnswers={() => {
+            // Vuelve al flujo general, situándose en "¿Qué tipo de producto
+            // necesitas?" para que el usuario pueda cambiar la respuesta
+            // que causó el descarte, sin perder el resto.
+            const flow = getGeneralQuestionFlow(answers.general)
+            const idx = flow.findIndex((q) => q.id === 'general.productRole')
+            setStage('general')
+            setStep(Math.max(0, idx))
+          }}
         />
       )}
 
@@ -509,34 +528,95 @@ function QuestionStep({
 
 function FamilyConfirmStep({
   candidates,
+  general,
   onConfirm,
   onSeeAll,
   onBack,
+  onReviewAnswers,
 }: {
   candidates: FamilyCandidate[]
+  general: FinderAnswers['general']
   onConfirm: (family: FamilySlug) => void
   onSeeAll: () => void
   onBack: () => void
+  onReviewAnswers: () => void
 }) {
   const primary = candidates[0]
   const secondary = candidates[1]
+
+  // Estado sin coincidencias: 0 candidatas.
+  if (!primary) {
+    const isPhotoAccessory =
+      general.use === 'foto' && general.productRole === 'accessory'
+    return (
+      <section
+        aria-labelledby="family-confirm"
+        className="mt-8"
+        aria-live="polite"
+      >
+        <h2 id="family-confirm" className="text-xl font-bold text-ink">
+          No encontramos una categoría que encaje con todo
+        </h2>
+        <p className="mt-2 text-sm text-ink">
+          {isPhotoAccessory
+            ? 'No encontramos una categoría de accesorio fotográfico que encaje con lo que buscas.'
+            : 'Con las respuestas indicadas no hemos podido sugerir una categoría del catálogo.'}
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Este prototipo recomienda dispositivos Apple y complementos de audio o
+          salud, pero no incluye una categoría específica de accesorios para
+          fotografía.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onReviewAnswers}
+            className="inline-flex items-center gap-2 rounded-[12px] bg-action px-5 py-3 text-sm font-semibold text-ink hover:bg-action-600"
+          >
+            Revisar respuestas
+          </button>
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="inline-flex items-center gap-2 rounded-[10px] border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink hover:border-ink/30"
+          >
+            Ver todas las categorías
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="text-sm font-semibold text-ink hover:underline"
+          >
+            ← Atrás
+          </button>
+        </div>
+      </section>
+    )
+  }
+
+  // 1 o 2 candidatas: layout normal. Con una sola no renderizamos la
+  // segunda tarjeta ni pasamos por un placeholder vacío.
   return (
-    <section aria-labelledby="family-confirm" className="mt-8">
+    <section aria-labelledby="family-confirm" className="mt-8" aria-live="polite">
       <h2 id="family-confirm" className="text-xl font-bold text-ink">
-        Por lo que nos cuentas, creemos que estas categorías pueden encajar
+        Por lo que nos cuentas, creemos que {secondary ? 'estas categorías pueden encajar' : 'esta categoría puede encajar'}
       </h2>
       <p className="mt-1 text-sm text-muted">
-        Confirma con cuál seguimos o elige otra manualmente.
+        Confirma con {secondary ? 'cuál' : 'ella'} seguimos o elige otra manualmente.
       </p>
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        {primary && (
-          <CandidateCard
-            candidate={primary}
-            label="Recomendación principal"
-            primary
-            onConfirm={() => onConfirm(primary.family)}
-          />
-        )}
+      <div
+        className={
+          secondary
+            ? 'mt-5 grid gap-4 md:grid-cols-2'
+            : 'mt-5 grid gap-4 md:max-w-md'
+        }
+      >
+        <CandidateCard
+          candidate={primary}
+          label="Recomendación principal"
+          primary
+          onConfirm={() => onConfirm(primary.family)}
+        />
         {secondary && (
           <CandidateCard
             candidate={secondary}
@@ -715,14 +795,22 @@ function SummaryStep({
         return { qid: q.id, prompt: q.prompt, label: opt?.label ?? '—' }
       })
     : []
-  const generalRows = (Object.keys(answers.general) as Array<keyof FinderAnswers['general']>)
-    .filter((k) => k !== 'budget' && k !== 'budgetFlex')
-    .map((k) => {
-      const value = answers.general[k]
-      const q = GENERAL_QUESTIONS.find((qq) => qq.id === `general.${k}`)
-      const opt = value && q ? q.options.find((o) => o.value === value) : null
-      return { key: k as string, prompt: q?.prompt ?? String(k), label: opt?.label ?? String(value ?? '—') }
+  // Solo mostramos preguntas del flujo actualmente aplicable (p. ej. no
+  // "¿Qué tipo de trabajo?" cuando el uso ya no es Trabajo). Además, solo
+  // filas con respuesta — nada de filas vacías por respuestas antiguas.
+  const generalRows = getGeneralQuestionFlow(answers.general)
+    .filter((q) => q.id !== 'general.budget' && q.id !== 'general.budgetFlex')
+    .map((q) => {
+      const key = q.id.split('.')[1] as keyof FinderAnswers['general']
+      const value = answers.general[key]
+      const opt = value ? q.options.find((o) => o.value === value) : null
+      return {
+        key: key as string,
+        prompt: q.prompt,
+        label: opt?.label ?? null,
+      }
     })
+    .filter((row) => row.label !== null) as { key: string; prompt: string; label: string }[]
   const budgetLabel =
     answers.general.budget && budgetOptions.find((b) => b.value === answers.general.budget)?.label
   const flexLabel =
