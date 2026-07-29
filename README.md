@@ -391,8 +391,14 @@ Suites actuales (93 pruebas, medido con `npm run test:e2e` — 91 en
   y añadir dos productos al comparador desde `/iphone/17-pro` usando los
   checkboxes "Añadir a comparar", verlos en `/comparar` y vaciarlo con
   los botones "Quitar". **No se preselecciona nada en `localStorage`.**
-- `tests/e2e/search.spec.ts` — sincronización del input con `?q=` y
-  destinos reales de los tiles de accesorios.
+- `tests/e2e/search.spec.ts` — buscador semántico agrupado:
+  sincronización del input con `?q=`, coincidencia principal +
+  Dispositivos Apple + Productos relacionados + Accesorios Apple +
+  Accesorios compatibles + Servicios + Ayuda; intención de accesorio
+  vs dispositivo; sinónimos ("air pods" ≡ "airpods"); corrección
+  ("airpds" → AirPods); estado vacío; URL + back/forward;
+  autocompletado del Header (escritorio y móvil) con navegación por
+  teclado; axe limpio.
 - `tests/e2e/apple-finder.spec.ts` — asistente "Encuentra tu Apple":
   acceso desde portada, flujo iPhone completo (4 preguntas + resultados
   + reiniciar), imposibilidad de avanzar sin respuesta, "Anterior",
