@@ -1248,7 +1248,18 @@ export const FINDER_QUESTIONS: Record<FamilySlug, readonly FinderQuestion[]> = {
   ],
 }
 
-/** Preguntas generales para el flujo "No lo tengo claro". IDs con prefijo. */
+/** Papel funcional del producto que busca el usuario. */
+export type ProductRole = 'primary' | 'mobile' | 'accessory' | 'unknown'
+
+/** Tipo de trabajo (solo relevante cuando `general.use === 'trabajo'`). */
+export type WorkType = 'office' | 'desktop-apps' | 'creative' | 'mobile-tasks' | 'unknown'
+
+/**
+ * Superset de preguntas generales. La UI usa `getGeneralQuestionFlow(general)`
+ * para filtrar dinámicamente (p. ej. `workType` solo aparece si el uso es
+ * "trabajo"). Mantener el array completo permite a la pantalla de resumen
+ * localizar la etiqueta de cualquier respuesta previa vía `GENERAL_QUESTIONS.find(...)`.
+ */
 export const GENERAL_QUESTIONS: readonly FinderQuestion[] = [
   {
     id: 'general.use',
@@ -1260,6 +1271,29 @@ export const GENERAL_QUESTIONS: readonly FinderQuestion[] = [
       { value: 'audio', label: 'Escuchar música o podcasts' },
       { value: 'salud', label: 'Salud y deporte' },
       { value: 'diario', label: 'Uso cotidiano' },
+    ],
+  },
+  {
+    id: 'general.productRole',
+    prompt: '¿Qué tipo de producto necesitas?',
+    help: 'Nos ayuda a distinguir entre un equipo principal, un dispositivo móvil o un complemento.',
+    options: [
+      { value: 'primary', label: 'Un equipo principal para realizar mis tareas.' },
+      { value: 'mobile', label: 'Un dispositivo móvil para llevar siempre conmigo.' },
+      { value: 'accessory', label: 'Un complemento, como auriculares o reloj.' },
+      { value: 'unknown', label: 'No estoy seguro.' },
+    ],
+  },
+  {
+    id: 'general.workType',
+    prompt: '¿Qué tipo de trabajo realizarás principalmente?',
+    help: 'Solo se pregunta cuando indicaste "Trabajo" como uso principal.',
+    options: [
+      { value: 'office', label: 'Ofimática, correo y videollamadas.' },
+      { value: 'desktop-apps', label: 'Programación o aplicaciones de escritorio.' },
+      { value: 'creative', label: 'Diseño, fotografía o edición de vídeo.' },
+      { value: 'mobile-tasks', label: 'Gestiones rápidas mientras me desplazo.' },
+      { value: 'unknown', label: 'Todavía no lo sé.' },
     ],
   },
   {
@@ -1284,6 +1318,19 @@ export const GENERAL_QUESTIONS: readonly FinderQuestion[] = [
   },
 ]
 
+/**
+ * Devuelve las preguntas generales aplicables al estado actual. `workType`
+ * solo se muestra cuando el uso principal es "trabajo".
+ */
+export function getGeneralQuestionFlow(
+  general: FinderAnswers['general'],
+): readonly FinderQuestion[] {
+  return GENERAL_QUESTIONS.filter((q) => {
+    if (q.id === 'general.workType') return general.use === 'trabajo'
+    return true
+  })
+}
+
 /** Pregunta de flexibilidad de presupuesto. */
 export const BUDGET_FLEX_QUESTION: FinderQuestion = {
   id: 'general.budgetFlex',
@@ -1302,6 +1349,8 @@ export const BUDGET_FLEX_QUESTION: FinderQuestion = {
 export interface FinderAnswers {
   general: {
     use?: string
+    productRole?: ProductRole
+    workType?: WorkType
     priority?: string
     portability?: string
     budget?: string
@@ -1316,7 +1365,7 @@ export function emptyAnswers(): FinderAnswers {
 }
 
 // -----------------------------------------------------------------------
-// Sugerencia de familia ("No lo tengo claro").
+// Sugerencia de familia ("No lo tengo claro") — ranking por intención.
 // -----------------------------------------------------------------------
 
 export interface FamilyCandidate {
@@ -1326,91 +1375,318 @@ export interface FamilyCandidate {
 }
 
 /**
- * Devuelve las dos familias más probables dadas las respuestas generales,
- * ordenadas por score. Combina uso + prioridad + portabilidad + presupuesto.
- * No elige silenciosamente: el usuario tendrá que confirmar.
+ * Prioridad semántica por uso principal. Se utiliza como criterio de
+ * desempate cuando dos familias tienen el mismo score. NUNCA orden
+ * alfabético: se ordena por la posición en este array (menor = antes).
  */
-export function computeFamilyCandidates(general: FinderAnswers['general']): FamilyCandidate[] {
-  const scores: Record<FamilySlug, { score: number; reasons: string[] }> = {
-    iphone: { score: 0, reasons: [] },
-    mac: { score: 0, reasons: [] },
-    ipad: { score: 0, reasons: [] },
-    'apple-watch': { score: 0, reasons: [] },
-    airpods: { score: 0, reasons: [] },
-  }
-  const add = (f: FamilySlug, n: number, r: string) => {
-    scores[f].score += n
-    if (r) scores[f].reasons.push(r)
+const FAMILY_PRIORITY_BY_USE: Record<string, FamilySlug[]> = {
+  trabajo: ['mac', 'ipad', 'iphone', 'airpods', 'apple-watch'],
+  estudio: ['ipad', 'mac', 'iphone', 'airpods', 'apple-watch'],
+  foto: ['iphone', 'mac', 'ipad', 'airpods', 'apple-watch'],
+  audio: ['airpods', 'iphone', 'mac', 'ipad', 'apple-watch'],
+  salud: ['apple-watch', 'iphone', 'airpods', 'ipad', 'mac'],
+  diario: ['iphone', 'ipad', 'apple-watch', 'airpods', 'mac'],
+}
+
+const DEFAULT_PRIORITY: FamilySlug[] = [
+  'iphone',
+  'mac',
+  'ipad',
+  'apple-watch',
+  'airpods',
+]
+
+/**
+ * Clasificación semántica del papel de cada familia. Se usa para elegibilidad
+ * por `productRole` y para razones. No es una restricción dura absoluta:
+ * `use === 'audio' | 'salud'` puede reelegir AirPods/Watch aunque el rol no
+ * sea "accessory".
+ */
+const FAMILY_ROLE_TAGS: Record<FamilySlug, ProductRole[]> = {
+  mac: ['primary'],
+  ipad: ['primary', 'mobile'],
+  iphone: ['mobile'],
+  airpods: ['accessory'],
+  'apple-watch': ['accessory'],
+}
+
+/**
+ * ¿Es semánticamente compatible la familia con las respuestas generales?
+ * Cuando devuelve `false`, la familia NO aparecerá entre las candidatas —
+ * puntúe lo que puntúe.
+ */
+export function isFamilyEligibleForIntent(
+  family: FamilySlug,
+  general: FinderAnswers['general'],
+): boolean {
+  const use = general.use
+  const role = general.productRole ?? 'unknown'
+
+  // Excepciones semánticas: audio y salud fuerzan la aparición de la
+  // familia natural aunque el rol sea otro.
+  if (use === 'audio' && family === 'airpods') return true
+  if (use === 'salud' && family === 'apple-watch') return true
+
+  // Reglas por USE.
+  if (use === 'trabajo') {
+    if (role === 'primary') {
+      // Equipo de trabajo: sin AirPods ni Watch, iPhone permitido pero
+      // rankeado abajo.
+      return family !== 'airpods' && family !== 'apple-watch'
+    }
+    if (role === 'mobile') {
+      return family !== 'airpods' && family !== 'apple-watch'
+    }
+    if (role === 'accessory') {
+      // Como complemento de trabajo: solo AirPods (Watch requiere
+      // justificación específica que aquí no tenemos).
+      return family === 'airpods'
+    }
+    // unknown: Watch queda fuera; el resto sí.
+    return family !== 'apple-watch'
   }
 
+  if (use === 'estudio') {
+    if (role === 'primary' || role === 'mobile') {
+      return family !== 'airpods' && family !== 'apple-watch'
+    }
+    if (role === 'accessory') {
+      return family === 'airpods'
+    }
+    return family !== 'apple-watch'
+  }
+
+  if (use === 'foto') {
+    if (role === 'primary' || role === 'mobile') {
+      return family !== 'airpods' && family !== 'apple-watch'
+    }
+    return true
+  }
+
+  if (use === 'audio') {
+    // AirPods es la prioridad. iPhone puede aparecer como complemento.
+    if (role === 'primary' || role === 'mobile') {
+      return family === 'iphone' || family === 'airpods'
+    }
+    return family === 'airpods' || family === 'iphone'
+  }
+
+  if (use === 'salud') {
+    // Watch prioritario, iPhone como complemento.
+    if (role === 'primary' || role === 'mobile') {
+      return family === 'apple-watch' || family === 'iphone'
+    }
+    return family === 'apple-watch' || family === 'iphone' || family === 'airpods'
+  }
+
+  if (use === 'diario') {
+    if (role === 'primary' || role === 'mobile') {
+      return family !== 'airpods' && family !== 'apple-watch'
+    }
+    if (role === 'accessory') {
+      return family === 'airpods' || family === 'apple-watch'
+    }
+    return true
+  }
+
+  // Sin uso indicado: cualquiera es válida.
+  return true
+}
+
+/**
+ * Puntúa una familia YA elegible frente a las respuestas generales. La
+ * portabilidad es CONTEXTUAL: no premia AirPods/Watch por ser pequeños.
+ */
+function scoreFamilyForIntent(
+  family: FamilySlug,
+  general: FinderAnswers['general'],
+): { score: number; reasons: string[] } {
   const use = general.use
+  const role = general.productRole ?? 'unknown'
+  const workType = general.workType
+  const priority = general.priority
+  const portability = general.portability
+
+  let score = 0
+  const reasons: string[] = []
+  const push = (n: number, r: string) => {
+    score += n
+    if (r) reasons.push(r)
+  }
+
+  // ----- Uso principal (base) -----
   if (use === 'trabajo') {
-    add('mac', 5, 'Has indicado que lo usarás para trabajo.')
-    add('ipad', 2, 'Los iPad también encajan para trabajo móvil.')
+    if (family === 'mac') push(10, 'Mac es el equipo natural para trabajar.')
+    else if (family === 'ipad')
+      push(6, 'iPad puede encajar como alternativa portátil de trabajo.')
+    else if (family === 'iphone') score += 3
+    else if (family === 'airpods')
+      push(8, 'AirPods como complemento de trabajo para llamadas y videoconferencias.')
   }
   if (use === 'estudio') {
-    add('ipad', 5, 'El estudio combina bien con iPad.')
-    add('mac', 3, 'Un Mac también funciona para estudiar.')
+    if (family === 'ipad') push(10, 'iPad se adapta muy bien al estudio.')
+    else if (family === 'mac') push(8, 'Mac también funciona para estudiar.')
+    else if (family === 'iphone') score += 3
+    else if (family === 'airpods')
+      push(6, 'AirPods como complemento para escuchar clases o concentrarte.')
   }
   if (use === 'foto') {
-    add('iphone', 5, 'La cámara del iPhone es tu prioridad.')
-    add('mac', 2, 'Para editar en escritorio, un Mac ayuda.')
+    if (family === 'iphone')
+      push(10, 'El iPhone es el mejor punto de captura del catálogo.')
+    else if (family === 'mac') push(6, 'El Mac es la opción para editar en escritorio.')
+    else if (family === 'ipad') push(4, 'iPad ayuda a editar sobre la marcha.')
   }
   if (use === 'audio') {
-    add('airpods', 6, 'Para música o podcasts, AirPods.')
+    if (family === 'airpods') push(12, 'Para escuchar música o podcasts, AirPods.')
+    else if (family === 'iphone') push(4, 'El iPhone es el mando y fuente natural.')
   }
   if (use === 'salud') {
-    add('apple-watch', 6, 'Salud y deporte encajan con Apple Watch.')
+    if (family === 'apple-watch') push(12, 'Salud y deporte encajan con Apple Watch.')
+    else if (family === 'iphone') push(3, 'El iPhone es el hub de datos del Watch.')
   }
   if (use === 'diario') {
-    add('iphone', 4, 'Para uso cotidiano, el iPhone es la base.')
-    add('airpods', 2, 'Los AirPods complementan bien el día a día.')
+    if (family === 'iphone') push(8, 'El iPhone es la base del día a día.')
+    else if (family === 'ipad') score += 3
+    else if (family === 'apple-watch') score += 2
+    else if (family === 'airpods') score += 2
   }
 
-  const priority = general.priority
+  // ----- Papel del producto (productRole) -----
+  if (use === 'trabajo') {
+    if (role === 'primary') {
+      if (family === 'mac') score += 5
+      if (family === 'ipad') score += 3
+      if (family === 'iphone') score -= 2
+    }
+    if (role === 'mobile') {
+      if (family === 'ipad') score += 5
+      if (family === 'iphone') push(5, 'iPhone encaja como dispositivo móvil de trabajo.')
+      if (family === 'mac') score -= 2
+    }
+    if (role === 'accessory') {
+      if (family === 'airpods')
+        push(8, 'AirPods es un complemento natural para trabajar con llamadas.')
+    }
+  }
+  if (use === 'estudio') {
+    if (role === 'primary') {
+      if (family === 'ipad') score += 4
+      if (family === 'mac') score += 4
+      if (family === 'iphone') score -= 2
+    }
+    if (role === 'mobile') {
+      if (family === 'ipad') score += 5
+      if (family === 'iphone') score += 3
+    }
+  }
+  if (use === 'foto') {
+    if (role === 'mobile' && family === 'iphone') score += 3
+    if (role === 'primary' && family === 'mac') score += 2
+  }
+  if (use === 'diario') {
+    if (role === 'mobile' && family === 'iphone') score += 3
+    if (role === 'primary' && family === 'iphone') score += 1
+    if (role === 'accessory') {
+      if (family === 'airpods') score += 5
+      if (family === 'apple-watch') score += 5
+    }
+  }
+
+  // ----- Tipo de trabajo (workType) — solo si use === 'trabajo' -----
+  if (use === 'trabajo' && workType) {
+    if (workType === 'office') {
+      if (family === 'mac') score += 4
+      if (family === 'ipad') score += 3
+    }
+    if (workType === 'desktop-apps') {
+      if (family === 'mac') push(8, 'Programación y apps de escritorio son terreno de Mac.')
+      if (family === 'ipad') score -= 3
+      if (family === 'iphone') score -= 5
+    }
+    if (workType === 'creative') {
+      if (family === 'mac') push(6, 'La edición creativa exige Mac.')
+      if (family === 'ipad') score += 3
+      if (family === 'iphone') score += 1
+    }
+    if (workType === 'mobile-tasks') {
+      if (family === 'ipad') push(5, 'iPad brilla para gestiones móviles.')
+      if (family === 'iphone') push(4, 'iPhone es imbatible para gestiones rápidas en movimiento.')
+      if (family === 'mac') score += 2
+    }
+  }
+
+  // ----- Prioridad (blanda) -----
   if (priority === 'portability') {
-    add('iphone', 2, 'La portabilidad es una prioridad para ti.')
-    add('airpods', 2, 'Los AirPods son máximamente portátiles.')
-    add('ipad', 1, '')
+    // Contextual: solo empuja a familias que ya encajan con el uso.
+    if (family === 'ipad') score += 2
+    if (family === 'iphone' && (use === 'diario' || use === 'foto' || use === 'audio' || use === 'salud'))
+      score += 2
+    if (family === 'mac') score += 1
+    // Ya NO se premia AirPods/Watch automáticamente por ser pequeños.
   }
   if (priority === 'performance') {
-    add('mac', 3, 'Para potencia, Mac es donde más margen hay.')
-    add('iphone', 1, '')
-    add('ipad', 1, '')
+    if (family === 'mac') score += 4
+    if (family === 'iphone') score += 1
   }
   if (priority === 'camera') {
-    add('iphone', 4, 'La cámara del iPhone es tu prioridad.')
+    if (family === 'iphone') score += 4
   }
   if (priority === 'battery') {
-    add('apple-watch', 2, '')
-    add('iphone', 1, '')
-    add('mac', 1, '')
+    if (family === 'apple-watch' && use === 'salud') score += 2
+    if (family === 'iphone') score += 1
+    if (family === 'mac') score += 1
   }
   if (priority === 'value') {
-    add('airpods', 2, 'AirPods es la familia con mejor precio de entrada.')
-    add('ipad', 1, '')
+    if (family === 'ipad') score += 2
+    if (family === 'airpods' && role === 'accessory') score += 2
   }
 
-  const port = general.portability
-  if (port === 'high') {
-    add('iphone', 2, 'Buscas algo muy portable.')
-    add('airpods', 2, '')
-    add('apple-watch', 2, '')
-    add('mac', -1, '')
+  // ----- Portabilidad global (dentro del contexto) -----
+  if (portability === 'high') {
+    // Sin bonus ciego a AirPods/Watch.
+    if (family === 'ipad') score += 2
+    if (family === 'iphone') score += 1
+    if (family === 'mac') score += 1 // MacBook cuenta como portátil; el filtro duro llega en /specific
   }
-  if (port === 'low') {
-    add('mac', 3, 'Preferirás algo de escritorio.')
-    add('iphone', -1, '')
+  if (portability === 'low') {
+    if (family === 'mac') score += 3
+    if (family === 'ipad') score -= 1
   }
 
-  const sorted = (Object.keys(scores) as FamilySlug[])
-    .map((f) => ({ family: f, score: scores[f].score, reasons: scores[f].reasons.slice(0, 3) }))
+  return { score, reasons: reasons.slice(0, 3) }
+}
+
+/**
+ * Devuelve las dos familias más probables dadas las respuestas generales.
+ * Filtra semánticamente primero (`isFamilyEligibleForIntent`) y luego
+ * puntúa. Desempate NO alfabético: usa `FAMILY_PRIORITY_BY_USE`.
+ */
+export function computeFamilyCandidates(general: FinderAnswers['general']): FamilyCandidate[] {
+  const allFamilies: FamilySlug[] = ['iphone', 'mac', 'ipad', 'apple-watch', 'airpods']
+  const priority = FAMILY_PRIORITY_BY_USE[general.use ?? ''] ?? DEFAULT_PRIORITY
+  const priorityIndex = (f: FamilySlug) => {
+    const i = priority.indexOf(f)
+    return i === -1 ? 999 : i
+  }
+
+  const scored = allFamilies
+    .filter((f) => isFamilyEligibleForIntent(f, general))
+    .map((f) => ({ family: f, ...scoreFamilyForIntent(f, general) }))
+    .filter((c) => c.score > 0)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score
-      return a.family.localeCompare(b.family)
+      // Desempate por relevancia semántica del uso, NO alfabético.
+      return priorityIndex(a.family) - priorityIndex(b.family)
     })
-    .filter((c) => c.score > 0)
-  return sorted.slice(0, 2)
+
+  return scored.slice(0, 2).map((s) => ({
+    family: s.family,
+    score: s.score,
+    reasons: s.reasons,
+  }))
+  // La bandera role queda implícita: no la exponemos aquí para no
+  // acoplar la UI a decisiones internas.
+  void FAMILY_ROLE_TAGS
 }
 
 // -----------------------------------------------------------------------

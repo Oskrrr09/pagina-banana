@@ -12,6 +12,7 @@ import {
   computeFinderResults,
   computeFamilyCandidates,
   getBudgetOptionsForFamily,
+  getGeneralQuestionFlow,
   emptyAnswers,
   type FamilySlug,
   type FinderAnswers,
@@ -70,10 +71,10 @@ export function AppleFinderPage() {
   const [candidates, setCandidates] = useState<FamilyCandidate[]>([])
 
   const activeQuestions: readonly FinderQuestion[] = useMemo(() => {
-    if (stage === 'general') return GENERAL_QUESTIONS
+    if (stage === 'general') return getGeneralQuestionFlow(answers.general)
     if (stage === 'specific' && answers.family) return FINDER_QUESTIONS[answers.family]
     return []
-  }, [stage, answers.family])
+  }, [stage, answers.family, answers.general])
 
   const totalSteps = activeQuestions.length
   const currentQ = activeQuestions[step] ?? null
@@ -185,7 +186,7 @@ export function AppleFinderPage() {
     }
     if (stage === 'family-confirm') {
       setStage('general')
-      setStep(GENERAL_QUESTIONS.length - 1)
+      setStep(getGeneralQuestionFlow(answers.general).length - 1)
       return
     }
     if (stage === 'family') setStage('intro')
@@ -318,7 +319,8 @@ export function AppleFinderPage() {
           onEditBudget={() => setStage('budget')}
           onEditBudgetFlex={() => setStage('budgetFlex')}
           onEditGeneral={(key) => {
-            const idx = GENERAL_QUESTIONS.findIndex((q) => q.id === `general.${key}`)
+            const flow = getGeneralQuestionFlow(answers.general)
+            const idx = flow.findIndex((q) => q.id === `general.${key}`)
             setStage('general')
             setStep(Math.max(0, idx))
           }}

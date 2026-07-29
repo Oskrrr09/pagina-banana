@@ -8,6 +8,47 @@ actualizado: 2026-07-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-29 — Ranking de familias del recomendador (PR pendiente)
+
+Rama `fix/finder-family-intent-ranking`.
+
+- **Bug corregido**: en el flujo "No lo tengo claro" con respuestas
+  Trabajo + Portabilidad + Sí lo llevaré siempre encima, el asistente
+  proponía AirPods e iPhone en lugar de Mac e iPad. Causa: en
+  `computeFamilyCandidates` los puntos se sumaban de forma independiente
+  y el desempate final era alfabético (`family.localeCompare`), lo que
+  colocaba `airpods` por delante de `mac`.
+- **Nuevas preguntas generales**:
+  - `general.productRole` ("¿Qué tipo de producto necesitas?") con
+    valores `primary` / `mobile` / `accessory` / `unknown`.
+  - `general.workType` ("¿Qué tipo de trabajo?") con `office` /
+    `desktop-apps` / `creative` / `mobile-tasks` / `unknown`. Solo se
+    pregunta si `general.use === 'trabajo'`.
+- **`getGeneralQuestionFlow(general)`** filtra dinámicamente el flujo:
+  `workType` solo aparece cuando el uso es trabajo.
+- **Eligibility semántica** (`isFamilyEligibleForIntent`): un modelo
+  incompatible por rol/uso NUNCA aparece. Trabajo + primary excluye
+  AirPods/Watch; trabajo + accessory limita a AirPods; audio y salud
+  fuerzan la familia natural.
+- **Scoring por intención** (`scoreFamilyForIntent`): base por uso,
+  modificador por productRole, modificador por workType, modificador
+  por priority, modificador por portability. La portabilidad ya NO
+  premia AirPods/Watch por ser pequeños ni penaliza a Mac con −1.
+- **Desempate NO alfabético**: `FAMILY_PRIORITY_BY_USE` define una
+  prioridad semántica por uso (`trabajo` → mac, ipad, iphone, airpods,
+  apple-watch; etc.). El sort primero por score desc, y en empate por
+  `priorityIndex` asc.
+- **Tests nuevos** (9 escenarios): el bug reportado (trabajo + primary
+  + portabilidad → Mac + iPad, no AirPods/Watch); trabajo + programación
+  → Mac; trabajo + móvil + mobile-tasks → iPad + iPhone; estudio +
+  primary → iPad + Mac; foto + primary → iPhone; audio + accessory →
+  AirPods; salud + accessory → Watch; diario + mobile → iPhone;
+  desempate NO alfabético. Suite: **116/116** (107 → 116).
+
+Sin cambios en comparador, catálogo, precios, carrito, seguro, checkout,
+Plan Renove, Servicio Técnico, tienda favorita, favoritos+avisos ni
+imágenes.
+
 ## 2026-07-29 — Calidad de las recomendaciones del asistente (PR pendiente)
 
 Rama `fix/apple-finder-recommendation-quality`.
