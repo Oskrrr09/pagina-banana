@@ -219,15 +219,21 @@ export function ComparePage() {
           <div className="mt-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <div
               style={{ scrollSnapType: 'x proximity', WebkitOverflowScrolling: 'touch' }}
-              className="min-w-full"
+              className="mx-auto min-w-full max-w-5xl"
             >
               <table
-                className="w-full min-w-[560px] border-collapse text-left"
+                className="mx-auto w-full min-w-[720px] table-fixed border-collapse text-left"
                 aria-label={`Comparación de ${compare.length} ${family?.name ?? ''}`}
               >
+                <colgroup>
+                  <col className="w-40" />
+                  <col className="w-[calc((100%-10rem)/3)]" />
+                  <col className="w-[calc((100%-10rem)/3)]" />
+                  <col className="w-[calc((100%-10rem)/3)]" />
+                </colgroup>
                 <thead className="sticky top-16 z-20 bg-surface sm:top-[6.25rem]">
                   <tr>
-                    <th className="w-40 p-3 align-bottom text-sm font-medium text-muted">
+                    <th className="p-3 align-bottom text-sm font-medium text-muted">
                       <span className="sr-only">Característica</span>
                     </th>
                     {Array.from({ length: MAX_SLOTS }).map((_, i) => {
@@ -236,7 +242,7 @@ export function ComparePage() {
                         return (
                           <th
                             key={`slot-${i}`}
-                            className="w-64 p-3 align-top"
+                            className="h-full p-3 align-top"
                             style={{ scrollSnapAlign: 'start' }}
                           >
                             <EmptySlot
@@ -256,10 +262,10 @@ export function ComparePage() {
                       return (
                         <th
                           key={c.id}
-                          className="w-64 p-3 align-top"
+                          className="h-full p-3 align-top"
                           style={{ scrollSnapAlign: 'start' }}
                         >
-                          <div className="flex h-full flex-col rounded-[12px] border border-line bg-surface p-3">
+                          <div className="flex h-full min-h-[460px] flex-col rounded-[12px] border border-line bg-surface p-3">
                             <ProductImage
                               src={productImage(c.modelSlug, c.color)}
                               alt={c.name}
@@ -288,30 +294,32 @@ export function ComparePage() {
                               </ul>
                             )}
 
-                            <Button
-                              size="sm"
-                              className="mt-3 w-full"
-                              onClick={() =>
-                                addToCart({
-                                  id: c.id,
-                                  modelSlug: c.modelSlug,
-                                  family: c.family,
-                                  name: c.name,
-                                  color: c.color,
-                                  capacity: c.capacity,
-                                  price: c.price,
-                                  previousPrice: null,
-                                })
-                              }
-                            >
-                              Comprar
-                            </Button>
-                            <Link
-                              to={variantPath(model)}
-                              className="mt-2 inline-flex items-center justify-center gap-1 rounded-[12px] border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:border-ink/30"
-                            >
-                              Más información
-                            </Link>
+                            <div className="mt-auto pt-3">
+                              <Button
+                                size="sm"
+                                className="w-full"
+                                onClick={() =>
+                                  addToCart({
+                                    id: c.id,
+                                    modelSlug: c.modelSlug,
+                                    family: c.family,
+                                    name: c.name,
+                                    color: c.color,
+                                    capacity: c.capacity,
+                                    price: c.price,
+                                    previousPrice: null,
+                                  })
+                                }
+                              >
+                                Comprar
+                              </Button>
+                              <Link
+                                to={variantPath(model)}
+                                className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-[12px] border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:border-ink/30"
+                              >
+                                Más información
+                              </Link>
+                            </div>
 
                             <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3">
                               <button
@@ -423,8 +431,8 @@ function EmptySlot({
       onClick={onClick}
       aria-label={`Elegir modelo de ${familyName} para el espacio ${index + 1}`}
       className={[
-        'group flex w-full flex-col items-center justify-center gap-2 rounded-[12px] border border-dashed p-4 text-center transition-[transform,border-color] duration-150 hover:-translate-y-0.5',
-        compact ? 'min-h-[220px]' : 'min-h-[180px]',
+        'group flex h-full w-full flex-col items-center justify-center gap-2 rounded-[12px] border border-dashed p-4 text-center transition-[transform,border-color] duration-150 hover:-translate-y-0.5',
+        compact ? 'min-h-[460px]' : 'min-h-[180px]',
         primary ? 'border-brand text-ink hover:border-banana' : 'border-line text-muted hover:border-ink/30',
       ].join(' ')}
     >
