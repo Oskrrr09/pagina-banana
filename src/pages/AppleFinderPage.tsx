@@ -373,18 +373,18 @@ function FamilyStep({
       <ul
         role="radiogroup"
         aria-label="Familia de producto"
-        className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        className="mt-4 grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3"
       >
         {FINDER_FAMILIES.map((option) => {
           const info = option.slug !== 'unknown' ? familyInfo(option.slug) : null
           return (
-            <li key={option.slug}>
+            <li key={option.slug} className="h-full">
               <button
                 type="button"
                 role="radio"
                 aria-checked={false}
                 onClick={() => onPick(option.slug)}
-                className="flex w-full items-start gap-3 rounded-[12px] border border-line bg-surface p-4 text-left transition hover:-translate-y-0.5 hover:border-banana hover:shadow-[var(--shadow-raised)]"
+                className="flex h-full min-h-[92px] w-full items-start gap-3 rounded-[12px] border border-line bg-surface p-4 text-left transition hover:-translate-y-0.5 hover:border-banana hover:shadow-[var(--shadow-raised)]"
               >
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-050 text-ink">
                   <Icon
