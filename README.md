@@ -89,7 +89,7 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 
 | Ruta | Pantalla |
 | --- | --- |
-| `/` | Portada (carrusel + franja de confianza + categorías + ofertas + accesorios + servicios + testimonios demo + tiendas + FAQ + newsletter) |
+| `/` | Portada (empieza directamente por el `HeroCarousel` — sin `<h1>` por decisión visual consciente) |
 | `/:family` | Familia (`iphone`, `mac`, `ipad`, `apple-watch`, `airpods` usan `ShowcaseFamilyPage`) |
 | `/:family/:model` | Modelo (redirige a la variante base) |
 | `/:family/:model/:variant` | Ficha con selectores de color, capacidad y (según modelo) tamaño |
@@ -101,7 +101,7 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 | `/checkout/3` | Confirmación (solo accesible con pedido válido) |
 | `/servicios` | Servicios de Banana (contenido demostrativo) |
 | `/plan-renove` | Página con timeline oficial de 4 pasos con Foxway, sin precios ni tasador propio |
-| `/soporte` | Centro de soporte (buscador, FAQ y acceso al Servicio Técnico) |
+| `/soporte` | Centro de soporte (buscador, FAQ, acceso al Servicio Técnico y activador de la guía **Preparar mi dispositivo**) |
 | `/servicio-tecnico` | **Servicio Técnico Autorizado**: sin cita, checklist, entrega, garantía / fuera de garantía y plazos orientativos |
 | `/tiendas`, `/tiendas/:slug` | Google Maps embed con las 5 tiendas |
 | `/favoritos` | Favoritos del usuario |
@@ -269,8 +269,8 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (49 pruebas, medido con `npm run test:e2e` — 48 en
-`chromium` + 1 en `mobile` etiquetada `@mobile`):
+Suites actuales (64 pruebas, medido con `npm run test:e2e` — 62 en
+`chromium` + 2 en `mobile` etiquetadas `@mobile`):
 
 - `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que
   llevan a `/buscar` y ausencia de scroll horizontal a 375 px.
@@ -295,19 +295,28 @@ Suites actuales (49 pruebas, medido con `npm run test:e2e` — 48 en
 - `tests/e2e/search.spec.ts` — sincronización del input con `?q=` y
   destinos reales de los tiles de accesorios.
 - `tests/e2e/audit-ux.spec.ts` — regresión de las mejoras post-auditoría:
-  H1 semántico único en portada, banner "Sin cita previa" en `/soporte`,
-  checklist de preparación (copia, Buscar, modo antirrobo), entrega en
+  ahora la portada **no** contiene ningún `<h1>` (decisión visual
+  consciente); banner "Sin cita previa" en `/servicio-tecnico`,
+  checklist de preparación (copia, modo antirrobo, Buscar), entrega en
   cualquier tienda Banana, garantía / fuera de garantía con **35 €** y su
-  descuento/no-reembolso, plazos orientativos con mínimo de 3 días,
-  ausencia de reserva de cita/calendario/contraseña, y timeline oficial
-  del Plan Renove con Foxway sin precios ni tasador.
+  descuento/no-reembolso, plazos orientativos con mínimo de 3 días, y
+  Plan Renove con timeline en tienda (sin nombre de partner ni precios).
+- `tests/e2e/device-preparation-guide.spec.ts` — guía interactiva
+  "Preparar mi dispositivo": apertura desde `/soporte`, "Paso 1 de 4",
+  confirmaciones que habilitan "Siguiente", contenido de los tres
+  pasos (copia, modo antirrobo, Buscar), resumen final en orden con
+  aviso de no compartir credenciales, "Anterior", Escape, trampa de
+  foco, cierre desde el pie, reinicio al reabrir y ausencia de
+  reserva de cita, calendario o denominación "Iniciar reparación".
 - `tests/e2e/accessibility.spec.ts` — comprobaciones con
   [`@axe-core/playwright`](https://www.npmjs.com/package/@axe-core/playwright)
-  (etiquetas `wcag2a`, `wcag2aa`, `wcag21a`) sobre siete rutas: `/`,
+  (etiquetas `wcag2a`, `wcag2aa`, `wcag21a`) sobre siete rutas (`/`,
   `/iphone`, `/iphone/17-pro/256gb-plata`, `/tiendas`, `/soporte`,
-  `/plan-renove` y `/checkout/1` (con carrito sembrado). Se documentan
-  dos excepciones justificadas: `color-contrast` (paleta de marca a
-  revisar en el rediseño) y `region` (bloques decorativos del hero).
+  `/servicio-tecnico`, `/plan-renove`, `/checkout/1`) + la guía
+  interactiva abierta. **Ninguna regla se desactiva globalmente**:
+  `color-contrast` y `region` están activas; las violaciones reales
+  se corrigieron oscureciendo `--color-muted` a `#4d4d55`, la barra
+  utilitaria a `#1f6e83` y `--color-available` a `#2a6d2e`.
 
 ## Documentación
 

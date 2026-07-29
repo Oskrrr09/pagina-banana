@@ -24,13 +24,16 @@
   --color-banana-600: #f0b800;
   --color-checkout: #f7e6a9; /* amarillo pastel opaco para el flujo de pago */
   --color-ink: #1d1d1f; /* Casi negro (estilo Apple) — texto principal */
-  --color-muted: #6e6e73; /* Gris medio — texto secundario */
+  --color-muted: #4d4d55; /* Gris oscuro — texto secundario. WCAG AA sobre
+                             fondos blanco (#fff), neutro (#f5f5f7), amarillo
+                             claro (#fff7db) y cabecera amarilla (#f7e6a9). */
   --color-neutral: #f5f5f7; /* Fondo neutro */
   --color-line: #e3e3e6; /* Bordes/divisores sutiles */
   --color-surface: #ffffff;
 
   /* Semánticos de disponibilidad */
-  --color-available: #2e7d32;
+  --color-available: #2a6d2e; /* Verde disponibilidad — oscurecido para cumplir
+                                  WCAG AA sobre `bg-available-050` (#e8f3e9). */
   --color-available-050: #e8f3e9;
   --color-backorder: #cf6a12;
   --color-backorder-050: #fdf0e3;

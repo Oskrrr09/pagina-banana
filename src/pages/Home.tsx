@@ -24,19 +24,9 @@ export function Home() {
 
   return (
     <>
-      {/* 01 — Título semántico único de la portada. Se mantiene visible pero
-             discreto para no competir con el hero (que hoy usa <h2>). Sirve
-             como landmark inequívoco para lectores de pantalla y SEO. */}
-      <Container className="pt-4 pb-1 md:pt-6 md:pb-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-          Bienvenido
-        </p>
-        <h1 className="mt-1 font-display text-xl font-extrabold text-ink sm:text-2xl">
-          Banana Computer — Apple en Canarias
-        </h1>
-      </Container>
-
-      {/* 02 — Hero carrusel rotativo */}
+      {/* Decisión visual consciente: la portada empieza directamente por el
+          HeroCarousel. Los títulos rotativos del hero se mantienen como <h2>
+          y no se añade ningún <h1> sustituto (ni visible, ni sr-only). */}
       <HeroCarousel />
 
       {/* 02a — Franja de confianza. Todas las afirmaciones vienen del módulo
@@ -158,7 +148,7 @@ export function Home() {
               Trae tu dispositivo Apple a cualquier tienda Banana, un especialista lo tasa y aplicamos
               el descuento sobre tu próxima compra. Sencillo, inmediato y con precio garantizado.
             </p>
-            <p className="mt-2 text-xs text-ink/60">Tasación presencial · Cantidad demostrativa.</p>
+            <p className="mt-2 text-xs text-ink/80">Tasación presencial · Cantidad demostrativa.</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <ButtonLink to="/plan-renove" variant="primary">
                 <Icon name="refresh" size={18} /> Valorar mi dispositivo
@@ -398,7 +388,7 @@ export function Home() {
               Suscribirme
             </button>
           </form>
-          <p className="mt-3 text-xs text-ink/60">
+          <p className="mt-3 text-xs text-ink/80">
             Demostración: el formulario no envía datos reales.
           </p>
         </Reveal>

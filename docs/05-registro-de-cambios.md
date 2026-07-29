@@ -68,6 +68,46 @@ Rama `chore/auditoria-web-oficial-banana`.
   componentes ni pruebas existentes. `npm run build` y
   `npm run test:e2e` siguen en verde (21 pruebas).
 
+## 2026-07-29 — Portada sin H1, guía interactiva y axe sin excepciones
+
+Rama `fix/home-sat-guide-accessibility`.
+
+- **Portada** (`src/pages/Home.tsx`): se elimina la franja
+  "Bienvenido / Banana Computer — Apple en Canarias" y el `<h1>`
+  que contenía. La portada empieza directamente por `HeroCarousel`.
+  Es una decisión visual consciente: no se sustituye por otro H1,
+  ni visible ni `sr-only`.
+- **Guía interactiva "Preparar mi dispositivo"**
+  (`src/components/support/DevicePreparationGuide.tsx`): modal
+  accesible con `role="dialog"`, `aria-labelledby`, `aria-describedby`,
+  trampa de foco (Tab / Shift+Tab cíclicos), Escape, restauración
+  del foco al activador y `inert` sobre el resto del documento
+  mientras está abierto. Cuatro pasos: copia de seguridad → modo
+  antirrobo → función Buscar → resumen. Cada paso de preparación
+  exige una confirmación explícita antes de habilitar "Siguiente".
+  **Estado local**: no toca `localStorage`, `sessionStorage`,
+  cookies ni la red; al cerrar reinicia el progreso.
+- El quick-link "Iniciar reparación" pasa a llamarse
+  **"Preparar mi dispositivo"** (`src/data/content.ts`) y ahora
+  abre la guía. Los CTAs de `/soporte` y `/servicio-tecnico` la
+  activan también.
+- **axe sin excepciones globales** (`tests/e2e/accessibility.spec.ts`):
+  se retira `disableRules(['color-contrast','region'])`. Las
+  violaciones reales se corrigen con cambios mínimos de paleta:
+  `--color-muted` `#6e6e73` → `#4d4d55`; barra utilitaria
+  `#3ea3c1` → `#1f6e83` (retirada la opacidad `text-white/90`);
+  `--color-available` `#2e7d32` → `#2a6d2e`; y `text-ink/60`
+  → `text-ink/80` en la portada y en el hero.
+- **`/tiendas`** ya se había corregido previamente para `nested-interactive`.
+- **Landmarks** en `SupportPage`: el contenido pasa a estar
+  envuelto en `<main>`, la FAQ y las secciones de cierre en
+  `<section aria-labelledby>` para que `region` pase sin trucos.
+- **Suite Playwright**: 49 → **64 pruebas** (nuevos:
+  `device-preparation-guide.spec.ts` con 12 pruebas y ajustes en
+  `audit-ux.spec.ts`).
+- **No se ha tocado** Plan Renove, ni carrito, ni checkout, ni la
+  lógica del seguro.
+
 ## 2026-07-28 — Docs actualizados y E2E reales para favoritos y comparador
 
 Rama `fix/docs-and-real-e2e`.

@@ -112,7 +112,7 @@ export function HeroCarousel() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.05 }}
-                className={`text-sm font-bold uppercase tracking-[0.18em] ${light ? 'text-banana' : 'text-ink/60'}`}
+                className={`text-sm font-bold uppercase tracking-[0.18em] ${light ? 'text-banana' : 'text-ink/80'}`}
               >
                 {slide.eyebrow}
               </motion.p>

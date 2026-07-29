@@ -101,13 +101,13 @@ export function Header() {
     <>
       <header className="sticky top-0 z-40">
         {/* Barra superior de servicios — sólo escritorio; en móvil viven en el menú */}
-        <div className="hidden bg-[#3ea3c1] text-white sm:block">
+        <div className="hidden bg-[#1f6e83] text-white sm:block">
           <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium">
             {utilityLinks.map((link) => (
               <Link
                 key={link.label}
                 to={link.to}
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white/90 transition-colors hover:bg-white/15 hover:text-white"
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
               >
                 <Icon name={link.icon} size={14} /> {link.label}
               </Link>
