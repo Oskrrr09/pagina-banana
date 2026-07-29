@@ -51,7 +51,9 @@ test('desde el estado vacío se elige el primer modelo con el diálogo (sin scro
   await dialog.getByRole('button', { name: /^Elegir iPhone 17$/ }).click()
   await expect(dialog).toBeHidden()
   // La cabecera de tabla contiene ya el nombre elegido.
-  await expect(page.locator('table thead').getByText('iPhone 17', { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('group', { name: /^Modelos comparados/ }).getByText('iPhone 17', { exact: true }),
+  ).toBeVisible()
 })
 
 test('bloque inferior antiguo y "Diferencias entre las opciones" YA NO existen', async ({ page }) => {
@@ -95,9 +97,9 @@ test('cambiar modelo mantiene la misma columna y no duplica', async ({ page }) =
   // Elegir iPhone 17 (modelo distinto, mismo family).
   await dialog.getByRole('button', { name: /^Cambiar a iPhone 17$/ }).click()
   await expect(dialog).toBeHidden()
-  const thead = page.locator('table thead')
-  await expect(thead.getByText('iPhone 17', { exact: true })).toHaveCount(1)
-  await expect(thead.getByText('iPhone 17 Pro', { exact: true })).toHaveCount(1)
+  const cards = page.getByRole('group', { name: /^Modelos comparados/ })
+  await expect(cards.getByText('iPhone 17', { exact: true })).toHaveCount(1)
+  await expect(cards.getByText('iPhone 17 Pro', { exact: true })).toHaveCount(1)
 })
 
 test('modelo ya añadido aparece deshabilitado en el diálogo', async ({ page }) => {

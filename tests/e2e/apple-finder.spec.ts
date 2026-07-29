@@ -280,8 +280,8 @@ test('"Comparar estas opciones" envía los resultados a /comparar', async ({ pag
   await page.getByRole('button', { name: 'Comparar estas opciones' }).click()
   await expect(page).toHaveURL(/\/comparar$/)
   // Al menos un iPhone aparece en la cabecera del comparador y como mucho tres.
-  const thead = page.locator('table thead')
-  const boldCount = await thead.locator('p.font-bold').count()
+  const cards = page.getByRole('group', { name: /^Modelos comparados/ })
+  const boldCount = await cards.locator('p.font-bold').count()
   expect(boldCount).toBeGreaterThanOrEqual(1)
   expect(boldCount).toBeLessThanOrEqual(3)
 })

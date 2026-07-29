@@ -217,179 +217,184 @@ export function ComparePage() {
           )}
 
           <div className="mt-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <div
-              style={{ scrollSnapType: 'x proximity', WebkitOverflowScrolling: 'touch' }}
-              className="mx-auto min-w-full max-w-5xl"
-            >
-              <table
-                className="mx-auto w-full min-w-[720px] table-fixed border-collapse text-left"
-                aria-label={`Comparación de ${compare.length} ${family?.name ?? ''}`}
-              >
-                <colgroup>
-                  <col className="w-40" />
-                  <col className="w-[calc((100%-10rem)/3)]" />
-                  <col className="w-[calc((100%-10rem)/3)]" />
-                  <col className="w-[calc((100%-10rem)/3)]" />
-                </colgroup>
-                <thead className="sticky top-16 z-20 bg-surface sm:top-[6.25rem]">
-                  <tr>
-                    <th className="p-3 align-bottom text-sm font-medium text-muted">
-                      <span className="sr-only">Característica</span>
-                    </th>
-                    {Array.from({ length: MAX_SLOTS }).map((_, i) => {
-                      const c = compare[i]
-                      if (!c) {
-                        return (
-                          <th
-                            key={`slot-${i}`}
-                            className="h-full p-3 align-top"
-                            style={{ scrollSnapAlign: 'start' }}
-                          >
-                            <EmptySlot
-                              index={i}
-                              onClick={() => setPickerSlot({ kind: 'add' })}
-                              familyName={family?.name ?? ''}
-                              primary={false}
-                              compact
-                            />
-                          </th>
-                        )
-                      }
-                      const favId = `${c.family}/${c.modelSlug}`
-                      const fav = isFavorite(favId)
-                      const model = models.find((m) => m.slug === c.modelSlug) ?? models[0]
-                      const highlights = highlightsFor(c.modelSlug)
+            <div className="mx-auto w-full max-w-4xl">
+              <div className="min-w-[720px]">
+                {/* Cards row: CSS grid garantiza tres columnas idénticas
+                    con las tarjetas estiradas a la misma altura. */}
+                <div
+                  className="grid gap-3"
+                  style={{ gridTemplateColumns: '10rem repeat(3, minmax(0, 1fr))' }}
+                  role="group"
+                  aria-label={`Modelos comparados en ${family?.name ?? ''}`}
+                >
+                  <div aria-hidden="true" />
+                  {Array.from({ length: MAX_SLOTS }).map((_, i) => {
+                    const c = compare[i]
+                    if (!c) {
                       return (
-                        <th
-                          key={c.id}
-                          className="h-full p-3 align-top"
-                          style={{ scrollSnapAlign: 'start' }}
-                        >
-                          <div className="flex h-full min-h-[460px] flex-col rounded-[12px] border border-line bg-surface p-3">
-                            <ProductImage
-                              src={productImage(c.modelSlug, c.color)}
-                              alt={c.name}
-                              ratio="4 / 3"
-                            />
-                            <p className="mt-2 text-sm font-bold text-ink">{c.name}</p>
-                            <p className="text-xs text-muted">
-                              {c.capacity} · {c.color}
-                            </p>
-                            <p className="mt-1 font-bold text-ink">{euro(c.price)}</p>
-                            <div className="mt-1">
-                              <ProvisionalBadge label="Precio demostrativo" />
-                            </div>
-
-                            {highlights.length > 0 && (
-                              <ul className="mt-2 flex flex-wrap gap-1" aria-label="Destaca por">
-                                {highlights.map((h) => (
-                                  <li
-                                    key={h}
-                                    className="inline-flex items-center gap-1 rounded-full border border-brand bg-brand-050 px-2 py-0.5 text-[11px] font-semibold text-ink"
-                                  >
-                                    <Icon name="check" size={11} aria-hidden="true" />
-                                    {h}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-
-                            <div className="mt-auto pt-3">
-                              <Button
-                                size="sm"
-                                className="w-full"
-                                onClick={() =>
-                                  addToCart({
-                                    id: c.id,
-                                    modelSlug: c.modelSlug,
-                                    family: c.family,
-                                    name: c.name,
-                                    color: c.color,
-                                    capacity: c.capacity,
-                                    price: c.price,
-                                    previousPrice: null,
-                                  })
-                                }
-                              >
-                                Comprar
-                              </Button>
-                              <Link
-                                to={variantPath(model)}
-                                className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-[12px] border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:border-ink/30"
-                              >
-                                Más información
-                              </Link>
-                            </div>
-
-                            <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setPickerSlot({
-                                    kind: 'replace',
-                                    currentId: c.id,
-                                    currentSlug: c.modelSlug,
-                                  })
-                                }
-                                aria-label={`Cambiar modelo en la columna ${c.name}`}
-                                className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-1 text-[11px] font-semibold text-ink hover:border-ink/30"
-                              >
-                                <Icon name="refresh" size={12} aria-hidden="true" />
-                                Cambiar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => toggleFavorite(favId)}
-                                aria-pressed={fav}
-                                aria-label={
-                                  fav ? `Quitar ${c.name} de favoritos` : `Añadir ${c.name} a favoritos`
-                                }
-                                className="grid h-8 w-8 place-items-center rounded-full border border-line text-ink hover:border-danger hover:text-danger"
-                              >
-                                <Icon
-                                  name="heart"
-                                  size={14}
-                                  className={fav ? 'fill-danger text-danger' : ''}
-                                  aria-hidden="true"
-                                />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeCompare(c.id)}
-                                aria-label={`Quitar ${c.name} de la comparación`}
-                                className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted hover:border-danger hover:text-danger"
-                              >
-                                <Icon name="close" size={14} aria-hidden="true" />
-                              </button>
-                            </div>
-                          </div>
-                        </th>
+                        <EmptySlot
+                          key={`slot-${i}`}
+                          index={i}
+                          onClick={() => setPickerSlot({ kind: 'add' })}
+                          familyName={family?.name ?? ''}
+                          primary={false}
+                          compact
+                        />
                       )
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sections.map((section) => (
-                    <SectionGroup
-                      key={section.title}
-                      title={section.title}
-                      rows={section.rows}
-                      slots={MAX_SLOTS}
-                    />
-                  ))}
-                  {compare.length >= 2 && sections.length === 0 && (
-                    <tr>
-                      <th scope="row" className="p-3 text-left text-sm font-medium text-muted">
-                        Diferencias
-                      </th>
-                      <td className="p-3 text-sm text-muted" colSpan={MAX_SLOTS}>
-                        Los modelos seleccionados comparten los datos esenciales disponibles.
-                        Cambia a "Mostrar todas" para verlos.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    }
+                    const favId = `${c.family}/${c.modelSlug}`
+                    const fav = isFavorite(favId)
+                    const model = models.find((m) => m.slug === c.modelSlug) ?? models[0]
+                    const highlights = highlightsFor(c.modelSlug)
+                    return (
+                      <div
+                        key={c.id}
+                        className="flex h-full min-h-[520px] flex-col rounded-[12px] border border-line bg-surface p-3"
+                      >
+                        <ProductImage
+                          src={productImage(c.modelSlug, c.color)}
+                          alt={c.name}
+                          ratio="4 / 3"
+                        />
+                        <p className="mt-2 text-sm font-bold text-ink">{c.name}</p>
+                        <p className="text-xs text-muted">
+                          {c.capacity} · {c.color}
+                        </p>
+                        <p className="mt-1 font-bold text-ink">{euro(c.price)}</p>
+                        <div className="mt-1">
+                          <ProvisionalBadge label="Precio demostrativo" />
+                        </div>
+
+                        {highlights.length > 0 && (
+                          <ul
+                            className="mt-2 flex flex-wrap gap-1"
+                            aria-label="Destaca por"
+                          >
+                            {highlights.map((h) => (
+                              <li
+                                key={h}
+                                className="inline-flex items-center gap-1 rounded-full border border-brand bg-brand-050 px-2 py-0.5 text-[11px] font-semibold text-ink"
+                              >
+                                <Icon name="check" size={11} aria-hidden="true" />
+                                {h}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        <div className="mt-auto pt-3">
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() =>
+                              addToCart({
+                                id: c.id,
+                                modelSlug: c.modelSlug,
+                                family: c.family,
+                                name: c.name,
+                                color: c.color,
+                                capacity: c.capacity,
+                                price: c.price,
+                                previousPrice: null,
+                              })
+                            }
+                          >
+                            Comprar
+                          </Button>
+                          <Link
+                            to={variantPath(model)}
+                            className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-[12px] border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:border-ink/30"
+                          >
+                            Más información
+                          </Link>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPickerSlot({
+                                kind: 'replace',
+                                currentId: c.id,
+                                currentSlug: c.modelSlug,
+                              })
+                            }
+                            aria-label={`Cambiar modelo en la columna ${c.name}`}
+                            className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-1 text-[11px] font-semibold text-ink hover:border-ink/30"
+                          >
+                            <Icon name="refresh" size={12} aria-hidden="true" />
+                            Cambiar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleFavorite(favId)}
+                            aria-pressed={fav}
+                            aria-label={
+                              fav
+                                ? `Quitar ${c.name} de favoritos`
+                                : `Añadir ${c.name} a favoritos`
+                            }
+                            className="grid h-8 w-8 place-items-center rounded-full border border-line text-ink hover:border-danger hover:text-danger"
+                          >
+                            <Icon
+                              name="heart"
+                              size={14}
+                              className={fav ? 'fill-danger text-danger' : ''}
+                              aria-hidden="true"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeCompare(c.id)}
+                            aria-label={`Quitar ${c.name} de la comparación`}
+                            className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted hover:border-danger hover:text-danger"
+                          >
+                            <Icon name="close" size={14} aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Tabla de especificaciones con el mismo grid de columnas
+                    que las cards, alineación garantizada por colgroup. */}
+                <table
+                  className="mt-6 w-full table-fixed border-collapse text-left"
+                  aria-label={`Especificaciones comparadas de ${compare.length} ${family?.name ?? ''}`}
+                >
+                  <colgroup>
+                    <col style={{ width: '10rem' }} />
+                    <col />
+                    <col />
+                    <col />
+                  </colgroup>
+                  <tbody>
+                    {sections.map((section) => (
+                      <SectionGroup
+                        key={section.title}
+                        title={section.title}
+                        rows={section.rows}
+                        slots={MAX_SLOTS}
+                      />
+                    ))}
+                    {compare.length >= 2 && sections.length === 0 && (
+                      <tr>
+                        <th
+                          scope="row"
+                          className="p-3 text-left text-sm font-medium text-muted"
+                        >
+                          Diferencias
+                        </th>
+                        <td className="p-3 text-sm text-muted" colSpan={MAX_SLOTS}>
+                          Los modelos seleccionados comparten los datos esenciales
+                          disponibles. Cambia a "Mostrar todas" para verlos.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </>
@@ -432,7 +437,7 @@ function EmptySlot({
       aria-label={`Elegir modelo de ${familyName} para el espacio ${index + 1}`}
       className={[
         'group flex h-full w-full flex-col items-center justify-center gap-2 rounded-[12px] border border-dashed p-4 text-center transition-[transform,border-color] duration-150 hover:-translate-y-0.5',
-        compact ? 'min-h-[460px]' : 'min-h-[180px]',
+        compact ? 'min-h-[520px]' : 'min-h-[180px]',
         primary ? 'border-brand text-ink hover:border-banana' : 'border-line text-muted hover:border-ink/30',
       ].join(' ')}
     >

@@ -908,12 +908,12 @@ function ResultsStep({
       </div>
       <ul
         aria-label="Recomendaciones del asistente"
-        className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+        className="mt-5 grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3"
       >
         {computation.results.map((result) => (
           <li
             key={`${result.role}-${result.model.slug}`}
-            className="flex h-full flex-col rounded-[16px] border border-line bg-surface p-4"
+            className="flex h-full min-h-[520px] flex-col rounded-[16px] border border-line bg-surface p-4"
           >
             <span className="inline-flex w-fit items-center gap-1 rounded-full bg-brand-050 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink">
               {result.role === 'best-fit'
