@@ -14,6 +14,7 @@ sobre React + Vite + TypeScript y publicada en GitHub Pages.
 
 | Pieza | Versión efectiva |
 | --- | --- |
+| Node.js | 24 (versión utilizada en GitHub Actions) |
 | React / React DOM | 18.3.1 |
 | React Router DOM | 6.30.4 |
 | Motion (`motion/react`) | 11.x |
@@ -24,7 +25,12 @@ sobre React + Vite + TypeScript y publicada en GitHub Pages.
 
 ## Arrancar y verificar
 
+Este repositorio utiliza **Node.js 24** en GitHub Actions. Con
+[nvm](https://github.com/nvm-sh/nvm) puedes activar la misma versión
+ejecutando `nvm use` (el archivo `.nvmrc` en la raíz fija la versión).
+
 ```bash
+nvm use                 # opcional, si usas nvm — fija Node 24 según .nvmrc
 npm ci                  # instala dependencias reproducibles
 npm run dev             # http://localhost:5173/pagina-banana/
 npm run build           # comprueba tipos + genera dist/
@@ -100,7 +106,7 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 | `/checkout/2` | Pago y extras (crea el pedido demo al confirmar) |
 | `/checkout/3` | Confirmación (solo accesible con pedido válido) |
 | `/servicios` | Servicios de Banana (contenido demostrativo) |
-| `/plan-renove` | Página con timeline oficial de 4 pasos con Foxway, sin precios ni tasador propio |
+| `/plan-renove` | Plan Renove con valoración estimada online y finalización en tienda, sin precios ni tasador propio |
 | `/soporte` | Centro de soporte (buscador, FAQ, acceso al Servicio Técnico y activador de la guía **Preparar mi dispositivo**) |
 | `/servicio-tecnico` | **Servicio Técnico Autorizado**: sin cita, checklist, entrega, garantía / fuera de garantía y plazos orientativos |
 | `/tiendas`, `/tiendas/:slug` | Google Maps embed con las 5 tiendas |
@@ -310,9 +316,10 @@ Suites actuales (64 pruebas, medido con `npm run test:e2e` — 62 en
   reserva de cita, calendario o denominación "Iniciar reparación".
 - `tests/e2e/accessibility.spec.ts` — comprobaciones con
   [`@axe-core/playwright`](https://www.npmjs.com/package/@axe-core/playwright)
-  (etiquetas `wcag2a`, `wcag2aa`, `wcag21a`) sobre siete rutas (`/`,
-  `/iphone`, `/iphone/17-pro/256gb-plata`, `/tiendas`, `/soporte`,
-  `/servicio-tecnico`, `/plan-renove`, `/checkout/1`) + la guía
+  (etiquetas `wcag2a`, `wcag2aa`, `wcag21a`) sobre ocho rutas
+  (`/`, `/iphone`, `/iphone/17-pro/256gb-plata`, `/tiendas`,
+  `/soporte`, `/servicio-tecnico`, `/plan-renove`, `/checkout/1`)
+  más la guía
   interactiva abierta. **Ninguna regla se desactiva globalmente**:
   `color-contrast` y `region` están activas; las violaciones reales
   se corrigieron oscureciendo `--color-muted` a `#4d4d55`, la barra

@@ -68,6 +68,43 @@ Rama `chore/auditoria-web-oficial-banana`.
   componentes ni pruebas existentes. `npm run build` y
   `npm run test:e2e` siguen en verde (21 pruebas).
 
+## 2026-07-29 — Limpieza release candidate y mantenimiento técnico
+
+Rama `chore/release-candidate-cleanup`.
+
+- **Documentación alineada con la interfaz**: la fila de
+  `/plan-renove` en la tabla de rutas del README ya no menciona
+  al proveedor externo; la sección de axe corrige el conteo a
+  "ocho rutas más la guía interactiva". `docs/03-roadmap.md`
+  refleja el orden correcto de preparación (copia → antirrobo →
+  Buscar), la existencia de `/servicio-tecnico` como página
+  propia y la guía interactiva `DevicePreparationGuide`.
+- **Node.js 24 explícito en CI y Pages**: `node-version: 20` →
+  `node-version: 24` en `.github/workflows/e2e.yml` y
+  `.github/workflows/deploy.yml`. Nuevo `.nvmrc` en la raíz con
+  `24` para alinear el entorno local con nvm.
+- **Artefactos de TypeScript fuera del repositorio**:
+  `git rm tsconfig.tsbuildinfo` y nueva regla `*.tsbuildinfo` en
+  `.gitignore`. El archivo sigue generándose localmente con
+  `tsc -b` pero ya no se versiona. No se ha desactivado el modo
+  `incremental`.
+- **`npm audit` reverificado**: sigue habiendo 2 vulnerabilidades
+  moderadas en `react-router@6.30.4` sin fix dentro de la línea
+  6.x (`GHSA-wrjc-x8rr-h8h6` y `GHSA-337j-9hxr-rhxg`). Se
+  **mantiene** `react-router-dom@6.30.4`; no se ha migrado a
+  React Router 7 ni se ha ejecutado `npm audit fix`. SEG-001
+  permanece abierto con la evidencia actualizada.
+- **QA-001 sin contradicciones**: el pendiente residual queda
+  reducido a ampliar la cobertura axe al detalle de tienda
+  (`/tiendas/:slug`); ya no aparece "integrar axe" como tarea
+  pendiente.
+- **CI-001 cerrado en código**, pendiente de la validación del
+  workflow de la propia PR.
+- **ARTEFACTOS-001** documentado y cerrado.
+- Sin cambios en interfaz, componentes React, `src/`, `tests/`
+  ni scripts privados de auditoría. El seguro, el checkout, el
+  Plan Renove y la guía interactiva permanecen intactos.
+
 ## 2026-07-29 — Portada sin H1, guía interactiva y axe sin excepciones
 
 Rama `fix/home-sat-guide-accessibility`.

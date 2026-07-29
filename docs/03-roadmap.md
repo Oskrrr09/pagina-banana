@@ -1,6 +1,6 @@
 ---
 tipo: roadmap
-actualizado: 2026-07-26
+actualizado: 2026-07-29
 ---
 
 # Roadmap
@@ -73,34 +73,47 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
   "Bienvenido / Banana Computer — Apple en Canarias" y **no se
   añade otro H1**. La portada empieza directamente por el
   `HeroCarousel`; los títulos de los slides son `<h2>`.
-- ✅ Bloque "Servicio Técnico Autorizado" en `/soporte` con banner
-  "Sin cita previa", checklist de preparación (copia de seguridad,
-  desactivar Buscar y modo antirrobo), opciones de entrega,
-  condiciones de garantía / fuera de garantía (35 € con descuento o
-  no reembolsable) y plazos orientativos con mínimo de 3 días de
-  traslado y aclaración de que ese plazo no incluye diagnóstico ni
-  reparación.
-- ✅ Timeline oficial del Plan Renove (4 pasos con Foxway) sin
-  precios, sin ejemplos de tasación y sin tasador propio.
-- ✅ Cobertura `@axe-core/playwright` sobre 7 rutas dentro de la
-  suite E2E existente. Ampliada el 2026-07-29 para ejecutar
-  `color-contrast` y `region` **sin excepciones globales** y para
-  cubrir también la guía interactiva.
-
-**Añadido el 2026-07-29** en `fix/home-sat-guide-accessibility`:
-
+- ✅ **Servicio Técnico Autorizado** — vive en `/servicio-tecnico`
+  (página propia enlazada desde la barra utilitaria y desde
+  `/soporte`). Contiene banner "Sin cita previa", checklist con el
+  **orden correcto** (1) copia de seguridad → (2) desactivar la
+  protección o modo antirrobo cuando corresponda → (3) desactivar
+  la función Buscar, opciones de entrega, condiciones de garantía /
+  fuera de garantía (35 € con descuento o no reembolsable) y plazos
+  orientativos con mínimo de 3 días de traslado y aclaración de que
+  ese plazo no incluye diagnóstico ni reparación. `/soporte` queda
+  como centro de ayuda genérico con activadores de la guía.
 - ✅ Nueva guía interactiva "Preparar mi dispositivo"
   (`DevicePreparationGuide`) con 4 pasos, confirmaciones,
   navegación teclado y trampa de foco. Estado local (sin
   `localStorage`, sin peticiones).
 - ✅ Renombrado del quick-link "Iniciar reparación" a
   "Preparar mi dispositivo" en `src/data/content.ts`.
-- ✅ Corrección real de contraste (paleta muted / cian / verde).
+- ✅ Timeline del Plan Renove con valoración estimada online,
+  finalización en tienda y tratamiento específico para Mac, sin
+  precios ni tasador propio.
+- ✅ **axe integrado** en la suite E2E. Ejecuta `color-contrast` y
+  `region` sobre **ocho rutas más la guía interactiva** (`/`,
+  `/iphone`, ficha de producto, `/tiendas`, `/soporte`,
+  `/servicio-tecnico`, `/plan-renove`, `/checkout/1` + guía). No
+  hay reglas globalmente desactivadas.
+- ✅ Corrección real de contraste (paleta muted / cian utilitaria /
+  verde disponibilidad).
+
+**Añadido el 2026-07-29** en `chore/release-candidate-cleanup`:
+
+- ✅ Node.js 24 en `.github/workflows/e2e.yml` y
+  `.github/workflows/deploy.yml`.
+- ✅ `.nvmrc` en la raíz con `24`.
+- ✅ Retirado `tsconfig.tsbuildinfo` del repositorio y añadido
+  `*.tsbuildinfo` al `.gitignore`.
 
 **Pendiente**:
 
 - Franja fija "Total — Continuar" en checkout móvil, sin tocar la
   lógica del seguro ni la trampa de foco existente del chat.
+- Cobertura axe adicional del detalle de tienda
+  (`/tiendas/:slug`).
 
 Descartadas expresamente (mismo informe): tasador propio del Plan
 Renove, sistema de citas para servicio técnico y chat con IA real.

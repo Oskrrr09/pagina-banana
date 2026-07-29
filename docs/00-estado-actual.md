@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-07-28
+actualizado: 2026-07-29
 ---
 
 # Estado actual
@@ -15,15 +15,26 @@ actualizado: 2026-07-28
 
 - Rama de producción: `main`.
 - Último merge relevante: PR
-  [#10](https://github.com/luis-lop-nas/pagina-banana/pull/10) —
-  "Checkout hooks, chat focus trap, README y suite E2E ampliada",
-  merge en `5430865` el 2026-07-28. Rama posterior
-  `fix/docs-and-real-e2e` actualiza README y pruebas E2E reales.
-- URL pública verificada el 2026-07-28:
+  [#14](https://github.com/luis-lop-nas/pagina-banana/pull/14) —
+  "Corrige portada, guía de preparación y accesibilidad",
+  merge en `78c38894` el 2026-07-29. Rama en curso
+  `chore/release-candidate-cleanup` para limpieza de release
+  candidate y mantenimiento técnico (Node 24, `.tsbuildinfo`
+  ignorado, `.nvmrc`).
+- URL pública verificada el 2026-07-29:
   <https://luis-lop-nas.github.io/pagina-banana/> (HTTP 200).
-- Workflows comprobados en el mismo día: Deploy a GitHub Pages
-  `30391392521` ✅ y Pruebas E2E (Playwright) `30391392484` ✅ sobre
-  el commit del merge de la PR #10.
+- **Node.js 24** en ambos workflows (`e2e.yml` y `deploy.yml`)
+  desde 2026-07-29. `.nvmrc` en la raíz para alinear el entorno
+  local con CI.
+- **Estado de dependencias (2026-07-29)**: `npm audit` reporta 2
+  vulnerabilidades moderadas en `react-router@6.30.4` sin fix
+  dentro de la línea 6.x (requerirían migración mayor a React
+  Router 7, fuera de alcance). Ver
+  [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
+- **axe** cubre 8 rutas más la guía interactiva, con `color-contrast`
+  y `region` activos y sin excepciones globales.
+- Artefacto `tsconfig.tsbuildinfo` retirado del repositorio;
+  `*.tsbuildinfo` en `.gitignore`.
 - Ya existían dos carpetas locales no versionadas: `.agents/` y
   `.obsidian/`. `.agents/` replica los skills versionados en
   `.claude/skills/` y se incorpora al repositorio como guía de trabajo
