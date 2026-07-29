@@ -307,21 +307,23 @@ test('desempate NO alfabético: para trabajo AirPods no desplaza a Mac aunque em
 // ------------------------- casos límite -----------------------------------
 
 test('workType se limpia al cambiar el uso a un valor distinto de Trabajo', async ({ page }) => {
-  // Flujo: Trabajo → programación (workType) → resumen → cambiar uso a
-  // Estudio. El resumen no debe conservar la pregunta ni el valor de
-  // workType.
+  // Flujo completo: Trabajo + Ofimática + Portabilidad → Mac primary → primer
+  // resumen (con workType visible). Cambiamos el uso a Estudio → family-confirm
+  // → iPad primary → segundo resumen. En el segundo resumen NO debe aparecer
+  // la pregunta ni el valor de workType, y sí "Estudio".
   await start(page)
   await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
   await answerGeneralFlow(page, {
     use: 'Trabajo',
     productRole: 'Un equipo principal para realizar mis tareas.',
-    workType: 'Programación o aplicaciones de escritorio.',
-    priority: 'Potencia',
+    workType: 'Ofimática, correo y videollamadas.',
+    priority: 'Portabilidad',
     portability: 'Sí, lo llevaré siempre encima',
   })
-  // Confirma familia principal (Mac) para llegar al flujo completo.
-  const primary = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
-  await primary.getByRole('button', { name: /Continuar con esta categoría/ }).click()
+  // Confirma familia principal (Mac, según el ranking probado).
+  const primaryMac = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primaryMac.getByRole('heading', { name: 'Mac' })).toBeVisible()
+  await primaryMac.getByRole('button', { name: /Continuar con esta categoría/ }).click()
   // Responder las preguntas específicas de Mac.
   await answerAndNext(page, 'Estudio y ofimática')
   await answerAndNext(page, 'Portátil (imprescindible)')
@@ -331,25 +333,47 @@ test('workType se limpia al cambiar el uso a un valor distinto de Trabajo', asyn
   await page.getByRole('radio', { name: 'Solo es una referencia' }).click()
   await page.getByRole('button', { name: /Continuar|Siguiente/ }).click()
   await expect(page.getByRole('heading', { name: 'Esto es lo que buscas' })).toBeVisible()
-  // El resumen antes de editar contiene el tipo de trabajo.
-  await expect(page.getByText('Programación o aplicaciones de escritorio.')).toBeVisible()
-  // Cambiamos el uso a Estudio.
+  // Primer resumen: la pregunta y valor de workType están presentes.
+  await expect(page.getByText('¿Qué tipo de trabajo realizarás principalmente?')).toBeVisible()
+  await expect(page.getByText('Ofimática, correo y videollamadas.')).toBeVisible()
+
+  // Cambiamos el uso a Estudio desde el resumen.
   await page
     .getByRole('button', { name: /Cambiar: ¿Para qué lo utilizarás principalmente\?/ })
     .click()
   await page.getByRole('radio', { name: 'Estudio' }).click()
-  // El flujo general para "Estudio" tiene 4 preguntas (use, productRole,
-  // priority, portability — sin workType). Avanzamos hasta llegar al
-  // family-confirm. Cada respuesta previa se conserva.
+  // Estudio tiene 4 preguntas (use, productRole, priority, portability —
+  // sin workType). Recorremos hasta family-confirm; cada respuesta previa
+  // se conserva.
   for (let i = 0; i < 4; i++) {
     await page.getByRole('button', { name: /Continuar|Siguiente/ }).first().click()
   }
-  // Ha vuelto a la pantalla de confirmación de familia (Estudio → iPad/Mac).
+  // Confirmamos familia principal (iPad, según 'estudio + primary + portabilidad').
+  const primaryIpad = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
+  await expect(primaryIpad.getByRole('heading', { name: 'iPad' })).toBeVisible()
+  await primaryIpad.getByRole('button', { name: /Continuar con esta categoría/ }).click()
+  // Responder las preguntas específicas de iPad.
+  await answerAndNext(page, 'Estudio')
+  await answerAndNext(page, 'Sí (imprescindible)')
+  await answerAndNext(page, 'Sí (imprescindible)', /Continuar|Siguiente/)
+  await page.getByRole('radio', { name: 'Sin límite' }).click()
+  await page.getByRole('button', { name: /^Siguiente/ }).click()
+  await page.getByRole('radio', { name: 'Solo es una referencia' }).click()
+  await page.getByRole('button', { name: /Continuar|Siguiente/ }).click()
+
+  // Segundo resumen: aparece Estudio, NO aparece workType.
+  await expect(page.getByRole('heading', { name: 'Esto es lo que buscas' })).toBeVisible()
+  // "Estudio" aparece dos veces en el resumen: como uso general y como
+  // uso específico de iPad.
+  await expect(page.getByText('Estudio', { exact: true })).toHaveCount(2)
+  await expect(page.getByText('¿Qué tipo de trabajo realizarás principalmente?')).toHaveCount(0)
+  await expect(page.getByText('Ofimática, correo y videollamadas.')).toHaveCount(0)
   await expect(
-    page.getByRole('heading', {
-      name: /Por lo que nos cuentas, creemos que/,
-    }),
-  ).toBeVisible()
+    page.getByRole('button', { name: /Cambiar: ¿Qué tipo de trabajo realizarás principalmente\?/ }),
+  ).toHaveCount(0)
+  // Se puede continuar a resultados.
+  await page.getByRole('button', { name: /Ver recomendaciones/ }).click()
+  await expect(page.getByRole('heading', { name: /Opciones sugeridas en iPad/ })).toBeVisible()
 })
 
 test('SummaryStep no muestra "¿Qué tipo de trabajo?" cuando el uso no es Trabajo', async ({ page }) => {
@@ -376,6 +400,23 @@ test('SummaryStep no muestra "¿Qué tipo de trabajo?" cuando el uso no es Traba
   // No hay fila de tipo de trabajo.
   await expect(page.getByText('¿Qué tipo de trabajo realizarás principalmente?')).toHaveCount(0)
   await expect(page.getByText('Programación o aplicaciones de escritorio.')).toHaveCount(0)
+})
+
+test('Estado sin coincidencias: el foco llega al encabezado principal', async ({ page }) => {
+  await start(page)
+  await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
+  await answerGeneralFlow(page, {
+    use: 'Fotografía y vídeo',
+    productRole: 'Un complemento, como auriculares o reloj.',
+    priority: 'Cámara',
+    portability: 'Sí, lo llevaré siempre encima',
+  })
+  const heading = page.getByRole('heading', {
+    name: 'No encontramos una categoría que encaje con todo',
+  })
+  await expect(heading).toBeVisible()
+  await expect(heading).toBeFocused()
+  await expect(heading).toHaveAttribute('tabindex', '-1')
 })
 
 test('Fotografía + complemento muestra estado sin coincidencias (sin recomendaciones)', async ({ page }) => {

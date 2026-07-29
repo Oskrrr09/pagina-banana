@@ -157,6 +157,14 @@ asistente:
 - `docs/05-registro-de-cambios.md`.
 - `docs/sesiones/2026-07-29--casos-limite-recomendador.md`.
 
+## Cierre
+
+- PR **#23** — `fix/finder-edge-cases-cleanup`.
+- Commit funcional `fe07b40d8bcd2b2a38430c24fb9cc68902297158`.
+- Merge `67d26b9f5e5065a1e30d04e5c49f2e91c42996a8`.
+- Workflow E2E correcto (`pass 3m44s` en el commit de merge).
+- Suite estable en **121/121** (chromium + mobile).
+
 ## Pendientes reales
 
 - Runner de tests unitarios (Vitest) para cubrir la matriz completa
