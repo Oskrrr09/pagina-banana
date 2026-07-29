@@ -23,6 +23,9 @@ docs/.obsidian/
 # Vite
 .vite/
 
+# TypeScript — caché incremental (se regenera con `tsc -b`, no se versiona)
+*.tsbuildinfo
+
 # Playwright — artefactos de pruebas E2E
 playwright-report/
 test-results/

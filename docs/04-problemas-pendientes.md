@@ -1,6 +1,6 @@
 ---
 tipo: problemas
-actualizado: 2026-07-28
+actualizado: 2026-07-29
 ---
 
 # Problemas pendientes
@@ -185,36 +185,61 @@ del repositorio. No se corrigen en la preparación documental.
   `npx playwright install --with-deps chromium` y `npm run test:e2e`
   en cada push/PR sobre `main`, con el proyecto móvil corriendo sobre
   Chromium (`Pixel 5`) para no requerir WebKit.
-- Pendiente: comprobaciones de accesibilidad automáticas (axe) y
-  cobertura del detalle de tienda.
+- Pendiente: únicamente ampliar la cobertura axe al detalle de tienda
+  (`/tiendas/:slug`). Las comprobaciones axe ya están integradas y
+  activas — no queda pendiente "integrar axe".
 
 ## SEG-001 — Avisos de seguridad en React Router
 
-- Estado: abierto.
+- Estado: **abierto**. Reverificado el 2026-07-29 con el lockfile
+  actual (`npm ci` + `npm audit` + `npm audit --omit=dev` + `npm ls`).
 - Impacto: moderado según `npm audit`.
-- Evidencia: el lockfile resuelve `react-router-dom@6.30.4` y
-  `react-router@6.30.4`. La auditoría del 2026-07-26 reportó:
-  - `GHSA-jjmj-jmhj-qwj2`: redirección abierta con posible XSS.
-  - `GHSA-wrjc-x8rr-h8h6`: bypass de redirección abierta mediante barra
-    invertida.
-  - `GHSA-337j-9hxr-rhxg`: inyección de constructor en hidratación SSR.
-- Matiz: este proyecto es una SPA sin SSR, por lo que el tercer caso no coincide
-  con la arquitectura actual; los avisos de navegación sí afectan a la
-  dependencia instalada.
-- Corrección disponible: sí, según `npm audit`. Debe evaluarse y verificarse sin
-  aplicar automáticamente `npm audit fix`.
+- Evidencia (2026-07-29): `npm ls react-router react-router-dom` →
+  `react-router-dom@6.30.4 → react-router@6.30.4`. `npm audit` reporta
+  **2 vulnerabilidades moderadas** con **"No fix available"** dentro
+  de la línea 6.x:
+  - `GHSA-wrjc-x8rr-h8h6`: React Router — Open redirect via backslash
+    en `<Link>` y `useNavigate` (bypass de CVE-2025-68470).
+  - `GHSA-337j-9hxr-rhxg`: React Router — Arbitrary Constructor
+    Injection via `deserializeErrors()` en la hidratación SSR.
+- Matiz: este prototipo es una SPA sin SSR, por lo que
+  `deserializeErrors` no se ejecuta; el aviso de open redirect vía
+  `<Link>` sí aplica en teoría, pero la URL de destino se compone en
+  cliente a partir de datos del propio catálogo (no se pasa input de
+  usuario a `<Link to>` en ninguna ruta).
+- Corrección disponible: **no** dentro de 6.x. La corrección oficial
+  requiere migrar a **React Router 7** (mayor, con `data routers` y
+  cambios de API). Esta migración queda fuera del alcance de la
+  presente PR y se evaluará por separado.
+- Acción tomada en esta PR: se mantiene `react-router-dom@6.30.4`
+  intacto. No se ha ejecutado `npm audit fix` ni `--force`.
 
 ## CI-001 — Actions fuerza Node 24 por obsolescencia de Node 20
 
-- Estado: abierto.
-- Impacto: bajo hoy; mantenimiento preventivo.
-- Evidencia: el workflow de Pages `30210351355` terminó correctamente, pero
-  avisó de que Node.js 20 está obsoleto y que fuerza Node.js 24 para
-  `actions/checkout@v4`, `actions/setup-node@v4` y
-  `actions/upload-artifact@v4`.
-- Consecuencia actual: ninguna en el despliegue verificado.
-- Siguiente validación: actualizar de forma explícita la versión de Node del
-  workflow y volver a comprobar `npm ci`, build y Pages.
+- Estado: **resuelto en código el 2026-07-29**, pendiente de
+  validación del workflow de la PR.
+- Cambio aplicado: `node-version: 20` → `node-version: 24` en
+  `.github/workflows/e2e.yml` y `.github/workflows/deploy.yml`.
+  Añadido `.nvmrc` con `24` en la raíz para que el entorno local
+  con nvm coincida con CI.
+- Verificación final: se marcará cerrado en cuanto los workflows
+  E2E y Pages de esta PR terminen en verde utilizando Node 24
+  explícito (sin el aviso de deprecación).
+
+## ARTEFACTOS-001 — `tsconfig.tsbuildinfo` versionado
+
+- Estado: **cerrado el 2026-07-29**.
+- Evidencia previa: `tsconfig.tsbuildinfo` (caché incremental de
+  TypeScript) estaba trackeado en el índice y aparecía en el diff
+  de casi todas las ramas con cambios de código.
+- Resolución: `git rm tsconfig.tsbuildinfo` y regla nueva
+  `*.tsbuildinfo` en `.gitignore`. El archivo se regenera
+  localmente con `tsc -b` en el paso `npm run build` y ya no
+  ensucia Git. No se ha desactivado el modo `incremental` de
+  TypeScript.
+- Comprobación: `git ls-files | grep -E '\.tsbuildinfo$'` → vacío;
+  `git check-ignore -v tsconfig.tsbuildinfo` → apunta a la nueva
+  regla del `.gitignore`.
 
 ## UX-BANANA-001 — Hallazgos de la auditoría de la web oficial
 
