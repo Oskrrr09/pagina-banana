@@ -393,7 +393,7 @@ function FavoriteStoreMenu() {
             ? `Mi tienda: ${favoriteStore.name}. Cambiar o quitar.`
             : 'Elegir tienda favorita'
         }
-        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
+        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-medium text-white transition-colors hover:bg-white/15"
       >
         <Icon name="star" size={14} aria-hidden="true" />
         {favoriteStore ? `Mi tienda: ${favoriteStore.name}` : 'Elegir tienda'}
