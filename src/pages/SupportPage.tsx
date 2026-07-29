@@ -3,15 +3,17 @@ import { Link } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Accordion } from '../components/ui/Accordion'
+import { DevicePreparationGuide } from '../components/support/DevicePreparationGuide'
 import { supportQuickLinks, supportTopics } from '../data/content'
 
 // Centro de soporte (§4.15).
 // - Buscador de ayuda + FAQ por tema.
-// - El bloque completo del Servicio Técnico Autorizado vive ahora en su
-//   página propia `/servicio-tecnico` (y está enlazada desde la barra
-//   utilitaria superior). Aquí se muestra únicamente un acceso rápido.
+// - El bloque completo del Servicio Técnico Autorizado vive en su página propia
+//   `/servicio-tecnico`. Aquí se muestra un acceso rápido y el activador de la
+//   guía interactiva "Preparar mi dispositivo" (DevicePreparationGuide).
 export function SupportPage() {
   const [q, setQ] = useState('')
+  const [guideOpen, setGuideOpen] = useState(false)
   const term = q.trim().toLowerCase()
 
   const filteredTopics = useMemo(() => {
@@ -45,93 +47,128 @@ export function SupportPage() {
         </Container>
       </section>
 
-      <Container className="py-10">
-        {/* 2 — Accesos rápidos. "Iniciar reparación" navega ahora a la
-              página dedicada del Servicio Técnico. */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {supportQuickLinks.map((l) => (
-            <Link
-              key={l.title}
-              to={l.title === 'Iniciar reparación' ? '/servicio-tecnico' : '#faq'}
-              className="flex flex-col items-start rounded-[12px] border border-line bg-surface p-5 text-left transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
-            >
-              <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-brand-050 text-ink">
-                <Icon name={l.icon} size={22} aria-hidden="true" />
-              </span>
-              <p className="mt-3 font-semibold text-ink">{l.title}</p>
-              <p className="mt-0.5 text-sm text-muted">{l.desc}</p>
-            </Link>
-          ))}
-        </div>
-
-        {/* 3 — Acceso destacado al Servicio Técnico Autorizado */}
-        <aside
-          aria-labelledby="sat-callout"
-          className="mt-8 rounded-[16px] border border-line bg-neutral p-6 md:p-8"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-2xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                Servicio técnico
-              </p>
-              <h2 id="sat-callout" className="mt-1 text-2xl font-extrabold text-ink">
-                ¿Necesitas reparar un dispositivo Apple?
-              </h2>
-              <p className="mt-2 text-sm text-ink">
-                Consulta cómo entregar tu dispositivo, qué preparar antes, y las condiciones en
-                garantía y fuera de garantía. No necesitas cita previa.
-              </p>
-            </div>
-            <Link
-              to="/servicio-tecnico"
-              className="inline-flex items-center gap-2 rounded-[12px] bg-action px-5 py-3 text-sm font-semibold text-ink hover:bg-action-600"
-            >
-              Ir a Servicio Técnico
-              <Icon name="arrow-right" size={16} aria-hidden="true" />
-            </Link>
+      <main>
+        <Container className="py-10">
+          {/* 2 — Accesos rápidos. "Preparar mi dispositivo" abre la guía
+                interactiva; el resto navegan a anclas o secciones. */}
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {supportQuickLinks.map((l) =>
+              l.title === 'Preparar mi dispositivo' ? (
+                <button
+                  key={l.title}
+                  type="button"
+                  onClick={() => setGuideOpen(true)}
+                  className="flex flex-col items-start rounded-[12px] border border-line bg-surface p-5 text-left transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
+                >
+                  <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-brand-050 text-ink">
+                    <Icon name={l.icon} size={22} aria-hidden="true" />
+                  </span>
+                  <p className="mt-3 font-semibold text-ink">{l.title}</p>
+                  <p className="mt-0.5 text-sm text-muted">{l.desc}</p>
+                </button>
+              ) : (
+                <Link
+                  key={l.title}
+                  to="#faq"
+                  className="flex flex-col items-start rounded-[12px] border border-line bg-surface p-5 text-left transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
+                >
+                  <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-brand-050 text-ink">
+                    <Icon name={l.icon} size={22} aria-hidden="true" />
+                  </span>
+                  <p className="mt-3 font-semibold text-ink">{l.title}</p>
+                  <p className="mt-0.5 text-sm text-muted">{l.desc}</p>
+                </Link>
+              ),
+            )}
           </div>
-        </aside>
 
-        {/* 4 — FAQ por tema */}
-        <div id="faq" className="mt-12">
-          <h2 className="mb-6 text-2xl font-bold text-ink">Preguntas frecuentes</h2>
-          {filteredTopics.length === 0 ? (
-            <div className="rounded-[12px] border border-dashed border-line py-12 text-center">
-              <p className="text-ink">No hemos encontrado artículos sobre “{q}”.</p>
-              <p className="mt-2 text-sm text-muted">Prueba a contactar por chat o formulario.</p>
+          {/* 3 — Acceso destacado al Servicio Técnico Autorizado */}
+          <aside
+            aria-labelledby="sat-callout"
+            className="mt-8 rounded-[16px] border border-line bg-neutral p-6 md:p-8"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-2xl">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+                  Servicio técnico
+                </p>
+                <h2 id="sat-callout" className="mt-1 text-2xl font-extrabold text-ink">
+                  ¿Necesitas reparar un dispositivo Apple?
+                </h2>
+                <p className="mt-2 text-sm text-ink">
+                  Consulta cómo entregar tu dispositivo, qué preparar antes, y las condiciones en
+                  garantía y fuera de garantía. No necesitas cita previa.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setGuideOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-5 py-3 text-sm font-semibold text-ink hover:border-ink/30"
+                >
+                  Preparar mi dispositivo
+                </button>
+                <Link
+                  to="/servicio-tecnico"
+                  className="inline-flex items-center gap-2 rounded-[12px] bg-action px-5 py-3 text-sm font-semibold text-ink hover:bg-action-600"
+                >
+                  Ir a Servicio Técnico
+                  <Icon name="arrow-right" size={16} aria-hidden="true" />
+                </Link>
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-8 md:grid-cols-2">
-              {filteredTopics.map((t) => (
-                <div key={t.topic}>
-                  <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-ink">{t.topic}</h3>
-                  <Accordion items={t.items} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          </aside>
 
-        {/* 5 — Cierre con acceso a tiendas y servicios */}
-        <div className="mt-12 rounded-[20px] border border-line bg-neutral p-8 text-center">
-          <h2 className="text-xl font-bold text-ink">¿No encuentras lo que buscas?</h2>
-          <p className="mt-2 text-muted">Estamos aquí para ayudarte por el canal que prefieras.</p>
-          <div className="mt-5 flex flex-wrap justify-center gap-3">
-            <Link
-              to="/tiendas"
-              className="inline-flex items-center gap-2 rounded-[12px] bg-action px-6 py-3 font-semibold text-ink hover:bg-action-600"
-            >
-              Ver tiendas y horarios
-            </Link>
-            <Link
-              to="/servicios"
-              className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-6 py-3 font-semibold text-ink hover:border-ink/30"
-            >
-              Más servicios de Banana
-            </Link>
-          </div>
-        </div>
-      </Container>
+          {/* 4 — FAQ por tema */}
+          <section id="faq" aria-labelledby="faq-heading" className="mt-12">
+            <h2 id="faq-heading" className="mb-6 text-2xl font-bold text-ink">
+              Preguntas frecuentes
+            </h2>
+            {filteredTopics.length === 0 ? (
+              <div className="rounded-[12px] border border-dashed border-line py-12 text-center">
+                <p className="text-ink">No hemos encontrado artículos sobre “{q}”.</p>
+                <p className="mt-2 text-sm text-muted">Prueba a contactar por chat o formulario.</p>
+              </div>
+            ) : (
+              <div className="grid gap-8 md:grid-cols-2">
+                {filteredTopics.map((t) => (
+                  <div key={t.topic}>
+                    <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-ink">{t.topic}</h3>
+                    <Accordion items={t.items} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* 5 — Cierre con acceso a tiendas y servicios */}
+          <section
+            aria-labelledby="support-more"
+            className="mt-12 rounded-[20px] border border-line bg-neutral p-8 text-center"
+          >
+            <h2 id="support-more" className="text-xl font-bold text-ink">
+              ¿No encuentras lo que buscas?
+            </h2>
+            <p className="mt-2 text-muted">Estamos aquí para ayudarte por el canal que prefieras.</p>
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
+              <Link
+                to="/tiendas"
+                className="inline-flex items-center gap-2 rounded-[12px] bg-action px-6 py-3 font-semibold text-ink hover:bg-action-600"
+              >
+                Ver tiendas y horarios
+              </Link>
+              <Link
+                to="/servicios"
+                className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-6 py-3 font-semibold text-ink hover:border-ink/30"
+              >
+                Más servicios de Banana
+              </Link>
+            </div>
+          </section>
+        </Container>
+      </main>
+
+      <DevicePreparationGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
     </>
   )
 }

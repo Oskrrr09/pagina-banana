@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ProvisionalBadge } from '../components/ui/Tag'
+import { DevicePreparationGuide } from '../components/support/DevicePreparationGuide'
 
 // Página propia del Servicio Técnico Autorizado.
 //
@@ -14,6 +16,7 @@ import { ProvisionalBadge } from '../components/ui/Tag'
 // No implementa reserva de cita, calendario, pago online, seguimiento de
 // reparación ni recogida a domicilio.
 export function ServiceTechnicalPage() {
+  const [guideOpen, setGuideOpen] = useState(false)
   return (
     <>
       <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
@@ -226,12 +229,19 @@ export function ServiceTechnicalPage() {
 
             {/* CTAs */}
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                to="/tiendas"
+              <button
+                type="button"
+                onClick={() => setGuideOpen(true)}
                 className="inline-flex items-center gap-2 rounded-[12px] bg-action px-5 py-3 text-sm font-semibold text-ink hover:bg-action-600"
               >
-                Consultar tiendas y horarios
+                Preparar mi dispositivo
                 <Icon name="arrow-right" size={16} aria-hidden="true" />
+              </button>
+              <Link
+                to="/tiendas"
+                className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-5 py-3 text-sm font-semibold text-ink hover:border-ink/30"
+              >
+                Consultar tiendas y horarios
               </Link>
               <Link
                 to="/soporte"
@@ -243,6 +253,8 @@ export function ServiceTechnicalPage() {
           </div>
         </section>
       </Container>
+
+      <DevicePreparationGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
     </>
   )
 }

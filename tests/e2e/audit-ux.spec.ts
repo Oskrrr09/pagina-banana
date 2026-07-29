@@ -4,16 +4,29 @@ import { test, expect } from '@playwright/test'
 // la web oficial. Cada bloque se ejecuta contra las mismas URLs públicas y
 // no manipula el carrito ni el flujo del seguro.
 
-test.describe('Portada — H1 semántico único', () => {
-  test('existe exactamente un H1 con el texto oficial y es visible', async ({ page }) => {
+test.describe('Portada — sin H1 (decisión visual consciente)', () => {
+  test('la portada no contiene ningún H1', async ({ page }) => {
     await page.goto('./')
-    const h1 = page.locator('h1')
-    await expect(h1).toHaveCount(1)
-    await expect(h1).toHaveText('Banana Computer — Apple en Canarias')
-    await expect(h1).toBeVisible()
+    await expect(page.locator('main h1')).toHaveCount(0)
+    await expect(page.locator('h1')).toHaveCount(0)
   })
 
-  test('a 375 px de ancho la portada sigue sin scroll horizontal @mobile', async ({ page }) => {
+  test('ni "Bienvenido" ni "Banana Computer — Apple en Canarias" en la portada', async ({ page }) => {
+    await page.goto('./')
+    await expect(page.getByText('Bienvenido', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('Banana Computer — Apple en Canarias')).toHaveCount(0)
+  })
+
+  test('la primera sección visual del <main> es el HeroCarousel', async ({ page }) => {
+    await page.goto('./')
+    // El carrusel expone su primer slide como <h2> con el título de campaña.
+    const firstH2 = page.locator('main h2').first()
+    await expect(firstH2).toBeVisible()
+    // Y su título es uno de los slides del hero (contenido rotativo real).
+    await expect(firstH2).not.toHaveText(/¿En qué podemos ayudarte\?|Servicios|Plan Renove/)
+  })
+
+  test('a 375 px la portada no genera scroll horizontal @mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 })
     await page.goto('./')
     const overflow = await page.evaluate(

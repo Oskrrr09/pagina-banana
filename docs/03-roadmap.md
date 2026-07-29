@@ -68,9 +68,11 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
 **Implementadas** en la rama `feature/audit-ux-improvements`
 (2026-07-28):
 
-- ✅ `<h1>` semántico único en la portada del prototipo
-  ("Banana Computer — Apple en Canarias"). El hero pasa a `<h2>`
-  para no duplicar nivel.
+- ✅ (revertida el 2026-07-29) `<h1>` semántico en la portada del
+  prototipo. Tras revisión visual se retira por completo la franja
+  "Bienvenido / Banana Computer — Apple en Canarias" y **no se
+  añade otro H1**. La portada empieza directamente por el
+  `HeroCarousel`; los títulos de los slides son `<h2>`.
 - ✅ Bloque "Servicio Técnico Autorizado" en `/soporte` con banner
   "Sin cita previa", checklist de preparación (copia de seguridad,
   desactivar Buscar y modo antirrobo), opciones de entrega,
@@ -81,7 +83,19 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
 - ✅ Timeline oficial del Plan Renove (4 pasos con Foxway) sin
   precios, sin ejemplos de tasación y sin tasador propio.
 - ✅ Cobertura `@axe-core/playwright` sobre 7 rutas dentro de la
-  suite E2E existente.
+  suite E2E existente. Ampliada el 2026-07-29 para ejecutar
+  `color-contrast` y `region` **sin excepciones globales** y para
+  cubrir también la guía interactiva.
+
+**Añadido el 2026-07-29** en `fix/home-sat-guide-accessibility`:
+
+- ✅ Nueva guía interactiva "Preparar mi dispositivo"
+  (`DevicePreparationGuide`) con 4 pasos, confirmaciones,
+  navegación teclado y trampa de foco. Estado local (sin
+  `localStorage`, sin peticiones).
+- ✅ Renombrado del quick-link "Iniciar reparación" a
+  "Preparar mi dispositivo" en `src/data/content.ts`.
+- ✅ Corrección real de contraste (paleta muted / cian / verde).
 
 **Pendiente**:
 

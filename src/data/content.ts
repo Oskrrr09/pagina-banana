@@ -110,7 +110,7 @@ export const planRenoveFaq = [
 // Centro de soporte
 export const supportQuickLinks = [
   { icon: 'package', title: 'Seguimiento de pedido', desc: 'Consulta el estado de tu compra.' },
-  { icon: 'wrench', title: 'Iniciar reparación', desc: 'Servicio técnico en tienda.' },
+  { icon: 'wrench', title: 'Preparar mi dispositivo', desc: 'Guía paso a paso antes de entregar tu equipo.' },
   { icon: 'chat', title: 'Contactar', desc: 'Chat, teléfono o formulario.' },
   { icon: 'shield', title: 'Garantía', desc: 'Consulta la cobertura de tu producto.' },
 ]

@@ -144,14 +144,17 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## QA-001 — Suite E2E con Playwright + accesibilidad axe
 
-- Estado: ampliado el 2026-07-28 con axe. Pendiente completar cobertura
-  de detalle de tienda.
-- Evidencia: 45 pruebas en `tests/e2e/` (44 en `chromium` + 1 en
-  `mobile` etiquetada `@mobile`), distribuidas en `home.spec.ts`,
+- Estado: ampliado el 2026-07-29. Pendiente completar cobertura del
+  detalle de tienda.
+- Evidencia: 64 pruebas en `tests/e2e/` (62 en `chromium` + 2 en
+  `mobile` etiquetadas `@mobile`), distribuidas en `home.spec.ts`,
   `checkout.spec.ts`, `checkout-flow.spec.ts`, `chat.spec.ts`,
   `product.spec.ts`, `favorites-compare.spec.ts`, `search.spec.ts`,
-  `audit-ux.spec.ts` (mejoras post-auditoría) y
-  `accessibility.spec.ts` (axe-core sobre 7 rutas).
+  `audit-ux.spec.ts` (mejoras post-auditoría),
+  `device-preparation-guide.spec.ts` (guía interactiva) y
+  `accessibility.spec.ts` (axe-core sobre 8 rutas + la guía).
+- `color-contrast` y `region` se ejecutan **sin excepciones
+  globales** desde 2026-07-29.
 - Cobertura:
   - Portada y no-scroll horizontal a 375 px.
   - Redirecciones y guardas de `/checkout/2` y `/checkout/3` sin pedido.
