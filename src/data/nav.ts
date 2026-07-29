@@ -104,10 +104,10 @@ export const directLinks = [
 // Enlaces institucionales que aparecen en la barra superior (escritorio) y en
 // el menú móvil como sección de servicios/ayuda.
 export const utilityLinks = [
+  { label: 'Encuentra tu Apple', to: '/elige-tu-apple', icon: 'chat' },
   { label: 'Tiendas', to: '/tiendas', icon: 'store' },
   { label: 'Empresas', to: '/servicios', icon: 'package' },
   { label: 'Educación', to: '/servicios', icon: 'graduation' },
-  { label: 'Formación', to: '/servicios', icon: 'chat' },
   { label: 'Servicio técnico', to: '/servicio-tecnico', icon: 'wrench' },
   { label: 'Soporte', to: '/soporte', icon: 'info' },
 ]

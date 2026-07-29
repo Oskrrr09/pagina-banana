@@ -134,16 +134,15 @@ export function ComparePage() {
             de abajo o deja que el asistente te oriente.
           </p>
           <div className="mt-4">
-            <button
-              type="button"
-              disabled
-              aria-disabled="true"
-              title="Disponible en próximas actualizaciones"
-              className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-4 py-2 text-sm font-semibold text-muted"
+            <Link
+              to="/elige-tu-apple"
+              className="inline-flex items-center gap-2 rounded-[12px] bg-action px-4 py-2 text-sm font-semibold text-ink hover:bg-action-600"
             >
               <Icon name="chat" size={16} aria-hidden="true" /> Necesito ayuda para elegir
-            </button>
-            <p className="mt-2 text-xs text-muted">Asistente "Encuentra tu Apple" disponible próximamente.</p>
+            </Link>
+            <p className="mt-2 text-xs text-muted">
+              Te lleva al asistente "Encuentra tu Apple".
+            </p>
           </div>
         </div>
       )}
