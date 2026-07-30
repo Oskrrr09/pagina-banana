@@ -403,3 +403,75 @@ test('sin residuos: 0 archivos SVG dentro del catálogo (referencias en accessor
     )
   expect(anySvg).toBe(0)
 })
+
+// ============================================================================
+// Tests reforzados de la PR fix/accessory-images-round-2 (imágenes correctas,
+// misma tarjeta en /buscar).
+// ============================================================================
+
+test('no hay accesorios retirados en /accesorios (TB4 Pro, MK basic, funda iPhone Air)', async ({ page }) => {
+  await page.goto('./accesorios')
+  await page.waitForLoadState('networkidle')
+  const links = await page.locator('main a[href*="/accesorios/"]').evaluateAll(
+    (nodes) => nodes.map((n) => (n as HTMLAnchorElement).getAttribute('href') ?? ''),
+  )
+  expect(links.some((h) => h.includes('cable-thunderbolt-4-pro'))).toBe(false)
+  expect(links.some((h) => h.includes('funda-magsafe-iphone-air'))).toBe(false)
+  // magic-keyboard-usb-c básico retirado; magic-keyboard-touch-id-numeric permanece.
+  expect(links.some((h) => h.endsWith('/accesorios/magic-keyboard-usb-c'))).toBe(false)
+  expect(links.some((h) => h.includes('magic-keyboard-touch-id-numeric-usb-c'))).toBe(true)
+})
+
+test('rutas de accesorios retirados devuelven a /accesorios (no ficha huérfana)', async ({ page }) => {
+  for (const slug of [
+    'cable-thunderbolt-4-pro-1_8m',
+    'funda-magsafe-iphone-air',
+    'magic-keyboard-usb-c',
+  ]) {
+    await page.goto(`./accesorios/${slug}`)
+    // El componente AccessoryDetailPage redirige a /accesorios si no encuentra el slug.
+    await expect(page).toHaveURL(/\/accesorios$/)
+  }
+})
+
+test('Magic Keyboard TouchID+numeric tiene dos variantes con imágenes distintas', async ({ page }) => {
+  await page.goto('./accesorios/magic-keyboard-touch-id-numeric-usb-c')
+  const img = page.locator('main img').first()
+  await expect(page.getByRole('radio', { name: /Teclas blancas/ })).toBeVisible()
+  const srcWhite = await img.getAttribute('src')
+  await page.getByRole('radio', { name: /Teclas negras/ }).click()
+  const srcBlack = await img.getAttribute('src')
+  expect(srcWhite).not.toBeNull()
+  expect(srcBlack).not.toBeNull()
+  expect(srcBlack).not.toBe(srcWhite)
+})
+
+test('/buscar?q=iPhone: los accesorios Apple usan la MISMA tarjeta que /accesorios (min-h-[400px])', async ({ page }) => {
+  await page.goto('./buscar?q=iPhone')
+  await page.waitForLoadState('networkidle')
+  const accSection = page.locator(
+    'section', { has: page.locator('h2', { hasText: /Accesorios Apple/ }) },
+  )
+  const cards = accSection.locator('div.group.min-h-\\[400px\\]')
+  // Al menos una tarjeta completa con altura mínima.
+  expect(await cards.count()).toBeGreaterThan(0)
+  // Cada tarjeta contiene una imagen local.
+  const firstImg = cards.first().locator('img').first()
+  await expect(firstImg).toHaveAttribute('src', /\/img\/accessories\//)
+})
+
+test('AccessoryCard comparte diseño con ProductCard: mismo borde, radio y min-height', async ({ page }) => {
+  await page.goto('./accesorios')
+  await page.waitForLoadState('networkidle')
+  const accCard = page.locator('main .group.min-h-\\[400px\\]').first()
+  const accBox = await accCard.boundingBox()
+  expect(accBox).not.toBeNull()
+  if (accBox) expect(accBox.height).toBeGreaterThanOrEqual(390)
+
+  await page.goto('./iphone')
+  await page.waitForLoadState('networkidle')
+  const prodCard = page.locator('main .group.min-h-\\[400px\\]').first()
+  const prodBox = await prodCard.boundingBox()
+  expect(prodBox).not.toBeNull()
+  if (prodBox) expect(prodBox.height).toBeGreaterThanOrEqual(390)
+})

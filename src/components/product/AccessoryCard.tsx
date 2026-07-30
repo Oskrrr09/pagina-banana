@@ -3,49 +3,51 @@ import { ProvisionalBadge } from '../ui/Tag'
 import { euro } from '../../lib/format'
 import type { Accessory } from '../../data/accessories'
 import { accessoryPath } from '../../data/accessories'
-import { AccessoryImage } from './AccessoryImage'
+import { ProductImage } from './ProductImage'
 
-// Tarjeta compacta de accesorio (§4.5). Coherente con `ProductCard` en
-// espaciado y estilos, pero sin importar su código: los accesorios no
-// tienen carrito, favoritos, comparador ni seguro en esta PR.
+// Tarjeta de accesorio (§4.5). Comparte la jerarquía visual con
+// `ProductCard` (mismo borde, radio, padding, altura mínima, hover,
+// sombra) para que en el catálogo y en el buscador los accesorios se
+// perciban como productos del mismo nivel.
+//
+// NO añade favoritos, carrito, comparador ni seguro — los accesorios
+// no participan en esos flujos en esta fase.
 export function AccessoryCard({ accessory }: { accessory: Accessory }) {
   const compat = describeCompatibility(accessory)
+
   return (
-    <Link
-      to={accessoryPath(accessory.slug)}
-      className="group flex h-full flex-col overflow-hidden rounded-[16px] border border-line bg-surface transition-colors hover:border-ink/30"
-    >
-      <AccessoryImage
-        src={accessory.image}
-        alt={accessory.name}
-        size="card"
-        presentation={accessory.imagePresentation}
-        imageBg={accessory.imageBg}
-        width={800}
-        height={800}
-      />
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
+    <div className="group relative flex h-full min-h-[400px] flex-col rounded-[12px] border border-line bg-surface p-4 transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]">
+      <Link to={accessoryPath(accessory.slug)} className="block focus-visible:outline-none">
+        <ProductImage
+          src={accessory.image}
+          alt={accessory.name}
+          bgColor={accessory.imageBg}
+          pad={!accessory.imageBg}
+        />
+        <p className="mt-3 text-[11px] font-semibold uppercase tracking-widest text-muted">
           {categoryLabel(accessory.category)}
         </p>
-        <h3 className="text-[15px] font-semibold text-ink">{accessory.name}</h3>
-        <p className="text-xs text-muted">{compat}</p>
-        <div className="mt-auto flex flex-wrap items-baseline gap-2 pt-2">
-          {accessory.price != null ? (
-            <>
-              <span className="text-[15px] font-bold text-ink">
-                {euro(accessory.price)}
-              </span>
-              <ProvisionalBadge label="Precio demostrativo" />
-            </>
-          ) : (
-            <span className="text-sm font-semibold text-ink">
-              Consultar precio
+        <h3 className="mt-1 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">
+          {accessory.name}
+        </h3>
+      </Link>
+
+      <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{compat}</p>
+
+      <div className="mt-auto pt-3">
+        {accessory.price != null ? (
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="text-lg font-bold text-ink">
+              {accessory.priceLabel === 'desde' ? 'desde ' : ''}
+              {euro(accessory.price)}
             </span>
-          )}
-        </div>
+            <ProvisionalBadge label="Precio demostrativo" />
+          </div>
+        ) : (
+          <span className="text-sm font-semibold text-ink">Consultar precio</span>
+        )}
       </div>
-    </Link>
+    </div>
   )
 }
 
