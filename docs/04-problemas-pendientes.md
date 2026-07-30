@@ -185,9 +185,9 @@ del repositorio. No se corrigen en la preparación documental.
   `npx playwright install --with-deps chromium` y `npm run test:e2e`
   en cada push/PR sobre `main`, con el proyecto móvil corriendo sobre
   Chromium (`Pixel 5`) para no requerir WebKit.
-- Pendiente: únicamente ampliar la cobertura axe al detalle de tienda
-  (`/tiendas/:slug`). Las comprobaciones axe ya están integradas y
-  activas — no queda pendiente "integrar axe".
+- Cobertura axe ampliada el 2026-07-30 al detalle de tienda
+  (`/tiendas/castillo`, representativa de `/tiendas/:slug`). No queda
+  pendiente ninguna ruta principal sin comprobación axe.
 
 ## SEG-001 — Avisos de seguridad en React Router
 
@@ -324,5 +324,7 @@ del repositorio. No se corrigen en la preparación documental.
   vigilancia.
 - Resolución planificada: ver
   [[03-roadmap#7. Chat de Bananito — Fase 2 y siguientes]].
-- Mitigación intermedia: añadir `Disallow: /pagina-banana/agente` a
-  `public/robots.txt` (pendiente).
+- Mitigación intermedia: añadido `Disallow: /pagina-banana/agente` a
+  `public/robots.txt` el 2026-07-30. No protege frente a quien ya
+  tiene el enlace directo; sólo evita indexación y enlazado desde
+  buscadores. La protección real sigue pendiente de Fase 2 (auth).

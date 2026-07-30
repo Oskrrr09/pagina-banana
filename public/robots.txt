@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /pagina-banana/agente
+Allow: /

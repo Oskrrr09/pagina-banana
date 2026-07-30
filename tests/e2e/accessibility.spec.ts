@@ -73,6 +73,10 @@ test.describe('Accesibilidad automatizada con axe-core (sin reglas globales desa
     await analyze(page, '/tiendas')
   })
 
+  test('detalle de tienda /tiendas/castillo', async ({ page }) => {
+    await analyze(page, '/tiendas/castillo')
+  })
+
   test('soporte /soporte', async ({ page }) => {
     await analyze(page, '/soporte')
   })
