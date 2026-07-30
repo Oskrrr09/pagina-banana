@@ -8,7 +8,55 @@ actualizado: 2026-07-30
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-30 — Buscador inteligente por secciones (PR pendiente)
+## 2026-07-30 — Enter abre la página completa de resultados (PR pendiente)
+
+Rama `fix/search-enter-results-page`.
+
+- **Bug corregido**: al escribir en el buscador del Header y pulsar
+  Enter directamente, el autocompletado abría el primer resultado
+  sugerido porque `activeIndex` se inicializaba en 0 (auto-selección).
+  El comportamiento contradecía el patrón habitual: Enter sin
+  selección explícita debe abrir la página completa de resultados.
+- **Nuevo estado inicial**: `activeIndex = -1`. Sin selección visible,
+  sin `aria-activedescendant`, sin resaltado de opción.
+- **Enter sin selección** (`activeIndex === -1`): navega a
+  `/buscar?q=${encodeURIComponent(query.trim())}`. Se aplica igual en
+  escritorio y en el overlay móvil.
+- **Enter con selección** (`activeIndex >= 0`, tras pulsar ArrowUp/
+  ArrowDown): abre el destino de la sugerencia activa, como antes.
+- **ArrowDown**: desde `-1` → `0` (primera sugerencia). Después
+  avanza sin salir de rango.
+- **ArrowUp**: desde `-1` → última sugerencia (wrap). Desde `0` →
+  `-1` (vuelta al estado sin selección; Enter vuelve a abrir la
+  página completa).
+- **Cambiar la consulta** reinicia `activeIndex` a `-1` mediante un
+  `useEffect` que observa `q`, elimina `aria-activedescendant` y la
+  clase visual activa.
+- **Cerrado**: `closeAndRestore()` limpia `activeIndex = -1` antes de
+  ejecutar `onClose()` y de restaurar el foco a la lupa.
+- **Se retiran `onMouseEnter` y `onFocus` de `SuggestionRow`**: la
+  selección activa la controla exclusivamente el teclado (o el clic,
+  que abre la opción directamente). Con esto el hover no cambia el
+  significado de Enter.
+- **Tests nuevos** (12): Enter directo abre `/buscar` en escritorio y
+  móvil; Flecha abajo actualiza `aria-activedescendant`; cambiar la
+  consulta lo limpia; botón lupa móvil abre `/buscar`; "Ver todos
+  los resultados"; Escape con selección cierra y restaura foco sin
+  navegar; regresión de orden de secciones para AirPods; intención
+  accesorio para "funda AirPods"; corrección para "airpds". El test
+  existente "flecha abajo + Enter" se endurece: la nueva assertion
+  exige que la URL NO contenga `/buscar` cuando la selección es
+  explícita. Total: **156/156** (141 → 156).
+- Sin cambios en ranking, sinónimos, fuzzy, taxonomía, contenido
+  demostrativo, catálogo, precios, imágenes, stock, `ProductCard`,
+  comparador, recomendador, carrito, checkout, seguro, Plan Renove,
+  Servicio Técnico, tienda favorita, favoritos, alertas, inventario,
+  workflows ni Node. Sin dependencias nuevas.
+
+## 2026-07-30 — Buscador inteligente por secciones (PR #25)
+
+Rama `feat/grouped-semantic-search`. Commit funcional `420f002`.
+Merge `21a93c3`.
 
 Rama `feat/grouped-semantic-search`.
 

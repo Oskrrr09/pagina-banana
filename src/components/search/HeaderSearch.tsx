@@ -74,7 +74,10 @@ export interface HeaderSearchProps {
 export function HeaderSearch({ mode, onClose, restoreFocusTo }: HeaderSearchProps) {
   const navigate = useNavigate()
   const [q, setQ] = useState('')
-  const [activeIndex, setActiveIndex] = useState(0)
+  // -1 = ninguna sugerencia seleccionada. Enter en ese estado envía la
+  // búsqueda completa a /buscar. El usuario debe pulsar ArrowDown/Up para
+  // elegir explícitamente una sugerencia; solo entonces Enter la abre.
+  const [activeIndex, setActiveIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const listboxId = useId()
 
@@ -91,12 +94,14 @@ export function HeaderSearch({ mode, onClose, restoreFocusTo }: HeaderSearchProp
     inputRef.current?.focus()
   }, [])
 
-  // Restaurar índice activo cuando cambian los resultados.
+  // Al cambiar la consulta, la selección previa deja de tener sentido: la
+  // limpiamos para que Enter vuelva a significar "ver todos los resultados".
   useEffect(() => {
-    setActiveIndex(0)
+    setActiveIndex(-1)
   }, [q])
 
   function closeAndRestore() {
+    setActiveIndex(-1)
     onClose()
     if (restoreFocusTo?.current) {
       window.setTimeout(() => restoreFocusTo.current?.focus(), 0)
@@ -134,23 +139,34 @@ export function HeaderSearch({ mode, onClose, restoreFocusTo }: HeaderSearchProp
     }
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIndex((i) => Math.min(flat.length - 1, i + 1))
+      // Desde -1 → 0 (primera sugerencia). Después avanza sin salir de rango.
+      setActiveIndex((i) => (i < 0 ? 0 : Math.min(flat.length - 1, i + 1)))
       return
     }
     if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setActiveIndex((i) => Math.max(0, i - 1))
+      // Desde -1 → última sugerencia (wrap consistente). Desde 0 → -1 (vuelve
+      // al estado sin selección, donde Enter envía la búsqueda completa).
+      setActiveIndex((i) => {
+        if (i < 0) return flat.length - 1
+        if (i === 0) return -1
+        return i - 1
+      })
       return
     }
     if (e.key === 'Enter') {
       e.preventDefault()
+      if (activeIndex < 0) {
+        submitFullSearch(q)
+        return
+      }
       const active = flat[activeIndex]
       if (active) activateItem(active.item)
       else submitFullSearch(q)
     }
   }
 
-  const activeId = expanded ? `${listboxId}-opt-${activeIndex}` : undefined
+  const activeId = expanded && activeIndex >= 0 ? `${listboxId}-opt-${activeIndex}` : undefined
 
   const isMobile = mode === 'mobile'
 
@@ -239,7 +255,6 @@ export function HeaderSearch({ mode, onClose, restoreFocusTo }: HeaderSearchProp
             listboxId={listboxId}
             entries={flat}
             activeIndex={activeIndex}
-            onHoverIndex={setActiveIndex}
             onSelect={activateItem}
             correction={results.correction}
             onCorrection={(term) => setQ(term)}
@@ -273,7 +288,6 @@ function SuggestionsList({
   listboxId,
   entries,
   activeIndex,
-  onHoverIndex,
   onSelect,
   correction,
   onCorrection,
@@ -283,7 +297,6 @@ function SuggestionsList({
   listboxId: string
   entries: FlatEntry[]
   activeIndex: number
-  onHoverIndex: (i: number) => void
   onSelect: (item: SearchItem) => void
   correction: string | null
   onCorrection: (term: string) => void
@@ -325,7 +338,6 @@ function SuggestionsList({
                   key={entry.item.id}
                   entry={entry}
                   active={activeIndex === entry.index}
-                  onHover={() => onHoverIndex(entry.index)}
                   onSelect={() => onSelect(entry.item)}
                   listboxId={listboxId}
                 />
@@ -351,13 +363,11 @@ function SuggestionsList({
 function SuggestionRow({
   entry,
   active,
-  onHover,
   onSelect,
   listboxId,
 }: {
   entry: FlatEntry
   active: boolean
-  onHover: () => void
   onSelect: () => void
   listboxId: string
 }) {
@@ -370,8 +380,6 @@ function SuggestionRow({
         id={`${listboxId}-opt-${entry.index}`}
         role="option"
         aria-selected={active}
-        onMouseEnter={onHover}
-        onFocus={onHover}
         onClick={onSelect}
         className={`flex w-full min-h-[44px] items-start gap-3 rounded-[10px] px-3 py-2 text-left ${
           active ? 'bg-neutral' : 'hover:bg-neutral'
