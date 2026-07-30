@@ -100,6 +100,8 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 | `/:family/:model` | Modelo (redirige a la variante base) |
 | `/:family/:model/:variant` | Ficha con selectores de color, capacidad y (según modelo) tamaño |
 | `/buscar?q=…` | Buscador sincronizado con la URL |
+| `/accesorios` | Catálogo inicial de accesorios oficiales Apple (§4.5). Filtros por categoría y compatibilidad, precios demostrativos, sin CTA de compra. |
+| `/accesorios/:slug` | Ficha de un accesorio (variantes, especificaciones, compatibilidad estructurada, CTA a tiendas). |
 | `/comparar` | Comparador esencial (hasta 3 productos, misma familia) con "Solo diferencias" y resumen orientativo |
 | `/elige-tu-apple` | Asistente "Encuentra tu Apple" con recomendación determinista basada en las respuestas del usuario |
 | `/carrito` | Carrito con selección de entrega compartida con checkout |
@@ -391,6 +393,14 @@ Suites actuales (93 pruebas, medido con `npm run test:e2e` — 91 en
   y añadir dos productos al comparador desde `/iphone/17-pro` usando los
   checkboxes "Añadir a comparar", verlos en `/comparar` y vaciarlo con
   los botones "Quitar". **No se preselecciona nada en `localStorage`.**
+- `tests/e2e/accessories.spec.ts` — catálogo de accesorios Apple:
+  encabezado, filtros por categoría y compatibilidad, cinco fichas
+  distintas (MagSafe, Apple Pencil Pro, Magic Mouse, correa Watch,
+  AirTag), imágenes reales con `naturalWidth > 0` y `alt` no vacío,
+  cambio de variante, compatibilidad exacta iPhone 17 Pro / iPad Pro,
+  buscador AirPods/cargador/funda/Pencil/Watch, navegación Home +
+  Header, axe limpio en `/accesorios` y ficha, sin scroll horizontal
+  a 375 px.
 - `tests/e2e/search.spec.ts` — buscador semántico agrupado:
   sincronización del input con `?q=`, coincidencia principal +
   Dispositivos Apple + Productos relacionados + Accesorios Apple +

@@ -98,7 +98,11 @@ export function Home() {
           {families.map((fam) => {
             const cover = modelsByFamily[fam.slug]?.[0]?.colors[0].image
             const developed = Boolean(modelsByFamily[fam.slug])
-            const to = developed ? `/${fam.slug}` : '/iphone'
+            const to = developed
+              ? `/${fam.slug}`
+              : fam.slug === 'accesorios'
+                ? '/accesorios'
+                : '/iphone'
             return (
               <StaggerItem key={fam.slug} className="w-44 shrink-0 snap-start sm:w-auto">
                 <Link
@@ -213,10 +217,10 @@ export function Home() {
           itemClass="w-[65vw] sm:w-auto"
         >
           {[
-            { label: 'Fundas iPhone', icon: 'shield', bg: '#dbeaf9', ring: '#7fb5e6', to: '/buscar?q=fundas' },
-            { label: 'Carga y MagSafe', icon: 'credit-card', bg: '#fff4c9', ring: '#ffd76b', to: '/buscar?q=magsafe' },
-            { label: 'Correas Watch', icon: 'refresh', bg: '#ffe0e7', ring: '#f0a3b8', to: '/buscar?q=correas' },
-            { label: 'Teclados y ratones', icon: 'compare', bg: '#e6dff8', ring: '#a992e0', to: '/buscar?q=teclados' },
+            { label: 'Fundas iPhone', icon: 'shield', bg: '#dbeaf9', ring: '#7fb5e6', to: '/accesorios' },
+            { label: 'Carga y MagSafe', icon: 'credit-card', bg: '#fff4c9', ring: '#ffd76b', to: '/accesorios' },
+            { label: 'Correas Watch', icon: 'refresh', bg: '#ffe0e7', ring: '#f0a3b8', to: '/accesorios' },
+            { label: 'Teclados y ratones', icon: 'compare', bg: '#e6dff8', ring: '#a992e0', to: '/accesorios' },
             { label: 'Audio y sonido', icon: 'chat', bg: '#dbf1e5', ring: '#7fc9a2', to: '/buscar?q=audio' },
           ].map((cat) => (
             <Link

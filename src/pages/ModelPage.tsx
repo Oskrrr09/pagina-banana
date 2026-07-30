@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
@@ -10,6 +10,7 @@ import { ProvisionalBadge } from '../components/ui/Tag'
 import { StorePicker } from '../components/product/StorePicker'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
 import { getModel, familyInfo, variantPath } from '../data/products'
+import { getAccessoriesForModel, accessoryPath } from '../data/accessories'
 import type { ColorVariant, Model } from '../data/types'
 import { useStore } from '../lib/store'
 import { euro } from '../lib/format'
@@ -95,6 +96,8 @@ export function ModelPage() {
           Consulta rápida: cada tarjeta permite ver stock por tienda y la cuota de financiación sin salir de la
           página.
         </p>
+
+        <CompatibleAccessoriesSection family={family.slug} modelSlug={model.slug} />
       </Container>
     </>
   )
@@ -239,5 +242,64 @@ function ColorCard({
         productName={`${model.name} ${current.capacity} · ${color.name}`}
       />
     </div>
+  )
+}
+
+// Sección "Accesorios compatibles" en la ficha del dispositivo (§4.5).
+// Muestra hasta 4 accesorios: primero compatibilidad exacta con el modelo,
+// después compatibilidad por familia. Sin lógica de carrito ni favoritos.
+function CompatibleAccessoriesSection({
+  family,
+  modelSlug,
+}: {
+  family: string
+  modelSlug: string
+}) {
+  const items = getAccessoriesForModel(`${family}/${modelSlug}`).slice(0, 4)
+  if (items.length === 0) return null
+  return (
+    <section aria-labelledby="compat-accessories" className="mt-12">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="compat-accessories" className="text-xl font-bold text-ink">
+          Accesorios compatibles
+        </h2>
+        <Link
+          to="/accesorios"
+          className="text-sm font-semibold text-ink underline-offset-2 hover:underline"
+        >
+          Ver todos los accesorios ›
+        </Link>
+      </div>
+      <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map((a) => (
+          <li key={a.slug}>
+            <Link
+              to={accessoryPath(a.slug)}
+              className="flex h-full flex-col overflow-hidden rounded-[12px] border border-line bg-surface hover:border-ink/30"
+            >
+              <div
+                className="flex aspect-square w-full items-center justify-center"
+                style={{ background: a.imageBg ?? '#fafafa' }}
+              >
+                <img
+                  src={a.image}
+                  alt={a.name}
+                  width={400}
+                  height={400}
+                  loading="lazy"
+                  className="max-h-full max-w-full object-contain p-4"
+                />
+              </div>
+              <div className="p-3">
+                <p className="text-sm font-semibold text-ink">{a.name}</p>
+                {a.price != null && (
+                  <p className="mt-1 text-xs text-muted">{euro(a.price)} · precio demostrativo</p>
+                )}
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

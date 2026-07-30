@@ -19,6 +19,7 @@
 
 import { families, allModels, modelsByFamily, variantPath } from './products'
 import { services, supportTopics } from './content'
+import { appleAccessories, accessoryPath, type Accessory } from './accessories'
 
 // -----------------------------------------------------------------------------
 // Tipos
@@ -195,77 +196,8 @@ export const SEARCH_DEMO_ITEMS: SearchItem[] = [
     source: 'demo',
   },
 
-  // Accesorios Apple.
-  {
-    id: 'demo:apple-usb-c-cable',
-    kind: 'apple-accessory',
-    name: 'Cable de carga USB-C de Apple',
-    brand: 'Apple',
-    family: 'accesorios',
-    category: 'cable',
-    aliases: ['cable usb-c apple', 'cable de carga apple'],
-    keywords: ['cable', 'carga', 'charging', 'usb-c'],
-    compatibleWith: ['iphone', 'ipad', 'mac', 'airpods'],
-    relatedTo: ['iphone', 'ipad', 'mac', 'airpods'],
-    demo: true,
-    source: 'demo',
-  },
-  {
-    id: 'demo:apple-usb-c-adapter',
-    kind: 'apple-accessory',
-    name: 'Adaptador de corriente USB-C de Apple',
-    brand: 'Apple',
-    family: 'accesorios',
-    category: 'charging',
-    aliases: ['adaptador usb-c apple', 'cargador apple'],
-    keywords: ['adaptador', 'cargador', 'carga', 'charging', 'corriente'],
-    compatibleWith: ['iphone', 'ipad', 'mac', 'airpods'],
-    relatedTo: ['iphone', 'ipad', 'mac', 'airpods'],
-    demo: true,
-    source: 'demo',
-  },
-  {
-    id: 'demo:apple-airpods-tips',
-    kind: 'apple-accessory',
-    name: 'Almohadillas para AirPods Pro',
-    brand: 'Apple',
-    family: 'accesorios',
-    category: 'ear-tips',
-    aliases: ['almohadillas airpods pro', 'ear tips airpods'],
-    keywords: ['almohadillas', 'ear-tips', 'silicona', 'reemplazo'],
-    compatibleWith: ['airpods'],
-    relatedTo: ['airpods'],
-    demo: true,
-    source: 'demo',
-  },
-  {
-    id: 'demo:apple-magsafe',
-    kind: 'apple-accessory',
-    name: 'Cargador MagSafe de Apple',
-    brand: 'Apple',
-    family: 'accesorios',
-    category: 'magsafe',
-    aliases: ['magsafe apple', 'cargador magsafe'],
-    keywords: ['magsafe', 'cargador', 'carga', 'inductiva', 'imanes'],
-    compatibleWith: ['iphone'],
-    relatedTo: ['iphone'],
-    demo: true,
-    source: 'demo',
-  },
-  {
-    id: 'demo:apple-watch-band',
-    kind: 'apple-accessory',
-    name: 'Correa deportiva para Apple Watch',
-    brand: 'Apple',
-    family: 'accesorios',
-    category: 'watch-band',
-    aliases: ['correa apple watch', 'watch band', 'pulsera apple watch'],
-    keywords: ['correa', 'pulsera', 'silicona'],
-    compatibleWith: ['apple-watch'],
-    relatedTo: ['apple-watch'],
-    demo: true,
-    source: 'demo',
-  },
+  // Los accesorios oficiales Apple ya no viven como entradas demo aquí:
+  // se generan automáticamente desde `appleAccessories` en `accessoriesToSearchItems`.
 
   // Accesorios compatibles (terceros).
   {
@@ -473,6 +405,40 @@ function serviceItems(): SearchItem[] {
   }))
 }
 
+// -----------------------------------------------------------------------------
+// Accesorios oficiales Apple (procedentes de `data/accessories.ts`)
+// -----------------------------------------------------------------------------
+
+function accessoryItems(): SearchItem[] {
+  return appleAccessories.map((a: Accessory) => {
+    const compatibleFamilies = new Set<string>()
+    a.compatibility.families?.forEach((f) => compatibleFamilies.add(f))
+    a.compatibility.models?.forEach((m) => compatibleFamilies.add(m.split('/')[0]))
+    // Familia semántica del ítem: la del accesorio en el catálogo (iphone,
+    // ipad, mac, apple-watch, airtag) o "accesorios" para carga y cables.
+    const familyForSearch = a.category === 'carga' || a.category === 'airtag'
+      ? 'accesorios'
+      : a.category
+    return {
+      id: `accessory:${a.slug}`,
+      kind: 'apple-accessory' as const,
+      name: a.name,
+      description: a.tagline,
+      brand: 'Apple',
+      family: familyForSearch,
+      category: a.category,
+      aliases: [...a.aliases, a.name.toLowerCase()],
+      keywords: a.keywords,
+      relatedTo: Array.from(compatibleFamilies),
+      compatibleWith: Array.from(compatibleFamilies),
+      route: accessoryPath(a.slug),
+      image: a.image,
+      demo: false,
+      source: 'catalog' as const,
+    }
+  })
+}
+
 function helpItems(): SearchItem[] {
   return supportTopics.flatMap((topic) =>
     topic.items.map((item, idx) => ({
@@ -498,6 +464,7 @@ export function buildSearchIndex(): SearchItem[] {
   _index = [
     ...familyItems(),
     ...deviceItems(),
+    ...accessoryItems(),
     ...SEARCH_DEMO_ITEMS,
     ...serviceItems(),
     ...helpItems(),

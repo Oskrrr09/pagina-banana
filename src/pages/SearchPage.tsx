@@ -246,7 +246,13 @@ function EmptyState({ query }: { query: string }) {
         {families.slice(0, 5).map((f) => (
           <Link
             key={f.slug}
-            to={modelsByFamily[f.slug] ? `/${f.slug}` : `/buscar?q=${encodeURIComponent(f.name)}`}
+            to={
+              modelsByFamily[f.slug]
+                ? `/${f.slug}`
+                : f.slug === 'accesorios'
+                  ? '/accesorios'
+                  : `/buscar?q=${encodeURIComponent(f.name)}`
+            }
             className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:border-brand hover:text-ink"
           >
             {f.name}
