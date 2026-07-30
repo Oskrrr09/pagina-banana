@@ -8,6 +8,7 @@ import { families, allModels, modelsByFamily } from '../data/products'
 import { searchCatalog, type SearchResults } from '../lib/catalogSearch'
 import type { SearchItem } from '../data/searchIndex'
 import { CompactSearchCard, SearchSectionHeading } from '../components/search/SearchResultCards'
+import { AccessorySearchCard } from '../components/search/AccessorySearchCard'
 
 // Resultados del buscador (§4.4bis). Usa `searchCatalog` — el mismo motor
 // determinista y agrupado que el autocompletado del Header. Sincroniza el
@@ -89,7 +90,7 @@ function ResultsSections({ results }: { results: SearchResults }) {
   const appleAccBlock = appleAccessories.length > 0 && (
     <section key="apple-acc" className="mt-10" aria-labelledby="search-apple-acc">
       <SearchSectionHeading title="Accesorios Apple" count={appleAccessories.length} />
-      <CompactGrid items={appleAccessories} />
+      <AccessoryVisualGrid items={appleAccessories} />
     </section>
   )
   const compatBlock = compatibleAccessories.length > 0 && (
@@ -186,6 +187,13 @@ function ExactMatchCard({ item }: { item: SearchItem }) {
       </Link>
     )
   }
+  if (item.kind === 'apple-accessory' && !item.demo) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 md:max-w-3xl">
+        <AccessorySearchCard item={item} />
+      </div>
+    )
+  }
   return <CompactSearchCard item={item} />
 }
 
@@ -229,6 +237,25 @@ function CompactGrid({ items }: { items: SearchItem[] }) {
       {items.map((i) => (
         <CompactSearchCard key={i.id} item={i} />
       ))}
+    </div>
+  )
+}
+
+/**
+ * Grid visual para accesorios Apple del catálogo real (con fotografía).
+ * Los ítems demostrativos (kind: apple-accessory con demo: true, en teoría
+ * ninguno tras esta PR) caerían en la tarjeta compacta como fallback.
+ */
+function AccessoryVisualGrid({ items }: { items: SearchItem[] }) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((i) =>
+        i.demo ? (
+          <CompactSearchCard key={i.id} item={i} />
+        ) : (
+          <AccessorySearchCard key={i.id} item={i} />
+        ),
+      )}
     </div>
   )
 }

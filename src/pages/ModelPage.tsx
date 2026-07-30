@@ -11,6 +11,7 @@ import { StorePicker } from '../components/product/StorePicker'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
 import { getModel, familyInfo, variantPath } from '../data/products'
 import { getAccessoriesForModel, accessoryPath } from '../data/accessories'
+import { AccessoryImage } from '../components/product/AccessoryImage'
 import type { ColorVariant, Model } from '../data/types'
 import { useStore } from '../lib/store'
 import { euro } from '../lib/format'
@@ -277,19 +278,15 @@ function CompatibleAccessoriesSection({
               to={accessoryPath(a.slug)}
               className="flex h-full flex-col overflow-hidden rounded-[12px] border border-line bg-surface hover:border-ink/30"
             >
-              <div
-                className="flex aspect-square w-full items-center justify-center"
-                style={{ background: a.imageBg ?? '#fafafa' }}
-              >
-                <img
-                  src={a.image}
-                  alt={a.name}
-                  width={400}
-                  height={400}
-                  loading="lazy"
-                  className="max-h-full max-w-full object-contain p-4"
-                />
-              </div>
+              <AccessoryImage
+                src={a.image}
+                alt={a.name}
+                size="card"
+                presentation={a.imagePresentation}
+                imageBg={a.imageBg}
+                width={400}
+                height={400}
+              />
               <div className="p-3">
                 <p className="text-sm font-semibold text-ink">{a.name}</p>
                 {a.price != null && (

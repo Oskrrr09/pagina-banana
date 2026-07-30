@@ -381,11 +381,27 @@ function SuggestionRow({
         role="option"
         aria-selected={active}
         onClick={onSelect}
-        className={`flex w-full min-h-[44px] items-start gap-3 rounded-[10px] px-3 py-2 text-left ${
+        className={`flex w-full min-h-[52px] items-center gap-3 rounded-[10px] px-3 py-2 text-left ${
           active ? 'bg-neutral' : 'hover:bg-neutral'
         }`}
       >
-        <Icon name="search" size={14} className="mt-1 shrink-0 text-muted" />
+        {item.image && !item.demo ? (
+          <span
+            className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-[#fafafa]"
+            aria-hidden="true"
+          >
+            <img
+              src={item.image}
+              alt=""
+              width={64}
+              height={64}
+              loading="lazy"
+              className="max-h-full max-w-full object-contain p-1"
+            />
+          </span>
+        ) : (
+          <Icon name="search" size={14} className="shrink-0 text-muted" />
+        )}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-ink">{item.name}</span>
           <span className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-muted">

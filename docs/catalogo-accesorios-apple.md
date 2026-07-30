@@ -4,6 +4,14 @@ actualizado: 2026-07-30
 tema: catálogo inicial de accesorios oficiales Apple
 ---
 
+> **Actualización 2026-07-30 (PR correctiva
+> `fix/accessory-images-and-search-cards`)**: los 8 productos que
+> inicialmente se implementaron con ilustración SVG bespoke se
+> sustituyeron por fotografía oficial de Apple España. Magic Mouse y
+> Magic Trackpad tienen ahora una imagen distinta por variante
+> (blanco/negro). Detalle en
+> [[auditoria-visual-accesorios]] y [[fuentes-imagenes-accesorios]].
+
 # Investigación previa — Catálogo de accesorios Apple
 
 Este documento registra la investigación previa realizada para armar el
