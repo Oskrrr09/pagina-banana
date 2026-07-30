@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-07-29
+actualizado: 2026-07-30
 ---
 
 # Estado actual
@@ -8,8 +8,9 @@ actualizado: 2026-07-29
 > [!summary]
 > Prototipo SPA navegable y compilable de una tienda Apple para Banana Computer.
 > La experiencia cubre catálogo, búsqueda, favoritos, comparación, carrito,
-> checkout simulado, servicios, Plan Renove, tiendas y soporte. No existe backend
-> ni integración comercial real.
+> checkout simulado, servicios, Plan Renove, tiendas, soporte y **chat en
+> tiempo real con Supabase + panel de agentes** (Fase 1 desplegada el
+> 2026-07-30). No hay integración comercial real ni motor de pago.
 
 ## Referencia actual
 
@@ -73,8 +74,22 @@ actualizado: 2026-07-29
   tarjeta de cesta como en “Pago y extras”.
 - Checkout de tres pasos con layout propio, una única cabecera simplificada y
   amarilla suave, sin navegación o footer comerciales.
-- Acceso flotante global al futuro chat, identificado expresamente como
-  “próximamente” y enlazado al soporte existente.
+- **Chat de Bananito** con mascota propia (silueta procesada desde imagen
+  de Gemini), burbuja circular en azul del nav utilitario, panel con
+  cabecera amarilla y patrón de plátanos en el fondo. Conectado a
+  Supabase: los mensajes persisten y llegan en tiempo real al panel de
+  agentes `/agente`. Cae al modo canned reply cuando no hay
+  credenciales configuradas.
+- **Panel de agentes** en `/agente` (Fase 1, sin auth). Layout
+  full-screen con bandeja de las 50 conversaciones más recientes y
+  ventana de chat con historial + envío. Suscripción realtime a
+  `mensajes` y `conversaciones` sin necesidad de recargar.
+- **Backend Supabase** en región EU (Postgres 17 estándar).
+  Esquema versionado en `supabase/schema.sql`: `visitantes`,
+  `conversaciones`, `mensajes` con RLS activa (políticas abiertas al
+  rol `anon` en Fase 1). Ver
+  [[02-decisiones#D-023 — Backend en Supabase (Fase 1)]] y
+  [[04-problemas-pendientes#CHAT-001 — /agente accesible por URL sin autenticación]].
 - Las tarjetas de producto reservan las mismas áreas para imagen, nombre y
   descripción, de modo que mantienen una altura alineada dentro de cada rejilla.
 - El carrusel de tiendas y el mega-menú de escritorio mantienen una altura fija

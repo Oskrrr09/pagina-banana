@@ -1,6 +1,6 @@
 ---
 tipo: problemas
-actualizado: 2026-07-29
+actualizado: 2026-07-30
 ---
 
 # Problemas pendientes
@@ -297,3 +297,32 @@ del repositorio. No se corrigen en la preparación documental.
   esta tarea.
 - Resolución: `.obsidian/` y `docs/.obsidian/` quedan ignoradas; no se versiona
   configuración local de Obsidian.
+
+## ENTORNO-002 — Caché npm propiedad de root
+
+- Estado: pendiente en la máquina local de Oscar.
+- Impacto: bajo (rompe `npm install` global sin `--cache` alternativa).
+- Evidencia: `stat -f "%Su:%Sg" ~/.npm` devuelve `root:staff`. Un
+  `sudo npm ...` antiguo dejó la caché con dueño incorrecto. También
+  bloquea el auto-update de Claude Code cuando está instalado por npm.
+- Resolución sugerida (ejecutar por el usuario):
+  ```
+  sudo chown -R $(whoami):staff ~/.npm
+  ```
+- Workaround temporal: `npm install --cache /tmp/npm-cache-osk ...`.
+
+## CHAT-001 — `/agente` accesible por URL sin autenticación
+
+- Estado: aceptado en Fase 1; a resolver antes de Fase 2.
+- Impacto: medio en producción (`https://luis-lop-nas.github.io/pagina-banana/agente`).
+- Evidencia: `src/pages/AgentPage.tsx` no protege la ruta; las políticas
+  RLS en `supabase/schema.sql` permiten a `anon` leer y escribir en las
+  tres tablas.
+- Riesgo: cualquiera que descubra la URL puede leer conversaciones de
+  visitantes y responder como agente. En Fase 1 el proyecto es un
+  prototipo interno desconocido por Banana; el riesgo se acepta con
+  vigilancia.
+- Resolución planificada: ver
+  [[03-roadmap#7. Chat de Bananito — Fase 2 y siguientes]].
+- Mitigación intermedia: añadir `Disallow: /pagina-banana/agente` a
+  `public/robots.txt` (pendiente).

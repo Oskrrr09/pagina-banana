@@ -1,6 +1,6 @@
 ---
 tipo: roadmap
-actualizado: 2026-07-29
+actualizado: 2026-07-30
 ---
 
 # Roadmap
@@ -151,3 +151,59 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
 
 Descartadas expresamente (mismo informe): tasador propio del Plan
 Renove, sistema de citas para servicio técnico y chat con IA real.
+
+## 7. Chat de Bananito — Fase 2 y siguientes
+
+Fase 1 desplegada el 2026-07-30 (ver
+[[sesiones/2026-07-30--chat-bananito-supabase-agente]]).
+
+**Fase 2 — Piloto interno con auth**:
+
+- Sustituir la política RLS abierta al rol `anon` por políticas
+  basadas en `auth.uid()` una vez añadido Supabase Auth. Ver
+  [[02-decisiones#D-025 — Fase 1 sin autenticación de agentes]].
+- Login de agentes con magic link por email en `/agente/login`.
+- Tabla `agentes` (id ↔ email ↔ rol ↔ tienda) y asignación de
+  conversaciones (`agente_id` en `conversaciones`).
+- Estado de agente: `disponible` / `ocupado` / `ausente`.
+- Ficha del cliente en la columna derecha del panel: nombre, historial
+  de conversaciones previas, dispositivos previos si consta.
+- Indicador de "está escribiendo" bidireccional vía Supabase
+  Presence.
+- Notificaciones (sonido + `Notification` API) en el panel del agente
+  cuando llega mensaje nuevo o cambia de conversación asignada.
+- Ocultar `/agente` de robots (`robots.txt`) mientras siga
+  accesible por URL sin auth.
+
+**Fase 2 bis — Aplicación Mac nativa (Tauri)**:
+
+- Empaquetar el panel `/agente` como app Mac con Tauri.
+- Icono en Dock con badge de conversaciones sin leer.
+- Notificaciones nativas de macOS.
+- Atajo global para traer al frente.
+- Firma con certificado Apple Developer (99 €/año) para evitar el
+  aviso de "aplicación no identificada".
+- Alternativa mínima: PWA con `manifest.json` + service worker (0
+  esfuerzo, sin Dock badge ni notificaciones integradas).
+
+**Fase 3 — Multicanal**:
+
+- WhatsApp Business API vía Meta como primer canal externo. Webhooks
+  a Supabase Edge Function, unificación en el mismo modelo
+  `conversaciones` + `mensajes` con nueva columna `canal`.
+- Instagram Direct como segundo canal.
+- Panel del agente muestra chip 🟢WhatsApp / 📷Instagram / 💻Web por
+  conversación.
+
+**Fase 4 — IA como asistente**:
+
+- RAG sobre el catálogo (productos, tiendas, servicios, FAQs) con
+  Supabase Vector (pgvector) o Qdrant.
+- Modelo por API (Groq / Together / OpenAI) con fallback a modo
+  humano si la respuesta no supera un umbral de confianza.
+- Historial de intervenciones IA vs agente humano para poder
+  auditar y ajustar prompts.
+
+Descartada expresamente: IA ejecutándose en el navegador del
+visitante (WebLLM). Inviable en móvil, primera carga demasiado
+larga.

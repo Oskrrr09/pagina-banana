@@ -1,6 +1,6 @@
 ---
 tipo: decisiones
-actualizado: 2026-07-26
+actualizado: 2026-07-30
 ---
 
 # Decisiones
@@ -226,6 +226,80 @@ No atribuye motivaciones que el repositorio no documenta.
 - Consecuencia: la interfaz responde a la preferencia actual del sistema y a sus
   cambios en vivo. Una antigua clave `banana:theme`, si existe en el navegador,
   deja de influir en la página.
+
+## D-022 — Chat de Bananito como sustitución de Quantum Asis
+
+- Fecha: 2026-07-30.
+- Estado: vigente (Fase 1 desplegada).
+- Decisión: desarrollar un chat propio para clientes web con panel de
+  agentes propio (`/agente`) como reemplazo del sistema actual de Banana
+  (Quantum Asis). El diseño es un pilar comercial de la propuesta a
+  presentar a la dirección.
+- Evidencia: `src/components/layout/ChatBubble.tsx`,
+  `src/pages/AgentPage.tsx`, `docs/sesiones/2026-07-30--chat-bananito-supabase-agente.md`.
+- Consecuencia: se abre la puerta a integraciones multicanal
+  (WhatsApp, Instagram) en Fase 2 y a añadir IA/RAG sobre el catálogo
+  en Fase 3.
+
+## D-023 — Backend en Supabase (Fase 1)
+
+- Fecha: 2026-07-30.
+- Estado: vigente.
+- Decisión: usar Supabase (Postgres + Realtime + Auth) como backend
+  del chat en lugar de montar servidor propio. Región EU, Postgres 17
+  estándar (no OrioleDB por ser experimental).
+- Evidencia: `supabase/schema.sql`, `src/lib/supabase.ts`,
+  `.env.example`.
+- Consecuencia: sin coste en Fase 1 (tier gratuito), sin infraestructura
+  que mantener. Si en el futuro Banana exige on-premise, se puede migrar
+  a Postgres propio (el esquema es Postgres estándar) y a un WebSocket
+  server (Socket.io, Ably) sin cambiar el modelo de datos.
+
+## D-024 — Modo demo como fallback sin credenciales
+
+- Fecha: 2026-07-30.
+- Estado: vigente.
+- Decisión: cuando faltan `VITE_SUPABASE_URL` o `VITE_SUPABASE_ANON_KEY`,
+  el chat cae al modo canned reply original y `/agente` muestra un
+  aviso de configuración. `supabaseEnabled` centraliza el switch.
+- Evidencia: `src/lib/supabase.ts` (`export const supabase = url && anon
+  ? createClient(url, anon) : null`), `src/lib/chatSession.ts`,
+  `src/components/layout/ChatBubble.tsx` (bloque `if (session.demo)`),
+  `src/pages/AgentPage.tsx` (`SupabaseMissingScreen`).
+- Consecuencia: cualquier clon del repo sigue teniendo un prototipo
+  navegable sin depender de infraestructura externa. Los tests E2E
+  actuales siguen funcionando sin cambios.
+
+## D-025 — Fase 1 sin autenticación de agentes
+
+- Fecha: 2026-07-30.
+- Estado: vigente en Fase 1, a revisar antes de Fase 2.
+- Decisión: `/agente` es accesible por URL sin login. Las políticas RLS
+  de las tres tablas permiten `select`/`insert`/`update` al rol `anon`.
+- Evidencia: bloque de políticas en `supabase/schema.sql`, ausencia de
+  cualquier proveedor de auth en el frontend.
+- Consecuencia: la Fase 1 se puede demostrar sin fricción, pero **la
+  URL pública `/agente` es visible para cualquiera que la descubra**.
+  Riesgo aceptable mientras el proyecto sea prototipo interno con
+  Banana desconociéndolo. Fase 2 debe:
+  1. Añadir Supabase Auth con magic link para el rol de agente.
+  2. Sustituir las políticas `to anon` por políticas basadas en
+     `auth.uid()` y una tabla `agentes`.
+  3. Ocultar `/agente` de robots (`robots.txt`) mientras tanto.
+
+## D-026 — Identidad de visitante en `localStorage`
+
+- Fecha: 2026-07-30.
+- Estado: vigente.
+- Decisión: cada visitante recibe un UUID persistido en `localStorage`
+  bajo la clave `bananito:visitor_id`. La conversación activa se guarda
+  bajo `bananito:conversation_id`.
+- Evidencia: `src/lib/chatSession.ts`, funciones `ensureVisitor` y
+  `ensureConversation`.
+- Consecuencia: sin flujo de consentimiento adicional ni cookies. Si el
+  visitante borra su almacenamiento local pierde el hilo. Cuando toque
+  cumplimiento estricto de RGPD (Fase 2+), añadir aviso y opción de
+  reset explícito.
 
 ## Cómo añadir una decisión
 

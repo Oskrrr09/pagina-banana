@@ -8,6 +8,45 @@ actualizado: 2026-07-30
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-07-30 — Chat de Bananito en tiempo real + panel /agente (Fase 1)
+
+Commits: `7a73335`, `ad2c8c4`, `66c487f`, `5718b13` en `main`.
+
+- **Mascota Bananito**: burbuja flotante circular en azul del nav
+  utilitario (`#0768A9`) con la mascota Bananito encima. Fondo del panel
+  de chat con patrón de plátanos sobre crema. Animación de entrada/salida
+  con `transform + opacity`.
+- **Panel visual del chat** con cabecera amarilla (color del nav),
+  historial con burbujas asimétricas (agente/bot a la izquierda, visitante
+  a la derecha), indicador de estado "En línea", auto-scroll y trampa de
+  foco. Cursor pointer en todos los controles.
+- **Backend Supabase** (Fase 1). Esquema versionado en
+  `supabase/schema.sql`: `visitantes`, `conversaciones`, `mensajes` con
+  trigger para ordenación, RLS activa con políticas abiertas al rol `anon`
+  (temporal — ver [[02-decisiones#D-025 — Fase 1 sin autenticación de agentes]])
+  y publicación en `supabase_realtime`.
+- **Cliente Supabase** en `src/lib/supabase.ts` con fallback: si no hay
+  credenciales, el chat cae al modo canned reply original y `/agente`
+  muestra un aviso de configuración.
+- **Hooks compartidos** en `src/lib/chatSession.ts`:
+  `useVisitorChatSession(active)`, `useAgentInbox()`,
+  `useAgentConversation(id)`. Todos incluyen suscripción realtime,
+  deduplicación por id y manejo de estados de carga/error.
+- **`ChatBubble.tsx`** reescrito para consumir la sesión real de
+  Supabase manteniendo el modo demo. Se oculta también en `/agente/*`
+  (antes solo en `/checkout/*`).
+- **Panel `/agente`** (`src/pages/AgentPage.tsx`): layout full-screen con
+  bandeja de las 50 conversaciones más recientes a la izquierda y
+  ventana de chat activa a la derecha. Auto-selección de la conversación
+  más reciente al cargar. Sin `Layout` público.
+- **Deploy**: `.github/workflows/deploy.yml` inyecta
+  `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` al build desde los
+  secretos `SUPABASE_URL` y `SUPABASE_ANON_KEY` del repo.
+- **`.gitignore`** extendido con bloque `.env` / `.env.*` (excepción
+  `.env.example`). Tipos de `import.meta.env` documentados en
+  `src/vite-env.d.ts`.
+- **Dependencia nueva**: `@supabase/supabase-js ^2.111.0`.
+
 ## 2026-07-30 — Segunda ronda de corrección visual (PR pendiente, sin merge)
 
 Rama `fix/accessory-images-round-2`. **NO fusionar sin revisión visual
