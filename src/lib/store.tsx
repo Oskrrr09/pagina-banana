@@ -7,27 +7,43 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 // ------------------------------------------------------------------
 
 export interface CartLine {
-  id: string // `${family}/${model}/${color}/${capacity}`
+  id: string // dispositivo: `${family}/${model}/${color}/${capacity}` · accesorio: `accessory:${slug}[/${variant}]`
   modelSlug: string
   family: string
-  name: string // 'iPhone 17 Pro'
-  color: string // 'Plata'
-  capacity: string // '256GB'
+  name: string // 'iPhone 17 Pro' | 'Cargador MagSafe · 1 m'
+  color: string // 'Plata' — vacío para accesorios sin color
+  capacity: string // '256GB' — vacío para accesorios sin capacidad
   price: number
   previousPrice: number | null
   qty: number
   insured?: boolean
+  /**
+   * `'device'` (por defecto, compatible con líneas existentes) o
+   * `'accessory'`. El cálculo de seguro sigue mirando `insured` — los
+   * accesorios simplemente no lo activan.
+   */
+  kind?: 'device' | 'accessory'
+  /** Miniatura opcional para pintar en el carrito. */
+  image?: string
 }
 
 export interface CompareItem {
   id: string
   modelSlug: string
+  /**
+   * Familia para segregación del comparador. Para dispositivos es
+   * `iphone`, `mac`, etc. Para accesorios usamos `accessory:<category>`
+   * (p. ej. `accessory:carga`) para que solo se comparen entre sí
+   * accesorios del mismo tipo y no se mezclen con dispositivos.
+   */
   family: string
   name: string
   color: string
   capacity: string
   price: number
   specs: { label: string; value: string }[]
+  kind?: 'device' | 'accessory'
+  image?: string
 }
 
 interface StoreState {

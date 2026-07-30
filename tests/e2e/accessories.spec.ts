@@ -88,8 +88,15 @@ for (const fx of detailFixtures) {
       'href',
       /\/tiendas$/,
     )
-    // Ausencia de CTA comerciales de compra.
-    await expect(page.getByRole('button', { name: /Añadir al carrito|Contratar seguro/ })).toHaveCount(0)
+    // Los accesorios sí tienen "Añadir al carrito" (integración con
+    // carrito), pero NO "Contratar seguro" — el seguro es solo para
+    // dispositivos.
+    await expect(
+      page.getByRole('button', { name: /Añadir al carrito/ }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: /Contratar seguro/ }),
+    ).toHaveCount(0)
   })
 }
 
@@ -526,4 +533,72 @@ test('/buscar?q=iPhone: la tarjeta del accesorio comparte estructura con la del 
   await expect(accCard.getByText('Precio demostrativo').first()).toBeVisible()
   // Sin eyebrow superior en mayúsculas dentro de la tarjeta del accesorio.
   expect(await accCard.locator('p.uppercase').count()).toBe(0)
+})
+
+// ============================================================================
+// Cross-sell y accesorios en carrito/comparador (PR feat/cross-sell-and-
+// accessories-in-cart)
+// ============================================================================
+
+test('accesorio en carrito: aparece con miniatura y SIN checkbox de seguro', async ({ page }) => {
+  await page.goto('./accesorios/cargador-magsafe')
+  await page.getByRole('button', { name: /Añadir al carrito/ }).click()
+  await page.goto('./carrito')
+  await expect(page.getByRole('heading', { name: /Tu cesta/ })).toBeVisible()
+  const cartItem = page.locator('li', { hasText: /Cargador MagSafe/ })
+  await expect(cartItem).toBeVisible()
+  await expect(cartItem.locator('img').first()).toHaveAttribute('src', /\/img\/accessories\//)
+  await expect(cartItem.getByText('Accesorio Apple')).toBeVisible()
+  // Sin checkbox de seguro para accesorios.
+  await expect(cartItem.getByText(/Seguro a todo riesgo/)).toHaveCount(0)
+})
+
+test('carrito con dispositivo: sí muestra checkbox de seguro; y cross-sell relacionado', async ({ page }) => {
+  await page.goto('./iphone/17-pro')
+  // Seleccionar variante y añadir al carrito desde la ficha del modelo.
+  // Alternativa fiable: ir a la variante directamente.
+  await page.goto('./iphone/17-pro/256gb-plata')
+  await page.getByRole('button', { name: /Añadir a la cesta|Añadir al carrito/ }).first().click()
+  await page.goto('./carrito')
+  const deviceItem = page.locator('li', { hasText: /iPhone 17 Pro/ }).first()
+  await expect(deviceItem.getByText(/Seguro a todo riesgo/)).toBeVisible()
+  // Cross-sell "Complementa tu compra".
+  await expect(page.getByRole('heading', { name: /Complementa tu compra/ })).toBeVisible()
+})
+
+test('VariantPage muestra sección "Complementa tu compra" con accesorios compatibles', async ({ page }) => {
+  await page.goto('./iphone/17-pro/256gb-plata')
+  await expect(page.getByRole('heading', { name: /Complementa tu compra/ })).toBeVisible()
+  const section = page.locator('section', {
+    has: page.locator('h2', { hasText: /Complementa tu compra/ }),
+  })
+  const links = section.locator('a[href*="/accesorios/"]')
+  expect(await links.count()).toBeGreaterThan(0)
+})
+
+test('comparador de accesorios: se abren dos MagSafe con misma categoría', async ({ page }) => {
+  // Añadir dos accesorios de la MISMA categoría (carga) al comparador.
+  await page.goto('./accesorios/cargador-magsafe')
+  await page.getByRole('checkbox', { name: /Añadir.+al comparador/ }).check()
+  await page.goto('./accesorios/adaptador-corriente-usb-c-20w')
+  await page.getByRole('checkbox', { name: /Añadir.+al comparador/ }).check()
+  await page.goto('./comparar')
+  await expect(page.getByText(/Comparando/)).toBeVisible()
+  // Ambos accesorios visibles en el modo compare.
+  await expect(page.getByText('Cargador MagSafe')).toBeVisible()
+  await expect(page.getByText(/Adaptador de corriente USB-C de 20 W/)).toBeVisible()
+})
+
+test('comparador mixto: al añadir un dispositivo con un accesorio ya presente, el accesorio se sustituye', async ({ page }) => {
+  await page.goto('./accesorios/cargador-magsafe')
+  await page.getByRole('checkbox', { name: /Añadir.+al comparador/ }).check()
+  // Añadimos un iPhone al comparador desde ModelPage (que tiene
+  // checkbox "Añadir a comparar" por variante).
+  await page.goto('./iphone/17-pro')
+  await page.getByRole('checkbox', { name: /Añadir a comparar/ }).first().check()
+  await page.goto('./comparar')
+  // Ya NO estamos en modo accessory (no aparece el header "Comparando").
+  await expect(page.getByText(/Comparando iPhone|Comparando Mac|Comparando iPad/)).toHaveCount(0)
+  // El dispositivo iPhone 17 Pro aparece en la comparativa clásica.
+  await expect(page.locator('main').getByText(/iPhone 17 Pro/).first()).toBeVisible()
 })

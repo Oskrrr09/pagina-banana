@@ -1,15 +1,17 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
-import { Placeholder } from '../components/ui/Placeholder'
 import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { useStore } from '../lib/store'
 import { useCheckoutState } from '../lib/checkoutState'
 import { productImage } from '../data/products'
 import { euro } from '../lib/format'
+import { appleAccessories, accessoryPath, getAccessoriesForFamily } from '../data/accessories'
+import type { Accessory } from '../data/accessories'
+import type { FamilySlug } from '../data/productDecisionData'
 
 export function CartPage() {
   const {
@@ -56,69 +58,88 @@ export function CartPage() {
         {/* Líneas de producto */}
         <div>
           <ul className="divide-y divide-line border-y border-line">
-            {cart.map((line) => (
-              <li key={line.id} className="flex gap-4 py-5">
-                <div className="w-20 shrink-0 sm:w-24">
-                  <ProductImage src={productImage(line.modelSlug, line.color)} alt={`${line.name} ${line.color}`} ratio="1 / 1" />
-                </div>
-                <div className="flex flex-1 flex-col">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-ink">{line.name}</p>
-                      <p className="text-sm text-muted">
-                        {line.capacity} · {line.color}
-                      </p>
-                      <div className="mt-1">
-                        <ProvisionalBadge label="Precio demostrativo" />
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeFromCart(line.id)}
-                      aria-label={`Quitar ${line.name}`}
-                      className="text-muted hover:text-danger"
-                    >
-                      <Icon name="close" size={18} />
-                    </button>
-                  </div>
-                  <div className="mt-auto flex items-center justify-between pt-3">
-                    <div className="inline-flex items-center rounded-[12px] border border-line">
-                      <button
-                        onClick={() => setQty(line.id, line.qty - 1)}
-                        aria-label="Reducir cantidad"
-                        className="grid h-9 w-9 place-items-center text-ink hover:bg-neutral disabled:opacity-40"
-                        disabled={line.qty <= 1}
-                      >
-                        <Icon name="minus" size={16} />
-                      </button>
-                      <span className="w-8 text-center text-sm font-semibold">{line.qty}</span>
-                      <button
-                        onClick={() => setQty(line.id, line.qty + 1)}
-                        aria-label="Aumentar cantidad"
-                        className="grid h-9 w-9 place-items-center text-ink hover:bg-neutral"
-                      >
-                        <Icon name="plus" size={16} />
-                      </button>
-                    </div>
-                    <span className="font-bold text-ink">{euro(line.price * line.qty)}</span>
-                  </div>
-                  <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] bg-neutral px-3 py-2 text-sm text-ink">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(line.insured)}
-                      onChange={(event) => setLineInsurance(line.id, event.target.checked)}
-                      className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
+            {cart.map((line) => {
+              const isAccessory = line.kind === 'accessory'
+              const src = isAccessory
+                ? line.image
+                : productImage(line.modelSlug, line.color)
+              const altText = isAccessory
+                ? line.name
+                : `${line.name} ${line.color}`
+              const subLabel = isAccessory
+                ? 'Accesorio Apple'
+                : `${line.capacity} · ${line.color}`
+              return (
+                <li key={line.id} className="flex gap-4 py-5">
+                  <div className="w-20 shrink-0 sm:w-24">
+                    <ProductImage
+                      src={src}
+                      alt={altText}
+                      ratio="1 / 1"
+                      blend={isAccessory}
                     />
-                    <Icon name="shield" size={18} />
-                    <span>
-                      <span className="font-semibold">Seguro a todo riesgo</span>
-                      <span className="block text-xs text-muted">
-                        +{euro(insurancePrice)}/mes* por unidad
-                      </span>
-                    </span>
-                  </label>
-                </div>
-              </li>
-            ))}
+                  </div>
+                  <div className="flex flex-1 flex-col">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-ink">{line.name}</p>
+                        <p className="text-sm text-muted">{subLabel}</p>
+                        <div className="mt-1">
+                          <ProvisionalBadge label="Precio demostrativo" />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeFromCart(line.id)}
+                        aria-label={`Quitar ${line.name}`}
+                        className="text-muted hover:text-danger"
+                      >
+                        <Icon name="close" size={18} />
+                      </button>
+                    </div>
+                    <div className="mt-auto flex items-center justify-between pt-3">
+                      <div className="inline-flex items-center rounded-[12px] border border-line">
+                        <button
+                          onClick={() => setQty(line.id, line.qty - 1)}
+                          aria-label="Reducir cantidad"
+                          className="grid h-9 w-9 place-items-center text-ink hover:bg-neutral disabled:opacity-40"
+                          disabled={line.qty <= 1}
+                        >
+                          <Icon name="minus" size={16} />
+                        </button>
+                        <span className="w-8 text-center text-sm font-semibold">{line.qty}</span>
+                        <button
+                          onClick={() => setQty(line.id, line.qty + 1)}
+                          aria-label="Aumentar cantidad"
+                          className="grid h-9 w-9 place-items-center text-ink hover:bg-neutral"
+                        >
+                          <Icon name="plus" size={16} />
+                        </button>
+                      </div>
+                      <span className="font-bold text-ink">{euro(line.price * line.qty)}</span>
+                    </div>
+                    {/* El seguro solo se ofrece para dispositivos. Los
+                        accesorios no participan en el cálculo del seguro. */}
+                    {!isAccessory && (
+                      <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] bg-neutral px-3 py-2 text-sm text-ink">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(line.insured)}
+                          onChange={(event) => setLineInsurance(line.id, event.target.checked)}
+                          className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
+                        />
+                        <Icon name="shield" size={18} />
+                        <span>
+                          <span className="font-semibold">Seguro a todo riesgo</span>
+                          <span className="block text-xs text-muted">
+                            +{euro(insurancePrice)}/mes* por unidad
+                          </span>
+                        </span>
+                      </label>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
           </ul>
 
           {/* Entrega o recogida (resumen) */}
@@ -199,20 +220,91 @@ export function CartPage() {
         </aside>
       </div>
 
-      {/* Productos compatibles */}
-      <div className="mt-12">
-        <h2 className="mb-4 text-xl font-bold text-ink">Productos compatibles</h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-          {['Funda de silicona', 'Cargador USB-C 20W', 'AirPods Pro', 'Protector de pantalla'].map((a) => (
-            <div key={a} className="w-44 shrink-0 rounded-[12px] border border-line p-4">
-              <Placeholder label={a} ratio="1 / 1" />
-              <p className="mt-2 text-sm font-medium text-ink">{a}</p>
-              <p className="text-xs text-muted">Precio demostrativo</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      <CrossSellSuggestions cart={cart} />
     </Container>
+  )
+}
+
+// Cross-sell contextual (§4.5): sugiere accesorios reales del catálogo
+// compatibles con las familias de los dispositivos que ya están en el
+// carrito. No se sugieren accesorios que el usuario ya tenga añadido.
+function CrossSellSuggestions({
+  cart,
+}: {
+  cart: ReturnType<typeof useStore>['cart']
+}) {
+  const suggestions = useMemo(() => {
+    const inCart = new Set(cart.filter((l) => l.kind === 'accessory').map((l) => l.modelSlug))
+    const deviceFamilies = new Set<FamilySlug>(
+      cart
+        .filter((l) => l.kind !== 'accessory')
+        .map((l) => l.family as FamilySlug),
+    )
+    const seen = new Set<string>()
+    const items: Accessory[] = []
+    // Prioridad 1: accesorios de las familias del carrito.
+    for (const family of deviceFamilies) {
+      for (const a of getAccessoriesForFamily(family)) {
+        if (!inCart.has(a.slug) && !seen.has(a.slug)) {
+          seen.add(a.slug)
+          items.push(a)
+        }
+      }
+    }
+    // Prioridad 2: si el carrito no tiene dispositivo, sugerencias generales.
+    if (items.length === 0) {
+      for (const a of appleAccessories) {
+        if (!inCart.has(a.slug) && !seen.has(a.slug)) {
+          seen.add(a.slug)
+          items.push(a)
+        }
+        if (items.length >= 4) break
+      }
+    }
+    return items.slice(0, 4)
+  }, [cart])
+
+  if (suggestions.length === 0) return null
+
+  return (
+    <div className="mt-12">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xl font-bold text-ink">Complementa tu compra</h2>
+        <Link
+          to="/accesorios"
+          className="text-sm font-semibold text-ink underline-offset-2 hover:underline"
+        >
+          Ver todos los accesorios ›
+        </Link>
+      </div>
+      <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {suggestions.map((a) => (
+          <li key={a.slug}>
+            <Link
+              to={accessoryPath(a.slug)}
+              className="flex h-full flex-col overflow-hidden rounded-[12px] border border-line bg-surface transition-colors hover:border-ink/30"
+            >
+              <ProductImage
+                src={a.image}
+                alt={a.name}
+                ratio="1 / 1"
+                bgColor={a.imageBg}
+                pad={!a.imageBg}
+                blend={!a.imageBg}
+              />
+              <div className="flex flex-1 flex-col p-3">
+                <p className="text-sm font-semibold text-ink">{a.name}</p>
+                {a.price != null && (
+                  <p className="mt-1 text-xs text-muted">
+                    {euro(a.price)} · precio demostrativo
+                  </p>
+                )}
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
