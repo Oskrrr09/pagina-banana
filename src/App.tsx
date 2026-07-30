@@ -18,6 +18,8 @@ import { SupportPage } from './pages/SupportPage'
 import { ServiceTechnicalPage } from './pages/ServiceTechnicalPage'
 import { FavoritesPage } from './pages/FavoritesPage'
 import { AppleFinderPage } from './pages/AppleFinderPage'
+import { AccessoriesPage } from './pages/AccessoriesPage'
+import { AccessoryDetailPage } from './pages/AccessoryDetailPage'
 import { NotFound } from './pages/NotFound'
 
 // Rutas del apartado 9.1.
@@ -27,6 +29,10 @@ export function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
+          {/* Rutas estáticas antes de las dinámicas `/:family` para evitar
+              que "accesorios" caiga en FamilyPage. */}
+          <Route path="/accesorios" element={<AccessoriesPage />} />
+          <Route path="/accesorios/:slug" element={<AccessoryDetailPage />} />
           <Route path="/:family" element={<FamilyPage />} />
           <Route path="/:family/:model" element={<ModelPage />} />
           <Route path="/:family/:model/:variant" element={<VariantPage />} />

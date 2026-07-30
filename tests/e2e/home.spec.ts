@@ -8,10 +8,10 @@ test('portada carga con el hero y las categorías', async ({ page }) => {
   await expect(page.getByText(/5 tiendas en Canarias/)).toBeVisible()
 })
 
-test('enlaces de accesorios llevan a /buscar con su término', async ({ page }) => {
+test('enlaces de accesorios llevan al catálogo /accesorios', async ({ page }) => {
   await page.goto('./')
   const fundas = page.getByRole('link', { name: /Fundas iPhone/ }).first()
-  await expect(fundas).toHaveAttribute('href', /\/buscar\?q=fundas/)
+  await expect(fundas).toHaveAttribute('href', /\/accesorios$/)
 })
 
 test('a 375 px de ancho no hay scroll horizontal @mobile', async ({ page }) => {

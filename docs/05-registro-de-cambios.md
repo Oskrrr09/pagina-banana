@@ -8,7 +8,80 @@ actualizado: 2026-07-30
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-30 — Enter abre la página completa de resultados (PR pendiente)
+## 2026-07-30 — Catálogo inicial de accesorios Apple (PR pendiente)
+
+Rama `feat/apple-accessories-catalog`.
+
+- **Nuevo tipo `Accessory`** en `src/data/accessories.ts` con
+  compatibilidad estructurada (`families`, `models`, `notes`),
+  variantes, especificaciones y precios de referencia. NO reutiliza
+  el tipo `Model` de dispositivos.
+- **20 fichas de accesorios oficiales Apple**: adaptadores USB-C
+  (20 W, 30 W), MagSafe, cables (USB-C 240 W 2 m, Thunderbolt 4 Pro),
+  fundas iPhone (17, 17 Pro trenzado técnico, Air), Correa Crossbody,
+  Apple Pencil Pro y USB-C, puntas Pencil, Magic Keyboard iPad Pro
+  11" (M4), Magic Keyboard (USB-C), Magic Keyboard Touch ID +
+  numérico, Magic Mouse, Magic Trackpad, cable Watch USB-C 1 m,
+  correa deportiva 46 mm, AirTag y AirTag pack de 4.
+- **Página `/accesorios`** (nueva `AccessoriesPage`) con filtros por
+  categoría y compatibilidad, radiogroups accesibles, botón "Limpiar
+  filtros" y CTA a tiendas/soporte.
+- **Ficha `/accesorios/:slug`** (nueva `AccessoryDetailPage`) con
+  breadcrumb, galería con variantes accesibles, especificaciones,
+  compatibilidad estructurada, aviso demostrativo, CTA
+  "Consultar disponibilidad en tiendas" y sección de accesorios
+  relacionados.
+- **Tarjeta `AccessoryCard`** (nueva) coherente con `ProductCard`
+  pero sin botón Comprar, sin stock, sin financiación ni seguro.
+- **Sección "Accesorios compatibles"** en `ModelPage` (hasta 4
+  accesorios por dispositivo, primero compatibilidad exacta, después
+  familia).
+- **Rutas** `/accesorios` y `/accesorios/:slug` registradas antes de
+  la ruta dinámica `/:family` para evitar colisión con FamilyPage.
+- **Integración con el buscador**: se retiran del
+  `SEARCH_DEMO_ITEMS` las 5 entradas Apple sustituidas
+  (`demo:apple-usb-c-cable`, `demo:apple-usb-c-adapter`,
+  `demo:apple-airpods-tips`, `demo:apple-magsafe`,
+  `demo:apple-watch-band`). El índice ahora genera automáticamente
+  entradas `kind: 'apple-accessory'` desde `appleAccessories` con
+  `source: 'catalog'` y `demo: false`. `demo:apple-airpods-tips`
+  desaparece por completo (Banana no lo publica). Las terceras marcas
+  (Beats, Sony, Bose, fundas y kits genéricos) siguen etiquetadas
+  como "Contenido demostrativo".
+- **Navegación**: Home, mega menú y accesos rápidos del Header
+  ahora dirigen a `/accesorios` en lugar de `/iphone` o `/buscar`. La
+  columna "Accesorios" del mega menú tiene enlaces reales, no
+  fallback.
+- **Imágenes**: 14 fotografías oficiales JPEG 1200×1200 descargadas
+  desde `store.storeimages.cdn-apple.com` y 8 ilustraciones SVG
+  bespoke del prototipo etiquetadas visualmente para los productos
+  sin asset accesible desde el CDN público. Todas en
+  `public/img/accessories/`. Ver
+  `docs/fuentes-imagenes-accesorios.md`.
+- **Documentación**:
+  `docs/catalogo-accesorios-apple.md` (investigación previa,
+  fuentes, decisiones, precios observados vs mostrados),
+  `docs/fuentes-imagenes-accesorios.md` (origen y formato de cada
+  imagen) y `docs/sesiones/2026-07-30--catalogo-accesorios-apple.md`
+  (sesión).
+- **Tests**: `tests/e2e/accessories.spec.ts` con 22 escenarios
+  (catálogo, filtros, 5 fichas, imágenes, variantes, compatibilidad
+  exacta iPhone/iPad, buscador AirPods/cargador/funda/Pencil/Watch,
+  navegación Home + Header, axe /accesorios y ficha, sin scroll
+  horizontal 375 px). El test histórico de home
+  ("enlaces de accesorios") se adapta al nuevo destino `/accesorios`.
+  Total: **179/179** (156 → 179).
+- Sin cambios en `src/lib/store.tsx`, `INSURANCE_PRICE`,
+  `insurancePrice`, `cartInsuranceTotal`, `setLineInsurance`, Plan
+  Renove, Servicio Técnico, tienda favorita, favoritos+avisos,
+  inventario demostrativo, comparador, recomendador, catálogo de
+  dispositivos, precios de dispositivos, imágenes de dispositivos ni
+  workflows.
+
+## 2026-07-30 — Enter abre la página completa de resultados (PR #26)
+
+Rama `fix/search-enter-results-page`. Commit funcional `dbf4b7f`.
+Merge `a6e11dd`.
 
 Rama `fix/search-enter-results-page`.
 

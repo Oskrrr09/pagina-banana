@@ -37,7 +37,34 @@ function buildFamilyNav(slug: string, name: string): FamilyNav {
   const models = modelsByFamily[slug] ?? []
   const developed = models.length > 0
   if (!developed) {
-    // Accesorios aún no tiene catálogo con fotos reales: enlaza a lo desarrollado.
+    // Sin catálogo de modelos: para Accesorios enlazamos a la página real
+    // `/accesorios`; para el resto (raros) se muestra un placeholder que
+    // dirige al catálogo desarrollado por defecto.
+    if (slug === 'accesorios') {
+      return {
+        slug,
+        name,
+        demo: false,
+        mega: {
+          explore: [
+            { label: 'Ver todos los accesorios', to: '/accesorios' },
+            { label: 'Carga y cables', to: '/accesorios' },
+            { label: 'Fundas iPhone', to: '/accesorios' },
+            { label: 'Accesorios iPad', to: '/accesorios' },
+            { label: 'Accesorios Mac', to: '/accesorios' },
+            { label: 'Accesorios Apple Watch', to: '/accesorios' },
+            { label: 'AirTag', to: '/accesorios' },
+          ],
+          buy: serviceLinks,
+          featured: {
+            name: 'Accesorios Apple',
+            cta: 'Ver el catálogo',
+            to: '/accesorios',
+            tint: tints[slug] ?? '#8a8f98',
+          },
+        },
+      }
+    }
     return {
       slug,
       name,
