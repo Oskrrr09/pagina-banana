@@ -340,7 +340,7 @@ export function ChatBubble() {
         aria-controls="chat-bananito"
         aria-haspopup="dialog"
         onClick={() => setOpen((v) => !v)}
-        className="ml-auto grid h-16 w-16 cursor-pointer place-items-center overflow-hidden rounded-full shadow-[0_10px_25px_-5px_rgba(0,0,0,0.35)] ring-4 ring-white transition-all duration-200 hover:-translate-y-1 hover:scale-105 hover:shadow-[0_14px_30px_-4px_rgba(0,0,0,0.45)] hover:ring-[#fff7db] active:translate-y-0 active:scale-100"
+        className="ml-auto grid h-16 w-16 cursor-pointer place-items-center overflow-hidden rounded-full shadow-[0_10px_25px_-5px_rgba(0,0,0,0.35)] transition-all duration-200 hover:-translate-y-1 hover:scale-105 hover:shadow-[0_14px_30px_-4px_rgba(0,0,0,0.45)] active:translate-y-0 active:scale-100"
         style={{ background: BANANA_BLUE }}
       >
         {open ? (
