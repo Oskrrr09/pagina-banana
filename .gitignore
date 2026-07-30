@@ -23,6 +23,11 @@ docs/.obsidian/
 # Vite
 .vite/
 
+# Variables de entorno — solo se versiona `.env.example`.
+.env
+.env.*
+!.env.example
+
 # TypeScript — caché incremental (se regenera con `tsc -b`, no se versiona)
 *.tsbuildinfo
 

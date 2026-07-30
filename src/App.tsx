@@ -20,6 +20,7 @@ import { FavoritesPage } from './pages/FavoritesPage'
 import { AppleFinderPage } from './pages/AppleFinderPage'
 import { AccessoriesPage } from './pages/AccessoriesPage'
 import { AccessoryDetailPage } from './pages/AccessoryDetailPage'
+import { AgentPage } from './pages/AgentPage'
 import { NotFound } from './pages/NotFound'
 
 // Rutas del apartado 9.1.
@@ -52,6 +53,9 @@ export function App() {
         <Route element={<CheckoutLayout />}>
           <Route path="/checkout/:step" element={<CheckoutPage />} />
         </Route>
+        {/* Panel interno para agentes de tienda. Sin Layout público
+            porque tiene su propia cabecera/estructura full-screen. */}
+        <Route path="/agente" element={<AgentPage />} />
       </Routes>
       <ChatBubble />
     </>

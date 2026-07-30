@@ -27,7 +27,16 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Credenciales de Supabase (chat de Bananito y panel /agente).
+      # Configurar en Settings → Secrets and variables → Actions:
+      #   SUPABASE_URL       → https://<ref>.supabase.co
+      #   SUPABASE_ANON_KEY  → anon/public key (empieza por eyJ...)
+      # Si no están definidas, la web se despliega en modo demo (chat con
+      # canned replies y el panel /agente muestra el aviso de configuración).
       - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

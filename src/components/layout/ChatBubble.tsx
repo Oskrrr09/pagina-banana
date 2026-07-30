@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
+import { useVisitorChatSession } from '../../lib/chatSession'
+import type { DbMessage } from '../../lib/supabase'
 
-// Chat "Bananito" — prototipo visual, sin backend real todavía.
-// - Botón flotante circular con Bananito en el color de la barra utilitaria (#0768A9).
-// - Al abrir, panel con cabecera (Bananito + estado), historial de mensajes de
-//   ejemplo y campo de entrada. Enviar añade un mensaje de usuario + una
-//   respuesta simulada con delay para dar sensación de "está escribiendo".
+// Chat "Bananito" — burbuja del visitante.
+// - Botón flotante circular con Bananito en azul del nav utilitario.
+// - Al abrir, panel con cabecera amarilla, historial en tiempo real y input.
+// - Conectado a Supabase: los mensajes viajan al backend y llegan al panel
+//   /agente. Si no hay credenciales, cae al modo demo con canned replies.
 // - Oculto en /checkout/* para no distraer del proceso de compra.
-// - Accesible: role="dialog", foco al abrir en el input, trampa de foco,
-//   Escape cierra y devuelve foco al botón.
+// - Accesible: role="dialog", trampa de foco, Escape cierra.
 
 const BANANA_BLUE = '#0768A9'
 const BANANA_YELLOW = '#ffce1f' // mismo amarillo del nav (--color-brand)
 const CHAT_BG_PATTERN = `${import.meta.env.BASE_URL}img/chat/pattern-bananas.png`
+const BANANITO_IMG = `${import.meta.env.BASE_URL}img/chat/bananito-square.png`
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -24,17 +26,13 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
-const BANANITO_IMG = `${import.meta.env.BASE_URL}img/chat/bananito-square.png`
+// ============================================================
+// Modo demo: mismas canned replies que antes de Supabase, para
+// que un fork sin credenciales siga viendo el chat funcional.
+// ============================================================
+const DEMO_WELCOME =
+  '¡Hola! Soy Bananito 🍌 el asistente de Banana Computer. Puedo ayudarte con productos, accesorios, comparar modelos, tiendas o precios. ¿En qué te ayudo?'
 
-interface Message {
-  id: string
-  from: 'bot' | 'user'
-  text: string
-  ts: number
-}
-
-// Respuestas simuladas para el prototipo. Cuando se conecte la IA real,
-// se sustituye este objeto por una llamada al backend.
 const CANNED_REPLIES: { keyword: RegExp; reply: string }[] = [
   {
     keyword: /iphone|móvil|movil|telefono|teléfono/i,
@@ -72,14 +70,29 @@ const CANNED_REPLIES: { keyword: RegExp; reply: string }[] = [
   },
 ]
 
-const FALLBACK_REPLY =
+const DEMO_FALLBACK =
   'Interesante pregunta. Déjame consultarlo — te paso con un compañero de tienda que te ayudará mejor. En unos segundos alguien te contestará.'
 
 function fakeReplyFor(text: string): string {
   for (const { keyword, reply } of CANNED_REPLIES) {
     if (keyword.test(text)) return reply
   }
-  return FALLBACK_REPLY
+  return DEMO_FALLBACK
+}
+
+// UI-message: forma común para renderizar, sea de Supabase o del modo demo.
+interface UIMessage {
+  id: string
+  side: 'left' | 'right' // izquierda = bot/agente, derecha = visitante
+  text: string
+}
+
+function toUIMessage(m: DbMessage): UIMessage {
+  return {
+    id: m.id,
+    side: m.autor === 'visitor' ? 'right' : 'left',
+    text: m.texto,
+  }
 }
 
 export function ChatBubble() {
@@ -88,16 +101,19 @@ export function ChatBubble() {
   // `visible` conmuta la clase CSS que dispara el transform/opacity.
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'm-welcome',
-      from: 'bot',
-      text: '¡Hola! Soy Bananito 🍌 el asistente de Banana Computer. Puedo ayudarte con productos, accesorios, comparar modelos, tiendas o precios. ¿En qué te ayudo?',
-      ts: Date.now(),
-    },
-  ])
   const [input, setInput] = useState('')
+
+  // Sesión de Supabase — se inicializa solo cuando el chat se abre.
+  const session = useVisitorChatSession(open)
+  const supabaseMessages: UIMessage[] = session.messages.map(toUIMessage)
+
+  // Estado del modo demo (fallback cuando no hay credenciales).
+  const [demoMessages, setDemoMessages] = useState<UIMessage[]>([
+    { id: 'welcome', side: 'left', text: DEMO_WELCOME },
+  ])
   const [botTyping, setBotTyping] = useState(false)
+
+  const messages = session.demo ? demoMessages : supabaseMessages
 
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -106,6 +122,7 @@ export function ChatBubble() {
   const location = useLocation()
 
   const inCheckout = location.pathname.startsWith('/checkout')
+  const inAgent = location.pathname.startsWith('/agente')
 
   const close = useCallback(() => {
     setOpen(false)
@@ -113,10 +130,8 @@ export function ChatBubble() {
   }, [])
 
   // Coreografía de montaje/animación:
-  //  open=true  → montamos, y en el siguiente frame activamos `visible`
-  //               para que la transición dispare desde el estado inicial.
-  //  open=false → quitamos `visible` (se anima hacia fuera). El desmontaje
-  //               ocurre en onTransitionEnd del panel.
+  //  open=true  → montamos, y en el siguiente frame activamos `visible`.
+  //  open=false → quitamos `visible` y desmontamos al terminar la transición.
   useEffect(() => {
     if (open) {
       setMounted(true)
@@ -126,8 +141,7 @@ export function ChatBubble() {
     setVisible(false)
   }, [open])
 
-  // Foco al abrir, trampa de tab, escape cierra.
-  // Depende de `mounted` porque el panel se monta un frame después de `open`.
+  // Foco al abrir, trampa de tab, Escape cierra.
   useEffect(() => {
     if (!open || !mounted) return
     const panel = panelRef.current
@@ -196,35 +210,40 @@ export function ChatBubble() {
     el.scrollTop = el.scrollHeight
   }, [messages, botTyping])
 
-  const sendMessage = useCallback(() => {
+  const submit = useCallback(() => {
     const trimmed = input.trim()
     if (!trimmed) return
-    const userMsg: Message = {
-      id: `u-${Date.now()}`,
-      from: 'user',
-      text: trimmed,
-      ts: Date.now(),
-    }
-    setMessages((prev) => [...prev, userMsg])
     setInput('')
-    setBotTyping(true)
-    // Respuesta simulada con pequeño delay para dar sensación de "escribiendo".
-    const delay = 600 + Math.min(1400, trimmed.length * 25)
-    window.setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `b-${Date.now()}`,
-          from: 'bot',
-          text: fakeReplyFor(trimmed),
-          ts: Date.now(),
-        },
-      ])
-      setBotTyping(false)
-    }, delay)
-  }, [input])
 
-  if (inCheckout) return null
+    if (session.demo) {
+      // Modo demo: añadimos localmente + respuesta simulada con delay.
+      const userMsg: UIMessage = {
+        id: `u-${Date.now()}`,
+        side: 'right',
+        text: trimmed,
+      }
+      setDemoMessages((prev) => [...prev, userMsg])
+      setBotTyping(true)
+      const delay = 600 + Math.min(1400, trimmed.length * 25)
+      window.setTimeout(() => {
+        setDemoMessages((prev) => [
+          ...prev,
+          { id: `b-${Date.now()}`, side: 'left', text: fakeReplyFor(trimmed) },
+        ])
+        setBotTyping(false)
+      }, delay)
+      return
+    }
+
+    // Modo real: enviamos a Supabase. El propio insert vuelve por la
+    // suscripción realtime, así que no hace falta añadir localmente.
+    void session.sendMessage(trimmed)
+  }, [input, session])
+
+  if (inCheckout || inAgent) return null
+
+  const showLoading = !session.demo && session.status === 'loading'
+  const showError = !session.demo && session.status === 'error'
 
   return (
     <div data-chat-root className="fixed bottom-6 right-4 z-[75] sm:right-6">
@@ -236,8 +255,6 @@ export function ChatBubble() {
           aria-modal="true"
           aria-labelledby="chat-bananito-title"
           onTransitionEnd={(e) => {
-            // Desmontar SOLO cuando termina la animación del propio panel
-            // (no de sus hijos) y solo si estamos en fase de cierre.
             if (e.target !== e.currentTarget) return
             if (!open) setMounted(false)
           }}
@@ -289,13 +306,21 @@ export function ChatBubble() {
             ref={scrollRef}
             className="flex-1 space-y-3 overflow-y-auto px-3 py-4"
             style={{
-              backgroundColor: '#fdf6e0', // crema del fondo, por si hay bandas
+              backgroundColor: '#fdf6e0',
               backgroundImage: `url(${CHAT_BG_PATTERN})`,
               backgroundRepeat: 'repeat',
               backgroundSize: '55% auto',
               backgroundPosition: 'top left',
             }}
           >
+            {showLoading && (
+              <p className="text-center text-xs text-ink/60">Cargando conversación…</p>
+            )}
+            {showError && (
+              <p className="text-center text-xs text-danger">
+                No se pudo conectar con el servidor. Recarga la página.
+              </p>
+            )}
             {messages.map((m) => (
               <MessageBubble key={m.id} message={m} />
             ))}
@@ -306,7 +331,7 @@ export function ChatBubble() {
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              sendMessage()
+              submit()
             }}
             className="flex items-center gap-2 border-t border-line bg-surface px-3 py-3"
           >
@@ -316,12 +341,13 @@ export function ChatBubble() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Escribe tu mensaje…"
               aria-label="Escribe un mensaje para Bananito"
-              className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30"
+              disabled={showLoading || showError}
+              className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30 disabled:opacity-60"
             />
             <button
               type="submit"
               aria-label="Enviar mensaje"
-              disabled={!input.trim()}
+              disabled={!input.trim() || showLoading || showError}
               className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
               style={{ background: BANANA_BLUE }}
             >
@@ -359,17 +385,23 @@ export function ChatBubble() {
   )
 }
 
-function MessageBubble({ message }: { message: Message }) {
-  const isBot = message.from === 'bot'
-  if (isBot) {
+function MessageBubble({ message }: { message: UIMessage }) {
+  if (message.side === 'left') {
     return (
       <div className="flex items-end gap-2">
-        <span className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full" style={{ background: BANANA_BLUE }}>
-          <img src={BANANITO_IMG} alt="" width={28} height={28} className="h-6 w-6 object-contain" />
-        </span>
-        <div
-          className="max-w-[80%] rounded-[16px] rounded-bl-[4px] bg-surface px-3.5 py-2 text-sm text-ink shadow-sm"
+        <span
+          className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full"
+          style={{ background: BANANA_BLUE }}
         >
+          <img
+            src={BANANITO_IMG}
+            alt=""
+            width={28}
+            height={28}
+            className="h-6 w-6 object-contain"
+          />
+        </span>
+        <div className="max-w-[80%] whitespace-pre-wrap break-words rounded-[16px] rounded-bl-[4px] bg-surface px-3.5 py-2 text-sm text-ink shadow-sm">
           {message.text}
         </div>
       </div>
@@ -378,7 +410,7 @@ function MessageBubble({ message }: { message: Message }) {
   return (
     <div className="flex justify-end">
       <div
-        className="max-w-[80%] rounded-[16px] rounded-br-[4px] px-3.5 py-2 text-sm text-white shadow-sm"
+        className="max-w-[80%] whitespace-pre-wrap break-words rounded-[16px] rounded-br-[4px] px-3.5 py-2 text-sm text-white shadow-sm"
         style={{ background: BANANA_BLUE }}
       >
         {message.text}
@@ -390,14 +422,32 @@ function MessageBubble({ message }: { message: Message }) {
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2">
-      <span className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full" style={{ background: BANANA_BLUE }}>
-        <img src={BANANITO_IMG} alt="" width={28} height={28} className="h-6 w-6 object-contain" />
+      <span
+        className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full"
+        style={{ background: BANANA_BLUE }}
+      >
+        <img
+          src={BANANITO_IMG}
+          alt=""
+          width={28}
+          height={28}
+          className="h-6 w-6 object-contain"
+        />
       </span>
       <div className="rounded-[16px] rounded-bl-[4px] bg-surface px-4 py-3 shadow-sm">
         <span className="flex gap-1">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-muted" style={{ animationDelay: '0ms' }} />
-          <span className="h-2 w-2 animate-pulse rounded-full bg-muted" style={{ animationDelay: '160ms' }} />
-          <span className="h-2 w-2 animate-pulse rounded-full bg-muted" style={{ animationDelay: '320ms' }} />
+          <span
+            className="h-2 w-2 animate-pulse rounded-full bg-muted"
+            style={{ animationDelay: '0ms' }}
+          />
+          <span
+            className="h-2 w-2 animate-pulse rounded-full bg-muted"
+            style={{ animationDelay: '160ms' }}
+          />
+          <span
+            className="h-2 w-2 animate-pulse rounded-full bg-muted"
+            style={{ animationDelay: '320ms' }}
+          />
         </span>
       </div>
     </div>
