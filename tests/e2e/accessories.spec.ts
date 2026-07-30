@@ -576,29 +576,21 @@ test('VariantPage muestra sección "Complementa tu compra" con accesorios compat
   expect(await links.count()).toBeGreaterThan(0)
 })
 
-test('comparador de accesorios: se abren dos MagSafe con misma categoría', async ({ page }) => {
-  // Añadir dos accesorios de la MISMA categoría (carga) al comparador.
+test('accesorios NO tienen checkbox "Añadir a comparar" en la ficha', async ({ page }) => {
   await page.goto('./accesorios/cargador-magsafe')
-  await page.getByRole('checkbox', { name: /Añadir.+al comparador/ }).check()
-  await page.goto('./accesorios/adaptador-corriente-usb-c-20w')
-  await page.getByRole('checkbox', { name: /Añadir.+al comparador/ }).check()
-  await page.goto('./comparar')
-  await expect(page.getByText(/Comparando/)).toBeVisible()
-  // Ambos accesorios visibles en el modo compare.
-  await expect(page.getByText('Cargador MagSafe')).toBeVisible()
-  await expect(page.getByText(/Adaptador de corriente USB-C de 20 W/)).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: /Añadir.+al comparador/ })).toHaveCount(0)
 })
 
-test('comparador mixto: al añadir un dispositivo con un accesorio ya presente, el accesorio se sustituye', async ({ page }) => {
+test('checkout resumen: la línea del accesorio muestra su fotografía real', async ({ page }) => {
   await page.goto('./accesorios/cargador-magsafe')
-  await page.getByRole('checkbox', { name: /Añadir.+al comparador/ }).check()
-  // Añadimos un iPhone al comparador desde ModelPage (que tiene
-  // checkbox "Añadir a comparar" por variante).
-  await page.goto('./iphone/17-pro')
-  await page.getByRole('checkbox', { name: /Añadir a comparar/ }).first().check()
-  await page.goto('./comparar')
-  // Ya NO estamos en modo accessory (no aparece el header "Comparando").
-  await expect(page.getByText(/Comparando iPhone|Comparando Mac|Comparando iPad/)).toHaveCount(0)
-  // El dispositivo iPhone 17 Pro aparece en la comparativa clásica.
-  await expect(page.locator('main').getByText(/iPhone 17 Pro/).first()).toBeVisible()
+  await page.getByRole('button', { name: /Añadir al carrito/ }).click()
+  await page.goto('./checkout/1')
+  const summary = page.locator('aside', { has: page.locator('h2', { hasText: /Resumen del pedido/ }) })
+  await expect(summary).toBeVisible()
+  const line = summary.locator('li', { hasText: /Cargador MagSafe/ })
+  await expect(line).toBeVisible()
+  const img = line.locator('img').first()
+  await expect(img).toHaveAttribute('src', /\/img\/accessories\//)
+  const nw = await img.evaluate((el: HTMLImageElement) => el.naturalWidth)
+  expect(nw).toBeGreaterThan(0)
 })

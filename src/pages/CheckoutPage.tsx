@@ -274,25 +274,29 @@ export function CheckoutPage() {
               <div className="mt-6 border-t border-line pt-5">
                 <p className="text-sm font-semibold text-ink">Extras</p>
                 <div className="mt-2 space-y-2">
-                  {cart.map((line) => (
-                    <label
-                      key={line.id}
-                      className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[10px] border border-line px-3 py-2 text-sm text-ink"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={Boolean(line.insured)}
-                        onChange={(event) => setLineInsurance(line.id, event.target.checked)}
-                        className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
-                      />
-                      <span>
-                        <span className="block font-semibold">Seguro para {line.name}</span>
-                        <span className="block text-xs text-muted">
-                          {line.capacity} · {line.color} · +{euro(insurancePrice)}/mes* por unidad
+                  {/* Solo se ofrece seguro para dispositivos. Los
+                      accesorios no participan en el cálculo del seguro. */}
+                  {cart
+                    .filter((line) => line.kind !== 'accessory')
+                    .map((line) => (
+                      <label
+                        key={line.id}
+                        className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[10px] border border-line px-3 py-2 text-sm text-ink"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={Boolean(line.insured)}
+                          onChange={(event) => setLineInsurance(line.id, event.target.checked)}
+                          className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
+                        />
+                        <span>
+                          <span className="block font-semibold">Seguro para {line.name}</span>
+                          <span className="block text-xs text-muted">
+                            {line.capacity} · {line.color} · +{euro(insurancePrice)}/mes* por unidad
+                          </span>
                         </span>
-                      </span>
-                    </label>
-                  ))}
+                      </label>
+                    ))}
                 </div>
                 <div className="mt-4">
                   <p className="mb-1 text-sm font-semibold text-ink">Código de cupón</p>
@@ -398,28 +402,43 @@ export function CheckoutPage() {
           <div className="rounded-[12px] border border-line bg-surface p-6">
             <h2 className="font-bold text-ink">Resumen del pedido</h2>
             <ul className="mt-4 space-y-3">
-              {summaryLines.map((line) => (
-                <li key={line.id} className="flex gap-3">
-                  <div className="w-14 shrink-0">
-                    <ProductImage src={productImage(line.modelSlug, line.color)} alt={`${line.name} ${line.color}`} ratio="1 / 1" />
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium text-ink">
-                      {line.name} {line.capacity}
-                    </p>
-                    <p className="text-muted">
-                      {line.color} · {line.qty} ud.
-                    </p>
-                    <p className="font-semibold text-ink">{euro(line.price * line.qty)}</p>
-                    {line.insured && (
-                      <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-available">
-                        <Icon name="shield" size={14} />
-                        Seguro incluido · {euro(insurancePrice * line.qty)}/mes*
+              {summaryLines.map((line) => {
+                const isAccessory = line.kind === 'accessory'
+                const src = isAccessory
+                  ? line.image
+                  : productImage(line.modelSlug, line.color)
+                const altText = isAccessory
+                  ? line.name
+                  : `${line.name} ${line.color}`
+                return (
+                  <li key={line.id} className="flex gap-3">
+                    <div className="w-14 shrink-0">
+                      <ProductImage
+                        src={src}
+                        alt={altText}
+                        ratio="1 / 1"
+                        blend={isAccessory}
+                      />
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-medium text-ink">
+                        {line.name}
+                        {!isAccessory && line.capacity ? ` ${line.capacity}` : ''}
                       </p>
-                    )}
-                  </div>
-                </li>
-              ))}
+                      <p className="text-muted">
+                        {isAccessory ? 'Accesorio Apple' : line.color} · {line.qty} ud.
+                      </p>
+                      <p className="font-semibold text-ink">{euro(line.price * line.qty)}</p>
+                      {line.insured && (
+                        <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-available">
+                          <Icon name="shield" size={14} />
+                          Seguro incluido · {euro(insurancePrice * line.qty)}/mes*
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
 
             <dl className="mt-4 space-y-1 border-t border-line pt-4 text-sm">

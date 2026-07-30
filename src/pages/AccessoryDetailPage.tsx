@@ -27,15 +27,9 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
   const [activeVariant, setActiveVariant] = useState(0)
   const variant = accessory.variants[activeVariant] ?? accessory.variants[0]
   const price = variant.price ?? accessory.price
-  const { addToCart, toggleCompare, isComparing, compare } = useStore()
+  const { addToCart } = useStore()
 
   const cartId = `accessory:${accessory.slug}/${variant.slug}`
-  const inCart = false // el store admite duplicados sumando qty; no bloqueamos el botón
-  const compareId = cartId
-  const compared = isComparing(compareId)
-  const compareFamily = `accessory:${accessory.category}`
-  const compareBlocked =
-    !compared && compare.length > 0 && compare[0].family !== compareFamily
 
   function handleAddToCart() {
     if (price == null) return
@@ -51,24 +45,6 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
       capacity: '',
       price,
       previousPrice: accessory.previousPrice ?? null,
-      kind: 'accessory',
-      image: variant.image,
-    })
-  }
-
-  function handleToggleCompare() {
-    toggleCompare({
-      id: compareId,
-      modelSlug: accessory.slug,
-      family: compareFamily,
-      name:
-        accessory.variants.length > 1
-          ? `${accessory.name} · ${variant.label}`
-          : accessory.name,
-      color: variant.label,
-      capacity: '',
-      price: price ?? 0,
-      specs: accessory.specs,
       kind: 'accessory',
       image: variant.image,
     })
@@ -185,31 +161,13 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
 
           <div className="mt-6 flex flex-wrap gap-3">
             {price != null && (
-              <Button variant="primary" onClick={handleAddToCart} disabled={inCart}>
+              <Button variant="primary" onClick={handleAddToCart}>
                 Añadir al carrito
               </Button>
             )}
             <ButtonLink to="/tiendas" variant="secondary">
               Consultar disponibilidad en tiendas
             </ButtonLink>
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-ink">
-              <input
-                type="checkbox"
-                className="h-4 w-4 cursor-pointer accent-ink"
-                checked={compared}
-                onChange={handleToggleCompare}
-                disabled={compareBlocked}
-                aria-label={
-                  compared
-                    ? `Quitar ${accessory.name} del comparador`
-                    : `Añadir ${accessory.name} al comparador`
-                }
-              />
-              Añadir a comparar
-              {compareBlocked && (
-                <span className="text-xs font-normal text-muted">(otra categoría)</span>
-              )}
-            </label>
             <a
               href="#compat"
               className="inline-flex items-center gap-2 rounded-[12px] px-3 py-2 text-sm font-semibold text-ink underline-offset-4 hover:underline"

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
@@ -23,12 +23,6 @@ import {
   buildDecisionSummary,
   type FamilySlug,
 } from '../data/productDecisionData'
-import {
-  ACCESSORY_CATEGORIES,
-  accessoryPath,
-  getAccessory,
-} from '../data/accessories'
-import type { AccessoryCategory } from '../data/accessories'
 
 // ---------------------------------------------------------------------------
 // Comparador (versión simplificada).
@@ -143,20 +137,14 @@ export function ComparePage() {
 
   const isEmpty = compare.length === 0
 
-  // Modo accesorio: cuando el usuario ha añadido a comparar uno o más
-  // accesorios (family = `accessory:<category>`), rendereamos una vista
-  // simplificada — sin `familyInfo` ni decision summary — porque los
-  // accesorios no tienen la matriz de especificaciones de los
-  // dispositivos.
-  if (!isEmpty && compare[0].family?.startsWith('accessory:')) {
-    return (
-      <AccessoryCompareView
-        items={compare}
-        onRemove={removeCompare}
-        onClear={() => compare.forEach((c) => removeCompare(c.id))}
-      />
-    )
-  }
+  // Compat: si algún accesorio quedó persistido en localStorage con la
+  // family antigua `accessory:<category>`, lo retiramos silenciosamente
+  // — el comparador queda solo para dispositivos.
+  useEffect(() => {
+    compare.forEach((c) => {
+      if (c.family?.startsWith('accessory:')) removeCompare(c.id)
+    })
+  }, [compare, removeCompare])
 
   return (
     <Container className="py-10">
@@ -511,139 +499,5 @@ function SectionGroup({
         </tr>
       ))}
     </>
-  )
-}
-
-// Vista simplificada del comparador cuando el usuario está comparando
-// accesorios. No usa la infraestructura de secciones/decisiones de
-// dispositivos (specs muy distintas). Muestra galería + specs + CTA a
-// la ficha real. Se limita a la misma categoría de accesorios (misma
-// `family = accessory:<category>`) — la restricción está en el store.
-function AccessoryCompareView({
-  items,
-  onRemove,
-  onClear,
-}: {
-  items: ReturnType<typeof useStore>['compare']
-  onRemove: (id: string) => void
-  onClear: () => void
-}) {
-  const category = (items[0].family?.split(':')[1] ?? '') as AccessoryCategory
-  const categoryLabel =
-    ACCESSORY_CATEGORIES.find((c) => c.slug === category)?.label ?? 'Accesorios'
-  const allSpecLabels = Array.from(
-    new Set(items.flatMap((i) => i.specs.map((s) => s.label))),
-  )
-
-  return (
-    <Container className="py-10">
-      <header className="max-w-2xl">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-          Comparador
-        </p>
-        <h1 className="mt-1 text-3xl font-extrabold text-ink sm:text-4xl">
-          Compara tus opciones
-        </h1>
-        <p className="mt-2 text-muted">
-          Comparando <span className="font-semibold text-ink">{categoryLabel}</span>. Sigue
-          añadiendo desde cada ficha de accesorio.
-        </p>
-      </header>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Link
-          to="/accesorios"
-          className="inline-flex items-center gap-2 rounded-[10px] border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink hover:border-ink/30"
-        >
-          Añadir otro accesorio
-        </Link>
-        <button
-          type="button"
-          onClick={onClear}
-          className="text-sm font-semibold text-ink underline underline-offset-2"
-        >
-          Vaciar comparador
-        </button>
-      </div>
-
-      <div className="mt-6 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div className="min-w-[560px]">
-          <div
-            className="grid gap-3"
-            style={{ gridTemplateColumns: `10rem repeat(${items.length}, minmax(0, 1fr))` }}
-          >
-            <div aria-hidden="true" />
-            {items.map((c) => {
-              const accessory = getAccessory(c.modelSlug)
-              return (
-                <div
-                  key={c.id}
-                  className="flex h-full flex-col overflow-hidden rounded-[12px] border border-line bg-surface p-4"
-                >
-                  <ProductImage
-                    src={c.image ?? accessory?.image}
-                    alt={c.name}
-                    ratio="1 / 1"
-                    blend
-                  />
-                  <p className="mt-3 text-sm font-semibold text-ink">{c.name}</p>
-                  <p className="mt-1 text-sm text-ink">
-                    {c.price > 0 ? euro(c.price) : 'Consultar precio'}
-                  </p>
-                  <div className="mt-1">
-                    <ProvisionalBadge label="Precio demostrativo" />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {accessory && (
-                      <Link
-                        to={accessoryPath(accessory.slug)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-ink underline underline-offset-2"
-                      >
-                        Ver ficha
-                      </Link>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => onRemove(c.id)}
-                      className="text-xs font-semibold text-danger hover:underline"
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {allSpecLabels.length > 0 && (
-            <table className="mt-6 w-full border-collapse text-sm">
-              <colgroup>
-                <col style={{ width: '10rem' }} />
-                {items.map((c) => (
-                  <col key={`c-${c.id}`} />
-                ))}
-              </colgroup>
-              <tbody>
-                {allSpecLabels.map((label) => (
-                  <tr key={label} className="border-b border-line">
-                    <th scope="row" className="py-3 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-muted">
-                      {label}
-                    </th>
-                    {items.map((c) => {
-                      const spec = c.specs.find((s) => s.label === label)
-                      return (
-                        <td key={c.id} className="py-3 pr-3 align-top text-ink">
-                          {spec?.value ?? <span className="text-muted">—</span>}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-    </Container>
   )
 }

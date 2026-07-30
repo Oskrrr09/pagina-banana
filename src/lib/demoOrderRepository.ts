@@ -15,6 +15,8 @@ export interface DemoOrderLine {
   price: number
   qty: number
   insured: boolean
+  kind?: 'device' | 'accessory'
+  image?: string
 }
 
 export type DemoDeliveryMode = 'envio' | 'recogida'
@@ -102,6 +104,8 @@ export const demoOrderRepository = {
         price: line.price,
         qty: line.qty,
         insured: Boolean(line.insured),
+        kind: line.kind,
+        image: line.image,
       })),
       productsTotal: input.cart.reduce((n, l) => n + l.price * l.qty, 0),
       monthlyInsuranceTotal: insuredUnits * INSURANCE_MONTHLY,
