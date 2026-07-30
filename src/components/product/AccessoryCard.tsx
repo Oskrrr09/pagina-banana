@@ -3,6 +3,7 @@ import { ProvisionalBadge } from '../ui/Tag'
 import { euro } from '../../lib/format'
 import type { Accessory } from '../../data/accessories'
 import { accessoryPath } from '../../data/accessories'
+import { AccessoryImage } from './AccessoryImage'
 
 // Tarjeta compacta de accesorio (§4.5). Coherente con `ProductCard` en
 // espaciado y estilos, pero sin importar su código: los accesorios no
@@ -14,19 +15,15 @@ export function AccessoryCard({ accessory }: { accessory: Accessory }) {
       to={accessoryPath(accessory.slug)}
       className="group flex h-full flex-col overflow-hidden rounded-[16px] border border-line bg-surface transition-colors hover:border-ink/30"
     >
-      <div
-        className="flex aspect-square w-full items-center justify-center"
-        style={{ background: accessory.imageBg ?? '#fafafa' }}
-      >
-        <img
-          src={accessory.image}
-          alt={accessory.name}
-          width={800}
-          height={800}
-          loading="lazy"
-          className="max-h-full max-w-full object-contain p-6"
-        />
-      </div>
+      <AccessoryImage
+        src={accessory.image}
+        alt={accessory.name}
+        size="card"
+        presentation={accessory.imagePresentation}
+        imageBg={accessory.imageBg}
+        width={800}
+        height={800}
+      />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
           {categoryLabel(accessory.category)}

@@ -47,6 +47,28 @@ export interface AccessoryVariant {
   swatch?: string
 }
 
+/**
+ * Configuración visual opcional del asset. Permite ajustar encuadre y
+ * escala sin escribir clases Tailwind arbitrarias en los datos. Los
+ * valores son tipados y cerrados; el componente traduce a estilo.
+ */
+export interface AccessoryImagePresentation {
+  /** Cómo encaja la imagen en el contenedor. Por defecto `contain`. */
+  fit?: 'contain' | 'cover'
+  /**
+   * Escala visual del producto. `1.0` = tamaño natural del asset dentro
+   * del contenedor; `>1` amplía (útil para adaptadores o AirTag pequeños);
+   * `<1` reduce (útil para cables largos).
+   */
+  scale?: 0.85 | 0.9 | 1 | 1.05 | 1.1 | 1.15 | 1.2
+  /** Alineación vertical dentro del contenedor. */
+  position?: 'top' | 'center' | 'bottom'
+  /** Padding interno reservado. `compact` para cables/adaptadores. */
+  padding?: 'none' | 'compact' | 'default'
+  /** Fondo del contenedor. */
+  background?: 'neutral' | 'white' | 'transparent'
+}
+
 export interface AccessorySpec {
   label: string
   value: string
@@ -74,6 +96,7 @@ export interface Accessory {
   priceLabel?: string
   image: string
   imageBg?: string
+  imagePresentation?: AccessoryImagePresentation
   gallery?: string[]
   variants: AccessoryVariant[]
   specs: AccessorySpec[]
@@ -118,6 +141,7 @@ export const appleAccessories: Accessory[] = [
     price: 25,
     priceLabel: 'desde',
     image: `${IMG}/apple-20w-usb-c-adapter.jpg`,
+    imagePresentation: { scale: 1.1, padding: 'compact' },
     variants: [
       {
         slug: 'unico',
@@ -160,13 +184,13 @@ export const appleAccessories: Accessory[] = [
       'Cargador de pared USB-C de 30 W con Power Delivery. Recomendado por ' +
       'Apple para MacBook Air, iPad y iPhone con cable USB-C compatible.',
     price: 45,
-    image: `${IMG}/apple-30w-usb-c-adapter.svg`,
-    imageBg: '#f5f5f7',
+    image: `${IMG}/apple-30w-usb-c-adapter.jpg`,
+    imagePresentation: { scale: 1.1, padding: 'compact' },
     variants: [
       {
         slug: 'unico',
         label: 'Único',
-        image: `${IMG}/apple-30w-usb-c-adapter.svg`,
+        image: `${IMG}/apple-30w-usb-c-adapter.jpg`,
       },
     ],
     specs: [
@@ -260,13 +284,12 @@ export const appleAccessories: Accessory[] = [
       'Cable USB-C a USB-C trenzado con carga de hasta 240 W. Longitud de 2 m. ' +
       'Diseñado para cargar Mac, iPad y iPhone con USB-C.',
     price: 35,
-    image: `${IMG}/usb-c-cable-240w-2m.svg`,
-    imageBg: '#f5f5f7',
+    image: `${IMG}/usb-c-cable-240w-2m.jpg`,
     variants: [
       {
         slug: 'unico',
         label: '2 metros',
-        image: `${IMG}/usb-c-cable-240w-2m.svg`,
+        image: `${IMG}/usb-c-cable-240w-2m.jpg`,
       },
     ],
     specs: [
@@ -305,13 +328,12 @@ export const appleAccessories: Accessory[] = [
       'Cable Thunderbolt 4 Pro de Apple con conector USB-C. Longitud de 1,8 m. ' +
       'Diseñado para Mac y iPad Pro compatibles con Thunderbolt.',
     price: 149,
-    image: `${IMG}/thunderbolt-4-pro-cable-1_8m.svg`,
-    imageBg: '#f5f5f7',
+    image: `${IMG}/thunderbolt-4-pro-cable-1_8m.jpg`,
     variants: [
       {
         slug: '1_8m',
         label: '1,8 m',
-        image: `${IMG}/thunderbolt-4-pro-cable-1_8m.svg`,
+        image: `${IMG}/thunderbolt-4-pro-cable-1_8m.jpg`,
       },
     ],
     specs: [
@@ -441,13 +463,12 @@ export const appleAccessories: Accessory[] = [
       'Funda con MagSafe diseñada exclusivamente para el iPhone Air. Perfil ' +
       'ultradelgado y alineación magnética precisa.',
     price: 59,
-    image: `${IMG}/iphone-air-magsafe-case.svg`,
-    imageBg: '#f5f5f7',
+    image: `${IMG}/iphone-air-magsafe-case.jpg`,
     variants: [
       {
         slug: 'escarcha',
         label: 'Escarcha',
-        image: `${IMG}/iphone-air-magsafe-case.svg`,
+        image: `${IMG}/iphone-air-magsafe-case.jpg`,
         swatch: '#e8ecf1',
       },
     ],
@@ -651,10 +672,9 @@ export const appleAccessories: Accessory[] = [
       'Incluye fila de teclas de función, trackpad ampliado y conector USB-C ' +
       'de paso para la carga.',
     price: 349,
-    image: `${IMG}/magic-keyboard-ipad-pro-11-m4.svg`,
-    imageBg: '#f5f5f7',
+    image: `${IMG}/magic-keyboard-ipad-pro-11-m4.jpg`,
     variants: [
-      { slug: 'unico', label: 'Único', image: `${IMG}/magic-keyboard-ipad-pro-11-m4.svg` },
+      { slug: 'unico', label: 'Único', image: `${IMG}/magic-keyboard-ipad-pro-11-m4.jpg` },
     ],
     specs: [
       { label: 'Trackpad', value: 'Trackpad ampliado con respuesta háptica' },
@@ -784,19 +804,19 @@ export const appleAccessories: Accessory[] = [
       'Magic Mouse con superficie Multi-Touch y puerto USB-C para su carga. ' +
       'Ligero, con conexión Bluetooth y compatible con Mac.',
     price: 85,
-    image: `${IMG}/magic-mouse.jpg`,
+    image: `${IMG}/magic-mouse-white.jpg`,
     variants: [
       {
         slug: 'blanco',
         label: 'Superficie Multi-Touch blanca',
-        image: `${IMG}/magic-mouse.jpg`,
+        image: `${IMG}/magic-mouse-white.jpg`,
         swatch: '#f2f2f7',
         price: 85,
       },
       {
         slug: 'negro',
         label: 'Superficie Multi-Touch negra',
-        image: `${IMG}/magic-mouse.jpg`,
+        image: `${IMG}/magic-mouse-black.jpg`,
         swatch: '#1d1d1f',
         price: 119,
       },
@@ -831,19 +851,19 @@ export const appleAccessories: Accessory[] = [
     description:
       'Magic Trackpad con Force Touch, gestos Multi-Touch y puerto USB-C para su carga.',
     price: 139,
-    image: `${IMG}/magic-trackpad.jpg`,
+    image: `${IMG}/magic-trackpad-white.jpg`,
     variants: [
       {
         slug: 'blanco',
         label: 'Superficie Multi-Touch blanca',
-        image: `${IMG}/magic-trackpad.jpg`,
+        image: `${IMG}/magic-trackpad-white.jpg`,
         swatch: '#f2f2f7',
         price: 139,
       },
       {
         slug: 'negro',
         label: 'Superficie Multi-Touch negra',
-        image: `${IMG}/magic-trackpad.jpg`,
+        image: `${IMG}/magic-trackpad-black.jpg`,
         swatch: '#1d1d1f',
         price: 169,
       },
@@ -926,13 +946,12 @@ export const appleAccessories: Accessory[] = [
       'Apple Watch de 46 mm, también compatible con cajas de 42/44/45/49 mm ' +
       'según la variante seleccionada.',
     price: 49,
-    image: `${IMG}/watch-sport-band-46mm.svg`,
-    imageBg: '#f5f5f7',
+    image: `${IMG}/watch-sport-band-46mm-guayaba.jpg`,
     variants: [
       {
         slug: 'guayaba',
         label: 'Guayaba intenso · 46 mm · M/L',
-        image: `${IMG}/watch-sport-band-46mm.svg`,
+        image: `${IMG}/watch-sport-band-46mm-guayaba.jpg`,
         swatch: '#e94a5f',
       },
     ],
@@ -973,10 +992,9 @@ export const appleAccessories: Accessory[] = [
       'AirTag de segunda generación. Se enlaza con iPhone o iPad para ' +
       'localizar llaves, mochila u otros objetos mediante la red Buscar.',
     price: 35,
-    image: `${IMG}/airtag-single.svg`,
-    imageBg: '#f5f5f7',
+    image: `${IMG}/airtag-single.jpg`,
     variants: [
-      { slug: 'unico', label: 'Individual', image: `${IMG}/airtag-single.svg` },
+      { slug: 'unico', label: 'Individual', image: `${IMG}/airtag-single.jpg` },
     ],
     specs: [
       { label: 'Batería', value: 'CR2032 reemplazable' },
@@ -1009,10 +1027,9 @@ export const appleAccessories: Accessory[] = [
       'Pack de cuatro AirTag de segunda generación. Ideal para localizar ' +
       'varios objetos a la vez con la red Buscar.',
     price: 119,
-    image: `${IMG}/airtag-4pack.svg`,
-    imageBg: '#f5f5f7',
+    image: `${IMG}/airtag-4pack.jpg`,
     variants: [
-      { slug: 'pack4', label: 'Pack de 4', image: `${IMG}/airtag-4pack.svg` },
+      { slug: 'pack4', label: 'Pack de 4', image: `${IMG}/airtag-4pack.jpg` },
     ],
     specs: [
       { label: 'Contenido', value: '4 AirTag' },

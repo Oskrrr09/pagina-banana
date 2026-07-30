@@ -8,7 +8,69 @@ actualizado: 2026-07-30
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-30 — Catálogo inicial de accesorios Apple (PR pendiente)
+## 2026-07-30 — Corrección visual del catálogo de accesorios (PR pendiente)
+
+Rama `fix/accessory-images-and-search-cards`. **Requiere revisión
+visual manual antes del merge.**
+
+- **8 SVG bespoke retirados** y sustituidos por fotografía oficial:
+  adaptador USB-C 30 W (`MY1W2_GEO_EMEA`), cable USB-C 240 W 2 m
+  (`MU2G3`), cable Thunderbolt 4 Pro 1,8 m (`MWP73`), funda MagSafe
+  iPhone Air (`MGH34`), Magic Keyboard iPad Pro 11" M4 (`MWR03`),
+  correa deportiva Watch 46 mm (`MHYH4ref`), AirTag individual
+  (`MX542`) y AirTag pack de 4 (`MX4M2`). Todas descargadas desde
+  `store.storeimages.cdn-apple.com` a `public/img/accessories/`.
+- **Magic Mouse y Magic Trackpad con variantes distintas**. Antes:
+  el catálogo mostraba la misma foto para blanco y negro y además la
+  variante "blanca" del Trackpad usaba en realidad la foto del
+  Magic Mouse blanco. Ahora se sirven 4 archivos distintos
+  (`magic-mouse-white/black.jpg`, `magic-trackpad-white/black.jpg`)
+  correspondientes a los SKU `MXK53`, `MXK63`, `MXK93` y `MXKA3`.
+- **Nuevo tipo `AccessoryImagePresentation`** con `fit`, `scale`,
+  `position`, `padding` y `background` tipados. Se aplica a los
+  adaptadores 20 W y 30 W (scale 1.1, padding compact) para que no
+  se vean diminutos.
+- **Nuevo componente `AccessoryImage`** que centraliza padding,
+  fondo, `object-fit`, escala y posición. Se usa desde
+  `AccessoryCard`, `AccessoryDetailPage` y la sección "Accesorios
+  compatibles" de `ModelPage`. Se retiran `object-contain p-6/p-8/p-4`
+  dispersos y `imageBg: '#f5f5f7'` redundante.
+- **Tarjeta visual en /buscar**: nuevo componente
+  `AccessorySearchCard` con fotografía + nombre + marca + categoría +
+  compatibilidad + precio demostrativo. `SearchPage` pinta accesorios
+  reales con `AccessoryVisualGrid` y mantiene `CompactSearchCard` como
+  fallback para los ítems demostrativos de terceros.
+  `ExactMatchCard` también renderiza `AccessorySearchCard` cuando el
+  match exacto es un accesorio Apple real.
+- **Miniatura en Header**: `SuggestionRow` muestra un thumbnail de
+  44×44 px con la imagen del accesorio real. Los ítems demostrativos
+  siguen con el icono de lupa. Ranking, Enter directo, ArrowUp/Down,
+  Escape y aria-activedescendant intactos.
+- **Tests reforzados**: 10 nuevos escenarios en `accessories.spec.ts`
+  (sin SVG en `<img>`, todas las imágenes cargan y pertenecen a
+  `/img/accessories/`, variantes de Mouse y Trackpad tienen `src`
+  distinto, tarjetas visuales en `/buscar?q=iPhone`, `/buscar?q=cargador`
+  sin badge demostrativo, Apple Pencil Pro vs USB-C con `src`
+  distinto, miniatura en Header, Enter directo intacto, tamaño
+  mínimo de imagen 140×140, guardia "0 SVG" en el catálogo). Total:
+  **189/189** (179 → 189).
+- **Documentación**: nueva `docs/auditoria-visual-accesorios.md`,
+  `docs/fuentes-imagenes-accesorios.md` totalmente reescrita,
+  `docs/catalogo-accesorios-apple.md` con banner de actualización,
+  nueva nota de sesión
+  `docs/sesiones/2026-07-30--correccion-visual-accesorios.md`.
+  PR #27 pasa de "PR pendiente" a "PR #27" en la entrada anterior
+  del registro.
+- Sin cambios en ranking del buscador, sinónimos, fuzzy, intención,
+  comportamiento de Enter, carrito, checkout, seguro, comparador,
+  recomendador, Plan Renove, Servicio Técnico, tienda favorita,
+  favoritos+avisos, inventario, dispositivos, precios de dispositivos,
+  imágenes de dispositivos, workflows ni Node.
+
+## 2026-07-30 — Catálogo inicial de accesorios Apple (PR #27)
+
+Rama `feat/apple-accessories-catalog`. Commit funcional `5c5b4a2`.
+Merge `cf40bd6`.
 
 Rama `feat/apple-accessories-catalog`.
 

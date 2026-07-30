@@ -8,6 +8,7 @@ import { euro } from '../lib/format'
 import { getAccessory, appleAccessories } from '../data/accessories'
 import type { Accessory } from '../data/accessories'
 import { allModels } from '../data/products'
+import { AccessoryImage } from '../components/product/AccessoryImage'
 
 // Ficha de detalle de un accesorio (§4.5). Muestra galería con variantes,
 // especificaciones, compatibilidad estructurada, avisos de precio y
@@ -50,16 +51,16 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
       <div className="mt-6 grid gap-8 md:grid-cols-2">
         {/* Galería */}
         <section aria-label="Galería del producto">
-          <div
-            className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-[16px] border border-line"
-            style={{ background: accessory.imageBg ?? '#fafafa' }}
-          >
-            <img
+          <div className="overflow-hidden rounded-[16px] border border-line">
+            <AccessoryImage
               src={variant.image}
               alt={`${accessory.name} — variante ${variant.label}`}
+              size="hero"
+              presentation={accessory.imagePresentation}
+              imageBg={accessory.imageBg}
               width={1200}
               height={1200}
-              className="max-h-full max-w-full object-contain p-8"
+              loading="eager"
             />
           </div>
           {accessory.variants.length > 1 && (
@@ -270,11 +271,16 @@ function RelatedAccessories({ current }: { current: Accessory }) {
               to={`/accesorios/${a.slug}`}
               className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-3 hover:border-ink/30"
             >
-              <div
-                className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[8px]"
-                style={{ background: a.imageBg ?? '#fafafa' }}
-              >
-                <img src={a.image} alt="" width={80} height={80} className="max-h-full max-w-full object-contain p-1" />
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[8px]">
+                <AccessoryImage
+                  src={a.image}
+                  alt=""
+                  size="thumb"
+                  presentation={a.imagePresentation}
+                  imageBg={a.imageBg}
+                  width={80}
+                  height={80}
+                />
               </div>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-ink">

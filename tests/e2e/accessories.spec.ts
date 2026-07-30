@@ -114,24 +114,34 @@ test('imágenes del catálogo cargan (naturalWidth > 0, alt no vacío)', async (
 
 // ---------------------- Test 5 — Variantes ----------------------------------
 
-test('variantes cambian la imagen mostrada (Magic Mouse blanco vs negro)', async ({ page }) => {
+test('variantes de Magic Mouse: blanco y negro tienen src DISTINTO', async ({ page }) => {
   await page.goto('./accesorios/magic-mouse-usb-c')
   const img = page.locator('main img').first()
-  // Blanco por defecto.
-  await expect(page.getByRole('radio', { name: /Superficie Multi-Touch blanca/ })).toBeVisible()
-  const src0 = await img.getAttribute('src')
+  await expect(page.getByRole('radio', { name: /Superficie Multi-Touch blanca/ })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
+  const srcWhite = await img.getAttribute('src')
   await page.getByRole('radio', { name: /Superficie Multi-Touch negra/ }).click()
   await expect(page.getByRole('radio', { name: /Superficie Multi-Touch negra/ })).toHaveAttribute(
     'aria-checked',
     'true',
   )
-  // La misma imagen del prototipo se muestra (ambos comparten foto),
-  // pero el alt debe contener la variante activa.
+  const srcBlack = await img.getAttribute('src')
+  expect(srcWhite).not.toBeNull()
+  expect(srcBlack).not.toBeNull()
+  expect(srcBlack).not.toBe(srcWhite)
   const alt = await img.getAttribute('alt')
   expect(alt).toContain('negra')
-  // (No comparamos src estrictamente porque el asset se comparte entre
-  // variantes; el alt sí distingue la variante seleccionada.)
-  expect(src0).not.toBeNull()
+})
+
+test('variantes de Magic Trackpad: blanco y negro tienen src DISTINTO', async ({ page }) => {
+  await page.goto('./accesorios/magic-trackpad-usb-c')
+  const img = page.locator('main img').first()
+  const srcWhite = await img.getAttribute('src')
+  await page.getByRole('radio', { name: /Superficie Multi-Touch negra/ }).click()
+  const srcBlack = await img.getAttribute('src')
+  expect(srcBlack).not.toBe(srcWhite)
 })
 
 // ---------------------- Test 6 — Compatibilidad exacta ----------------------
@@ -250,4 +260,146 @@ test('a 375 px /accesorios no genera scroll horizontal @mobile', async ({ page }
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
   expect(overflow).toBeLessThanOrEqual(1)
+})
+
+// ============================================================================
+// Tests reforzados de la PR correctiva (sin SVG bespoke, variantes distintas,
+// tarjetas visuales en /buscar, miniaturas en Header).
+// ============================================================================
+
+async function openDesktopHeaderSearchStrict(page: Page) {
+  await page.setViewportSize({ width: 1366, height: 900 })
+  await page.goto('./')
+  await page.getByRole('button', { name: 'Buscar', exact: true }).first().click()
+}
+
+test('sin ilustraciones inventadas: ningún src de accesorio real termina en .svg', async ({ page }) => {
+  await page.goto('./accesorios')
+  await page.waitForLoadState('networkidle')
+  const srcs = await page
+    .locator('main img')
+    .evaluateAll((imgs) => imgs.map((el) => (el as HTMLImageElement).src))
+  expect(srcs.length).toBeGreaterThan(0)
+  for (const s of srcs) {
+    expect(s.toLowerCase().endsWith('.svg')).toBe(false)
+    expect(s).not.toContain('placeholder')
+  }
+})
+
+test('todas las imágenes de accesorios cargan y pertenecen a /img/accessories', async ({ page }) => {
+  await page.goto('./accesorios')
+  await page.waitForLoadState('networkidle')
+  const imgs = page.locator('main img')
+  const count = await imgs.count()
+  expect(count).toBeGreaterThan(0)
+  for (let i = 0; i < count; i++) {
+    const img = imgs.nth(i)
+    const src = (await img.getAttribute('src')) ?? ''
+    // Pertenece al bundle local (no hotlinking a apple.com).
+    expect(src).toContain('/img/accessories/')
+    expect(src).not.toContain('apple.com')
+    expect(src).not.toContain('cdn-apple')
+    const nw = await img.evaluate((el: HTMLImageElement) => el.naturalWidth)
+    const nh = await img.evaluate((el: HTMLImageElement) => el.naturalHeight)
+    expect(nw).toBeGreaterThan(0)
+    expect(nh).toBeGreaterThan(0)
+    const alt = (await img.getAttribute('alt')) ?? ''
+    expect(alt.length).toBeGreaterThan(0)
+  }
+})
+
+test('/buscar?q=iPhone: la sección Accesorios Apple muestra tarjetas VISUALES con fotografía', async ({ page }) => {
+  await page.goto('./buscar?q=iPhone')
+  await page.waitForLoadState('networkidle')
+  const accHeading = page.getByRole('heading', { name: /Accesorios Apple/ })
+  await expect(accHeading).toBeVisible()
+  // La sección debe contener enlaces a /accesorios/ con una imagen dentro.
+  const accSection = page.locator('section', { has: page.locator('h2', { hasText: 'Accesorios Apple' }) })
+  const links = accSection.locator('a[href*="/accesorios/"]')
+  const linkCount = await links.count()
+  expect(linkCount).toBeGreaterThan(0)
+  // Cada enlace tiene una imagen de /img/accessories/.
+  for (let i = 0; i < linkCount; i++) {
+    const img = links.nth(i).locator('img').first()
+    await expect(img).toHaveAttribute('src', /\/img\/accessories\//)
+    const nw = await img.evaluate((el: HTMLImageElement) => el.naturalWidth)
+    expect(nw).toBeGreaterThan(0)
+  }
+})
+
+test('/buscar?q=cargador: accesorios Apple aparecen con fotografía y sin "Contenido demostrativo"', async ({ page }) => {
+  await page.goto('./buscar?q=cargador')
+  await page.waitForLoadState('networkidle')
+  const accSection = page.locator('section', { has: page.locator('h2', { hasText: /Accesorios Apple/ }) })
+  await expect(accSection).toBeVisible()
+  const links = accSection.locator('a[href*="/accesorios/"]')
+  expect(await links.count()).toBeGreaterThan(0)
+  // Ninguna de esas tarjetas lleva la etiqueta de contenido demostrativo.
+  const demoBadges = accSection.getByText('Contenido demostrativo')
+  expect(await demoBadges.count()).toBe(0)
+  // Al menos la primera tiene imagen local.
+  await expect(links.first().locator('img').first()).toHaveAttribute('src', /\/img\/accessories\//)
+})
+
+test('/buscar?q=Apple Pencil: Pro y USB-C tienen fotografías DISTINTAS', async ({ page }) => {
+  await page.goto('./buscar?q=Apple%20Pencil')
+  await page.waitForLoadState('networkidle')
+  const proLink = page.locator('a[href*="/accesorios/apple-pencil-pro"]').first()
+  const usbLink = page.locator('a[href*="/accesorios/apple-pencil-usb-c"]').first()
+  await expect(proLink).toBeVisible()
+  await expect(usbLink).toBeVisible()
+  const proSrc = await proLink.locator('img').first().getAttribute('src')
+  const usbSrc = await usbLink.locator('img').first().getAttribute('src')
+  expect(proSrc).not.toBeNull()
+  expect(usbSrc).not.toBeNull()
+  expect(proSrc).not.toBe(usbSrc)
+})
+
+test('Header autocompletado: sugerencias de accesorios reales muestran miniatura', async ({ page }) => {
+  await openDesktopHeaderSearchStrict(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('MagSafe')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  // Al menos una opción cuyo enlace apunte a /accesorios/ debe contener una img.
+  const accOption = page.getByRole('option').filter({ hasText: /MagSafe/i }).first()
+  await expect(accOption).toBeVisible()
+  const img = accOption.locator('img').first()
+  await expect(img).toHaveAttribute('src', /\/img\/accessories\//)
+  const nw = await img.evaluate((el: HTMLImageElement) => el.naturalWidth)
+  expect(nw).toBeGreaterThan(0)
+})
+
+test('Header autocompletado: Enter directo sigue abriendo /buscar', async ({ page }) => {
+  await openDesktopHeaderSearchStrict(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('iPhone')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await input.press('Enter')
+  await expect(page).toHaveURL(/\/buscar\?q=iPhone$/)
+})
+
+test('/accesorios: cada tarjeta tiene un tamaño de imagen suficiente (no diminuto)', async ({ page }) => {
+  await page.goto('./accesorios')
+  await page.waitForLoadState('networkidle')
+  // Contenedores directos de imagen dentro de las tarjetas.
+  const boxes = page.locator('main a[href*="/accesorios/"] > div').first()
+  const box = await boxes.boundingBox()
+  expect(box).not.toBeNull()
+  if (box) {
+    expect(box.width).toBeGreaterThanOrEqual(140)
+    expect(box.height).toBeGreaterThanOrEqual(140)
+  }
+})
+
+test('sin residuos: 0 archivos SVG dentro del catálogo (referencias en accessories.ts)', async ({ page }) => {
+  // Test guard: al menos una imagen debe existir y NINGUNA de las visibles
+  // en /accesorios apunta a un .svg.
+  await page.goto('./accesorios')
+  await page.waitForLoadState('networkidle')
+  const anySvg = await page
+    .locator('main img')
+    .evaluateAll((imgs) =>
+      imgs.filter((el) => (el as HTMLImageElement).src.toLowerCase().endsWith('.svg')).length,
+    )
+  expect(anySvg).toBe(0)
 })
