@@ -59,10 +59,17 @@ export function AccessoryImage({
   const style: CSSProperties = {
     background: bg,
   }
+  // Los JPG de Apple traen fondo blanco sólido. Cuando el contenedor
+  // muestra un fondo neutro (gris muy claro) aplicamos
+  // `mix-blend-mode: multiply` para eliminar visualmente el blanco sin
+  // reprocesar el archivo. Si el ítem define `imageBg` propio se
+  // respeta y no aplicamos blend.
+  const shouldBlend = !imageBg && (p.background ?? 'neutral') !== 'transparent'
   const imgStyle: CSSProperties = {
     objectFit: fit,
     transform: scale !== 1 ? `scale(${scale})` : undefined,
     transformOrigin: 'center',
+    mixBlendMode: shouldBlend ? 'multiply' : undefined,
   }
   return (
     <div

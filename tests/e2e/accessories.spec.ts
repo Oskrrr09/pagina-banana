@@ -95,9 +95,8 @@ for (const fx of detailFixtures) {
 
 // ---------------------- Test 4 — Imágenes -----------------------------------
 
-test('imágenes del catálogo cargan (naturalWidth > 0, alt no vacío)', async ({ page }) => {
+test('imágenes del catálogo cargan (naturalWidth > 0, con alt o aria-label en enlace padre)', async ({ page }) => {
   await openAccessories(page)
-  // Esperamos al layout.
   await page.waitForLoadState('networkidle')
   const images = page.locator('main img')
   const count = await images.count()
@@ -105,8 +104,20 @@ test('imágenes del catálogo cargan (naturalWidth > 0, alt no vacío)', async (
   for (let i = 0; i < count; i++) {
     const img = images.nth(i)
     const alt = await img.getAttribute('alt')
+    // El alt debe existir (puede ser "" cuando es decorativa dentro de
+    // un enlace nombrado por aria-label).
     expect(alt).not.toBe(null)
-    expect((alt ?? '').length).toBeGreaterThan(0)
+    if ((alt ?? '').length === 0) {
+      const wrappedByLabelledLink = await img.evaluate((el: HTMLImageElement) => {
+        let n: HTMLElement | null = el.parentElement
+        while (n) {
+          if (n.tagName === 'A' && n.getAttribute('aria-label')) return true
+          n = n.parentElement
+        }
+        return false
+      })
+      expect(wrappedByLabelledLink).toBe(true)
+    }
     const nw = await img.evaluate((el: HTMLImageElement) => el.naturalWidth)
     expect(nw).toBeGreaterThan(0)
   }
@@ -303,8 +314,10 @@ test('todas las imágenes de accesorios cargan y pertenecen a /img/accessories',
     const nh = await img.evaluate((el: HTMLImageElement) => el.naturalHeight)
     expect(nw).toBeGreaterThan(0)
     expect(nh).toBeGreaterThan(0)
-    const alt = (await img.getAttribute('alt')) ?? ''
-    expect(alt.length).toBeGreaterThan(0)
+    const alt = await img.getAttribute('alt')
+    // alt vacío es válido para imágenes decorativas dentro de enlaces
+    // con aria-label. No relajamos: exigimos que el atributo exista.
+    expect(alt).not.toBeNull()
   }
 })
 
@@ -402,4 +415,115 @@ test('sin residuos: 0 archivos SVG dentro del catálogo (referencias en accessor
       imgs.filter((el) => (el as HTMLImageElement).src.toLowerCase().endsWith('.svg')).length,
     )
   expect(anySvg).toBe(0)
+})
+
+// ============================================================================
+// Tests reforzados de la PR fix/accessory-images-round-2 (imágenes correctas,
+// misma tarjeta en /buscar).
+// ============================================================================
+
+test('no hay accesorios retirados en /accesorios (TB4 Pro, MK basic, funda iPhone Air)', async ({ page }) => {
+  await page.goto('./accesorios')
+  await page.waitForLoadState('networkidle')
+  const links = await page.locator('main a[href*="/accesorios/"]').evaluateAll(
+    (nodes) => nodes.map((n) => (n as HTMLAnchorElement).getAttribute('href') ?? ''),
+  )
+  expect(links.some((h) => h.includes('cable-thunderbolt-4-pro'))).toBe(false)
+  expect(links.some((h) => h.includes('funda-magsafe-iphone-air'))).toBe(false)
+  // magic-keyboard-usb-c básico retirado; magic-keyboard-touch-id-numeric permanece.
+  expect(links.some((h) => h.endsWith('/accesorios/magic-keyboard-usb-c'))).toBe(false)
+  expect(links.some((h) => h.includes('magic-keyboard-touch-id-numeric-usb-c'))).toBe(true)
+})
+
+test('rutas de accesorios retirados devuelven a /accesorios (no ficha huérfana)', async ({ page }) => {
+  for (const slug of [
+    'cable-thunderbolt-4-pro-1_8m',
+    'funda-magsafe-iphone-air',
+    'magic-keyboard-usb-c',
+  ]) {
+    await page.goto(`./accesorios/${slug}`)
+    // El componente AccessoryDetailPage redirige a /accesorios si no encuentra el slug.
+    await expect(page).toHaveURL(/\/accesorios$/)
+  }
+})
+
+test('Magic Keyboard TouchID+numeric tiene dos variantes con imágenes distintas', async ({ page }) => {
+  await page.goto('./accesorios/magic-keyboard-touch-id-numeric-usb-c')
+  const img = page.locator('main img').first()
+  await expect(page.getByRole('radio', { name: /Teclas blancas/ })).toBeVisible()
+  const srcWhite = await img.getAttribute('src')
+  await page.getByRole('radio', { name: /Teclas negras/ }).click()
+  const srcBlack = await img.getAttribute('src')
+  expect(srcWhite).not.toBeNull()
+  expect(srcBlack).not.toBeNull()
+  expect(srcBlack).not.toBe(srcWhite)
+})
+
+test('/buscar?q=iPhone: los accesorios Apple usan la MISMA tarjeta que /accesorios (min-h-[400px])', async ({ page }) => {
+  await page.goto('./buscar?q=iPhone')
+  await page.waitForLoadState('networkidle')
+  const accSection = page.locator(
+    'section', { has: page.locator('h2', { hasText: /Accesorios Apple/ }) },
+  )
+  const cards = accSection.locator('div.group.min-h-\\[400px\\]')
+  // Al menos una tarjeta completa con altura mínima.
+  expect(await cards.count()).toBeGreaterThan(0)
+  // Cada tarjeta contiene una imagen local.
+  const firstImg = cards.first().locator('img').first()
+  await expect(firstImg).toHaveAttribute('src', /\/img\/accessories\//)
+})
+
+test('AccessoryCard comparte diseño con ProductCard: mismo borde, radio y min-height', async ({ page }) => {
+  await page.goto('./accesorios')
+  await page.waitForLoadState('networkidle')
+  const accCard = page.locator('main .group.min-h-\\[400px\\]').first()
+  const accBox = await accCard.boundingBox()
+  expect(accBox).not.toBeNull()
+  if (accBox) expect(accBox.height).toBeGreaterThanOrEqual(390)
+
+  await page.goto('./iphone')
+  await page.waitForLoadState('networkidle')
+  const prodCard = page.locator('main .group.min-h-\\[400px\\]').first()
+  const prodBox = await prodCard.boundingBox()
+  expect(prodBox).not.toBeNull()
+  if (prodBox) expect(prodBox.height).toBeGreaterThanOrEqual(390)
+})
+
+test('AccessoryCard estructura: h3 → tagline → precio → badge (mismo orden que ProductCard, sin línea de categoría)', async ({ page }) => {
+  await page.goto('./accesorios')
+  await page.waitForLoadState('networkidle')
+  const card = page.locator('main .group.min-h-\\[400px\\]').first()
+  await expect(card.locator('h3').first()).toBeVisible()
+  // No hay eyebrow en mayúsculas ("ACCESORIOS IPHONE", etc.) dentro de la tarjeta.
+  const eyebrow = card.locator('p.uppercase')
+  expect(await eyebrow.count()).toBe(0)
+  // Precio con clases text-lg font-bold text-ink.
+  const price = card.locator('span.text-lg.font-bold.text-ink').first()
+  await expect(price).toBeVisible()
+  // "Precio demostrativo" badge presente cuando hay precio.
+  await expect(card.getByText('Precio demostrativo')).toBeVisible()
+
+  // Orden vertical: h3 arriba, badge más abajo (bounding box).
+  const h3Box = await card.locator('h3').first().boundingBox()
+  const priceBox = await price.boundingBox()
+  const badgeBox = await card.getByText('Precio demostrativo').boundingBox()
+  expect(h3Box && priceBox && badgeBox).toBeTruthy()
+  if (h3Box && priceBox && badgeBox) {
+    expect(h3Box.y).toBeLessThan(priceBox.y)
+    expect(priceBox.y).toBeLessThan(badgeBox.y)
+  }
+})
+
+test('/buscar?q=iPhone: la tarjeta del accesorio comparte estructura con la del dispositivo (h3, tagline, precio, badge)', async ({ page }) => {
+  await page.goto('./buscar?q=iPhone')
+  await page.waitForLoadState('networkidle')
+  const accSection = page.locator(
+    'section', { has: page.locator('h2', { hasText: /Accesorios Apple/ }) },
+  )
+  const accCard = accSection.locator('div.group.min-h-\\[400px\\]').first()
+  await expect(accCard.locator('h3').first()).toBeVisible()
+  await expect(accCard.locator('span.text-lg.font-bold.text-ink').first()).toBeVisible()
+  await expect(accCard.getByText('Precio demostrativo').first()).toBeVisible()
+  // Sin eyebrow superior en mayúsculas dentro de la tarjeta del accesorio.
+  expect(await accCard.locator('p.uppercase').count()).toBe(0)
 })

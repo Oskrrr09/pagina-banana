@@ -11,6 +11,7 @@ export function ProductImage({
   pad = true,
   bgColor,
   priority = false,
+  blend = false,
 }: {
   src?: string
   alt: string
@@ -19,6 +20,13 @@ export function ProductImage({
   pad?: boolean
   bgColor?: string
   priority?: boolean
+  /**
+   * `true` cuando la fotografía tiene fondo blanco sólido (JPG) y
+   * queremos que se funda con el gris de la tarjeta. Aplica
+   * `mix-blend-mode: multiply` para eliminar visualmente el blanco sin
+   * tener que reprocesar el asset a PNG con alfa.
+   */
+  blend?: boolean
 }) {
   return (
     <div
@@ -34,6 +42,7 @@ export function ProductImage({
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           fetchPriority={priority ? 'high' : 'auto'}
+          style={blend ? { mixBlendMode: 'multiply' } : undefined}
           className={`h-full w-full object-contain object-center transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06] ${
             pad ? 'p-3' : ''
           }`}

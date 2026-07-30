@@ -8,7 +8,8 @@ import { families, allModels, modelsByFamily } from '../data/products'
 import { searchCatalog, type SearchResults } from '../lib/catalogSearch'
 import type { SearchItem } from '../data/searchIndex'
 import { CompactSearchCard, SearchSectionHeading } from '../components/search/SearchResultCards'
-import { AccessorySearchCard } from '../components/search/AccessorySearchCard'
+import { AccessoryCard } from '../components/product/AccessoryCard'
+import { getAccessory } from '../data/accessories'
 
 // Resultados del buscador (§4.4bis). Usa `searchCatalog` — el mismo motor
 // determinista y agrupado que el autocompletado del Header. Sincroniza el
@@ -188,11 +189,15 @@ function ExactMatchCard({ item }: { item: SearchItem }) {
     )
   }
   if (item.kind === 'apple-accessory' && !item.demo) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 md:max-w-3xl">
-        <AccessorySearchCard item={item} />
-      </div>
-    )
+    const slug = item.route?.split('/').pop() ?? ''
+    const accessory = getAccessory(slug)
+    if (accessory) {
+      return (
+        <div className="grid gap-4 sm:grid-cols-2 md:max-w-2xl">
+          <AccessoryCard accessory={accessory} />
+        </div>
+      )
+    }
   }
   return <CompactSearchCard item={item} />
 }
@@ -242,20 +247,21 @@ function CompactGrid({ items }: { items: SearchItem[] }) {
 }
 
 /**
- * Grid visual para accesorios Apple del catálogo real (con fotografía).
- * Los ítems demostrativos (kind: apple-accessory con demo: true, en teoría
- * ninguno tras esta PR) caerían en la tarjeta compacta como fallback.
+ * Grid visual para accesorios Apple del catálogo real. Cada ítem se
+ * pinta con la MISMA `AccessoryCard` del catálogo (§4.5) para que la
+ * jerarquía visual coincida con `ProductCard`. Los demostrativos caen
+ * en la tarjeta compacta como fallback.
  */
 function AccessoryVisualGrid({ items }: { items: SearchItem[] }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((i) =>
-        i.demo ? (
-          <CompactSearchCard key={i.id} item={i} />
-        ) : (
-          <AccessorySearchCard key={i.id} item={i} />
-        ),
-      )}
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((i) => {
+        if (i.demo) return <CompactSearchCard key={i.id} item={i} />
+        const slug = i.route?.split('/').pop() ?? ''
+        const accessory = getAccessory(slug)
+        if (!accessory) return <CompactSearchCard key={i.id} item={i} />
+        return <AccessoryCard key={i.id} accessory={accessory} />
+      })}
     </div>
   )
 }

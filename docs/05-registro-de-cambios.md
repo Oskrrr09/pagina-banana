@@ -8,7 +8,62 @@ actualizado: 2026-07-30
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-07-30 — Corrección visual del catálogo de accesorios (PR pendiente)
+## 2026-07-30 — Segunda ronda de corrección visual (PR pendiente, sin merge)
+
+Rama `fix/accessory-images-round-2`. **NO fusionar sin revisión visual
+manual.**
+
+- **Auditoría visual manual** de las 22 imágenes de
+  `public/img/accessories/`: se abrió cada archivo con `Read` para no
+  fiarse del nombre. Detectadas **7 imágenes incorrectas** y 3
+  productos retirados.
+- **Imágenes corregidas** (SKU real verificado): AirTag individual
+  (`MX532`), AirTag pack de 4 (`MX542`), puntas Apple Pencil (`MLUN2`),
+  MagSafe 2 m (`MGDM4`).
+- **Productos retirados** (imagen del CDN público no coincide con el
+  producto declarado): Cable Thunderbolt 4 Pro 1,8 m, Magic Keyboard
+  (USB-C) básico, Funda MagSafe iPhone Air. Sus rutas ya no aparecen
+  en `/accesorios` ni en el buscador; visitar `/accesorios/<slug
+  retirado>` redirige a `/accesorios`.
+- **Magic Keyboard Touch ID + numérico** amplía a 2 variantes:
+  **blanco** (`MXK73Y`, 199 €) y **negro** (`MXK83Y`, 229 €). Antes
+  el archivo del basic (que en realidad era Touch ID + numérico
+  blanco) se reasigna a esta variante.
+- **`AccessoryCard` rediseñado** para compartir la jerarquía visual
+  con `ProductCard`: mismo `min-h-[400px]`, `rounded-[12px] border
+  border-line bg-surface p-4`, `hover:-translate-y-1.5
+  hover:border-banana hover:shadow-[var(--shadow-raised)]`. Usa el
+  helper `ProductImage` (bg neutral, `object-contain`, hover scale).
+  Sin favoritos, carrito, comparador ni seguro.
+- **`/buscar` usa la misma `AccessoryCard`** en la sección
+  "Accesorios Apple". Se retira `AccessorySearchCard`. El
+  autocompletado del Header conserva su miniatura compacta.
+- **`ExactMatchCard`** también usa `AccessoryCard` cuando el match
+  exacto es un accesorio Apple real.
+- **Tests reforzados** (5 nuevos en `accessories.spec.ts`, total
+  **194/194**): no aparecen productos retirados en `/accesorios`;
+  las rutas retiradas redirigen a `/accesorios` (no ficha huérfana);
+  Magic Keyboard Touch ID + numérico tiene 2 variantes con `src`
+  distinto; `/buscar?q=iPhone` muestra la sección Accesorios Apple
+  con la tarjeta completa `min-h-[400px]` (mismo diseño que
+  `ProductCard`); guardia de altura mínima en ambas páginas.
+- **Capturas** en `docs/capturas/`: `accesorios-desktop-1440.png`
+  (1440 px, 19 productos), `accesorios-mobile-375.png` (móvil, sin
+  scroll horizontal), `buscar-iphone-desktop.png` (accesorios con
+  fotografía y misma jerarquía que dispositivos).
+- **Documentación**: `docs/auditoria-visual-accesorios-round-2.md`
+  con la tabla de hallazgos por archivo. `PR #28` pasa de "PR
+  pendiente" a fusionada en la entrada anterior del registro.
+- Sin cambios en carrito, checkout, seguro, favoritos, comparador,
+  Plan Renove, Servicio Técnico, tienda favorita, alertas, inventario,
+  ranking del buscador, sinónimos, fuzzy, comportamiento de Enter,
+  dispositivos, precios de dispositivos, imágenes de dispositivos ni
+  workflows.
+
+## 2026-07-30 — Corrección visual del catálogo de accesorios (PR #28)
+
+Rama `fix/accessory-images-and-search-cards`. Commit funcional
+`db85349`. Merge `001d0b1`.
 
 Rama `fix/accessory-images-and-search-cards`. **Requiere revisión
 visual manual antes del merge.**

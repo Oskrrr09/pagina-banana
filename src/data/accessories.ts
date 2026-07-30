@@ -318,46 +318,11 @@ export const appleAccessories: Accessory[] = [
     availabilityLabel: 'Producto mostrado públicamente por Banana',
     provisionalTags: ['Precio demostrativo'],
   },
-  {
-    slug: 'cable-thunderbolt-4-pro-1_8m',
-    name: 'Cable Thunderbolt 4 Pro (USB-C) 1,8 m',
-    brand: 'Apple',
-    category: 'carga',
-    tagline: 'Alto rendimiento para configuraciones profesionales.',
-    description:
-      'Cable Thunderbolt 4 Pro de Apple con conector USB-C. Longitud de 1,8 m. ' +
-      'Diseñado para Mac y iPad Pro compatibles con Thunderbolt.',
-    price: 149,
-    image: `${IMG}/thunderbolt-4-pro-cable-1_8m.jpg`,
-    variants: [
-      {
-        slug: '1_8m',
-        label: '1,8 m',
-        image: `${IMG}/thunderbolt-4-pro-cable-1_8m.jpg`,
-      },
-    ],
-    specs: [
-      { label: 'Estándar', value: 'Thunderbolt 4' },
-      { label: 'Longitud', value: '1,8 m' },
-      { label: 'Conectores', value: 'USB-C a USB-C' },
-    ],
-    highlights: [
-      'Thunderbolt 4 con hasta 40 Gb/s',
-      'Compatible con Mac y iPad Pro con Thunderbolt',
-      'Construcción reforzada',
-    ],
-    compatibility: {
-      families: ['mac', 'ipad'],
-      notes: ['Requiere un puerto Thunderbolt en el equipo.'],
-    },
-    aliases: ['thunderbolt 4', 'cable tb4', 'thunderbolt pro'],
-    keywords: ['cable', 'thunderbolt', 'tb4', 'usb-c', 'mac', 'ipad'],
-    bananaSource:
-      'https://tienda.bananacomputer.com/accesorios-apple/accesorios-mac/',
-    verifiedOn: VERIFIED_ON,
-    availabilityLabel: 'Producto mostrado públicamente por Banana',
-    provisionalTags: ['Precio demostrativo'],
-  },
+  // Cable Thunderbolt 4 Pro (USB-C) 1,8 m — RETIRADO temporalmente
+  // (PR fix/accessory-images-round-2): no fue posible obtener una
+  // fotografía oficial legítima desde el CDN público de Apple. Volver a
+  // añadir cuando exista imagen verificada. Documentado en
+  // docs/auditoria-visual-accesorios-round-2.md.
 
   // ============================== IPHONE ===================================
   {
@@ -453,47 +418,12 @@ export const appleAccessories: Accessory[] = [
     availabilityLabel: 'Producto mostrado públicamente por Banana',
     provisionalTags: ['Precio demostrativo'],
   },
-  {
-    slug: 'funda-magsafe-iphone-air',
-    name: 'Funda con MagSafe para el iPhone Air',
-    brand: 'Apple',
-    category: 'iphone',
-    tagline: 'Diseño delgado y transparente para iPhone Air.',
-    description:
-      'Funda con MagSafe diseñada exclusivamente para el iPhone Air. Perfil ' +
-      'ultradelgado y alineación magnética precisa.',
-    price: 59,
-    image: `${IMG}/iphone-air-magsafe-case.jpg`,
-    variants: [
-      {
-        slug: 'escarcha',
-        label: 'Escarcha',
-        image: `${IMG}/iphone-air-magsafe-case.jpg`,
-        swatch: '#e8ecf1',
-      },
-    ],
-    specs: [
-      { label: 'Material', value: 'Policarbonato con MagSafe' },
-      { label: 'Compatibilidad', value: 'iPhone Air exclusivamente' },
-    ],
-    highlights: [
-      'Diseñada para iPhone Air',
-      'Alineación MagSafe',
-      'Perfil delgado',
-    ],
-    compatibility: {
-      models: ['iphone/air'],
-      notes: [
-        'Exclusiva para iPhone Air. No compatible con iPhone 17, 17 Pro ni Pro Max.',
-      ],
-    },
-    aliases: ['funda iphone air', 'case iphone air', 'iphone air magsafe'],
-    keywords: ['funda', 'case', 'magsafe', 'iphone', 'air'],
-    appleSource: 'https://www.apple.com/es/shop/product/mgh34zm/a/',
-    verifiedOn: VERIFIED_ON,
-    availabilityLabel: 'Producto mostrado públicamente por Banana',
-    provisionalTags: ['Precio demostrativo'],
-  },
+  // Funda con MagSafe para el iPhone Air — RETIRADA temporalmente
+  // (PR fix/accessory-images-round-2): la imagen que servía el CDN
+  // público de Apple para el SKU MGH34 correspondía a una funda de
+  // iPhone 16e (cámara con dos círculos pequeños), no al iPhone Air.
+  // Volver a añadir cuando exista fotografía verificada.
+
   {
     slug: 'correa-crossbody',
     name: 'Correa Crossbody',
@@ -703,41 +633,12 @@ export const appleAccessories: Accessory[] = [
   },
 
   // ================================ MAC ====================================
-  {
-    slug: 'magic-keyboard-usb-c',
-    name: 'Magic Keyboard (USB-C)',
-    brand: 'Apple',
-    category: 'mac',
-    tagline: 'Teclado inalámbrico compacto con USB-C.',
-    description:
-      'Magic Keyboard clásico con conector USB-C para su carga. Diseño compacto, ' +
-      'batería recargable y teclas cómodas para largas sesiones.',
-    price: 119,
-    image: `${IMG}/magic-keyboard-usb-c.jpg`,
-    variants: [
-      { slug: 'unico', label: 'Único', image: `${IMG}/magic-keyboard-usb-c.jpg` },
-    ],
-    specs: [
-      { label: 'Conexión', value: 'Bluetooth' },
-      { label: 'Puerto de carga', value: 'USB-C' },
-      { label: 'Distribución', value: 'Español' },
-    ],
-    highlights: [
-      'Batería recargable con USB-C',
-      'Perfil delgado',
-      'Compatible con Mac y iPad',
-    ],
-    compatibility: {
-      families: ['mac', 'ipad'],
-    },
-    aliases: ['magic keyboard', 'teclado mac', 'apple keyboard'],
-    keywords: ['magic keyboard', 'teclado', 'mac', 'usb-c'],
-    bananaSource:
-      'https://tienda.bananacomputer.com/accesorios-apple/accesorios-mac/',
-    verifiedOn: VERIFIED_ON,
-    availabilityLabel: 'Producto mostrado públicamente por Banana',
-    provisionalTags: ['Precio demostrativo'],
-  },
+  // Magic Keyboard (USB-C) básico — RETIRADO temporalmente
+  // (PR fix/accessory-images-round-2): no fue posible obtener una
+  // fotografía específica del modelo compacto sin Touch ID ni teclado
+  // numérico. Volver a añadir cuando exista imagen verificada. Las
+  // variantes con Touch ID + numérico (blanco y negro) permanecen.
+
   {
     slug: 'magic-keyboard-touch-id-numeric-usb-c',
     name: 'Magic Keyboard con Touch ID y teclado numérico (USB-C)',
@@ -747,9 +648,16 @@ export const appleAccessories: Accessory[] = [
     description:
       'Magic Keyboard con Touch ID y teclado numérico integrado. Requiere un ' +
       'Mac con chip de Apple para utilizar Touch ID.',
-    price: 229,
-    image: `${IMG}/magic-keyboard-touch-id-numeric.jpg`,
+    price: 199,
+    image: `${IMG}/magic-keyboard-touch-id-numeric-white.jpg`,
     variants: [
+      {
+        slug: 'blanco',
+        label: 'Teclas blancas',
+        image: `${IMG}/magic-keyboard-touch-id-numeric-white.jpg`,
+        swatch: '#f2f2f7',
+        price: 199,
+      },
       {
         slug: 'negro',
         label: 'Teclas negras',
