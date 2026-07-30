@@ -158,15 +158,18 @@ test('Header escritorio: escribir muestra grupos, no todo el catálogo', async (
   expect(options).toBeLessThanOrEqual(20)
 })
 
-test('Header escritorio: flecha abajo + Enter navega a la primera sugerencia', async ({ page }) => {
+test('Header escritorio: flecha abajo + Enter abre la primera sugerencia (destino de la sugerencia)', async ({ page }) => {
   await openDesktopSearch(page)
   const input = page.locator('[data-testid="header-search-input"]:visible')
   await input.fill('AirPods')
-  await expect(page.getByRole('option').first()).toBeVisible()
+  const firstOption = page.getByRole('option').first()
+  await expect(firstOption).toBeVisible()
+  const firstId = await firstOption.getAttribute('id')
   await input.press('ArrowDown')
+  await expect(input).toHaveAttribute('aria-activedescendant', firstId!)
   await input.press('Enter')
-  // Puede navegar a /airpods o a /buscar; en cualquier caso salimos de "/"
-  // vacío.
+  // Debe navegar al destino de la sugerencia, no a /buscar.
+  await expect(page).not.toHaveURL(/\/buscar/)
   await expect(page).not.toHaveURL(/\/$/)
 })
 
@@ -216,4 +219,170 @@ test('axe: /buscar sin resultados sin violaciones críticas', async ({ page }) =
     .exclude('[aria-hidden="true"]')
     .analyze()
   expect(result.violations).toEqual([])
+})
+
+// -------------------- Enter y selección explícita (§4.4bis) -----------------
+//
+// Regla: sin selección explícita (activeIndex = -1), Enter abre la página
+// completa /buscar?q=…. Con selección (ArrowDown/Up), Enter abre la
+// sugerencia activa. Cambiar la consulta reinicia la selección.
+
+async function openMobileSearch(page: Page) {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('./')
+  await page.getByRole('button', { name: 'Buscar', exact: true }).first().click()
+}
+
+test('Enter directo desde escritorio abre /buscar?q=AirPods, no la primera sugerencia', async ({ page }) => {
+  await openDesktopSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('AirPods')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  // Ninguna opción está seleccionada por defecto.
+  expect(await page.getByRole('option', { selected: true }).count()).toBe(0)
+  await expect(input).not.toHaveAttribute('aria-activedescendant', /.+/)
+  await input.press('Enter')
+  await expect(page).toHaveURL(/\/buscar\?q=AirPods$/)
+  await expect(page.getByText(/Resultados para/)).toContainText('AirPods')
+})
+
+test('Flecha abajo selecciona explícitamente y aparece aria-activedescendant', async ({ page }) => {
+  await openDesktopSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('AirPods')
+  const firstOption = page.getByRole('option').first()
+  await expect(firstOption).toBeVisible()
+  await input.press('ArrowDown')
+  const firstId = await firstOption.getAttribute('id')
+  await expect(input).toHaveAttribute('aria-activedescendant', firstId!)
+  await expect(page.getByRole('option', { selected: true })).toHaveCount(1)
+})
+
+test('Cambiar la consulta reinicia la selección y Enter vuelve a abrir /buscar', async ({ page }) => {
+  await openDesktopSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('AirPods')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await input.press('ArrowDown')
+  await expect(input).toHaveAttribute('aria-activedescendant', /.+/)
+  // Cambiamos a MacBook — la selección debe limpiarse.
+  await input.fill('MacBook')
+  await expect(input).not.toHaveAttribute('aria-activedescendant', /.+/)
+  expect(await page.getByRole('option', { selected: true }).count()).toBe(0)
+  await input.press('Enter')
+  await expect(page).toHaveURL(/\/buscar\?q=MacBook$/)
+})
+
+test('Botón lupa en móvil abre /buscar?q=AirPods sin abrir la primera sugerencia @mobile', async ({ page }) => {
+  await openMobileSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('AirPods')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  // El botón de lupa dentro del overlay móvil.
+  const searchBtns = page.getByRole('button', { name: 'Buscar', exact: true })
+  await searchBtns.last().click()
+  await expect(page).toHaveURL(/\/buscar\?q=AirPods$/)
+})
+
+test('"Ver todos los resultados" abre /buscar?q=AirPods', async ({ page }) => {
+  await openDesktopSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('AirPods')
+  await page.getByRole('button', { name: /Ver todos los resultados/ }).click()
+  await expect(page).toHaveURL(/\/buscar\?q=AirPods$/)
+  await expect(page.locator('h2').filter({ hasText: /Dispositivos Apple|Coincidencia principal/ }).first()).toBeVisible()
+})
+
+test('Enter en móvil abre /buscar y cierra el overlay @mobile', async ({ page }) => {
+  await openMobileSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('AirPods')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await input.press('Enter')
+  await expect(page).toHaveURL(/\/buscar\?q=AirPods$/)
+  // El overlay se cerró: el input del Header ya no está en el DOM visible.
+  await expect(page.locator('[data-testid="header-search-input"]:visible')).toHaveCount(0)
+  // El body puede volver a hacer scroll (no queda `overflow: hidden`).
+  const bodyOverflow = await page.evaluate(() => document.body.style.overflow)
+  expect(bodyOverflow === '' || bodyOverflow === 'auto' || bodyOverflow === 'visible').toBe(true)
+})
+
+test('Móvil con Flecha abajo + Enter abre la sugerencia activa, no /buscar @mobile', async ({ page }) => {
+  await openMobileSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('AirPods')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await input.press('ArrowDown')
+  await expect(input).toHaveAttribute('aria-activedescendant', /.+/)
+  await input.press('Enter')
+  await expect(page).not.toHaveURL(/\/buscar/)
+  // El overlay se cerró.
+  await expect(page.locator('[data-testid="header-search-input"]:visible')).toHaveCount(0)
+})
+
+test('Sin selección: input no tiene aria-activedescendant; tras ArrowDown, sí; tras cambiar consulta, no', async ({ page }) => {
+  await openDesktopSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('AirPods')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await expect(input).not.toHaveAttribute('aria-activedescendant', /.+/)
+  await input.press('ArrowDown')
+  await expect(input).toHaveAttribute('aria-activedescendant', /.+/)
+  await input.fill('MacBook')
+  await expect(input).not.toHaveAttribute('aria-activedescendant', /.+/)
+})
+
+test('Escape con selección cierra, restaura foco y no navega', async ({ page }) => {
+  await openDesktopSearch(page)
+  const searchBtn = page.getByRole('button', { name: 'Buscar', exact: true }).first()
+  const startUrl = page.url()
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('AirPods')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await input.press('ArrowDown')
+  await input.press('Escape')
+  await expect(page.locator('[data-testid="header-search-input"]:visible')).toHaveCount(0)
+  await expect(searchBtn).toBeFocused()
+  expect(page.url()).toBe(startUrl)
+})
+
+test('Regresión de /buscar?q=AirPods: mismo motor y orden que el Header', async ({ page }) => {
+  await search(page, 'AirPods')
+  const headings = await sectionTexts(page)
+  const iDevices = headings.findIndex((h) => h.startsWith('Dispositivos Apple'))
+  const iRelated = headings.findIndex((h) => h.startsWith('Productos relacionados'))
+  const iApple = headings.findIndex((h) => h.startsWith('Accesorios Apple'))
+  const iCompat = headings.findIndex((h) => h.startsWith('Accesorios compatibles'))
+  const iHelp = headings.findIndex((h) => h.startsWith('Ayuda'))
+  expect(iDevices).toBeGreaterThanOrEqual(0)
+  if (iRelated !== -1) expect(iDevices).toBeLessThan(iRelated)
+  if (iApple !== -1) expect(iDevices).toBeLessThan(iApple)
+  if (iCompat !== -1 && iApple !== -1) expect(iApple).toBeLessThan(iCompat)
+  if (iHelp !== -1) expect(iDevices).toBeLessThan(iHelp)
+})
+
+test('Enter con "funda AirPods" abre /buscar y mantiene intención accesorio', async ({ page }) => {
+  await openDesktopSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('funda AirPods')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await input.press('Enter')
+  await expect(page).toHaveURL(/\/buscar\?q=funda%20AirPods$/)
+  const headings = await sectionTexts(page)
+  const iApple = headings.findIndex((h) => h.startsWith('Accesorios Apple'))
+  const iCompat = headings.findIndex((h) => h.startsWith('Accesorios compatibles'))
+  const iDevices = headings.findIndex((h) => h.startsWith('Dispositivos Apple'))
+  const firstAcc = Math.min(...[iApple, iCompat].filter((n) => n !== -1))
+  expect(firstAcc).toBeGreaterThanOrEqual(0)
+  if (iDevices !== -1) expect(firstAcc).toBeLessThan(iDevices)
+})
+
+test('Enter con "airpds" abre /buscar y la página sugiere la corrección', async ({ page }) => {
+  await openDesktopSearch(page)
+  const input = page.locator('[data-testid="header-search-input"]:visible')
+  await input.fill('airpds')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await input.press('Enter')
+  await expect(page).toHaveURL(/\/buscar\?q=airpds$/)
+  await expect(page.getByText(/Quizá querías decir/).first()).toBeVisible()
 })
