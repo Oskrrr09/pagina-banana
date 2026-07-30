@@ -1,35 +1,46 @@
 import { test, expect } from '@playwright/test'
 
 test('el chat se abre desde el teclado y confina el foco con Tab', async ({ page }) => {
+  // Evita que el aviso independiente de "tienda favorita" (aparece a los
+  // 800ms y también gestiona foco/Escape) interfiera con este test.
+  await page.addInitScript(() => {
+    localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
+  })
   await page.goto('./')
-  const trigger = page.getByRole('button', { name: 'Abrir información del chat' })
+  const trigger = page.getByRole('button', { name: 'Abrir chat de Bananito' })
   await trigger.focus()
   await expect(trigger).toBeFocused()
   await page.keyboard.press('Enter')
 
-  const dialog = page.getByRole('dialog', { name: 'Chat con Banana' })
+  const dialog = page.getByRole('dialog', { name: 'Bananito' })
   await expect(dialog).toBeVisible()
 
-  // El foco entra en el panel (botón de cerrar como primer elemento).
-  const close = dialog.getByRole('button', { name: 'Cerrar información del chat' })
+  // El foco entra en el panel sobre el botón de cerrar (siempre disponible,
+  // a diferencia del input que puede empezar deshabilitado mientras carga
+  // la conversación). El botón "Enviar" empieza deshabilitado porque el
+  // input está vacío, así que sólo hay dos elementos enfocables: cerrar e
+  // input.
+  const close = dialog.getByRole('button', { name: 'Cerrar chat' })
+  const input = dialog.getByRole('textbox', { name: 'Escribe un mensaje para Bananito' })
+  await expect(close).toBeFocused()
+  await expect(input).toBeEnabled()
+
+  // Tab desde el primero (cerrar) lleva al segundo (input).
+  await page.keyboard.press('Tab')
+  await expect(input).toBeFocused()
+
+  // Otro Tab cicla de vuelta al primero (cerrar) — trampa de foco.
+  await page.keyboard.press('Tab')
   await expect(close).toBeFocused()
 
-  // Tab lleva al enlace "Ir a soporte".
-  await page.keyboard.press('Tab')
-  await expect(dialog.getByRole('link', { name: 'Ir a soporte' })).toBeFocused()
-
-  // Otro Tab cicla al primer elemento (cerrar) — trampa de foco.
-  await page.keyboard.press('Tab')
-  await expect(close).toBeFocused()
-
-  // Shift+Tab vuelve al último elemento.
+  // Shift+Tab vuelve al último elemento (input).
   await page.keyboard.press('Shift+Tab')
-  await expect(dialog.getByRole('link', { name: 'Ir a soporte' })).toBeFocused()
+  await expect(input).toBeFocused()
 
   // Escape cierra y devuelve el foco al botón que lo abrió.
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Abrir información del chat' })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Abrir chat de Bananito' })).toBeFocused()
 })
 
 test('el chat sigue oculto en /checkout/*', async ({ page }) => {
@@ -50,5 +61,5 @@ test('el chat sigue oculto en /checkout/*', async ({ page }) => {
     ]))
   })
   await page.goto('./checkout/1')
-  await expect(page.getByRole('button', { name: /información del chat/i })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /chat de Bananito/i })).toHaveCount(0)
 })

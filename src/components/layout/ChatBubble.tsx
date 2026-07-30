@@ -117,6 +117,7 @@ export function ChatBubble() {
 
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
@@ -148,7 +149,10 @@ export function ChatBubble() {
     if (!panel) return
 
     const focusFrame = window.requestAnimationFrame(() => {
-      inputRef.current?.focus()
+      // El input puede estar deshabilitado mientras carga la conversación
+      // de Supabase, así que el foco inicial va al botón de cerrar (siempre
+      // disponible) en vez de al input.
+      closeRef.current?.focus()
     })
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -292,6 +296,7 @@ export function ChatBubble() {
               </p>
             </div>
             <button
+              ref={closeRef}
               type="button"
               onClick={close}
               aria-label="Cerrar chat"

@@ -188,6 +188,15 @@ del repositorio. No se corrigen en la preparación documental.
 - Cobertura axe ampliada el 2026-07-30 al detalle de tienda
   (`/tiendas/castillo`, representativa de `/tiendas/:slug`). No queda
   pendiente ninguna ruta principal sin comprobación axe.
+- `tests/e2e/chat.spec.ts` reparado el 2026-07-30: el rediseño de
+  "Chat de Bananito" (commits `7a73335`/`ad2c8c4`) cambió los
+  `aria-label` del botón flotante, el botón de cerrar y el nombre del
+  diálogo, y el panel pasó de un enlace "Ir a soporte" a un input +
+  botón de enviar — el test seguía buscando las etiquetas y la
+  estructura antiguas y llevaba fallando en CI desde entonces sin que
+  se detectara (`docs: chat en tiempo real...`, run
+  [`30573485862`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30573485862)).
+  Reescrito para reflejar el diálogo actual.
 
 ## SEG-001 — Avisos de seguridad en React Router
 
@@ -328,3 +337,38 @@ del repositorio. No se corrigen en la preparación documental.
   `public/robots.txt` el 2026-07-30. No protege frente a quien ya
   tiene el enlace directo; sólo evita indexación y enlazado desde
   buscadores. La protección real sigue pendiente de Fase 2 (auth).
+
+## A11Y-002 — Foco perdido al abrir el chat si Supabase tarda en cargar
+
+- Estado: cerrado el 2026-07-30.
+- Evidencia: el efecto de foco inicial de `ChatBubble` enfocaba
+  `inputRef` incondicionalmente al abrir el panel. Con credenciales de
+  Supabase configuradas (como en producción, vía `deploy.yml`), el
+  input queda `disabled` mientras `status === 'loading'`; enfocar un
+  elemento deshabilitado no hace nada, así que el foco de teclado se
+  quedaba fuera del diálogo hasta que el input se habilitaba, sin que
+  nada lo recuperara.
+- Resolución: el foco inicial va ahora al botón "Cerrar chat"
+  (`closeRef`), que está disponible de inmediato independientemente
+  del estado de carga.
+
+## A11Y-003 — El aviso de "tienda favorita" puede robar el foco al chat
+
+- Estado: detectado el 2026-07-30, sin resolver.
+- Impacto: bajo/raro — requiere que ambos widgets coincidan en el
+  tiempo.
+- Evidencia: `FavoriteStorePrompt` (`src/components/layout/FavoriteStoreDialogs.tsx`)
+  aparece 800 ms después de montar `Layout` si no hay tienda favorita
+  guardada, y en ese momento guarda `document.activeElement` como
+  `previous` y enfoca su propio botón de cerrar. Si el chat de
+  Bananito está abierto en ese instante, le roba el foco; al cerrarse
+  el aviso, su `previous?.focus()` devuelve el foco a lo que tuviera
+  el chat en ese momento, no necesariamente a donde el usuario espera.
+  Ambos componentes también registran su propio listener global de
+  `Escape` de forma independiente.
+- Riesgo: un usuario que abra el chat justo en la ventana de ~800 ms
+  tras cargar la página puede ver el foco saltar de forma inesperada
+  entre el chat y el aviso de tienda favorita.
+- Resolución planificada: ninguna todavía — requeriría coordinar un
+  gestor de foco único entre los overlays globales (chat, aviso de
+  tienda favorita, y futuros). Fuera de alcance de esta sesión.
