@@ -23,6 +23,7 @@ export function AccessoryCard({ accessory }: { accessory: Accessory }) {
           alt={accessory.name}
           bgColor={accessory.imageBg}
           pad={!accessory.imageBg}
+          blend={!accessory.imageBg}
         />
         <p className="mt-3 text-[11px] font-semibold uppercase tracking-widest text-muted">
           {categoryLabel(accessory.category)}
