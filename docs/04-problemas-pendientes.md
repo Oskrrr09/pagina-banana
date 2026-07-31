@@ -546,3 +546,24 @@ del repositorio. No se corrigen en la preparación documental.
 - Resolución posible: un proyecto de Playwright aparte que sirva `dist/`
   con `vite preview` en vez del dev server. No se hace ahora para no
   duplicar el arranque de la suite por una superficie pequeña.
+
+## QA-003 — La trampa de foco de la guía escapa con Shift+Tab, solo en CI
+
+- Estado: detectado el 2026-07-31, sin resolver.
+- Impacto: bajo en la web publicada; alto como ruido de CI, porque deja el
+  workflow en rojo.
+- Evidencia: `tests/e2e/device-preparation-guide.spec.ts:122` falla en el
+  runner de GitHub (Linux) en la línea 134, la del bucle de **Shift+Tab**;
+  el bucle de Tab hacia delante pasa. Falló las tres veces, incluidos los
+  dos reintentos, en el run del commit `687126a`.
+- **No se reproduce en local**: 4 repeticiones seguidas del fichero, la
+  suite entera, y la suite entera con `CI=1` (219) pasan todas. Es
+  específico del entorno del runner.
+- Descartado como causa el cambio de esa sesión: la PWA no toca
+  `DevicePreparationGuide` ni `/soporte`. Lo único global que se añadió es
+  una `<meta name="theme-color">` en `index.html` y el registro del
+  service worker, que no se ejecuta en desarrollo.
+- Pendiente de investigar: qué elemento recibe el foco al salir hacia
+  atrás. El test comprueba `dialog.contains(document.activeElement)` pero
+  no registra **quién** queda enfocado, así que el log de CI no lo dice.
+  Primer paso sería que el propio test lo informe.
