@@ -427,6 +427,55 @@ No atribuye motivaciones que el repositorio no documenta.
 - Nota de implementación: el filtro va en la consulta, no en cliente, para
   que el límite de 50 no se lo coman las cerradas según crezca el archivo.
 
+## D-035 — El chat anónimo pide nombre y email antes de empezar
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: quien abre el chat sin sesión ve primero un formulario de
+  nombre y email. Hasta rellenarlo no se crea conversación ni se puede
+  escribir. Los datos quedan en `localStorage` para no volver a pedirlos
+  y se copian a su fila de `visitantes`. Con sesión iniciada no se pide
+  nada: los datos salen de la cuenta.
+- Motivo: si el visitante cierra el chat antes de que le contesten, hace
+  falta un contacto para avisarle, como hace el proveedor actual
+  (Quantum Asis).
+- ⚠️ **El aviso por email no está implementado.** Solo se recoge el
+  contacto. La interfaz lo dice explícitamente para no prometer un correo
+  que nunca llega. Enviarlo de verdad exige un servicio de email
+  (Resend, Postmark…) y una Edge Function que reaccione al mensaje nuevo;
+  queda anotado en el roadmap.
+
+## D-036 — Valoración con estrellas al cerrar el chat
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: al cerrar una conversación el agente elige entre "cerrar y
+  pedir valoración" o "cerrar sin pedirla". Si la pide, el visitante ve
+  un formulario de 1 a 5 estrellas más una observación opcional la
+  próxima vez que abra el chat; si no, solo ve que se ha cerrado.
+- La valoración vive en columnas de `conversaciones`
+  (`valoracion_solicitada`, `valoracion_estrellas`,
+  `valoracion_observacion`), no en tabla aparte: es una por conversación
+  y así se lee sin joins.
+- El visitante la envía por la función `enviar_valoracion()`, no con un
+  UPDATE. Es anónimo: si le abriéramos `conversaciones` para escribir
+  podría tocar también el estado o la asignación. La función exige
+  conocer los DOS uuid (conversación y visitante) y solo deja valorar una
+  vez, y únicamente si el agente lo ha pedido.
+- Reabrir una conversación retira la petición pendiente; una valoración ya
+  enviada no se toca.
+
+## D-037 — Borrado definitivo solo desde el archivo
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: el botón "Eliminar" solo aparece en conversaciones ya
+  cerradas, y pide confirmación en un diálogo aparte. Borra la
+  conversación y sus mensajes (cascada de la clave foránea).
+- Motivo: obligar a cerrar antes evita eliminar por error una
+  conversación viva. No hay papelera — lo borrado no se recupera — así
+  que la confirmación deja claro que es irreversible.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

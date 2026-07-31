@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { supabaseEnabled, type AgentStatus, type DbCustomer } from '../lib/supabase'
+import {
+  supabaseEnabled,
+  type AgentStatus,
+  type DbConversation,
+  type DbCustomer,
+} from '../lib/supabase'
 import {
   assignConversation,
+  deleteConversation,
   setConversationState,
   useAgentConversation,
   useAgentInbox,
@@ -123,8 +129,8 @@ export function AgentPage() {
           />
           <ConversationColumn
             conversationId={selectedId}
-            assignedTo={selected?.conversation.agente_id ?? null}
-            estado={selected?.conversation.estado ?? 'abierta'}
+            conversation={selected?.conversation ?? null}
+            onDeleted={() => setSelectedId(null)}
           />
           <VisitorColumn conversationId={selectedId} />
         </div>
@@ -377,13 +383,15 @@ function BandejaTab({
 
 function ConversationColumn({
   conversationId,
-  assignedTo,
-  estado,
+  conversation,
+  onDeleted,
 }: {
   conversationId: string | null
-  assignedTo: string | null
-  estado: 'abierta' | 'cerrada'
+  conversation: DbConversation | null
+  onDeleted: () => void
 }) {
+  const assignedTo = conversation?.agente_id ?? null
+  const estado = conversation?.estado ?? 'abierta'
   const { messages, sendMessage, status } = useAgentConversation(conversationId)
   const { visitor } = useConversationVisitor(conversationId)
   const agentNames = useAgentNames()
@@ -391,6 +399,9 @@ function ConversationColumn({
   const [input, setInput] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [closing, setClosing] = useState(false)
+  const [closeDialog, setCloseDialog] = useState(false)
+  const [deleteDialog, setDeleteDialog] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -436,11 +447,36 @@ function ConversationColumn({
     setAssigning(false)
   }
 
+  // Reabrir es inmediato; cerrar pasa antes por el diálogo que pregunta si
+  // se le pide valoración al cliente.
   const toggleEstado = async () => {
     if (!conversationId) return
+    if (!cerrada) {
+      setCloseDialog(true)
+      return
+    }
     setClosing(true)
-    await setConversationState(conversationId, cerrada ? 'abierta' : 'cerrada')
+    await setConversationState(conversationId, 'abierta')
     setClosing(false)
+  }
+
+  const confirmarCierre = async (pedirValoracion: boolean) => {
+    if (!conversationId) return
+    setClosing(true)
+    await setConversationState(conversationId, 'cerrada', { pedirValoracion })
+    setClosing(false)
+    setCloseDialog(false)
+  }
+
+  const confirmarBorrado = async () => {
+    if (!conversationId) return
+    setDeleting(true)
+    const { error } = await deleteConversation(conversationId)
+    setDeleting(false)
+    setDeleteDialog(false)
+    // La suscripción realtime refresca la bandeja; aquí solo soltamos la
+    // selección para no quedarnos apuntando a algo que ya no existe.
+    if (!error) onDeleted()
   }
 
   return (
@@ -495,8 +531,110 @@ function ConversationColumn({
           >
             {cerrada ? 'Reabrir' : 'Cerrar'}
           </button>
+          {/* Borrar solo desde el archivo: obliga a cerrar antes, así no se
+              elimina por error una conversación viva. */}
+          {cerrada && (
+            <button
+              type="button"
+              onClick={() => setDeleteDialog(true)}
+              disabled={deleting}
+              className="cursor-pointer rounded-full border border-danger px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Eliminar
+            </button>
+          )}
         </div>
       </header>
+
+      {/* Valoración recibida */}
+      {conversation?.valoracion_estrellas != null && (
+        <div className="border-b border-line bg-surface px-6 py-3">
+          <p className="text-xs font-semibold text-ink">
+            Valoración del cliente:{' '}
+            <span className="text-[#f5b301]" aria-hidden>
+              {'★'.repeat(conversation.valoracion_estrellas)}
+              {'☆'.repeat(5 - conversation.valoracion_estrellas)}
+            </span>{' '}
+            <span className="font-normal text-ink/70">
+              ({conversation.valoracion_estrellas} de 5)
+            </span>
+          </p>
+          {conversation.valoracion_observacion && (
+            <p className="mt-1 text-sm text-ink/80">
+              “{conversation.valoracion_observacion}”
+            </p>
+          )}
+        </div>
+      )}
+      {cerrada &&
+        conversation?.valoracion_solicitada &&
+        conversation.valoracion_estrellas == null && (
+          <div className="border-b border-line bg-surface px-6 py-2 text-xs text-ink/60">
+            Valoración pedida al cliente · pendiente de respuesta
+          </div>
+        )}
+
+      {closeDialog && (
+        <ConfirmDialog
+          title="Cerrar conversación"
+          onCancel={() => setCloseDialog(false)}
+          busy={closing}
+        >
+          <p className="text-sm text-ink/80">
+            ¿Quieres pedirle al cliente que valore la atención? Verá un
+            formulario de estrellas la próxima vez que abra el chat.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void confirmarCierre(true)}
+              disabled={closing}
+              className="cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Cerrar y pedir valoración
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmarCierre(false)}
+              disabled={closing}
+              className="cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold text-ink hover:bg-black/5 disabled:opacity-50"
+            >
+              Cerrar sin pedirla
+            </button>
+          </div>
+        </ConfirmDialog>
+      )}
+
+      {deleteDialog && (
+        <ConfirmDialog
+          title="Eliminar conversación"
+          onCancel={() => setDeleteDialog(false)}
+          busy={deleting}
+        >
+          <p className="text-sm text-ink/80">
+            Se borrarán la conversación y todos sus mensajes.{' '}
+            <strong>Esto no se puede deshacer.</strong>
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void confirmarBorrado()}
+              disabled={deleting}
+              className="cursor-pointer rounded-full bg-danger px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {deleting ? 'Eliminando…' : 'Sí, eliminar'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeleteDialog(false)}
+              disabled={deleting}
+              className="cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold text-ink hover:bg-black/5 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
+        </ConfirmDialog>
+      )}
 
       <div
         ref={scrollRef}
@@ -602,6 +740,58 @@ function ConversationColumn({
         </form>
       )}
     </main>
+  )
+}
+
+/**
+ * Diálogo de confirmación del panel. Escape cancela y el foco entra en el
+ * cuadro, para no dejar al teclado detrás del overlay.
+ */
+function ConfirmDialog({
+  title,
+  children,
+  onCancel,
+  busy,
+}: {
+  title: string
+  children: React.ReactNode
+  onCancel: () => void
+  busy: boolean
+}) {
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const previo = document.activeElement as HTMLElement | null
+    const frame = window.requestAnimationFrame(() => {
+      panelRef.current?.querySelector<HTMLElement>('button')?.focus()
+    })
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !busy) {
+        event.preventDefault()
+        onCancel()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      document.removeEventListener('keydown', onKey)
+      previo?.focus?.()
+    }
+  }, [onCancel, busy])
+
+  return (
+    <div className="fixed inset-0 z-[90] grid place-items-center bg-black/40 p-4">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="w-full max-w-md rounded-[16px] border border-line bg-surface p-5 shadow-[var(--shadow-raised)]"
+      >
+        <h2 className="font-semibold text-ink">{title}</h2>
+        <div className="mt-2">{children}</div>
+      </div>
+    </div>
   )
 }
 

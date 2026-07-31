@@ -335,47 +335,57 @@ export function ChatBubble() {
               backgroundPosition: 'top left',
             }}
           >
-            {showLoading && (
-              <p className="text-center text-xs text-ink/60">Cargando conversación…</p>
+            {session.necesitaDatos ? (
+              <GuestGate onSubmit={session.registrarDatos} />
+            ) : (
+              <>
+                {showLoading && (
+                  <p className="text-center text-xs text-ink/60">Cargando conversación…</p>
+                )}
+                {showError && (
+                  <p className="text-center text-xs text-danger">
+                    No se pudo conectar con el servidor. Recarga la página.
+                  </p>
+                )}
+                {messages.map((m) => (
+                  <MessageBubble key={m.id} message={m} />
+                ))}
+                {botTyping && <TypingIndicator />}
+              </>
             )}
-            {showError && (
-              <p className="text-center text-xs text-danger">
-                No se pudo conectar con el servidor. Recarga la página.
-              </p>
-            )}
-            {messages.map((m) => (
-              <MessageBubble key={m.id} message={m} />
-            ))}
-            {botTyping && <TypingIndicator />}
           </div>
 
-          {/* Input */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              submit()
-            }}
-            className="flex items-center gap-2 border-t border-line bg-surface px-3 py-3"
-          >
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Escribe tu mensaje…"
-              aria-label="Escribe un mensaje para Bananito"
-              disabled={showLoading || showError}
-              className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30 disabled:opacity-60"
-            />
-            <button
-              type="submit"
-              aria-label="Enviar mensaje"
-              disabled={!input.trim() || showLoading || showError}
-              className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-              style={{ background: BANANA_BLUE }}
+          {/* Pie: valoración, aviso de cierre o campo de escritura */}
+          {session.necesitaDatos ? null : session.cierre.cerrada ? (
+            <ClosedFooter session={session} />
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                submit()
+              }}
+              className="flex items-center gap-2 border-t border-line bg-surface px-3 py-3"
             >
-              <Icon name="arrow-right" size={16} />
-            </button>
-          </form>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Escribe tu mensaje…"
+                aria-label="Escribe un mensaje para Bananito"
+                disabled={showLoading || showError}
+                className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30 disabled:opacity-60"
+              />
+              <button
+                type="submit"
+                aria-label="Enviar mensaje"
+                disabled={!input.trim() || showLoading || showError}
+                className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+                style={{ background: BANANA_BLUE }}
+              >
+                <Icon name="arrow-right" size={16} />
+              </button>
+            </form>
+          )}
         </div>
       )}
 
@@ -404,6 +414,193 @@ export function ChatBubble() {
         )}
       </button>
     </div>
+  )
+}
+
+/**
+ * Puerta de entrada para quien escribe sin cuenta: pedimos nombre y email
+ * antes de abrir la conversación, para tener a quién avisar si cierra el
+ * chat antes de que le contesten.
+ */
+function GuestGate({
+  onSubmit,
+}: {
+  onSubmit: (nombre: string, email: string) => Promise<{ error: string | null }>
+}) {
+  const [nombre, setNombre] = useState('')
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [enviando, setEnviando] = useState(false)
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    setEnviando(true)
+    const { error: err } = await onSubmit(nombre, email)
+    setEnviando(false)
+    setError(err)
+  }
+
+  return (
+    <div className="rounded-[16px] bg-surface/95 p-4 shadow-sm">
+      <p className="text-sm font-semibold text-ink">Antes de empezar</p>
+      <p className="mt-1 text-xs text-ink/70">
+        Déjanos cómo te llamas y tu email. Si cierras el chat antes de que te
+        respondamos, así podemos avisarte.
+      </p>
+
+      <form onSubmit={handleSubmit} className="mt-3 space-y-2" noValidate>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink">Nombre</span>
+          <input
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            autoComplete="name"
+            className="w-full rounded-[10px] border border-line bg-neutral px-3 py-2 text-sm text-ink outline-none focus:border-ink/30"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink">Email</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            className="w-full rounded-[10px] border border-line bg-neutral px-3 py-2 text-sm text-ink outline-none focus:border-ink/30"
+          />
+        </label>
+
+        {error && (
+          <p role="alert" className="text-xs text-danger">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={enviando}
+          className="w-full cursor-pointer rounded-full px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          style={{ background: BANANA_BLUE }}
+        >
+          {enviando ? 'Abriendo chat…' : 'Empezar a chatear'}
+        </button>
+      </form>
+
+      <p className="mt-3 text-[11px] leading-snug text-ink/50">
+        Prototipo de demostración: los datos se guardan para enseñar el flujo,
+        pero <strong>todavía no se envía ningún email</strong>. Si tienes cuenta,
+        inicia sesión y no hará falta escribirlos.
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Pie del chat cuando el agente ha cerrado la conversación. Si pidió
+ * valoración, se muestra el formulario de estrellas; si no, solo el aviso.
+ */
+function ClosedFooter({ session }: { session: ReturnType<typeof useVisitorChatSession> }) {
+  const { cierre, enviarValoracion } = session
+  const [estrellas, setEstrellas] = useState(0)
+  const [observacion, setObservacion] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [enviando, setEnviando] = useState(false)
+
+  const pideValoracion = cierre.valoracionSolicitada && !cierre.valoracionEnviada
+
+  if (cierre.valoracionEnviada) {
+    return (
+      <div className="border-t border-line bg-surface px-3 py-4 text-center">
+        <p className="text-sm font-semibold text-ink">¡Gracias por tu valoración!</p>
+        <p className="mt-1 text-xs text-ink/60">La conversación está cerrada.</p>
+      </div>
+    )
+  }
+
+  if (!pideValoracion) {
+    return (
+      <div className="border-t border-line bg-surface px-3 py-4 text-center">
+        <p className="text-sm font-semibold text-ink">Chat cerrado</p>
+        <p className="mt-1 text-xs text-ink/60">
+          Un agente ha cerrado esta conversación. Escríbenos otra vez cuando
+          quieras y abriremos una nueva.
+        </p>
+      </div>
+    )
+  }
+
+  async function submitRating(event: React.FormEvent) {
+    event.preventDefault()
+    if (estrellas < 1) {
+      setError('Elige de 1 a 5 estrellas.')
+      return
+    }
+    setEnviando(true)
+    const { error: err } = await enviarValoracion(estrellas, observacion)
+    setEnviando(false)
+    setError(err)
+  }
+
+  return (
+    <form
+      onSubmit={submitRating}
+      className="border-t border-line bg-surface px-3 py-4"
+      noValidate
+    >
+      <p className="text-sm font-semibold text-ink">¿Qué tal te hemos atendido?</p>
+
+      <div
+        role="radiogroup"
+        aria-label="Puntuación de 1 a 5 estrellas"
+        className="mt-2 flex gap-1"
+      >
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            role="radio"
+            aria-checked={estrellas === n}
+            aria-label={`${n} ${n === 1 ? 'estrella' : 'estrellas'}`}
+            onClick={() => {
+              setEstrellas(n)
+              setError(null)
+            }}
+            className={
+              'cursor-pointer text-2xl leading-none transition-transform hover:scale-110 ' +
+              (n <= estrellas ? 'text-[#f5b301]' : 'text-ink/25')
+            }
+          >
+            <span aria-hidden>★</span>
+          </button>
+        ))}
+      </div>
+
+      <label className="mt-3 block">
+        <span className="mb-1 block text-xs font-medium text-ink">
+          Observaciones (opcional)
+        </span>
+        <textarea
+          value={observacion}
+          onChange={(e) => setObservacion(e.target.value)}
+          rows={2}
+          className="w-full resize-none rounded-[10px] border border-line bg-neutral px-3 py-2 text-sm text-ink outline-none focus:border-ink/30"
+        />
+      </label>
+
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-danger">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={enviando}
+        className="mt-3 w-full cursor-pointer rounded-full px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        style={{ background: BANANA_BLUE }}
+      >
+        {enviando ? 'Enviando…' : 'Enviar valoración'}
+      </button>
+    </form>
   )
 }
 

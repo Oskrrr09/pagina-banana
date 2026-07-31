@@ -58,6 +58,13 @@ export interface DbConversation {
   estado: 'abierta' | 'cerrada'
   agente_id: string | null
   ultimo_mensaje_at: string | null
+  cerrada_at: string | null
+  /** El agente pidió valoración al cerrar. */
+  valoracion_solicitada: boolean
+  /** 1-5. Null mientras el visitante no la haya enviado. */
+  valoracion_estrellas: number | null
+  valoracion_observacion: string | null
+  valoracion_at: string | null
 }
 
 export interface DbMessage {

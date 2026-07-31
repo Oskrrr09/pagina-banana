@@ -251,6 +251,17 @@ alter table public.visitantes
 alter table public.mensajes
   add column if not exists agente_id uuid references auth.users(id) on delete set null;
 
+-- Valoración del chat. Al cerrar, el agente decide si pide valoración;
+-- si la pide, el visitante ve el formulario de estrellas la próxima vez
+-- que abra el chat. Una por conversación.
+alter table public.conversaciones
+  add column if not exists valoracion_solicitada boolean not null default false,
+  add column if not exists valoracion_estrellas smallint
+    check (valoracion_estrellas between 1 and 5),
+  add column if not exists valoracion_observacion text,
+  add column if not exists valoracion_at timestamptz,
+  add column if not exists cerrada_at timestamptz;
+
 create index if not exists visitantes_cliente_idx
   on public.visitantes (cliente_id)
   where cliente_id is not null;
@@ -305,6 +316,51 @@ begin
      and otras.pagado_at < v_propia.pagado_at;
 
   return v_posicion;
+end;
+$$;
+
+-- Valoración del chat por parte del visitante.
+--
+-- Va en función y no en una política de UPDATE porque el visitante es
+-- anónimo: si le abriéramos `conversaciones` para escribir, podría tocar
+-- también el estado o la asignación. Aquí solo puede dejar su nota, una
+-- vez, y únicamente si el agente se la ha pedido.
+--
+-- Se exige además el `visitor_id` de la conversación: el visitante lo
+-- tiene en su localStorage, así que hay que conocer los DOS uuid para
+-- poder valorar. No es autenticación de verdad — el visitante no tiene
+-- cuenta — pero evita que valga con adivinar un solo identificador.
+create or replace function public.enviar_valoracion(
+  p_conversacion_id uuid,
+  p_visitor_id uuid,
+  p_estrellas smallint,
+  p_observacion text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_afectadas integer;
+begin
+  if p_estrellas is null or p_estrellas < 1 or p_estrellas > 5 then
+    raise exception 'La valoración debe estar entre 1 y 5';
+  end if;
+
+  update public.conversaciones
+     set valoracion_estrellas = p_estrellas,
+         valoracion_observacion = nullif(btrim(coalesce(p_observacion, '')), ''),
+         valoracion_at = now()
+   where id = p_conversacion_id
+     and visitor_id = p_visitor_id
+     and valoracion_solicitada
+     and valoracion_estrellas is null;
+
+  get diagnostics v_afectadas = row_count;
+  if v_afectadas = 0 then
+    raise exception 'No hay ninguna valoración pendiente para esta conversación';
+  end if;
 end;
 $$;
 
@@ -369,6 +425,7 @@ drop policy if exists "chat actualiza visitantes"       on public.visitantes;
 drop policy if exists "chat lectura conversaciones"     on public.conversaciones;
 drop policy if exists "chat alta conversaciones"        on public.conversaciones;
 drop policy if exists "agente actualiza conversaciones" on public.conversaciones;
+drop policy if exists "agente borra conversaciones"     on public.conversaciones;
 drop policy if exists "chat lectura mensajes"           on public.mensajes;
 drop policy if exists "visitante escribe mensajes"      on public.mensajes;
 drop policy if exists "agente escribe mensajes"         on public.mensajes;
@@ -395,6 +452,13 @@ create policy "agente actualiza conversaciones"
   on public.conversaciones for update to authenticated
   using (public.es_agente())
   with check (public.es_agente());
+
+-- Borrado definitivo desde el archivo. Los mensajes caen solos por el
+-- `on delete cascade` de la clave foránea. No hay papelera: lo que se
+-- borra aquí no se recupera, por eso el panel pide confirmación.
+create policy "agente borra conversaciones"
+  on public.conversaciones for delete to authenticated
+  using (public.es_agente());
 
 create policy "chat lectura mensajes"
   on public.mensajes for select to anon, authenticated using (true);

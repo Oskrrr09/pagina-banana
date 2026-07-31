@@ -355,6 +355,19 @@ del repositorio. No se corrigen en la preparación documental.
   tiene el enlace directo; sólo evita indexación y enlazado desde
   buscadores. La protección real sigue pendiente de Fase 2 (auth).
 
+## CHAT-002 — El aviso por email al visitante no existe
+
+- Estado: **abierto**. Es la razón por la que se pide el email, así que
+  conviene no perderlo de vista.
+- Evidencia: el chat pide nombre y email a quien escribe sin cuenta
+  (ver [[02-decisiones#D-035 — El chat anónimo pide nombre y email antes de empezar]])
+  y los guarda en `visitantes`, pero **no se envía ningún correo**. El
+  formulario lo advierte para no prometer algo que no ocurre.
+- Qué haría falta: un proveedor de email (Resend, Postmark, el SMTP de
+  Supabase…) y una Edge Function disparada al insertarse un mensaje de
+  agente en una conversación cuyo visitante no está mirando. Además,
+  decidir qué cuenta lo firma y añadir baja de la notificación.
+
 ## CUENTAS-004 — Segunda tanda de SQL pendiente de ejecutar
 
 - Estado: **abierto**. Ejecutado ya el bloque inicial (CUENTAS-001), el
@@ -365,11 +378,16 @@ del repositorio. No se corrigen en la preparación documental.
     vez de un UUID.
   - `mensajes.agente_id` — sin esto no se puede saber qué agente escribió
     cada respuesta cuando hay más de uno.
+  - Columnas de valoración en `conversaciones`
+    (`valoracion_solicitada`, `valoracion_estrellas`,
+    `valoracion_observacion`, `valoracion_at`, `cerrada_at`), la función
+    `enviar_valoracion()` y la política de borrado para agentes.
 - Qué hace falta: volver a ejecutar `supabase/schema.sql` entero. Es
   idempotente, así que re-ejecutarlo no rompe lo ya creado.
 - Mientras no se aplique: el chat seguirá funcionando, pero el panel no
-  mostrará la identidad del cliente y los envíos de agente fallarán al
-  intentar escribir `agente_id` en una columna que no existe.
+  mostrará la identidad del cliente, los envíos de agente fallarán al
+  intentar escribir `agente_id` en una columna que no existe, y ni el
+  cierre con valoración ni el borrado funcionarán.
 
 ## CUENTAS-001 — El esquema SQL no se ha ejecutado todavía
 

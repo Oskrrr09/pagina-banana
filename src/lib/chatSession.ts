@@ -26,6 +26,9 @@ import {
 
 const VISITOR_STORAGE_KEY = 'bananito:visitor_id'
 const CONVERSATION_STORAGE_KEY = 'bananito:conversation_id'
+// Nombre y email de quien escribe sin cuenta. Se guardan para no volver a
+// pedírselos en cada visita desde el mismo navegador.
+const GUEST_STORAGE_KEY = 'bananito:guest'
 
 const WELCOME_TEXT =
   '¡Hola! Soy Bananito 🍌 el asistente de Banana Computer. Puedo ayudarte con productos, accesorios, comparar modelos, tiendas o precios. ¿En qué te ayudo?'
@@ -38,6 +41,23 @@ export interface ChatSession {
   status: Status
   demo: boolean
   conversationId: string | null
+  /**
+   * true cuando hace falta pedir nombre y email antes de empezar: no hay
+   * sesión de cliente y este navegador no los ha dado todavía.
+   */
+  necesitaDatos: boolean
+  /** Guarda nombre y email del visitante anónimo y arranca la conversación. */
+  registrarDatos: (nombre: string, email: string) => Promise<{ error: string | null }>
+  /** Estado de cierre y valoración de la conversación en curso. */
+  cierre: {
+    cerrada: boolean
+    valoracionSolicitada: boolean
+    valoracionEnviada: boolean
+  }
+  enviarValoracion: (
+    estrellas: number,
+    observacion: string,
+  ) => Promise<{ error: string | null }>
 }
 
 function readStored(key: string): string | null {
@@ -69,6 +89,24 @@ export interface VisitorIdentity {
   telefono: string | null
 }
 
+/** Datos de contacto de quien escribe sin cuenta. */
+interface GuestIdentity {
+  nombre: string
+  email: string
+}
+
+function readGuest(): GuestIdentity | null {
+  const raw = readStored(GUEST_STORAGE_KEY)
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as Partial<GuestIdentity>
+    if (!parsed.nombre || !parsed.email) return null
+    return { nombre: parsed.nombre, email: parsed.email }
+  } catch {
+    return null
+  }
+}
+
 // Asegura que existe un visitante en Supabase para este navegador. Devuelve
 // el UUID. La primera vez inserta la fila; después reutiliza el guardado.
 //
@@ -76,9 +114,13 @@ export interface VisitorIdentity {
 // también sobre filas ya existentes: alguien puede haber usado el chat como
 // anónimo y registrarse después, y a partir de ese momento el agente debe
 // verle identificado.
-async function ensureVisitor(identity: VisitorIdentity | null): Promise<string> {
+async function ensureVisitor(
+  identity: VisitorIdentity | null,
+  guest: GuestIdentity | null,
+): Promise<string> {
   if (!supabase) throw new Error('Supabase no configurado')
 
+  // La cuenta manda sobre los datos escritos a mano como invitado.
   const identityFields = identity
     ? {
         cliente_id: identity.clienteId,
@@ -86,11 +128,13 @@ async function ensureVisitor(identity: VisitorIdentity | null): Promise<string> 
         email: identity.email,
         telefono: identity.telefono,
       }
-    : {}
+    : guest
+      ? { nombre: guest.nombre, email: guest.email }
+      : {}
 
   const stored = readStored(VISITOR_STORAGE_KEY)
   if (stored) {
-    if (identity) {
+    if (identity || guest) {
       const { error } = await supabase
         .from('visitantes')
         .update(identityFields)
@@ -160,9 +204,15 @@ export function useVisitorChatSession(
   )
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<DbMessage[]>([])
+  const [guest, setGuest] = useState<GuestIdentity | null>(() => readGuest())
+  const [conversation, setConversation] = useState<DbConversation | null>(null)
   // Guardamos IDs vistos en un Set para dedupear entre insert optimista y
   // el evento realtime que llega después con el mismo id.
   const seenIdsRef = useRef<Set<string>>(new Set())
+
+  // Sin cuenta y sin datos de invitado no arrancamos la conversación: hace
+  // falta un contacto para poder avisarle si cierra el chat.
+  const necesitaDatos = supabaseEnabled && !identity && !guest
 
   const appendMessage = useCallback((m: DbMessage) => {
     if (seenIdsRef.current.has(m.id)) return
@@ -175,10 +225,11 @@ export function useVisitorChatSession(
     if (!supabaseEnabled || !supabase) return
     if (!active) return
     if (conversationId) return
+    if (necesitaDatos) return
     let cancelled = false
     ;(async () => {
       try {
-        const visitorId = await ensureVisitor(identity)
+        const visitorId = await ensureVisitor(identity, guest)
         const convId = await ensureConversation(visitorId)
         if (cancelled) return
         const { data, error } = await supabase!
@@ -191,6 +242,15 @@ export function useVisitorChatSession(
         seenIdsRef.current = new Set((data ?? []).map((m) => m.id))
         setMessages((data ?? []) as DbMessage[])
         setConversationId(convId)
+
+        // Estado de cierre/valoración de esta conversación.
+        const { data: conv } = await supabase!
+          .from('conversaciones')
+          .select('*')
+          .eq('id', convId)
+          .maybeSingle()
+        if (!cancelled && conv) setConversation(conv as DbConversation)
+
         setStatus('ready')
       } catch (err) {
         console.error('[chatSession] init error', err)
@@ -202,7 +262,7 @@ export function useVisitorChatSession(
     }
     // `identity` se omite a propósito: el efecto solo inicializa una vez.
     // Los cambios de sesión posteriores los recoge el efecto de abajo.
-  }, [active, conversationId])
+  }, [active, conversationId, necesitaDatos, guest])
 
   // Si el visitante inicia sesión con el chat ya abierto, le pegamos la
   // identidad a su fila para que el agente deje de ver un UUID anónimo.
@@ -250,6 +310,30 @@ export function useVisitorChatSession(
     }
   }, [conversationId, appendMessage])
 
+  // El agente puede cerrar la conversación mientras el visitante la tiene
+  // abierta; nos suscribimos para enterarnos sin recargar.
+  useEffect(() => {
+    if (!supabase || !conversationId) return
+    const channel = supabase
+      .channel(`conversacion:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversaciones',
+          filter: `id=eq.${conversationId}`,
+        },
+        (payload) => {
+          setConversation(payload.new as DbConversation)
+        },
+      )
+      .subscribe()
+    return () => {
+      supabase!.removeChannel(channel)
+    }
+  }, [conversationId])
+
   const sendMessage = useCallback(
     async (texto: string) => {
       if (!supabase || !conversationId) return
@@ -267,12 +351,63 @@ export function useVisitorChatSession(
     [conversationId, appendMessage],
   )
 
+  const registrarDatos = useCallback(async (nombre: string, email: string) => {
+    const limpio = { nombre: nombre.trim(), email: email.trim() }
+    if (!limpio.nombre) return { error: 'Escribe tu nombre.' }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(limpio.email)) {
+      return { error: 'Escribe un email válido.' }
+    }
+    writeStored(GUEST_STORAGE_KEY, JSON.stringify(limpio))
+    // Al pasar de null a datos, el efecto de inicialización arranca solo.
+    setGuest(limpio)
+    return { error: null }
+  }, [])
+
+  const enviarValoracion = useCallback(
+    async (estrellas: number, observacion: string) => {
+      if (!supabase || !conversationId) return { error: 'No hay conversación.' }
+      const visitorId = readStored(VISITOR_STORAGE_KEY)
+      if (!visitorId) return { error: 'No se pudo identificar la conversación.' }
+
+      const { error } = await supabase.rpc('enviar_valoracion', {
+        p_conversacion_id: conversationId,
+        p_visitor_id: visitorId,
+        p_estrellas: estrellas,
+        p_observacion: observacion,
+      })
+      if (error) {
+        console.error('[chatSession] valoración error', error)
+        return { error: error.message }
+      }
+      setConversation((prev) =>
+        prev
+          ? {
+              ...prev,
+              valoracion_estrellas: estrellas,
+              valoracion_observacion: observacion || null,
+              valoracion_at: new Date().toISOString(),
+            }
+          : prev,
+      )
+      return { error: null }
+    },
+    [conversationId],
+  )
+
   return {
     messages,
     sendMessage,
     status,
     demo: !supabaseEnabled,
     conversationId,
+    necesitaDatos,
+    registrarDatos,
+    cierre: {
+      cerrada: conversation?.estado === 'cerrada',
+      valoracionSolicitada: conversation?.valoracion_solicitada === true,
+      valoracionEnviada: conversation?.valoracion_estrellas != null,
+    },
+    enviarValoracion,
   }
 }
 
@@ -478,14 +613,47 @@ export function useAgentConversation(conversationId: string | null): {
 export async function setConversationState(
   conversationId: string,
   estado: 'abierta' | 'cerrada',
+  opciones: { pedirValoracion?: boolean } = {},
+): Promise<{ error: string | null }> {
+  if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
+
+  const patch: Record<string, unknown> = { estado }
+  if (estado === 'cerrada') {
+    patch.cerrada_at = new Date().toISOString()
+    patch.valoracion_solicitada = opciones.pedirValoracion === true
+  } else {
+    // Al reabrir se retira la petición pendiente: si el agente vuelve a
+    // cerrar, decidirá otra vez. Una valoración ya enviada no se toca.
+    patch.cerrada_at = null
+    patch.valoracion_solicitada = false
+  }
+
+  const { error } = await supabaseAgent
+    .from('conversaciones')
+    .update(patch)
+    .eq('id', conversationId)
+  if (error) {
+    console.error('[setConversationState] error', error)
+    return { error: error.message }
+  }
+  return { error: null }
+}
+
+/**
+ * Borrado definitivo de una conversación y sus mensajes (cascada en la
+ * clave foránea). No hay papelera: quien llame a esto debe haber
+ * confirmado antes con el agente.
+ */
+export async function deleteConversation(
+  conversationId: string,
 ): Promise<{ error: string | null }> {
   if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
   const { error } = await supabaseAgent
     .from('conversaciones')
-    .update({ estado })
+    .delete()
     .eq('id', conversationId)
   if (error) {
-    console.error('[setConversationState] error', error)
+    console.error('[deleteConversation] error', error)
     return { error: error.message }
   }
   return { error: null }
