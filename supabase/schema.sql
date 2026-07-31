@@ -234,6 +234,28 @@ end
 $$;
 
 -- --------------------------------------------------------------
+-- Migración: enlazar el visitante del chat con su cuenta de cliente.
+-- Cuando alguien con sesión iniciada abre el chat, guardamos quién es
+-- para que el agente vea su nombre y su teléfono en vez de un UUID.
+-- Los visitantes sin cuenta siguen funcionando igual, con `cliente_id`
+-- a null.
+-- --------------------------------------------------------------
+alter table public.visitantes
+  add column if not exists cliente_id uuid references auth.users(id) on delete set null;
+
+alter table public.visitantes
+  add column if not exists telefono text;
+
+-- Quién escribió cada respuesta. Sin esto, con más de un agente en el
+-- panel no se puede saber a quién atribuir un mensaje 'agent'.
+alter table public.mensajes
+  add column if not exists agente_id uuid references auth.users(id) on delete set null;
+
+create index if not exists visitantes_cliente_idx
+  on public.visitantes (cliente_id)
+  where cliente_id is not null;
+
+-- --------------------------------------------------------------
 -- Funciones auxiliares
 -- --------------------------------------------------------------
 

@@ -355,9 +355,29 @@ del repositorio. No se corrigen en la preparación documental.
   tiene el enlace directo; sólo evita indexación y enlazado desde
   buscadores. La protección real sigue pendiente de Fase 2 (auth).
 
+## CUENTAS-004 — Segunda tanda de SQL pendiente de ejecutar
+
+- Estado: **abierto**. Ejecutado ya el bloque inicial (CUENTAS-001), el
+  archivo ha crecido con tres columnas nuevas que **todavía no están
+  aplicadas**:
+  - `visitantes.cliente_id` y `visitantes.telefono` — enlazan el chat con
+    la cuenta del cliente, para que el agente vea nombre y teléfono en
+    vez de un UUID.
+  - `mensajes.agente_id` — sin esto no se puede saber qué agente escribió
+    cada respuesta cuando hay más de uno.
+- Qué hace falta: volver a ejecutar `supabase/schema.sql` entero. Es
+  idempotente, así que re-ejecutarlo no rompe lo ya creado.
+- Mientras no se aplique: el chat seguirá funcionando, pero el panel no
+  mostrará la identidad del cliente y los envíos de agente fallarán al
+  intentar escribir `agente_id` en una columna que no existe.
+
 ## CUENTAS-001 — El esquema SQL no se ha ejecutado todavía
 
-- Estado: **abierto**. Bloquea la prueba real de la Fase 2.
+- Estado: **cerrado el 2026-07-31**. Oscar ejecutó el script y se
+  verificó por API que las tablas `agentes`, `clientes`, `pedidos` y
+  `reservas` existen, que las funciones responden, que un anónimo no
+  puede escribir como agente ni aprobar descuentos, y que el bucket de
+  Storage es privado. Continúa en CUENTAS-004 para lo añadido después.
 - Evidencia: `supabase/schema.sql` incluye las tablas `agentes`,
   `clientes`, `pedidos` y `reservas`, el bucket de Storage y las nuevas
   políticas, pero no hay Postgres ni Docker en el entorno de desarrollo

@@ -19,6 +19,7 @@ import {
   uploadEducationalProof,
 } from '../lib/educationalDiscount'
 import { supabaseEnabled, type DbAddress, type DbOrder } from '../lib/supabase'
+import { ISLAS } from '../lib/checkoutState'
 import { euro } from '../lib/format'
 
 // "Mi cuenta" — Fase 2.
@@ -29,9 +30,23 @@ import { euro } from '../lib/format'
 
 const EMPTY_ADDRESS: DbAddress = { calle: '', ciudad: '', isla: '', cp: '' }
 
+// Apartados del menú lateral, en el orden en que se muestran.
+const APARTADOS = [
+  { id: 'datos', label: 'Datos personales' },
+  { id: 'envio', label: 'Dirección de envío' },
+  { id: 'facturacion', label: 'Dirección de facturación' },
+  { id: 'pedidos', label: 'Mis pedidos' },
+  { id: 'reservas', label: 'Mis reservas' },
+  { id: 'descuento', label: 'Descuento educativo' },
+  { id: 'favoritos', label: 'Favoritos y tienda' },
+] as const
+
+type Apartado = (typeof APARTADOS)[number]['id']
+
 export function ProfilePage() {
   const { session, cliente, loading, signOut } = useCustomerAuth()
   const navigate = useNavigate()
+  const [apartado, setApartado] = useState<Apartado>('datos')
 
   if (!supabaseEnabled) {
     return (
@@ -83,13 +98,21 @@ export function ProfilePage() {
         nada.
       </div>
 
-      <div className="mt-10 space-y-12">
-        <PersonalDataSection />
-        <AddressesSection />
-        <OrdersSection clienteId={session.user.id} />
-        <ReservationsSection clienteId={session.user.id} />
-        <EducationalDiscountSection />
-        <FavoritesSection />
+      <div className="mt-10 grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <ProfileNav active={apartado} onChange={setApartado} />
+        <div>
+          {apartado === 'datos' && <PersonalDataSection />}
+          {apartado === 'envio' && (
+            <AddressSection which="envio" title="Dirección de envío" />
+          )}
+          {apartado === 'facturacion' && (
+            <AddressSection which="facturacion" title="Dirección de facturación" />
+          )}
+          {apartado === 'pedidos' && <OrdersSection clienteId={session.user.id} />}
+          {apartado === 'reservas' && <ReservationsSection clienteId={session.user.id} />}
+          {apartado === 'descuento' && <EducationalDiscountSection />}
+          {apartado === 'favoritos' && <FavoritesSection />}
+        </div>
       </div>
 
       {!cliente && (
@@ -99,6 +122,46 @@ export function ProfilePage() {
         </p>
       )}
     </Container>
+  )
+}
+
+/**
+ * Menú de apartados. En escritorio es una columna a la izquierda; en
+ * móvil se convierte en una fila de pestañas desplazable, para no comerse
+ * la pantalla antes de llegar al contenido.
+ */
+function ProfileNav({
+  active,
+  onChange,
+}: {
+  active: Apartado
+  onChange: (next: Apartado) => void
+}) {
+  return (
+    <nav aria-label="Apartados de mi cuenta" className="lg:sticky lg:top-24 lg:self-start">
+      <ul className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
+        {APARTADOS.map((item) => {
+          const selected = item.id === active
+          return (
+            <li key={item.id} className="shrink-0 lg:shrink">
+              <button
+                type="button"
+                onClick={() => onChange(item.id)}
+                aria-current={selected ? 'page' : undefined}
+                className={
+                  'w-full cursor-pointer whitespace-nowrap rounded-[12px] px-4 py-2.5 text-left text-sm font-medium transition-colors lg:whitespace-normal ' +
+                  (selected
+                    ? 'bg-ink text-white'
+                    : 'text-ink hover:bg-neutral')
+                }
+              >
+                {item.label}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </nav>
   )
 }
 
@@ -195,21 +258,7 @@ function PersonalDataSection() {
   )
 }
 
-function AddressesSection() {
-  return (
-    <Section
-      title="Direcciones"
-      description="Se usan para rellenar el checkout más rápido."
-    >
-      <div className="grid gap-6 lg:grid-cols-2">
-        <AddressCard which="envio" title="Dirección de envío" />
-        <AddressCard which="facturacion" title="Dirección de facturación" />
-      </div>
-    </Section>
-  )
-}
-
-function AddressCard({
+function AddressSection({
   which,
   title,
 }: {
@@ -218,8 +267,13 @@ function AddressCard({
 }) {
   const { cliente, updateProfile } = useCustomerAuth()
   const stored = which === 'envio' ? cliente?.direccion_envio : cliente?.direccion_facturacion
+  // La "otra" dirección, para poder copiarla.
+  const otra = which === 'envio' ? cliente?.direccion_facturacion : cliente?.direccion_envio
+  const otraLabel = which === 'envio' ? 'facturación' : 'envío'
+
   const [address, setAddress] = useState<DbAddress>(EMPTY_ADDRESS)
   const [state, setState] = useState<SaveState>('idle')
+  const [copiedNotice, setCopiedNotice] = useState(false)
 
   useEffect(() => {
     setAddress(stored ?? EMPTY_ADDRESS)
@@ -227,11 +281,22 @@ function AddressCard({
 
   function set(patch: Partial<DbAddress>) {
     setAddress((prev) => ({ ...prev, ...patch }))
+    setState('idle')
+  }
+
+  // Copiar rellena el formulario pero NO guarda: así se puede ajustar
+  // algo (un piso distinto, por ejemplo) antes de confirmar.
+  function copiarDeLaOtra() {
+    if (!otra) return
+    setAddress(otra)
+    setState('idle')
+    setCopiedNotice(true)
   }
 
   async function save(event: React.FormEvent) {
     event.preventDefault()
     setState('saving')
+    setCopiedNotice(false)
     const isEmpty = Object.values(address).every((v) => !v.trim())
     const { error } = await updateProfile(
       which === 'envio'
@@ -241,64 +306,96 @@ function AddressCard({
     setState(error ? 'error' : 'saved')
   }
 
+  const otraTieneDatos = otra ? Object.values(otra).some((v) => v?.trim()) : false
+
   return (
-    <form
-      onSubmit={save}
-      className="rounded-[16px] border border-line bg-surface p-5 shadow-sm"
+    <Section
+      title={title}
+      description={
+        which === 'envio'
+          ? 'Se usa para rellenar el checkout más rápido.'
+          : 'La usamos en la factura del pedido.'
+      }
     >
-      <h3 className="font-semibold text-ink">{title}</h3>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <Field label="Calle y número" full>
-          {(props) => (
-            <input
-              {...props}
-              className="field"
-              value={address.calle}
-              onChange={(e) => set({ calle: e.target.value })}
-            />
-          )}
-        </Field>
-        <Field label="Ciudad">
-          {(props) => (
-            <input
-              {...props}
-              className="field"
-              value={address.ciudad}
-              onChange={(e) => set({ ciudad: e.target.value })}
-            />
-          )}
-        </Field>
-        <Field label="Isla">
-          {(props) => (
-            <input
-              {...props}
-              className="field"
-              value={address.isla}
-              onChange={(e) => set({ isla: e.target.value })}
-            />
-          )}
-        </Field>
-        <Field label="Código postal">
-          {(props) => (
-            <input
-              {...props}
-              className="field"
-              inputMode="numeric"
-              value={address.cp}
-              onChange={(e) => set({ cp: e.target.value })}
-            />
-          )}
-        </Field>
-      </div>
-      <div className="mt-4">
-        <Button type="submit" variant="secondary" disabled={state === 'saving'}>
-          Guardar dirección
-        </Button>
-        <div className="mt-2">
-          <SaveFeedback state={state} />
+      <form
+        onSubmit={save}
+        className="rounded-[16px] border border-line bg-surface p-5 shadow-sm"
+      >
+        {otraTieneDatos && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[12px] bg-neutral p-3">
+            <Button type="button" variant="secondary" size="sm" onClick={copiarDeLaOtra}>
+              Copiar dirección de {otraLabel}
+            </Button>
+            <span role="status" aria-live="polite" className="text-xs text-muted">
+              {copiedNotice
+                ? 'Copiada. Revísala y pulsa Guardar.'
+                : 'Rellena este formulario con la otra dirección.'}
+            </span>
+          </div>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Calle y número" full>
+            {(props) => (
+              <input
+                {...props}
+                className="field"
+                autoComplete={which === 'envio' ? 'shipping street-address' : 'billing street-address'}
+                value={address.calle}
+                onChange={(e) => set({ calle: e.target.value })}
+              />
+            )}
+          </Field>
+          <Field label="Ciudad">
+            {(props) => (
+              <input
+                {...props}
+                className="field"
+                value={address.ciudad}
+                onChange={(e) => set({ ciudad: e.target.value })}
+              />
+            )}
+          </Field>
+          <Field label="Isla">
+            {(props) => (
+              <select
+                {...props}
+                className="field"
+                value={address.isla}
+                onChange={(e) => set({ isla: e.target.value })}
+              >
+                <option value="">Selecciona una isla</option>
+                {ISLAS.map((isla) => (
+                  <option key={isla} value={isla}>
+                    {isla}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+          <Field label="Código postal">
+            {(props) => (
+              <input
+                {...props}
+                className="field"
+                inputMode="numeric"
+                value={address.cp}
+                onChange={(e) => set({ cp: e.target.value })}
+              />
+            )}
+          </Field>
         </div>
-      </div>
-    </form>
+
+        <div className="mt-4">
+          <Button type="submit" disabled={state === 'saving'}>
+            Guardar dirección
+          </Button>
+          <div className="mt-2">
+            <SaveFeedback state={state} />
+          </div>
+        </div>
+      </form>
+    </Section>
   )
 }
 

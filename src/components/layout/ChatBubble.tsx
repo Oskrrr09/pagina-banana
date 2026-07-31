@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
 import { useVisitorChatSession } from '../../lib/chatSession'
+import { useCustomerAuth } from '../../lib/customerAuth'
 import type { DbMessage } from '../../lib/supabase'
 
 // Chat "Bananito" — burbuja del visitante.
@@ -103,8 +104,24 @@ export function ChatBubble() {
   const [visible, setVisible] = useState(false)
   const [input, setInput] = useState('')
 
+  // Si hay cuenta iniciada, el agente verá nombre y teléfono en vez de un
+  // identificador anónimo.
+  const { session: customerSession, cliente } = useCustomerAuth()
+  const identity = useMemo(
+    () =>
+      customerSession
+        ? {
+            clienteId: customerSession.user.id,
+            nombre: cliente?.nombre ?? null,
+            email: cliente?.email ?? customerSession.user.email ?? null,
+            telefono: cliente?.telefono ?? null,
+          }
+        : null,
+    [customerSession, cliente],
+  )
+
   // Sesión de Supabase — se inicializa solo cuando el chat se abre.
-  const session = useVisitorChatSession(open)
+  const session = useVisitorChatSession(open, identity)
   const supabaseMessages: UIMessage[] = session.messages.map(toUIMessage)
 
   // Estado del modo demo (fallback cuando no hay credenciales).

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
@@ -7,7 +7,7 @@ import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { Chip } from '../components/ui/Chip'
 import { useStore } from '../lib/store'
-import { useCheckoutState } from '../lib/checkoutState'
+import { ISLAS, useCheckoutState, formatAddressLine } from '../lib/checkoutState'
 import { useCustomerAuth } from '../lib/customerAuth'
 import { createReservationsFromCart, isReservationLine } from '../lib/reservations'
 import { mirrorOrderToSupabase } from '../lib/orderSync'
@@ -39,7 +39,7 @@ export function CheckoutPage() {
     insurancePrice,
   } = useStore()
   const { delivery, setDelivery, form, setForm, step1Valid, validateStep1 } = useCheckoutState()
-  const { session: customerSession } = useCustomerAuth()
+  const { session: customerSession, cliente } = useCustomerAuth()
 
   // El carrito puede llevar compras normales, reservas de productos sin
   // stock, o ambas cosas a la vez.
@@ -64,6 +64,33 @@ export function CheckoutPage() {
   useEffect(() => {
     if (current === 3 && confirmedOrder && cart.length > 0) clearCart()
   }, [current, confirmedOrder, cart.length, clearCart])
+
+  // Con sesión iniciada, rellenamos el formulario con los datos del perfil.
+  // Solo tocamos los campos vacíos: si el usuario ya ha escrito algo (o
+  // vuelve atrás desde el paso 2), no se le pisa. Se hace una sola vez por
+  // montaje para que borrar un campo a propósito no lo repueble.
+  const prefilled = useRef(false)
+  useEffect(() => {
+    if (prefilled.current || !cliente) return
+    const patch: Partial<typeof form> = {}
+    if (!form.nombre.trim() && cliente.nombre) patch.nombre = cliente.nombre
+    if (!form.email.trim() && cliente.email) patch.email = cliente.email
+
+    const envio = cliente.direccion_envio
+    if (envio) {
+      if (!form.direccion.trim()) {
+        const linea = formatAddressLine(envio)
+        if (linea) patch.direccion = linea
+      }
+      // Solo si es una de las islas que ofrece el selector.
+      if (envio.isla && (ISLAS as readonly string[]).includes(envio.isla)) {
+        patch.isla = envio.isla
+      }
+    }
+
+    if (Object.keys(patch).length > 0) setForm(patch)
+    prefilled.current = true
+  }, [cliente, form, setForm])
 
   // --- Guardas de navegación (después de todos los hooks) ---
   // Paso 3: exige un pedido demostrativo real creado en esta sesión.
@@ -231,13 +258,9 @@ export function CheckoutPage() {
                         onChange={(e) => setForm({ isla: e.target.value })}
                         className="field"
                       >
-                        <option>Gran Canaria</option>
-                        <option>Tenerife</option>
-                        <option>Lanzarote</option>
-                        <option>Fuerteventura</option>
-                        <option>La Palma</option>
-                        <option>La Gomera</option>
-                        <option>El Hierro</option>
+                        {ISLAS.map((isla) => (
+                          <option key={isla}>{isla}</option>
+                        ))}
                       </select>
                     </Field>
                   </>

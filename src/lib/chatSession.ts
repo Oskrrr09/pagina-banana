@@ -58,15 +58,51 @@ function writeStored(key: string, value: string) {
   }
 }
 
+/**
+ * Identidad del cliente cuando escribe con la sesión iniciada, para que el
+ * agente vea con quién habla en vez de un UUID.
+ */
+export interface VisitorIdentity {
+  clienteId: string
+  nombre: string | null
+  email: string | null
+  telefono: string | null
+}
+
 // Asegura que existe un visitante en Supabase para este navegador. Devuelve
 // el UUID. La primera vez inserta la fila; después reutiliza el guardado.
-async function ensureVisitor(): Promise<string> {
+//
+// Si el visitante tiene cuenta, se le pega la identidad a la fila. Se hace
+// también sobre filas ya existentes: alguien puede haber usado el chat como
+// anónimo y registrarse después, y a partir de ese momento el agente debe
+// verle identificado.
+async function ensureVisitor(identity: VisitorIdentity | null): Promise<string> {
   if (!supabase) throw new Error('Supabase no configurado')
+
+  const identityFields = identity
+    ? {
+        cliente_id: identity.clienteId,
+        nombre: identity.nombre,
+        email: identity.email,
+        telefono: identity.telefono,
+      }
+    : {}
+
   const stored = readStored(VISITOR_STORAGE_KEY)
-  if (stored) return stored
+  if (stored) {
+    if (identity) {
+      const { error } = await supabase
+        .from('visitantes')
+        .update(identityFields)
+        .eq('id', stored)
+      if (error) console.error('[chatSession] no se pudo identificar al visitante', error)
+    }
+    return stored
+  }
+
   const { data, error } = await supabase
     .from('visitantes')
-    .insert({ user_agent: navigator.userAgent })
+    .insert({ user_agent: navigator.userAgent, ...identityFields })
     .select('id')
     .single()
   if (error) throw error
@@ -115,7 +151,10 @@ async function ensureConversation(visitorId: string): Promise<string> {
   return created.id
 }
 
-export function useVisitorChatSession(active: boolean): ChatSession {
+export function useVisitorChatSession(
+  active: boolean,
+  identity: VisitorIdentity | null = null,
+): ChatSession {
   const [status, setStatus] = useState<Status>(
     supabaseEnabled ? 'loading' : 'demo',
   )
@@ -139,7 +178,7 @@ export function useVisitorChatSession(active: boolean): ChatSession {
     let cancelled = false
     ;(async () => {
       try {
-        const visitorId = await ensureVisitor()
+        const visitorId = await ensureVisitor(identity)
         const convId = await ensureConversation(visitorId)
         if (cancelled) return
         const { data, error } = await supabase!
@@ -161,7 +200,32 @@ export function useVisitorChatSession(active: boolean): ChatSession {
     return () => {
       cancelled = true
     }
+    // `identity` se omite a propósito: el efecto solo inicializa una vez.
+    // Los cambios de sesión posteriores los recoge el efecto de abajo.
   }, [active, conversationId])
+
+  // Si el visitante inicia sesión con el chat ya abierto, le pegamos la
+  // identidad a su fila para que el agente deje de ver un UUID anónimo.
+  const clienteId = identity?.clienteId ?? null
+  useEffect(() => {
+    if (!supabase || !clienteId) return
+    const visitorId = readStored(VISITOR_STORAGE_KEY)
+    if (!visitorId) return
+    void supabase
+      .from('visitantes')
+      .update({
+        cliente_id: clienteId,
+        nombre: identity?.nombre ?? null,
+        email: identity?.email ?? null,
+        telefono: identity?.telefono ?? null,
+      })
+      .eq('id', visitorId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('[chatSession] no se pudo identificar al visitante', error)
+        }
+      })
+  }, [clienteId, identity?.nombre, identity?.email, identity?.telefono])
 
   // Suscripción realtime a los mensajes de esta conversación.
   useEffect(() => {
@@ -224,7 +288,12 @@ export interface InboxItem {
   lastMessage: DbMessage | null
 }
 
-export function useAgentInbox(): {
+/**
+ * Bandeja del agente. `estado` separa las conversaciones activas de las
+ * archivadas; se filtra en la consulta y no en cliente para que el límite
+ * de 50 no se lo coman las cerradas cuando el archivo crezca.
+ */
+export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
   items: InboxItem[]
   status: Status
 } {
@@ -238,6 +307,7 @@ export function useAgentInbox(): {
     const { data: convs, error } = await supabaseAgent
       .from('conversaciones')
       .select('*')
+      .eq('estado', estado)
       .order('ultimo_mensaje_at', { ascending: false, nullsFirst: false })
       .limit(50)
     if (error) {
@@ -267,7 +337,7 @@ export function useAgentInbox(): {
       })),
     )
     setStatus('ready')
-  }, [])
+  }, [estado])
 
   useEffect(() => {
     if (!supabaseEnabled) return
@@ -377,9 +447,15 @@ export function useAgentConversation(conversationId: string | null): {
   const sendMessage = useCallback(
     async (texto: string) => {
       if (!supabaseAgent || !conversationId) return
+      const { data: auth } = await supabaseAgent.auth.getUser()
       const { data, error } = await supabaseAgent
         .from('mensajes')
-        .insert({ conversacion_id: conversationId, autor: 'agent', texto })
+        .insert({
+          conversacion_id: conversationId,
+          autor: 'agent',
+          texto,
+          agente_id: auth.user?.id ?? null,
+        })
         .select('*')
         .single()
       if (error) {
@@ -392,6 +468,27 @@ export function useAgentConversation(conversationId: string | null): {
   )
 
   return { messages, sendMessage, status }
+}
+
+/**
+ * Cierra o reabre una conversación. El visitante que tenga esa
+ * conversación guardada empezará una nueva cuando vuelva a escribir, ya
+ * que `ensureConversation` solo reutiliza las que están 'abierta'.
+ */
+export async function setConversationState(
+  conversationId: string,
+  estado: 'abierta' | 'cerrada',
+): Promise<{ error: string | null }> {
+  if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
+  const { error } = await supabaseAgent
+    .from('conversaciones')
+    .update({ estado })
+    .eq('id', conversationId)
+  if (error) {
+    console.error('[setConversationState] error', error)
+    return { error: error.message }
+  }
+  return { error: null }
 }
 
 /**
@@ -412,6 +509,35 @@ export async function assignConversation(
     return { error: error.message }
   }
   return { error: null }
+}
+
+/**
+ * Nombres de los agentes indexados por id, para poder firmar cada
+ * respuesta del historial. Son 2-3 filas, así que se cargan de una vez.
+ */
+export function useAgentNames(): Record<string, string> {
+  const [names, setNames] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!supabaseAgent) return
+    let active = true
+    void supabaseAgent
+      .from('agentes')
+      .select('id, nombre')
+      .then(({ data, error }) => {
+        if (!active || error || !data) return
+        setNames(
+          Object.fromEntries(
+            (data as { id: string; nombre: string }[]).map((a) => [a.id, a.nombre]),
+          ),
+        )
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return names
 }
 
 /**

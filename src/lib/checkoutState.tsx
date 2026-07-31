@@ -17,6 +17,22 @@ export interface CheckoutForm {
   tienda: string
 }
 
+/**
+ * Islas a las que se envía. Vive aquí porque la comparten el checkout y
+ * las direcciones del perfil: si el perfil guardara una isla que el
+ * checkout no ofrece, el rellenado automático dejaría el select en un
+ * valor imposible.
+ */
+export const ISLAS = [
+  'Gran Canaria',
+  'Tenerife',
+  'Lanzarote',
+  'Fuerteventura',
+  'La Palma',
+  'La Gomera',
+  'El Hierro',
+] as const
+
 export type CheckoutStep = 1 | 2 | 3
 
 interface CheckoutState {
@@ -37,6 +53,21 @@ const emptyForm: CheckoutForm = {
   direccion: '',
   isla: 'Gran Canaria',
   tienda: 'triana',
+}
+
+/**
+ * Aplana una dirección del perfil en la única línea de texto que pide el
+ * checkout. Omite las partes vacías para no dejar comas sueltas.
+ */
+export function formatAddressLine(address: {
+  calle?: string
+  cp?: string
+  ciudad?: string
+}): string {
+  return [address.calle, address.cp, address.ciudad]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(', ')
 }
 
 const CheckoutContext = createContext<CheckoutState | null>(null)

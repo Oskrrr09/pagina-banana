@@ -46,6 +46,9 @@ export interface DbVisitor {
   nombre: string | null
   email: string | null
   user_agent: string | null
+  /** Cuenta del cliente, si escribió con la sesión iniciada. */
+  cliente_id: string | null
+  telefono: string | null
 }
 
 export interface DbConversation {
@@ -63,6 +66,8 @@ export interface DbMessage {
   conversacion_id: string
   autor: 'visitor' | 'agent' | 'bot'
   texto: string
+  /** Agente que escribió la respuesta. Null en mensajes de visitante o bot. */
+  agente_id: string | null
 }
 
 // ---- Cuentas (Fase 2) ------------------------------------------------

@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { supabaseEnabled, type AgentStatus, type DbCustomer } from '../lib/supabase'
 import {
   assignConversation,
+  setConversationState,
   useAgentConversation,
   useAgentInbox,
+  useAgentNames,
   useConversationVisitor,
   type InboxItem,
 } from '../lib/chatSession'
@@ -26,8 +28,24 @@ import {
 // - Realtime: los mensajes nuevos aparecen sin refrescar.
 
 const BANANA_BLUE = '#0768A9'
+// Versión pastel del azul del nav, para las respuestas automáticas de
+// Bananito: mismo tono, mucha menos saturación, así se distinguen de un
+// vistazo de lo que ha escrito una persona sin salirse de la paleta.
+const BANANA_BLUE_PASTEL = '#cfe4f5'
 const BANANA_YELLOW = '#ffce1f'
 const BANANITO_IMG = `${import.meta.env.BASE_URL}img/chat/bananito-square.png`
+const CHAT_BG_PATTERN = `${import.meta.env.BASE_URL}img/chat/pattern-bananas.png`
+
+// Mismo fondo que la burbuja de la web. Allí el patrón mide el 55% de un
+// panel de ~352px, así que aquí lo fijamos en píxeles para que se vea a la
+// misma escala aunque esta columna sea mucho más ancha.
+const CHAT_BACKGROUND = {
+  backgroundColor: '#fdf6e0',
+  backgroundImage: `url(${CHAT_BG_PATTERN})`,
+  backgroundRepeat: 'repeat',
+  backgroundSize: '190px auto',
+  backgroundPosition: 'top left',
+} as const
 
 function shortId(id: string): string {
   return id.slice(0, 8)
@@ -50,8 +68,9 @@ type Tab = 'conversaciones' | 'descuentos'
 export function AgentPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('conversaciones')
+  const [bandeja, setBandeja] = useState<Bandeja>('abierta')
   const { session, agente, loading } = useAgentAuth()
-  const inbox = useAgentInbox()
+  const inbox = useAgentInbox(bandeja)
 
   // Selección automática de la conversación más reciente al cargar.
   useEffect(() => {
@@ -95,10 +114,17 @@ export function AgentPage() {
             status={inbox.status}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            bandeja={bandeja}
+            onBandejaChange={(next) => {
+              setBandeja(next)
+              // La conversación abierta puede no estar en la otra bandeja.
+              setSelectedId(null)
+            }}
           />
           <ConversationColumn
             conversationId={selectedId}
             assignedTo={selected?.conversation.agente_id ?? null}
+            estado={selected?.conversation.estado ?? 'abierta'}
           />
           <VisitorColumn conversationId={selectedId} />
         </div>
@@ -108,6 +134,8 @@ export function AgentPage() {
     </div>
   )
 }
+
+type Bandeja = 'abierta' | 'cerrada'
 
 const ESTADOS: { value: AgentStatus; label: string; dot: string }[] = [
   { value: 'disponible', label: 'Disponible', dot: 'bg-green-600' },
@@ -224,11 +252,15 @@ function InboxColumn({
   status,
   selectedId,
   onSelect,
+  bandeja,
+  onBandejaChange,
 }: {
   items: InboxItem[]
   status: 'loading' | 'ready' | 'demo' | 'error'
   selectedId: string | null
   onSelect: (id: string) => void
+  bandeja: Bandeja
+  onBandejaChange: (next: Bandeja) => void
 }) {
   return (
     <aside className="flex w-80 shrink-0 flex-col border-r border-line bg-surface">
@@ -236,6 +268,26 @@ function InboxColumn({
         <h2 className="text-sm font-semibold text-ink">Conversaciones</h2>
         <span className="text-xs text-ink/60">{items.length}</span>
       </div>
+
+      <div
+        role="tablist"
+        aria-label="Bandeja de conversaciones"
+        className="flex gap-1 border-b border-line px-3 py-2"
+      >
+        <BandejaTab
+          active={bandeja === 'abierta'}
+          onClick={() => onBandejaChange('abierta')}
+        >
+          Abiertas
+        </BandejaTab>
+        <BandejaTab
+          active={bandeja === 'cerrada'}
+          onClick={() => onBandejaChange('cerrada')}
+        >
+          Archivadas
+        </BandejaTab>
+      </div>
+
       <div className="flex-1 overflow-y-auto">
         {status === 'loading' && (
           <p className="p-4 text-sm text-ink/60">Cargando…</p>
@@ -245,8 +297,9 @@ function InboxColumn({
         )}
         {status === 'ready' && items.length === 0 && (
           <p className="p-4 text-sm text-ink/60">
-            Aún no hay conversaciones. Abre la web como visitante y escribe algo desde
-            la burbuja de Bananito.
+            {bandeja === 'abierta'
+              ? 'No hay conversaciones abiertas. Abre la web como visitante y escribe algo desde la burbuja de Bananito.'
+              : 'No hay conversaciones archivadas todavía.'}
           </p>
         )}
         <ul>
@@ -297,17 +350,47 @@ function InboxColumn({
   )
 }
 
+function BandejaTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={
+        'flex-1 cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ' +
+        (active ? 'bg-ink text-white' : 'text-ink/70 hover:bg-neutral')
+      }
+    >
+      {children}
+    </button>
+  )
+}
+
 function ConversationColumn({
   conversationId,
   assignedTo,
+  estado,
 }: {
   conversationId: string | null
   assignedTo: string | null
+  estado: 'abierta' | 'cerrada'
 }) {
   const { messages, sendMessage, status } = useAgentConversation(conversationId)
+  const { visitor } = useConversationVisitor(conversationId)
+  const agentNames = useAgentNames()
   const { agente } = useAgentAuth()
   const [input, setInput] = useState('')
   const [assigning, setAssigning] = useState(false)
+  const [closing, setClosing] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -316,13 +399,12 @@ function ConversationColumn({
     el.scrollTop = el.scrollHeight
   }, [messages])
 
-  const visitorLabel = useMemo(() => {
-    if (!conversationId) return ''
-    const visitorMsg = messages.find((m) => m.autor === 'visitor')
-    return visitorMsg
+  // Con cuenta iniciada mostramos quién es; si no, un identificador corto.
+  const visitorLabel = visitor?.nombre?.trim()
+    ? visitor.nombre
+    : conversationId
       ? `Visitante ${shortId(conversationId)}`
-      : `Visitante ${shortId(conversationId)}`
-  }, [conversationId, messages])
+      : ''
 
   if (!conversationId) {
     return (
@@ -345,12 +427,20 @@ function ConversationColumn({
 
   const mine = assignedTo != null && assignedTo === agente?.id
   const takenByOther = assignedTo != null && assignedTo !== agente?.id
+  const cerrada = estado === 'cerrada'
 
   const toggleAssign = async () => {
     if (!conversationId || !agente) return
     setAssigning(true)
     await assignConversation(conversationId, mine ? null : agente.id)
     setAssigning(false)
+  }
+
+  const toggleEstado = async () => {
+    if (!conversationId) return
+    setClosing(true)
+    await setConversationState(conversationId, cerrada ? 'abierta' : 'cerrada')
+    setClosing(false)
   }
 
   return (
@@ -363,7 +453,21 @@ function ConversationColumn({
           <img src={BANANITO_IMG} alt="" className="h-7 w-7 object-contain" />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-ink">{visitorLabel}</p>
+          <p className="truncate text-sm font-semibold text-ink">
+            {visitorLabel}
+            {visitor?.cliente_id && (
+              <span className="ml-2 rounded-full bg-available-050 px-2 py-0.5 text-[10px] font-semibold text-available">
+                Registrado
+              </span>
+            )}
+          </p>
+          {visitor?.telefono && (
+            <p className="truncate text-xs text-ink/70">
+              <a href={`tel:${visitor.telefono}`} className="hover:underline">
+                {visitor.telefono}
+              </a>
+            </p>
+          )}
           <p className="text-xs text-ink/60">
             Canal: web ·{' '}
             {mine
@@ -371,19 +475,34 @@ function ConversationColumn({
               : takenByOther
                 ? 'Asignada a otro agente'
                 : 'Sin asignar'}
+            {cerrada && ' · Archivada'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void toggleAssign()}
-          disabled={assigning || takenByOther}
-          className="ml-auto shrink-0 cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {mine ? 'Soltar' : 'Asignarme'}
-        </button>
+        <div className="ml-auto flex shrink-0 gap-2">
+          <button
+            type="button"
+            onClick={() => void toggleAssign()}
+            disabled={assigning || takenByOther}
+            className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {mine ? 'Soltar' : 'Asignarme'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void toggleEstado()}
+            disabled={closing}
+            className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {cerrada ? 'Reabrir' : 'Cerrar'}
+          </button>
+        </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-6 py-6">
+      <div
+        ref={scrollRef}
+        className="flex-1 space-y-3 overflow-y-auto px-6 py-6"
+        style={CHAT_BACKGROUND}
+      >
         {status === 'loading' && (
           <p className="text-center text-xs text-ink/60">Cargando historial…</p>
         )}
@@ -393,66 +512,95 @@ function ConversationColumn({
           </p>
         )}
         {messages.map((m) => {
-          const side =
-            m.autor === 'visitor' ? 'left' : m.autor === 'agent' ? 'right' : 'left'
+          // Aquí manda el punto de vista del AGENTE, al revés que en la
+          // burbuja de la web: todo lo que sale de Banana (agente y también
+          // Bananito, que responde en su nombre) va a la derecha en azul del
+          // nav; el cliente va a la izquierda.
           const isAgent = m.autor === 'agent'
           const isBot = m.autor === 'bot'
+          const deBanana = isAgent || isBot
+
+          const autorNombre = isAgent
+            ? m.agente_id
+              ? (agentNames[m.agente_id] ?? 'Agente')
+              : 'Agente'
+            : isBot
+              ? 'Bananito · automático'
+              : (visitor?.nombre?.trim() || 'Visitante')
+
           return (
             <div
               key={m.id}
-              className={side === 'right' ? 'flex justify-end' : 'flex items-end gap-2'}
+              className={deBanana ? 'flex justify-end' : 'flex items-end gap-2'}
             >
-              {side === 'left' && (
+              {!deBanana && (
                 <span
-                  className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full"
-                  style={{ background: isBot ? BANANA_BLUE : '#c9c9cf' }}
+                  className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#c9c9cf]"
+                  aria-hidden
                 >
-                  {isBot ? (
-                    <img src={BANANITO_IMG} alt="" className="h-6 w-6 object-contain" />
-                  ) : (
-                    <span className="text-[10px] font-bold text-white">V</span>
-                  )}
+                  <span className="text-[10px] font-bold text-white">
+                    {(visitor?.nombre?.trim()?.[0] ?? 'V').toUpperCase()}
+                  </span>
                 </span>
               )}
-              <div
-                className={
-                  'max-w-[70%] whitespace-pre-wrap break-words rounded-[16px] px-3.5 py-2 text-sm shadow-sm ' +
-                  (isAgent
-                    ? 'rounded-br-[4px] text-white'
-                    : 'rounded-bl-[4px] bg-surface text-ink')
-                }
-                style={isAgent ? { background: BANANA_BLUE } : undefined}
-              >
-                {m.texto}
+              <div className={'max-w-[70%] ' + (deBanana ? 'text-right' : '')}>
+                <p className="mb-0.5 px-1 text-[11px] font-medium text-ink/60">
+                  {autorNombre}
+                </p>
+                <div
+                  className={
+                    'inline-block whitespace-pre-wrap break-words rounded-[16px] px-3.5 py-2 text-left text-sm shadow-sm ' +
+                    (deBanana
+                      ? 'rounded-br-[4px]'
+                      : 'rounded-bl-[4px] bg-surface text-ink') +
+                    // Sobre el azul pastel del bot el texto blanco no se
+                    // leería, así que ahí va en tinta.
+                    (deBanana ? (isBot ? ' text-ink' : ' text-white') : '')
+                  }
+                  style={
+                    deBanana
+                      ? { background: isBot ? BANANA_BLUE_PASTEL : BANANA_BLUE }
+                      : undefined
+                  }
+                >
+                  {m.texto}
+                </div>
               </div>
             </div>
           )
         })}
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          void submit()
-        }}
-        className="flex items-center gap-2 border-t border-line bg-surface px-6 py-4"
-      >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Responde al visitante…"
-          aria-label="Responder al visitante"
-          className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30"
-        />
-        <button
-          type="submit"
-          disabled={!input.trim()}
-          className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: BANANA_BLUE }}
+      {cerrada ? (
+        <div className="border-t border-line bg-surface px-6 py-4 text-sm text-ink/60">
+          Conversación archivada. Reábrela para poder responder; si el visitante
+          vuelve a escribir se le abrirá una conversación nueva.
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void submit()
+          }}
+          className="flex items-center gap-2 border-t border-line bg-surface px-6 py-4"
         >
-          Enviar
-        </button>
-      </form>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Responde al visitante…"
+            aria-label="Responder al visitante"
+            className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim()}
+            className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: BANANA_BLUE }}
+          >
+            Enviar
+          </button>
+        </form>
+      )}
     </main>
   )
 }
@@ -479,6 +627,18 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
           <>
             <dl className="space-y-3">
               <div>
+                <dt className="text-xs text-ink/60">Cuenta</dt>
+                <dd className="text-ink">
+                  {visitor?.cliente_id ? (
+                    <span className="rounded-full bg-available-050 px-2 py-0.5 text-xs font-semibold text-available">
+                      Cliente registrado
+                    </span>
+                  ) : (
+                    <span className="text-ink/70">Visitante sin cuenta</span>
+                  )}
+                </dd>
+              </div>
+              <div>
                 <dt className="text-xs text-ink/60">Identificador</dt>
                 <dd className="font-mono text-xs text-ink">
                   {visitor ? shortId(visitor.id) : '—'}
@@ -487,6 +647,18 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
               <div>
                 <dt className="text-xs text-ink/60">Nombre</dt>
                 <dd className="text-ink">{visitor?.nombre ?? 'No facilitado'}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-ink/60">Teléfono</dt>
+                <dd className="text-ink">
+                  {visitor?.telefono ? (
+                    <a href={`tel:${visitor.telefono}`} className="hover:underline">
+                      {visitor.telefono}
+                    </a>
+                  ) : (
+                    'No facilitado'
+                  )}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-ink/60">Email</dt>
@@ -525,10 +697,12 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
               )}
             </div>
 
-            <p className="mt-6 text-xs text-ink/50">
-              El visitante del chat no se identifica con cuenta todavía, así que
-              nombre y email solo aparecen si los ha escrito él.
-            </p>
+            {!visitor?.cliente_id && (
+              <p className="mt-6 text-xs text-ink/50">
+                Este visitante escribió sin iniciar sesión, así que solo sabemos
+                lo que él mismo haya contado.
+              </p>
+            )}
           </>
         )}
       </div>

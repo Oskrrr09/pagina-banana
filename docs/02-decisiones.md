@@ -381,6 +381,52 @@ No atribuye motivaciones que el repositorio no documenta.
 - Consecuencia: los agentes tienen `select` sobre `clientes` (necesario
   para ver la cola de solicitudes) pero ningún `update`.
 
+## D-032 — En el panel, Bananito va del lado de Banana
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: en `/agente` los mensajes se ordenan desde el punto de vista
+  del agente: todo lo que sale de Banana (respuestas del agente **y** del
+  bot Bananito) va a la derecha en azul del nav; el cliente va a la
+  izquierda. En la burbuja de la web es al revés, porque allí el "tú" es
+  el visitante.
+- Motivo: antes el bot se pintaba a la izquierda, junto al cliente, y
+  desde el panel parecía que las respuestas automáticas las mandaba la
+  otra parte. Es el mismo criterio que usan las consolas de soporte al
+  uso.
+- Matiz: el bot usa una versión pastel del mismo azul (`#cfe4f5`) y la
+  etiqueta "Bananito · automático", para distinguir de un vistazo lo
+  automático de lo que ha escrito una persona. Sobre ese pastel el texto
+  va en tinta, no en blanco, que no tendría contraste suficiente.
+
+## D-033 — El chat identifica al cliente si tiene sesión
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: cuando alguien con la sesión iniciada usa el chat, se guarda
+  su `cliente_id`, nombre, email y teléfono en su fila de `visitantes`.
+  Se hace también sobre visitantes que ya existían, porque alguien puede
+  haber escrito como anónimo y registrarse después.
+- Consecuencia: el agente ve con quién habla y puede llamarle. Los
+  visitantes sin cuenta siguen funcionando igual, con `cliente_id` nulo y
+  un aviso en la ficha de que solo sabemos lo que él haya contado.
+- Evidencia: `ensureVisitor` en `src/lib/chatSession.ts`, columnas nuevas
+  en `supabase/schema.sql`.
+
+## D-034 — Conversaciones archivables, no borrables
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: el agente cierra conversaciones (`estado = 'cerrada'`) y las
+  consulta en una bandeja "Archivadas" aparte, desde donde puede
+  reabrirlas. No se borra nada.
+- Consecuencia: si el visitante vuelve a escribir tras un cierre, se le
+  abre una conversación nueva, porque `ensureConversation` solo reutiliza
+  las que están abiertas. El historial anterior sigue accesible desde la
+  ficha del visitante.
+- Nota de implementación: el filtro va en la consulta, no en cliente, para
+  que el límite de 50 no se lo coman las cerradas según crezca el archivo.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y
