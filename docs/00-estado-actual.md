@@ -14,12 +14,13 @@ actualizado: 2026-07-31
 
 ## Fase 2 — cuentas, reservas y panel con auth (2026-07-31)
 
-> [!warning] Pendiente de aplicar el esquema
-> El SQL de `supabase/schema.sql` **todavía no se ha ejecutado** contra
-> Supabase (no hay Postgres ni Docker en el entorno local, así que no se
-> ha podido validar). Hasta hacerlo, el login de agentes y el registro de
-> clientes no funcionan. Ver
-> [[04-problemas-pendientes#CUENTAS-001 — El esquema SQL no se ha ejecutado todavía]].
+> [!check] Esquema aplicado y verificado el 2026-07-31
+> Oscar ejecutó `supabase/schema.sql` completo (las dos tandas). Se
+> comprobó contra la base de datos real, vía la API REST, que existen las
+> tablas y columnas nuevas, que las funciones responden, y que un
+> anónimo **no** puede escribir como agente (`42501`), aprobar descuentos
+> ni borrar conversaciones. El bucket de justificantes es privado. Ver
+> [[04-problemas-pendientes#CUENTAS-004 — Segunda tanda de SQL pendiente de ejecutar]].
 
 Todo lo de esta sección es **demostrativo, con cuentas ficticias**: no
 hay agentes ni clientes reales de Banana, ni cobros. Ver
@@ -47,8 +48,38 @@ hay agentes ni clientes reales de Banana, ni cobros. Ver
   exactamente como antes, contra `sessionStorage`. El espejo en Supabase
   solo ocurre con sesión iniciada, y si falla no rompe la compra.
 
-Pasos manuales que quedan por hacer en el panel de Supabase: ejecutar el
-esquema, dar de alta los agentes ficticios y desactivar "Confirm email".
+## Chat — identidad, valoración y archivo (2026-07-31)
+
+Segunda mitad de la sesión de Fase 2, ya con el esquema aplicado:
+
+- **El chat anónimo pide nombre y email** antes de empezar. El motivo es
+  poder avisar por correo de la respuesta si la persona cierra la
+  ventana; el aviso por email **todavía no existe**
+  ([[04-problemas-pendientes#CHAT-002 — El aviso por email al visitante no existe]]),
+  y el formulario lo dice para no prometerlo. Con sesión iniciada no se
+  pregunta nada: se toman los datos de la cuenta.
+- **El panel muestra el nombre, no el UUID.** `visitorDisplayName()`
+  centraliza la regla (nombre con inicial en mayúscula → email → como
+  último recurso `Visitante xxxxxxxx`) y la usan los cinco sitios que
+  antes lo resolvían cada uno por su cuenta.
+- **Cierre con valoración opcional.** Al cerrar, el agente elige entre
+  cerrar sin más o pedir una valoración de 1 a 5 estrellas con
+  observación. Si no la pide, el cliente solo ve que el chat se cerró.
+- **Borrado permanente** de conversaciones archivadas, con confirmación
+  previa. Reservado a agentes por RLS.
+- **El cliente puede volver a escribir sin recargar** cuando su
+  conversación se cierra
+  ([[02-decisiones#D-038 — El visitante puede abrir otra conversación sin recargar]]).
+- **Mensajes por lado**: cliente a la izquierda; agente a la derecha en
+  el azul del nav; Bananito también a la derecha pero en azul pastel con
+  texto oscuro, para distinguir el bot de la persona sin perder
+  contraste.
+- El perfil de cliente pasa a **menú lateral** con las secciones en el
+  orden que pidió Oscar, cada dirección puede copiarse de la otra, y el
+  checkout se rellena solo con los datos de la cuenta.
+
+Pasos manuales que quedan por hacer en el panel de Supabase: dar de alta
+los agentes ficticios que falten y desactivar "Confirm email".
 
 ## Referencia actual
 
@@ -118,15 +149,20 @@ esquema, dar de alta los agentes ficticios y desactivar "Confirm email".
   Supabase: los mensajes persisten y llegan en tiempo real al panel de
   agentes `/agente`. Cae al modo canned reply cuando no hay
   credenciales configuradas.
-- **Panel de agentes** en `/agente` (Fase 1, sin auth). Layout
-  full-screen con bandeja de las 50 conversaciones más recientes y
-  ventana de chat con historial + envío. Suscripción realtime a
-  `mensajes` y `conversaciones` sin necesidad de recargar.
+- **Panel de agentes** en `/agente`, **protegido con sesión** desde la
+  Fase 2: exige cuenta de Supabase dada de alta en `agentes`. Layout
+  full-screen con bandeja filtrable por estado (abiertas / archivadas),
+  ventana de chat con el mismo fondo de plátanos que el widget web,
+  ficha del visitante y pestaña de descuentos educativos. Suscripción
+  realtime a `mensajes`, `conversaciones` y `visitantes` sin recargar.
 - **Backend Supabase** en región EU (Postgres 17 estándar).
   Esquema versionado en `supabase/schema.sql`: `visitantes`,
-  `conversaciones`, `mensajes` con RLS activa (políticas abiertas al
-  rol `anon` en Fase 1). Ver
-  [[02-decisiones#D-023 — Backend en Supabase (Fase 1)]] y
+  `conversaciones`, `mensajes`, `agentes`, `clientes`, `pedidos` y
+  `reservas`, todas con RLS activa. Escribir como agente, asignarse
+  conversaciones, aprobar descuentos y borrar exigen `auth.uid()`
+  presente en `agentes`; la **lectura** de las tres tablas del chat
+  sigue abierta al rol `anon` porque el widget del visitante no tiene
+  login. Ver [[02-decisiones#D-023 — Backend en Supabase (Fase 1)]] y
   [[04-problemas-pendientes#CHAT-001 — /agente accesible por URL sin autenticación]].
 - Las tarjetas de producto reservan las mismas áreas para imagen, nombre y
   descripción, de modo que mantienen una altura alineada dentro de cada rejilla.

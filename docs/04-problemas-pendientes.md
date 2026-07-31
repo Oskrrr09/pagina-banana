@@ -1,6 +1,6 @@
 ---
 tipo: problemas
-actualizado: 2026-07-30
+actualizado: 2026-07-31
 ---
 
 # Problemas pendientes
@@ -389,9 +389,19 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## CUENTAS-004 — Segunda tanda de SQL pendiente de ejecutar
 
-- Estado: **abierto**. Ejecutado ya el bloque inicial (CUENTAS-001), el
-  archivo ha crecido con tres columnas nuevas que **todavía no están
-  aplicadas**:
+- Estado: **cerrado el 2026-07-31**. Oscar ejecutó el archivo completo.
+  Verificado contra la base de datos real por la API REST:
+  `visitantes.cliente_id`, `visitantes.telefono`, `mensajes.agente_id` y
+  las cinco columnas de valoración de `conversaciones` existen y
+  responden; la función `enviar_valoracion()` está publicada y rechaza
+  con su mensaje propio ("No hay ninguna valoración pendiente para esta
+  conversación") cuando no procede; un anónimo sigue sin poder escribir
+  como agente (`42501`) ni borrar conversaciones.
+- Comprobación de punta a punta: una conversación real del panel
+  (`2f2ebf4e`) quedó con `nombre`, `email`, `telefono` y `cliente_id`
+  rellenos, que es exactamente lo que la bandeja necesita para mostrar
+  el nombre en vez del UUID.
+- Historial de lo que faltaba por aplicar en ese momento:
   - `visitantes.cliente_id` y `visitantes.telefono` — enlazan el chat con
     la cuenta del cliente, para que el agente vea nombre y teléfono en
     vez de un UUID.
@@ -403,12 +413,14 @@ del repositorio. No se corrigen en la preparación documental.
     (`valoracion_solicitada`, `valoracion_estrellas`,
     `valoracion_observacion`, `valoracion_at`, `cerrada_at`), la función
     `enviar_valoracion()` y la política de borrado para agentes.
-- Qué hace falta: volver a ejecutar `supabase/schema.sql` entero. Es
-  idempotente, así que re-ejecutarlo no rompe lo ya creado.
-- Mientras no se aplique: el chat seguirá funcionando, pero el panel no
-  mostrará la identidad del cliente, los envíos de agente fallarán al
-  intentar escribir `agente_id` en una columna que no existe, y ni el
-  cierre con valoración ni el borrado funcionarán.
+- Nota de método: el archivo es idempotente, así que la forma de aplicar
+  cambios posteriores es volver a ejecutarlo entero, no ir escribiendo
+  `alter table` sueltos.
+- Queda un resto **de datos, no de esquema**: el agente de la demo sigue
+  llamándose "Ana (demo)". Se cambia con
+  `update public.agentes set nombre = 'Oscar' where email = 'ana.demo@banana.example';`.
+  No se puede verificar desde fuera porque la RLS oculta `agentes` al
+  rol anónimo.
 
 ## CUENTAS-001 — El esquema SQL no se ha ejecutado todavía
 
