@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   supabase,
+  supabaseAgent,
   supabaseEnabled,
   type DbConversation,
   type DbMessage,
+  type DbVisitor,
 } from './supabase'
 
 // ============================================================================
@@ -232,8 +234,8 @@ export function useAgentInbox(): {
   const [items, setItems] = useState<InboxItem[]>([])
 
   const reload = useCallback(async () => {
-    if (!supabase) return
-    const { data: convs, error } = await supabase
+    if (!supabaseAgent) return
+    const { data: convs, error } = await supabaseAgent
       .from('conversaciones')
       .select('*')
       .order('ultimo_mensaje_at', { ascending: false, nullsFirst: false })
@@ -247,7 +249,7 @@ export function useAgentInbox(): {
     const ids = (convs ?? []).map((c) => c.id)
     let lastByConv: Record<string, DbMessage> = {}
     if (ids.length > 0) {
-      const { data: msgs } = await supabase
+      const { data: msgs } = await supabaseAgent
         .from('mensajes')
         .select('*')
         .in('conversacion_id', ids)
@@ -276,8 +278,8 @@ export function useAgentInbox(): {
   // dispara una recarga. Para Fase 1 es suficiente (< 100 conversaciones);
   // luego optimizamos con updates parciales si hace falta.
   useEffect(() => {
-    if (!supabase) return
-    const channel = supabase
+    if (!supabaseAgent) return
+    const channel = supabaseAgent
       .channel('agent-inbox')
       .on(
         'postgres_changes',
@@ -295,7 +297,7 @@ export function useAgentInbox(): {
       )
       .subscribe()
     return () => {
-      supabase!.removeChannel(channel)
+      supabaseAgent!.removeChannel(channel)
     }
   }, [reload])
 
@@ -320,7 +322,7 @@ export function useAgentConversation(conversationId: string | null): {
   }, [])
 
   useEffect(() => {
-    if (!supabaseEnabled || !supabase) return
+    if (!supabaseEnabled || !supabaseAgent) return
     if (!conversationId) {
       setMessages([])
       seenIdsRef.current = new Set()
@@ -330,7 +332,7 @@ export function useAgentConversation(conversationId: string | null): {
     let cancelled = false
     setStatus('loading')
     ;(async () => {
-      const { data, error } = await supabase!
+      const { data, error } = await supabaseAgent!
         .from('mensajes')
         .select('*')
         .eq('conversacion_id', conversationId)
@@ -351,8 +353,8 @@ export function useAgentConversation(conversationId: string | null): {
   }, [conversationId])
 
   useEffect(() => {
-    if (!supabase || !conversationId) return
-    const channel = supabase
+    if (!supabaseAgent || !conversationId) return
+    const channel = supabaseAgent
       .channel(`agent-mensajes:${conversationId}`)
       .on(
         'postgres_changes',
@@ -368,14 +370,14 @@ export function useAgentConversation(conversationId: string | null): {
       )
       .subscribe()
     return () => {
-      supabase!.removeChannel(channel)
+      supabaseAgent!.removeChannel(channel)
     }
   }, [conversationId, appendMessage])
 
   const sendMessage = useCallback(
     async (texto: string) => {
-      if (!supabase || !conversationId) return
-      const { data, error } = await supabase
+      if (!supabaseAgent || !conversationId) return
+      const { data, error } = await supabaseAgent
         .from('mensajes')
         .insert({ conversacion_id: conversationId, autor: 'agent', texto })
         .select('*')
@@ -390,4 +392,85 @@ export function useAgentConversation(conversationId: string | null): {
   )
 
   return { messages, sendMessage, status }
+}
+
+/**
+ * Asigna (o libera, pasando null) una conversación a un agente.
+ * La suscripción realtime del inbox refresca la lista sola.
+ */
+export async function assignConversation(
+  conversationId: string,
+  agentId: string | null,
+): Promise<{ error: string | null }> {
+  if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
+  const { error } = await supabaseAgent
+    .from('conversaciones')
+    .update({ agente_id: agentId })
+    .eq('id', conversationId)
+  if (error) {
+    console.error('[assignConversation] error', error)
+    return { error: error.message }
+  }
+  return { error: null }
+}
+
+/**
+ * Ficha del visitante de una conversación: sus datos y el resto de
+ * conversaciones que ha tenido, para dar contexto al agente.
+ */
+export function useConversationVisitor(conversationId: string | null): {
+  visitor: DbVisitor | null
+  otherConversations: DbConversation[]
+  status: Status
+} {
+  const [visitor, setVisitor] = useState<DbVisitor | null>(null)
+  const [otherConversations, setOtherConversations] = useState<DbConversation[]>([])
+  const [status, setStatus] = useState<Status>(supabaseEnabled ? 'loading' : 'demo')
+
+  useEffect(() => {
+    if (!supabaseAgent || !conversationId) {
+      setVisitor(null)
+      setOtherConversations([])
+      setStatus(supabaseEnabled ? 'ready' : 'demo')
+      return
+    }
+    let cancelled = false
+    setStatus('loading')
+    ;(async () => {
+      const { data: conv, error: convError } = await supabaseAgent!
+        .from('conversaciones')
+        .select('visitor_id')
+        .eq('id', conversationId)
+        .maybeSingle()
+      if (cancelled) return
+      if (convError || !conv) {
+        setStatus('error')
+        return
+      }
+
+      const [{ data: v }, { data: otras }] = await Promise.all([
+        supabaseAgent!
+          .from('visitantes')
+          .select('*')
+          .eq('id', conv.visitor_id)
+          .maybeSingle(),
+        supabaseAgent!
+          .from('conversaciones')
+          .select('*')
+          .eq('visitor_id', conv.visitor_id)
+          .neq('id', conversationId)
+          .order('created_at', { ascending: false })
+          .limit(10),
+      ])
+      if (cancelled) return
+      setVisitor((v as DbVisitor | null) ?? null)
+      setOtherConversations((otras ?? []) as DbConversation[])
+      setStatus('ready')
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [conversationId])
+
+  return { visitor, otherConversations, status }
 }

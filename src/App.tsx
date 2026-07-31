@@ -21,6 +21,10 @@ import { AppleFinderPage } from './pages/AppleFinderPage'
 import { AccessoriesPage } from './pages/AccessoriesPage'
 import { AccessoryDetailPage } from './pages/AccessoryDetailPage'
 import { AgentPage } from './pages/AgentPage'
+import { AgentLoginPage } from './pages/AgentLoginPage'
+import { LoginPage } from './pages/LoginPage'
+import { RegisterPage } from './pages/RegisterPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { NotFound } from './pages/NotFound'
 
 // Rutas del apartado 9.1.
@@ -34,6 +38,9 @@ export function App() {
               que "accesorios" caiga en FamilyPage. */}
           <Route path="/accesorios" element={<AccessoriesPage />} />
           <Route path="/accesorios/:slug" element={<AccessoryDetailPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/registro" element={<RegisterPage />} />
+          <Route path="/cuenta" element={<ProfilePage />} />
           <Route path="/:family" element={<FamilyPage />} />
           <Route path="/:family/:model" element={<ModelPage />} />
           <Route path="/:family/:model/:variant" element={<VariantPage />} />
@@ -56,6 +63,7 @@ export function App() {
         {/* Panel interno para agentes de tienda. Sin Layout público
             porque tiene su propia cabecera/estructura full-screen. */}
         <Route path="/agente" element={<AgentPage />} />
+        <Route path="/agente/login" element={<AgentLoginPage />} />
       </Routes>
       <ChatBubble />
     </>

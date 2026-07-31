@@ -135,7 +135,7 @@ function ColorCard({
 
   const favId = `${family}/${model.slug}/${color.color}`
   const compareId = `${family}/${model.slug}/${color.color}/${current.capacity}`
-  const soldOut = current.availability === 'agotado'
+  const needsReservation = current.availability !== 'disponible'
 
   const openVariant = () =>
     navigate(variantPath(model, color, current))
@@ -192,13 +192,11 @@ function ColorCard({
 
       {/* Acciones */}
       <div className="mt-5 flex flex-col gap-2">
-        {soldOut ? (
-          <Button variant="secondary" onClick={() => alert('Te avisaremos cuando esté disponible (demostración).')}>
-            Avísame cuando esté disponible
-          </Button>
-        ) : (
-          <Button onClick={openVariant}>Comprar</Button>
-        )}
+        {/* Sin stock inmediato se reserva en vez de comprar. El flujo
+            completo vive en la ficha, así que aquí solo se navega. */}
+        <Button onClick={openVariant} variant={needsReservation ? 'secondary' : 'primary'}>
+          {needsReservation ? 'Reservar' : 'Comprar'}
+        </Button>
         <div className="flex items-center justify-between text-sm">
           <button onClick={() => setStoreOpen(true)} className="font-semibold text-ink hover:underline">
             Ver stock por tienda ›

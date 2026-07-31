@@ -273,7 +273,8 @@ No atribuye motivaciones que el repositorio no documenta.
 ## D-025 — Fase 1 sin autenticación de agentes
 
 - Fecha: 2026-07-30.
-- Estado: vigente en Fase 1, a revisar antes de Fase 2.
+- Estado: **reemplazada por [[#D-027 — Fase 2 con cuentas ficticias]]**
+  el 2026-07-31. Se conserva como historia.
 - Decisión: `/agente` es accesible por URL sin login. Las políticas RLS
   de las tres tablas permiten `select`/`insert`/`update` al rol `anon`.
 - Evidencia: bloque de políticas en `supabase/schema.sql`, ausencia de
@@ -300,6 +301,85 @@ No atribuye motivaciones que el repositorio no documenta.
   visitante borra su almacenamiento local pierde el hilo. Cuando toque
   cumplimiento estricto de RGPD (Fase 2+), añadir aviso y opción de
   reset explícito.
+
+## D-027 — Fase 2 con cuentas ficticias
+
+- Fecha: 2026-07-31.
+- Estado: vigente. Reemplaza a [[#D-025 — Fase 1 sin autenticación de agentes]].
+- Contexto: la Fase 2 estaba bloqueada esperando luz verde de Banana
+  porque implicaba agentes reales atendiendo a clientes reales, con sus
+  datos en infraestructura montada por Oscar.
+- Decisión: construir la Fase 2 completa pero **solo con cuentas
+  ficticias** (agentes y clientes de prueba), para poder enseñársela a
+  Banana como demostración. Ningún dato real de clientes ni de
+  compañeros entra en el sistema.
+- Consecuencia: se destraba el desarrollo sin comprometer a nadie. Antes
+  de que Banana use esto de verdad hará falta su aprobación explícita,
+  revisar el tratamiento de datos personales y decidir si la
+  infraestructura sigue siendo Supabase o pasa a algo suyo.
+
+## D-028 — Dos clientes de Supabase, uno por rol
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: `src/lib/supabase.ts` exporta dos clientes contra el mismo
+  proyecto: `supabase` (tienda: chat del visitante y sesión de cliente) y
+  `supabaseAgent` (panel `/agente`), este último con
+  `auth.storageKey = 'banana-agente-auth'`.
+- Motivo: supabase-js guarda **una sola sesión por cliente**. Con un solo
+  objeto compartido, entrar como agente cerraría la sesión del cliente y
+  al revés — justo lo que rompería una demostración en la que se enseñan
+  las dos caras a la vez.
+- Consecuencia: ambas sesiones conviven en el mismo navegador. La consola
+  muestra el aviso "Multiple GoTrueClient instances", que es esperado y
+  benigno mientras las claves de almacenamiento sean distintas. Las
+  consultas del panel de agentes **deben** usar `supabaseAgent`, o
+  viajarán sin el JWT del agente y la RLS las rechazará.
+
+## D-029 — Email + contraseña en vez de magic link
+
+- Fecha: 2026-07-31.
+- Estado: vigente. Corrige el punto 1 de [[#D-025 — Fase 1 sin autenticación de agentes]].
+- Decisión: tanto los agentes como los clientes entran con email y
+  contraseña, no con enlace mágico por correo.
+- Motivo: en una demostración en vivo el magic link obliga a abrir una
+  bandeja de entrada en ese momento; si el correo tarda o cae en spam, la
+  demo se para. Con contraseña se escribe la credencial y se entra.
+- Consecuencia: hay que desactivar "Confirm email" en Supabase
+  (Authentication → Providers → Email) para que el registro sea
+  inmediato. Si se deja activo, el registro sigue funcionando pero pide
+  validar el correo antes de entrar; la interfaz lo detecta y lo explica.
+
+## D-030 — Reservas por orden de pago, sin guardar la posición
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: una variante `agotado` o `bajo-pedido` ya no se compra: se
+  **reserva**. Cada unidad reservada es una fila en `reservas` y el
+  puesto en la cola lo fija `pagado_at`. La posición **no se almacena**:
+  se calcula al vuelo con la función `posicion_en_cola` de la base de
+  datos.
+- Motivo: una posición guardada se queda obsoleta en cuanto alguien por
+  delante cancela. Calcularla al leer siempre da el número correcto.
+- Consecuencia: cambia el comportamiento de `bajo-pedido`, que hasta
+  ahora dejaba comprar como si hubiera stock. La reserva exige cuenta
+  iniciada, porque la cola se ordena por cliente y no por navegador.
+- Evidencia: `src/lib/reservations.ts`, `supabase/schema.sql`,
+  `src/pages/VariantPage.tsx`.
+
+## D-031 — El agente revisa descuentos por función, no por UPDATE
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: aprobar o rechazar un descuento educativo se hace llamando a
+  `revisar_descuento_educativo()` (SECURITY DEFINER), no dando permiso de
+  UPDATE al agente sobre la tabla `clientes`.
+- Motivo: RLS filtra **filas, no columnas**. Una política de UPDATE que
+  dejara al agente tocar la fila del cliente le permitiría cambiar
+  también su dirección o su teléfono. La función limita la escritura a
+  los campos de la revisión.
+- Consecuencia: los agentes tienen `select` sobre `clientes` (necesario
+  para ver la cola de solicitudes) pero ningún `update`.
 
 ## Cómo añadir una decisión
 

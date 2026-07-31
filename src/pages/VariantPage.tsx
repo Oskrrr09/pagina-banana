@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Container } from '../components/ui/Container'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
@@ -16,6 +16,7 @@ import { serviceFaq } from '../data/content'
 import { getAccessoriesForModel, accessoryPath } from '../data/accessories'
 import { euro } from '../lib/format'
 import { useStore } from '../lib/store'
+import { useCustomerAuth } from '../lib/customerAuth'
 import { NotFound } from './NotFound'
 
 const TABS = ['Características', 'Comparar', 'Plan Renove', 'Garantía', 'Accesorios', 'FAQ'] as const
@@ -37,7 +38,9 @@ export function VariantPage() {
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
   const navigate = useNavigate()
+  const location = useLocation()
   const { addToCart, cart, insurancePrice, removeFromCart, setQty, toggleFavorite, isFavorite } = useStore()
+  const { session: customerSession } = useCustomerAuth()
 
   const initialColor =
     model?.colors.find((candidate) => variant?.endsWith(`-${candidate.color}`)) ?? model?.colors[0]
@@ -117,6 +120,9 @@ export function VariantPage() {
 
   if (!family || !model || !color || !current) return <NotFound />
 
+  // Sin stock inmediato: ni agotado ni bajo pedido se compran al momento,
+  // se reservan y entran en lista de espera.
+  const needsReservation = current.availability !== 'disponible'
   const soldOut = current.availability === 'agotado'
   const cartLine = {
     id: `${family.slug}/${model.slug}/${color.color}/${current.capacity}`,
@@ -133,6 +139,16 @@ export function VariantPage() {
 
   const buyNow = () => {
     addToCart(cartLine)
+    navigate('/checkout/1')
+  }
+
+  // Reservar exige cuenta: la cola se ordena por cliente, no por navegador.
+  const reserve = () => {
+    if (!customerSession) {
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`)
+      return
+    }
+    addToCart({ ...cartLine, insured: false, reservation: true })
     navigate('/checkout/1')
   }
   const addAndContinue = () => {
@@ -332,16 +348,25 @@ export function VariantPage() {
 
           {/* Acciones */}
           <div className="mt-6 flex flex-col gap-3">
-            {soldOut ? (
+            {needsReservation ? (
               <div className="rounded-[12px] border border-line bg-neutral p-4">
-                <p className="text-sm font-semibold text-ink">Esta variante está agotada.</p>
-                <Button
-                  variant="secondary"
-                  className="mt-3 w-full"
-                  onClick={() => alert('Te avisaremos cuando esté disponible (demostración).')}
-                >
-                  Avísame cuando esté disponible
+                <p className="text-sm font-semibold text-ink">
+                  {soldOut
+                    ? 'Esta variante está agotada.'
+                    : 'Esta variante es bajo pedido.'}
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  Puedes reservarla: entras en la lista de espera y se sirve por
+                  orden de reserva cuando lleguen unidades.
+                </p>
+                <Button className="mt-3 w-full" onClick={reserve}>
+                  Reservar
                 </Button>
+                {!customerSession && (
+                  <p className="mt-2 text-xs text-muted">
+                    Necesitas iniciar sesión para reservar.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -484,7 +509,7 @@ export function VariantPage() {
 
       {/* Barra de compra fija (móvil) */}
       <AnimatePresence>
-        {showBar && !soldOut && (
+        {showBar && (
           <motion.div
             initial={{ y: 80 }}
             animate={{ y: 0 }}
@@ -499,23 +524,31 @@ export function VariantPage() {
                   <p className="text-xs text-ink">antes {euro(current.previousPrice)}</p>
                 )}
               </div>
-              {lineInCart ? (
-                <QuantityControl
-                  quantity={lineInCart.qty}
-                  productName={model.name}
-                  onDecrease={decreaseQuantity}
-                  onIncrease={increaseQuantity}
-                  compact
-                  className="ml-auto"
-                />
-              ) : (
-                <Button size="lg" variant="secondary" onClick={addAndContinue} className="ml-auto px-3">
-                  Al carrito
+              {needsReservation ? (
+                <Button size="lg" onClick={reserve} className="ml-auto px-4">
+                  Reservar
                 </Button>
+              ) : (
+                <>
+                  {lineInCart ? (
+                    <QuantityControl
+                      quantity={lineInCart.qty}
+                      productName={model.name}
+                      onDecrease={decreaseQuantity}
+                      onIncrease={increaseQuantity}
+                      compact
+                      className="ml-auto"
+                    />
+                  ) : (
+                    <Button size="lg" variant="secondary" onClick={addAndContinue} className="ml-auto px-3">
+                      Al carrito
+                    </Button>
+                  )}
+                  <Button size="lg" onClick={buyNow} className="px-4">
+                    Comprar
+                  </Button>
+                </>
               )}
-              <Button size="lg" onClick={buyNow} className="px-4">
-                Comprar
-              </Button>
             </div>
           </motion.div>
         )}

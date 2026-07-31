@@ -25,6 +25,15 @@ export interface CartLine {
   kind?: 'device' | 'accessory'
   /** Miniatura opcional para pintar en el carrito. */
   image?: string
+  /**
+   * Línea de RESERVA: la variante está agotada o es bajo pedido, así que
+   * al confirmar no se compra — se entra en una lista de espera ordenada
+   * por el momento del pago. Exige sesión de cliente iniciada.
+   *
+   * Va aparte de `kind` a propósito: `kind` dice QUÉ es el producto, esto
+   * dice CÓMO se adquiere. Una reserva sigue siendo un dispositivo.
+   */
+  reservation?: boolean
 }
 
 export interface CompareItem {

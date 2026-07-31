@@ -8,6 +8,9 @@ import { ProvisionalBadge } from '../components/ui/Tag'
 import { Chip } from '../components/ui/Chip'
 import { useStore } from '../lib/store'
 import { useCheckoutState } from '../lib/checkoutState'
+import { useCustomerAuth } from '../lib/customerAuth'
+import { createReservationsFromCart, isReservationLine } from '../lib/reservations'
+import { mirrorOrderToSupabase } from '../lib/orderSync'
 import { demoOrderRepository, type DemoOrder } from '../lib/demoOrderRepository'
 import { productImage } from '../data/products'
 import { stores, getStore } from '../data/stores'
@@ -36,6 +39,12 @@ export function CheckoutPage() {
     insurancePrice,
   } = useStore()
   const { delivery, setDelivery, form, setForm, step1Valid, validateStep1 } = useCheckoutState()
+  const { session: customerSession } = useCustomerAuth()
+
+  // El carrito puede llevar compras normales, reservas de productos sin
+  // stock, o ambas cosas a la vez.
+  const hasReservations = cart.some(isReservationLine)
+  const hasPurchases = cart.some((line) => !isReservationLine(line))
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [pay, setPay] = useState<'tarjeta' | 'bizum' | 'financiacion'>('tarjeta')
@@ -90,25 +99,44 @@ export function CheckoutPage() {
     if (current === 2) {
       setProcessing(true)
       window.setTimeout(() => {
-        const order = demoOrderRepository.createFromCart({
-          cart,
-          delivery,
-          customer: {
-            nombre: form.nombre,
-            email: form.email,
-            direccion: delivery === 'envio' ? form.direccion : undefined,
-            isla: delivery === 'envio' ? form.isla : undefined,
-            tienda: delivery === 'recogida' ? form.tienda : undefined,
-          },
-          paymentMethod: pay,
-          financingMonths: pay === 'financiacion' ? months : undefined,
-        })
-        setConfirmedOrder(order)
-        setProcessing(false)
-        navigate('/checkout/3')
+        void confirmOrder()
       }, 900)
       return
     }
+  }
+
+  async function confirmOrder() {
+    const order = demoOrderRepository.createFromCart({
+      cart,
+      delivery,
+      customer: {
+        nombre: form.nombre,
+        email: form.email,
+        direccion: delivery === 'envio' ? form.direccion : undefined,
+        isla: delivery === 'envio' ? form.isla : undefined,
+        tienda: delivery === 'recogida' ? form.tienda : undefined,
+      },
+      paymentMethod: pay,
+      financingMonths: pay === 'financiacion' ? months : undefined,
+    })
+
+    // Con sesión iniciada dejamos constancia en Supabase para que "Mi
+    // cuenta" tenga historial. Si algo falla, el pedido demostrativo ya
+    // existe y la confirmación se muestra igual: no bloqueamos la compra.
+    if (customerSession) {
+      const clienteId = customerSession.user.id
+      if (hasReservations) {
+        const { error } = await createReservationsFromCart(clienteId, cart)
+        if (error) console.error('[checkout] no se pudieron crear las reservas', error)
+      }
+      if (hasPurchases) {
+        await mirrorOrderToSupabase(clienteId, order)
+      }
+    }
+
+    setConfirmedOrder(order)
+    setProcessing(false)
+    navigate('/checkout/3')
   }
 
   const total = cartSubtotal + cartInsuranceTotal
@@ -322,7 +350,11 @@ export function CheckoutPage() {
                 <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-available-050 text-available">
                   <Icon name="check" size={30} />
                 </div>
-                <h1 className="mt-4 text-2xl font-bold text-ink">¡Pedido confirmado!</h1>
+                <h1 className="mt-4 text-2xl font-bold text-ink">
+                  {confirmedOrder.lines.every((l) => l.reservation)
+                    ? '¡Reserva confirmada!'
+                    : '¡Pedido confirmado!'}
+                </h1>
                 <p className="mt-2 text-muted">
                   Número de pedido: <strong className="text-ink">{confirmedOrder.id}</strong>
                 </p>
@@ -330,6 +362,33 @@ export function CheckoutPage() {
                   <ProvisionalBadge label="Pedido de demostración" />
                 </div>
               </div>
+
+              {confirmedOrder.lines.some((l) => l.reservation) && (
+                <div className="mt-6 rounded-[12px] border border-line bg-neutral p-5 text-sm">
+                  <p className="font-semibold text-ink">Estás en la lista de espera</p>
+                  <p className="mt-1 text-muted">
+                    {customerSession ? (
+                      <>
+                        Las unidades reservadas se sirven por orden de reserva cuando
+                        lleguen. Puedes consultar tu posición en{' '}
+                        <Link to="/cuenta" className="font-semibold text-ink underline">
+                          Mi cuenta
+                        </Link>
+                        .
+                      </>
+                    ) : (
+                      <>
+                        Al no haber sesión iniciada, esta reserva no se ha guardado en
+                        ninguna cuenta.{' '}
+                        <Link to="/login" className="font-semibold text-ink underline">
+                          Inicia sesión
+                        </Link>{' '}
+                        antes de reservar para poder seguirla.
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
 
               <div className="mt-6 rounded-[12px] bg-neutral p-5 text-sm text-muted">
                 <p className="font-semibold text-ink">Datos del pedido</p>

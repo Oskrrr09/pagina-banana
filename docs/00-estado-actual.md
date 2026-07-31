@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-07-30
+actualizado: 2026-07-31
 ---
 
 # Estado actual
@@ -11,6 +11,44 @@ actualizado: 2026-07-30
 > checkout simulado, servicios, Plan Renove, tiendas, soporte y **chat en
 > tiempo real con Supabase + panel de agentes** (Fase 1 desplegada el
 > 2026-07-30). No hay integración comercial real ni motor de pago.
+
+## Fase 2 — cuentas, reservas y panel con auth (2026-07-31)
+
+> [!warning] Pendiente de aplicar el esquema
+> El SQL de `supabase/schema.sql` **todavía no se ha ejecutado** contra
+> Supabase (no hay Postgres ni Docker en el entorno local, así que no se
+> ha podido validar). Hasta hacerlo, el login de agentes y el registro de
+> clientes no funcionan. Ver
+> [[04-problemas-pendientes#CUENTAS-001 — El esquema SQL no se ha ejecutado todavía]].
+
+Todo lo de esta sección es **demostrativo, con cuentas ficticias**: no
+hay agentes ni clientes reales de Banana, ni cobros. Ver
+[[02-decisiones#D-027 — Fase 2 con cuentas ficticias]].
+
+- **Cuenta de cliente**: `/login`, `/registro` y `/cuenta` con Supabase
+  Auth por email y contraseña. `/cuenta` reúne datos personales,
+  direcciones de envío y facturación, historial de pedidos, reservas,
+  descuento educativo y accesos a favoritos y tienda habitual.
+- **Reservas por lista de espera**: las variantes `agotado` y
+  `bajo-pedido` ya no se compran, se reservan. Cada unidad ocupa un
+  puesto en la cola fijado por el momento del pago; la posición se
+  calcula al vuelo, no se guarda. Exige sesión iniciada. Ver
+  [[02-decisiones#D-030 — Reservas por orden de pago, sin guardar la posición]].
+- **Descuento educativo**: el cliente sube un justificante a un bucket
+  privado de Storage y queda pendiente; un agente lo aprueba o rechaza
+  desde `/agente`. Validación manual a propósito.
+- **Panel de agentes con auth**: `/agente/login`, guard de sesión,
+  selector de estado (disponible/ocupado/ausente), asignación de
+  conversaciones, ficha del visitante y pestaña de descuentos.
+- **Dos clientes de Supabase** (`supabase` y `supabaseAgent`) para que la
+  sesión de cliente y la de agente convivan en el mismo navegador. Ver
+  [[02-decisiones#D-028 — Dos clientes de Supabase, uno por rol]].
+- **El invitado no cambia**: sin sesión, el checkout sigue funcionando
+  exactamente como antes, contra `sessionStorage`. El espejo en Supabase
+  solo ocurre con sesión iniciada, y si falla no rompe la compra.
+
+Pasos manuales que quedan por hacer en el panel de Supabase: ejecutar el
+esquema, dar de alta los agentes ficticios y desactivar "Confirm email".
 
 ## Referencia actual
 
@@ -218,9 +256,17 @@ actualizado: 2026-07-30
 
 ## Qué no existe
 
-- Backend, API, base de datos, autenticación o cuenta de usuario.
-- Pago, pedidos reales, emails, cupones, newsletter, chat real, formulario
-  de contacto, reservas, stock, financiación o Plan Renove reales.
+- Pago real: no hay pasarela ni cargo. El "pago" que fija el puesto en
+  una lista de espera es igual de demostrativo que el resto del checkout.
+- Stock real: la disponibilidad del catálogo es fija y escrita a mano, no
+  se consulta ningún inventario. Una reserva no descuenta unidades ni
+  cambia el estado de la variante para nadie más.
+- Pedidos reales, emails, cupones, newsletter, formulario de contacto,
+  financiación o Plan Renove reales.
+- Clientes y agentes reales: las cuentas son ficticias (D-027).
+- Aviso al cliente cuando su descuento educativo se resuelve o cuando le
+  toca el turno en una reserva: el estado cambia en la base de datos,
+  pero no se le notifica por ningún canal.
 - Catálogo desarrollado para accesorios (siguen enlazando al buscador con
   un término que puede no tener resultados aún).
 - Tests unitarios ni lint automáticos (solo E2E con Playwright).

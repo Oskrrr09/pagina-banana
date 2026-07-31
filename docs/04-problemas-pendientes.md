@@ -322,7 +322,24 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## CHAT-001 — `/agente` accesible por URL sin autenticación
 
-- Estado: aceptado en Fase 1; a resolver antes de Fase 2.
+- Estado: **cerrado el 2026-07-31**. `/agente` exige ahora sesión de
+  Supabase y que la cuenta esté dada de alta en la tabla `agentes`
+  (`src/pages/AgentPage.tsx` + `src/lib/agentAuth.tsx`). Responder como
+  agente, asignarse conversaciones y revisar descuentos requieren
+  `auth.uid()` presente en `agentes`, comprobado en la RLS. El
+  `Disallow` de `robots.txt` se mantiene.
+- **Queda abierto un resto**: la LECTURA de `visitantes`,
+  `conversaciones` y `mensajes` sigue permitida al rol `anon`, porque el
+  widget de chat del visitante no tiene login y la necesita. Es decir,
+  quien conozca la URL del proyecto Supabase y la anon key (que viaja en
+  el bundle, como es normal) podría leer conversaciones aunque ya no
+  pueda responder como agente. Se cierra cuando el visitante tenga
+  también cuenta; hasta entonces sigue siendo un prototipo con datos
+  ficticios. Ver [[02-decisiones#D-027 — Fase 2 con cuentas ficticias]].
+
+## CHAT-001-HIST — Estado anterior de CHAT-001 (Fase 1)
+
+- Estado: histórico, resuelto. Se conserva para no perder el contexto.
 - Impacto: medio en producción (`https://luis-lop-nas.github.io/pagina-banana/agente`).
 - Evidencia: `src/pages/AgentPage.tsx` no protege la ruta; las políticas
   RLS en `supabase/schema.sql` permiten a `anon` leer y escribir en las
@@ -337,6 +354,51 @@ del repositorio. No se corrigen en la preparación documental.
   `public/robots.txt` el 2026-07-30. No protege frente a quien ya
   tiene el enlace directo; sólo evita indexación y enlazado desde
   buscadores. La protección real sigue pendiente de Fase 2 (auth).
+
+## CUENTAS-001 — El esquema SQL no se ha ejecutado todavía
+
+- Estado: **abierto**. Bloquea la prueba real de la Fase 2.
+- Evidencia: `supabase/schema.sql` incluye las tablas `agentes`,
+  `clientes`, `pedidos` y `reservas`, el bucket de Storage y las nuevas
+  políticas, pero no hay Postgres ni Docker en el entorno de desarrollo
+  local, así que **el script no se ha llegado a ejecutar ni a validar
+  contra una base de datos**. Está escrito y revisado a mano, nada más.
+- Qué hace falta: pegar el archivo entero en el SQL Editor de Supabase y
+  ejecutarlo, dar de alta 2-3 agentes ficticios siguiendo el comentario
+  del propio archivo, y desactivar "Confirm email" en Authentication →
+  Providers → Email.
+- Riesgo: hasta entonces `/agente` no deja entrar a nadie (no existe la
+  tabla `agentes`) y el registro de clientes fallará al crear la ficha.
+- ⚠️ El script cambia la política de `mensajes` para exigir agente
+  autenticado. Aplicarlo **antes** de desplegar esta versión dejaría el
+  panel de agentes sin poder responder.
+
+## CUENTAS-002 — Sin pruebas E2E del flujo autenticado
+
+- Estado: abierto, asumido por ahora.
+- Evidencia: `tests/e2e/accounts.spec.ts` cubre el cableado (rutas,
+  redirecciones, CTA de reserva, que `/cuenta` no filtra datos sin
+  sesión) y pasa **con y sin** credenciales de Supabase, que es el
+  requisito para que CI siga en verde. Lo que no cubre es el camino
+  autenticado: registro, login, reserva de punta a punta, revisión de
+  descuentos.
+- Motivo: el workflow `e2e.yml` no tiene los secretos de Supabase, así
+  que en CI `supabaseEnabled` es false y no hay backend contra el que
+  probar.
+- Opciones cuando interese cerrarlo: añadir los secretos al workflow y
+  usar un proyecto Supabase de pruebas aparte del de la demo, o levantar
+  Supabase local con Docker en CI.
+
+## CUENTAS-003 — Favoritos y tienda favorita siguen fuera de la cuenta
+
+- Estado: abierto, decisión consciente.
+- Evidencia: `ProfilePage` muestra favoritos y tienda habitual, pero los
+  lee de `localStorage` vía `useStore()`/`useStorePreference()`, no de
+  la cuenta. Cambiar de navegador los pierde aunque haya sesión.
+- Motivo: migrarlos a Supabase obliga a resolver la fusión entre lo que
+  ya hay en el navegador y lo que haya en la cuenta al iniciar sesión,
+  que no es trivial y no aporta a la demostración.
+- La página lo dice explícitamente para no prometer algo que no hace.
 
 ## A11Y-002 — Foco perdido al abrir el chat si Supabase tarda en cargar
 

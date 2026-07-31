@@ -93,6 +93,17 @@ test.describe('Accesibilidad automatizada con axe-core (sin reglas globales desa
     await analyze(page, '/checkout/1')
   })
 
+  // Sin credenciales de Supabase (el caso de CI) estas rutas enseñan su
+  // aviso de configuración; con credenciales, el formulario. Ambas
+  // variantes deben pasar axe.
+  test('acceso /login', async ({ page }) => {
+    await analyze(page, '/login')
+  })
+
+  test('registro /registro', async ({ page }) => {
+    await analyze(page, '/registro')
+  })
+
   test('guía "Preparar mi dispositivo" abierta desde /soporte', async ({ page }) => {
     await reduceMotion(page)
     await page.goto('./soporte')

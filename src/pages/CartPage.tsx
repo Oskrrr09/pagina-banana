@@ -84,6 +84,11 @@ export function CartPage() {
                       <div>
                         <p className="font-semibold text-ink">{line.name}</p>
                         <p className="text-sm text-muted">{subLabel}</p>
+                        {line.reservation && (
+                          <p className="mt-1 text-xs font-semibold text-ink">
+                            Reserva · entra en lista de espera
+                          </p>
+                        )}
                         <div className="mt-1">
                           <ProvisionalBadge label="Precio demostrativo" />
                         </div>

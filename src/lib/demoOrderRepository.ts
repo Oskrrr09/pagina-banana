@@ -17,6 +17,8 @@ export interface DemoOrderLine {
   insured: boolean
   kind?: 'device' | 'accessory'
   image?: string
+  /** Línea reservada (lista de espera) en vez de comprada. */
+  reservation?: boolean
 }
 
 export type DemoDeliveryMode = 'envio' | 'recogida'
@@ -106,6 +108,7 @@ export const demoOrderRepository = {
         insured: Boolean(line.insured),
         kind: line.kind,
         image: line.image,
+        reservation: line.reservation,
       })),
       productsTotal: input.cart.reduce((n, l) => n + l.price * l.qty, 0),
       monthlyInsuranceTotal: insuredUnits * INSURANCE_MONTHLY,

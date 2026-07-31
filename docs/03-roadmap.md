@@ -157,23 +157,39 @@ Renove, sistema de citas para servicio técnico y chat con IA real.
 Fase 1 desplegada el 2026-07-30 (ver
 [[sesiones/2026-07-30--chat-bananito-supabase-agente]]).
 
-**Fase 2 — Piloto interno con auth**:
+**Fase 2 — Piloto interno con auth** (implementada el 2026-07-31 con
+cuentas ficticias, ver [[02-decisiones#D-027 — Fase 2 con cuentas ficticias]]):
 
-- Sustituir la política RLS abierta al rol `anon` por políticas
-  basadas en `auth.uid()` una vez añadido Supabase Auth. Ver
-  [[02-decisiones#D-025 — Fase 1 sin autenticación de agentes]].
-- Login de agentes con magic link por email en `/agente/login`.
-- Tabla `agentes` (id ↔ email ↔ rol ↔ tienda) y asignación de
-  conversaciones (`agente_id` en `conversaciones`).
-- Estado de agente: `disponible` / `ocupado` / `ausente`.
-- Ficha del cliente en la columna derecha del panel: nombre, historial
-  de conversaciones previas, dispositivos previos si consta.
-- Indicador de "está escribiendo" bidireccional vía Supabase
-  Presence.
-- Notificaciones (sonido + `Notification` API) en el panel del agente
-  cuando llega mensaje nuevo o cambia de conversación asignada.
-- Ocultar `/agente` de robots (`robots.txt`) mientras siga
-  accesible por URL sin auth.
+- [x] Políticas RLS basadas en `auth.uid()` para todo lo que hace un
+      agente. La lectura anónima del chat se mantiene porque el widget
+      del visitante sigue sin login.
+- [x] Login de agentes en `/agente/login` — con email y contraseña, no
+      magic link (ver [[02-decisiones#D-029 — Email + contraseña en vez de magic link]]).
+- [x] Tabla `agentes` y asignación de conversaciones (`agente_id`).
+- [x] Estado de agente: `disponible` / `ocupado` / `ausente`.
+- [x] Ficha del visitante en la columna derecha del panel, con sus
+      conversaciones anteriores.
+- [x] Ocultar `/agente` de robots (`robots.txt`), hecho el 2026-07-30.
+- [ ] Indicador de "está escribiendo" bidireccional vía Supabase
+      Presence. **Aplazado**: no aporta a la demostración y añade una
+      suscripción más que mantener.
+- [ ] Notificaciones (sonido + `Notification` API) al llegar un mensaje.
+      **Aplazado** por el mismo motivo.
+
+**Fase 2 bis — Cuenta de cliente** (implementada el 2026-07-31):
+
+- [x] Registro, login y perfil (`/registro`, `/login`, `/cuenta`).
+- [x] Direcciones de envío y facturación.
+- [x] Historial de pedidos persistente cuando hay sesión.
+- [x] Reservas por lista de espera para variantes sin stock
+      (ver [[02-decisiones#D-030 — Reservas por orden de pago, sin guardar la posición]]).
+- [x] Descuento educativo con justificante y validación manual por un
+      agente.
+- [ ] Migrar favoritos y tienda habitual a la cuenta. **Aplazado**: ver
+      [[04-problemas-pendientes#CUENTAS-003 — Favoritos y tienda favorita siguen fuera de la cuenta]].
+- [ ] Avisar al cliente cuando le toca el turno de una reserva o cuando
+      se resuelve su descuento. Hoy el estado cambia en la base de datos
+      pero no se notifica por ningún canal.
 
 **Fase 2 bis — Aplicación Mac nativa (Tauri)**:
 

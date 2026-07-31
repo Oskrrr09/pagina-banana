@@ -4,6 +4,7 @@ import { familiesNav, directLinks, utilityLinks } from '../../data/nav'
 import { useStore } from '../../lib/store'
 import { useStorePreference } from '../../lib/storePreference'
 import { useFavoriteAlerts } from '../../lib/favoriteAlerts'
+import { useCustomerAuth } from '../../lib/customerAuth'
 import { stores } from '../../data/stores'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
@@ -17,6 +18,7 @@ import { HeaderSearch } from '../search/HeaderSearch'
 // (sin borde duro), evitando que corte el hero de golpe.
 export function Header() {
   const { cartCount, favorites, compare } = useStore()
+  const { session: customerSession } = useCustomerAuth()
   const [activeFamily, setActiveFamily] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -155,12 +157,13 @@ export function Header() {
             <IconBadge to="/favoritos" icon="heart" label="Favoritos" count={favorites.length} desktopOnly />
             <IconBadge to="/comparar" icon="compare" label="Comparador" count={compare.length} desktopOnly />
             <NotificationsBell />
-            <button
-              aria-label="Cuenta"
+            <Link
+              to={customerSession ? '/cuenta' : '/login'}
+              aria-label={customerSession ? 'Mi cuenta' : 'Iniciar sesión'}
               className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
             >
               <Icon name="user" />
-            </button>
+            </Link>
 
             {/* Móvil: lupa (antes del carrito) */}
             <button

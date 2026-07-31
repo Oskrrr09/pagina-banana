@@ -5,21 +5,30 @@ import { StoreProvider } from './lib/store'
 import { CheckoutProvider } from './lib/checkoutState'
 import { StorePreferenceProvider } from './lib/storePreference'
 import { FavoriteAlertsProvider } from './lib/favoriteAlerts'
+import { CustomerAuthProvider } from './lib/customerAuth'
+import { AgentAuthProvider } from './lib/agentAuth'
 import { App } from './App'
 import './index.css'
 
+// Los dos proveedores de sesión van lo más arriba posible: el Header, el
+// checkout y el panel /agente los necesitan, y esas rutas usan layouts
+// distintos (o ninguno), así que no valdría montarlos dentro de Layout.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <StoreProvider>
-        <StorePreferenceProvider>
-          <FavoriteAlertsProvider>
-            <CheckoutProvider>
-              <App />
-            </CheckoutProvider>
-          </FavoriteAlertsProvider>
-        </StorePreferenceProvider>
-      </StoreProvider>
+      <CustomerAuthProvider>
+        <AgentAuthProvider>
+          <StoreProvider>
+            <StorePreferenceProvider>
+              <FavoriteAlertsProvider>
+                <CheckoutProvider>
+                  <App />
+                </CheckoutProvider>
+              </FavoriteAlertsProvider>
+            </StorePreferenceProvider>
+          </StoreProvider>
+        </AgentAuthProvider>
+      </CustomerAuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )
