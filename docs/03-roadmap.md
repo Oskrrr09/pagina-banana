@@ -1,6 +1,6 @@
 ---
 tipo: roadmap
-actualizado: 2026-07-30
+actualizado: 2026-07-31
 ---
 
 # Roadmap
@@ -173,8 +173,10 @@ cuentas ficticias, ver [[02-decisiones#D-027 — Fase 2 con cuentas ficticias]])
 - [ ] Indicador de "está escribiendo" bidireccional vía Supabase
       Presence. **Aplazado**: no aporta a la demostración y añade una
       suscripción más que mantener.
-- [ ] Notificaciones (sonido + `Notification` API) al llegar un mensaje.
-      **Aplazado** por el mismo motivo.
+- [x] Notificaciones (`Notification` API) al llegar un mensaje, hecho el
+      2026-07-31 junto con la PWA del panel. Se desaplazó porque con la
+      app instalada sí aporta: es lo que permite atender sin tener la
+      ventana delante. Sin sonido propio — el del sistema basta.
 
 **Fase 2 bis — Cuenta de cliente** (implementada el 2026-07-31):
 
@@ -191,16 +193,37 @@ cuentas ficticias, ver [[02-decisiones#D-027 — Fase 2 con cuentas ficticias]])
       se resuelve su descuento. Hoy el estado cambia en la base de datos
       pero no se notifica por ningún canal.
 
-**Fase 2 bis — Aplicación Mac nativa (Tauri)**:
+**Fase 2 bis — Aplicaciones** (2026-07-31): se resolvió con dos piezas
+distintas en vez de una, ver
+[[02-decisiones#D-039 — Dos aplicaciones distintas: la tienda nativa, el panel como PWA]].
 
-- Empaquetar el panel `/agente` como app Mac con Tauri.
-- Icono en Dock con badge de conversaciones sin leer.
-- Notificaciones nativas de macOS.
-- Atajo global para traer al frente.
-- Firma con certificado Apple Developer (99 €/año) para evitar el
-  aviso de "aplicación no identificada".
-- Alternativa mínima: PWA con `manifest.json` + service worker (0
-  esfuerzo, sin Dock badge ni notificaciones integradas).
+*Panel de agentes — PWA instalable* (hecho):
+
+- [x] `manifest-agente.webmanifest`, iconos propios y service worker
+      generado en el build.
+- [x] Icono en el Dock con contador de conversaciones sin leer
+      (Badging API).
+- [x] Notificaciones del sistema al llegar un mensaje.
+- [x] Arranque y navegación sin conexión, con aviso al perderla.
+- [ ] Atajo global para traer al frente. **No se puede desde una PWA**;
+      necesitaría envoltorio nativo.
+- ~~Tauri~~ **descartado**: exigía instalar el toolchain de Rust,
+  distribuir el binario a mano y un certificado de Apple de 99 €/año solo
+  para que macOS no lo marcase como aplicación no identificada. La PWA da
+  Dock, contador y notificaciones sin nada de eso.
+
+*Tienda — app nativa con Capacitor* (configurada, sin compilar):
+
+- [x] `capacitor.config.ts`, `npm run build:app`, proyectos `ios/` y
+      `android/`, iconos y pantallas de carga.
+- [ ] Compilar y ejecutar el binario. Requiere Xcode completo, Android
+      Studio y JDK, ver
+      [[04-problemas-pendientes#APP-001 — La app nativa está configurada pero nunca se ha compilado]].
+- [ ] Publicar en App Store y Google Play. **No es trabajo de código**:
+      exige autorización de Banana, sus cuentas de desarrollador
+      (99 €/año + 25 $) y sustituir los datos demostrativos por reales.
+      Detalles en [[06-app-nativa]].
+- [ ] Notificaciones push (FCM + APNs). Trabajo aparte.
 
 **Fase 3 — Multicanal**:
 

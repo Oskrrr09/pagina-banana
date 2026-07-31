@@ -6,7 +6,12 @@
   "description": "Prototipo navegable de la nueva web de Banana Computer (Fase 2). Demostración conceptual con datos de ejemplo.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/generate-sw.mjs",
+    "icons": "node scripts/generate-icons.mjs",
+    "build:app": "tsc -b && vite build --base=/ --outDir=dist-app",
+    "app:sync": "npm run build:app && cap sync",
+    "app:ios": "npm run app:sync && cap open ios",
+    "app:android": "npm run app:sync && cap open android",
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
@@ -15,6 +20,9 @@
     "audit:banana": "tsx scripts/banana-audit/run-audit.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
     "@supabase/supabase-js": "^2.111.0",
     "motion": "^11.15.0",
     "react": "^18.3.1",
@@ -23,6 +31,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
+    "@capacitor/cli": "^8.4.2",
     "@playwright/test": "^1.62.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^26.1.2",

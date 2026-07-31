@@ -4,6 +4,8 @@ node_modules/
 # Build
 dist/
 dist-ssr/
+# Build web que se empaqueta en la app nativa (`npm run build:app`).
+dist-app/
 
 # Logs
 *.log

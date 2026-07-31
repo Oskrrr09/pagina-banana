@@ -22,6 +22,7 @@ import { AccessoriesPage } from './pages/AccessoriesPage'
 import { AccessoryDetailPage } from './pages/AccessoryDetailPage'
 import { AgentPage } from './pages/AgentPage'
 import { AgentLoginPage } from './pages/AgentLoginPage'
+import { AgentAppScope } from './components/agent/AgentAppScope'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ProfilePage } from './pages/ProfilePage'
@@ -61,9 +62,13 @@ export function App() {
           <Route path="/checkout/:step" element={<CheckoutPage />} />
         </Route>
         {/* Panel interno para agentes de tienda. Sin Layout público
-            porque tiene su propia cabecera/estructura full-screen. */}
-        <Route path="/agente" element={<AgentPage />} />
-        <Route path="/agente/login" element={<AgentLoginPage />} />
+            porque tiene su propia cabecera/estructura full-screen.
+            AgentAppScope solo declara la identidad de app instalable; no
+            pinta nada. */}
+        <Route element={<AgentAppScope />}>
+          <Route path="/agente" element={<AgentPage />} />
+          <Route path="/agente/login" element={<AgentLoginPage />} />
+        </Route>
       </Routes>
       <ChatBubble />
     </>

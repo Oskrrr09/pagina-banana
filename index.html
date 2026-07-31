@@ -5,6 +5,9 @@
     <link rel="icon" type="image/png" href="/banana-icon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Color de la barra del sistema. El panel de agentes lo sobrescribe con
+         su amarillo al montarse (ver src/lib/pwa.ts). -->
+    <meta name="theme-color" content="#ffffff" />
     <meta name="description" content="Prototipo navegable de Banana Computer. Demostración conceptual con datos de ejemplo, sin sistemas reales." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,8 +15,11 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Preload de la primera imagen del hero para acelerar el LCP en la home. -->
-    <link rel="preload" as="image" href="/pagina-banana/img/products/17pro-plata.webp" fetchpriority="high" />
+    <!-- Preload de la primera imagen del hero para acelerar el LCP en la home.
+         La ruta va sin la base a propósito: Vite le antepone la que toque en
+         cada build (`/pagina-banana/` en GitHub Pages, `/` en la app nativa).
+         Escrita a mano daría 404 en el binario de iOS y Android. -->
+    <link rel="preload" as="image" href="/img/products/17pro-plata.webp" fetchpriority="high" />
     <title>Banana Computer — Prototipo</title>
     <!-- Decodifica la ruta que 404.html guardó en la query (fallback SPA de GitHub Pages). -->
     <script>

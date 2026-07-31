@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button'
 import { Field } from '../components/ui/Field'
 import { useAgentAuth } from '../lib/agentAuth'
 import { supabaseEnabled } from '../lib/supabase'
+import { InstallAppNote } from '../components/agent/AgentAppBar'
 
 // Acceso al panel de agentes — Fase 2.
 //
@@ -112,6 +113,8 @@ export function AgentLoginPage() {
           {submitting ? 'Entrando…' : 'Entrar'}
         </Button>
       </form>
+
+      <InstallAppNote />
 
       <Link to="/" className="mt-6 inline-block text-sm text-muted underline">
         Volver a la tienda

@@ -45,6 +45,30 @@ Antes de ejecutar los tests por primera vez:
 npx playwright install chromium
 ```
 
+## Aplicaciones
+
+Hay dos, por públicos distintos:
+
+- **Panel de agentes como PWA.** `/agente` se instala como aplicación
+  desde el propio navegador (Dock en Mac y Windows, pantalla de inicio en
+  móvil), con icono y nombre propios, contador de conversaciones sin leer
+  y notificaciones. No requiere nada: viaja en el despliegue normal.
+  `npm run build` genera además `dist/sw.js` con el precache.
+- **Tienda como aplicación nativa** (iOS y Android) con Capacitor, para
+  App Store y Google Play.
+
+```bash
+npm run icons        # regenera iconos y splash desde el logo vectorial
+npm run build:app    # build de la web para el binario (base '/', a dist-app/)
+npm run app:ios      # build + sync + abre Xcode
+npm run app:android  # build + sync + abre Android Studio
+```
+
+Los dos últimos necesitan Xcode completo, Android Studio y un JDK. **El
+binario no se ha compilado nunca todavía**; los requisitos, los pasos y lo
+que hace falta para publicar de verdad están en
+[`docs/06-app-nativa.md`](docs/06-app-nativa.md).
+
 ## Catálogo desarrollado
 
 Cinco familias con datos, imágenes locales y variantes reales:

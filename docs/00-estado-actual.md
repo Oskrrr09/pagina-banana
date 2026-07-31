@@ -81,6 +81,46 @@ Segunda mitad de la sesión de Fase 2, ya con el esquema aplicado:
 Pasos manuales que quedan por hacer en el panel de Supabase: dar de alta
 los agentes ficticios que falten y desactivar "Confirm email".
 
+## Aplicaciones — tienda nativa y panel instalable (2026-07-31)
+
+Dos aplicaciones distintas, por públicos distintos. Ver
+[[02-decisiones#D-039 — Dos aplicaciones distintas: la tienda nativa, el panel como PWA]].
+
+**Panel de agentes como PWA — entregado y publicado.**
+
+- `/agente` y `/agente/login` se instalan como aplicación desde el
+  navegador (Dock en Mac y Windows, pantalla de inicio en móvil), con
+  nombre e icono propios: negro con el plátano amarillo, para no
+  confundirlo con la tienda.
+- **Contador de conversaciones sin leer** en la pestaña del panel y sobre
+  el icono del Dock (Badging API), y **notificación del sistema** al
+  llegar un mensaje con la ventana de fondo. Cierra los dos puntos que la
+  Fase 2 había aplazado. El permiso se pide con un clic del agente, nunca
+  al cargar.
+- Sin leer se calcula en el navegador del agente, no en la base de datos.
+  Ver [[02-decisiones#D-041 — Las conversaciones sin leer se cuentan en el dispositivo]].
+- **Service worker** generado en el build (`scripts/generate-sw.mjs`) con
+  la lista de precache real, hashes incluidos. Navegación a red primero
+  —una demostración nunca debe servir contenido viejo—, assets con hash a
+  caché primero, y Supabase **siempre** a la red. Sin conexión la app
+  sigue navegando el catálogo y avisa con una barra.
+- El manifest **solo existe mientras se está en `/agente`**: se inyecta al
+  entrar y se retira al salir, para que ninguna página pública de la
+  tienda ofrezca instalar el panel interno. Cubierto por
+  `tests/e2e/pwa.spec.ts`.
+
+**Tienda como app nativa (Capacitor) — configurada, sin compilar.**
+
+- `capacitor.config.ts`, `npm run build:app` (mismo código, `--base=/`),
+  proyectos `ios/` y `android/` generados, e iconos y pantallas de carga
+  en todos los tamaños.
+- **El binario no se ha compilado ni ejecutado nunca**: hacen falta Xcode
+  completo, Android Studio y un JDK, que no estaban instalados. Ver
+  [[04-problemas-pendientes#APP-001 — La app nativa está configurada pero nunca se ha compilado]].
+- Publicarla de verdad no depende del código: exige autorización de
+  Banana, cuentas de desarrollador de pago y sustituir los datos
+  demostrativos. Todo detallado en [[06-app-nativa]].
+
 ## Referencia actual
 
 - Rama de producción: `main`.

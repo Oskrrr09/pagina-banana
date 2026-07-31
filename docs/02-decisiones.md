@@ -492,6 +492,62 @@ No atribuye motivaciones que el repositorio no documenta.
   como la anterior quedó cerrada, `ensureConversation` crea una nueva en
   vez de reutilizarla. El historial anterior no se toca.
 
+## D-039 — Dos aplicaciones distintas: la tienda nativa, el panel como PWA
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: la **tienda** se empaqueta como aplicación nativa para App
+  Store y Google Play (Capacitor); el **panel de agentes** se instala como
+  PWA desde el navegador. No se hace lo mismo con las dos.
+- Motivo: son públicos y canales distintos. Un cliente busca "Banana
+  Computer" en la tienda de aplicaciones de su móvil y espera encontrarla;
+  ahí una PWA no aparece. Un agente entra desde el ordenador de la tienda,
+  no necesita pasar por App Store y publicar en una tienda pública un panel
+  interno no tiene sentido.
+- Consecuencia: la tienda depende de cuentas de desarrollador de pago y de
+  la revisión de Apple; el panel se despliega solo, con cada push a `main`.
+- Evidencia: `capacitor.config.ts` (`webDir: 'dist-app'`),
+  `public/manifest-agente.webmanifest` y `src/lib/pwa.ts`.
+- Descartado: **Tauri** para el panel (ver alternativa en
+  [[03-roadmap]]). Habría exigido instalar el toolchain de Rust, distribuir
+  un binario a mano y un certificado de Apple de 99 €/año solo para que
+  macOS no lo marque como aplicación no identificada. La PWA da Dock,
+  contador y notificaciones sin nada de eso.
+
+## D-040 — Un único código para web y app nativa
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: la app nativa envuelve **el mismo build de React** que se
+  publica en GitHub Pages. No hay una segunda versión del código.
+- Motivo: es un prototipo de demostración; mantener dos interfaces en
+  paralelo garantizaría que se separasen.
+- Implementación: la única diferencia es la base de las rutas. En Pages la
+  web cuelga de `/pagina-banana/`; dentro del binario los ficheros están en
+  la raíz. De ahí `npm run build:app`, que construye a `dist-app/` con
+  `--base=/`. El `basename` del enrutador ya salía de
+  `import.meta.env.BASE_URL`, así que se adapta solo.
+- Consecuencia detectada al hacerlo: el `<link rel="preload">` del hero
+  tenía `/pagina-banana/` escrito a mano en `index.html` y habría dado 404
+  dentro de la app. Ahora va sin base y la antepone Vite en cada build.
+- Consecuencia pendiente: cada cambio de la web exige **recompilar y volver
+  a publicar** la app en las tiendas, con revisión de Apple por medio. La
+  web se actualiza sola; la app no.
+
+## D-041 — Las conversaciones sin leer se cuentan en el dispositivo
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: no hay columna de "leído" en la base de datos. Una conversación
+  está sin leer si su último mensaje lo escribió el visitante y es
+  posterior a la última vez que ese navegador la abrió.
+- Motivo: sería estado por agente y por conversación, y en la demostración
+  atiende una sola persona. Añadir la tabla ahora sería esquema que
+  mantener sin nadie que lo use.
+- Limitación asumida y visible: la marca vive en `localStorage`, así que un
+  agente que entre desde otro equipo empieza con todo sin leer.
+- Evidencia: `src/lib/agentUnread.ts`, clave `banana:agente-visto`.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

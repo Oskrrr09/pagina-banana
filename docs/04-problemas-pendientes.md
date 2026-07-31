@@ -505,3 +505,44 @@ del repositorio. No se corrigen en la preparación documental.
 - Resolución planificada: ninguna todavía — requeriría coordinar un
   gestor de foco único entre los overlays globales (chat, aviso de
   tienda favorita, y futuros). Fuera de alcance de esta sesión.
+
+## APP-001 — La app nativa está configurada pero nunca se ha compilado
+
+- Estado: detectado el 2026-07-31, abierto por dependencia externa.
+- Impacto: alto si se da por hecho que la app funciona; nulo para la web,
+  que no depende de esto.
+- Evidencia: `capacitor.config.ts`, `npm run build:app`, y los proyectos
+  `ios/` y `android/` existen y se generaron sin errores. Pero en el
+  equipo donde se montó no había Xcode completo (solo Command Line
+  Tools), ni Android SDK, ni JDK, ni CocoaPods; se comprobó antes de
+  empezar. Capacitor 8 no necesita CocoaPods, pero sí los otros tres.
+- Riesgo: la configuración es coherente y el build web para la app se
+  verificó (`dist-app/` sale con rutas en la raíz), pero **el binario no
+  se ha ejecutado nunca**. Puede haber ajustes que solo aparezcan al
+  abrirlo en Xcode o Android Studio.
+- Resolución: instalar las herramientas y abrir el proyecto. Pasos en
+  [[06-app-nativa]].
+- No confundir con lo que sí bloquea publicar: autorización de Banana,
+  cuentas de desarrollador de pago y datos reales en vez de
+  demostrativos. Eso no es un problema técnico.
+
+## PWA-001 — El service worker no lo cubren las pruebas E2E
+
+- Estado: detectado el 2026-07-31, asumido.
+- Impacto: bajo.
+- Evidencia: la suite corre contra el dev server de Vite, y ahí el
+  service worker no se registra a propósito (`src/lib/pwa.ts` comprueba
+  `import.meta.env.PROD`). `tests/e2e/pwa.spec.ts` cubre el manifest, los
+  iconos, la inyección y limpieza de las etiquetas por ruta, y que en
+  desarrollo **no** haya ningún registro —regresión deliberada, por lo
+  ocurrido en [[04-problemas-pendientes#QA-002 — Las pruebas E2E escribían en el Supabase real]]—
+  pero no el precache ni el arranque sin conexión.
+- Verificación que sí se hizo, a mano y contra un build servido: el
+  service worker toma el control, deja una sola caché con 10 ficheros en
+  precache, y con la red cortada una ruta profunda (`/iphone`) sigue
+  cargando la web y no el error del navegador.
+- Riesgo: una regresión en las estrategias de caché no la detectaría el
+  CI.
+- Resolución posible: un proyecto de Playwright aparte que sirva `dist/`
+  con `vite preview` en vez del dev server. No se hace ahora para no
+  duplicar el arranque de la suite por una superficie pequeña.

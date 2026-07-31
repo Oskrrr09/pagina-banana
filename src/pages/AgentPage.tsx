@@ -24,6 +24,9 @@ import {
   reviewRequest,
   signedProofUrl,
 } from '../lib/educationalDiscount'
+import { useAppBadge, useNotifications } from '../lib/pwa'
+import { useNewMessageAlert, useUnreadConversations } from '../lib/agentUnread'
+import { AgentAppBar } from '../components/agent/AgentAppBar'
 
 // Panel del agente — Fase 2
 // - Con auth: solo entran cuentas dadas de alta en la tabla `agentes`.
@@ -86,6 +89,26 @@ export function AgentPage() {
     setSelectedId(inbox.items[0].conversation.id)
   }, [inbox.items, selectedId])
 
+  // --- Panel como aplicación instalable ---------------------------------
+  // Las etiquetas de manifest e iconos las declara AgentAppScope, que
+  // envuelve también a /agente/login.
+  const { unreadIds, count: sinLeer } = useUnreadConversations(inbox.items, selectedId)
+  // El contador del Dock solo tiene sentido con la bandeja de abiertas; al
+  // mirar el archivo se conserva el último valor en vez de caer a cero.
+  const [badge, setBadge] = useState(0)
+  useEffect(() => {
+    if (bandeja === 'abierta') setBadge(sinLeer)
+  }, [bandeja, sinLeer])
+  useAppBadge(badge)
+
+  const { permission, request: pedirNotificaciones, notify } = useNotifications()
+  useNewMessageAlert(inbox.items, (item) => {
+    notify(
+      `${visitorDisplayName(item.visitor, item.conversation.visitor_id)} ha escrito`,
+      item.lastMessage?.texto ?? 'Mensaje nuevo en el chat',
+    )
+  })
+
   // Todos los hooks quedan por encima de cualquier return condicional
   // (Reglas de los Hooks), igual que en CheckoutPage.
   if (!supabaseEnabled) {
@@ -113,7 +136,11 @@ export function AgentPage() {
 
   return (
     <div className="flex h-screen flex-col bg-neutral">
-      <TopBar tab={tab} onTabChange={setTab} />
+      <TopBar tab={tab} onTabChange={setTab} sinLeer={badge} />
+      <AgentAppBar
+        notificaciones={permission}
+        onPedirNotificaciones={() => void pedirNotificaciones()}
+      />
       {tab === 'conversaciones' ? (
         <div className="flex min-h-0 flex-1">
           <InboxColumn
@@ -121,6 +148,7 @@ export function AgentPage() {
             status={inbox.status}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            unreadIds={unreadIds}
             bandeja={bandeja}
             onBandejaChange={(next) => {
               setBandeja(next)
@@ -150,7 +178,15 @@ const ESTADOS: { value: AgentStatus; label: string; dot: string }[] = [
   { value: 'ausente', label: 'Ausente', dot: 'bg-ink/40' },
 ]
 
-function TopBar({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) => void }) {
+function TopBar({
+  tab,
+  onTabChange,
+  sinLeer,
+}: {
+  tab: Tab
+  onTabChange: (t: Tab) => void
+  sinLeer: number
+}) {
   const { agente, signOut, setEstado } = useAgentAuth()
   const actual = ESTADOS.find((e) => e.value === agente?.estado) ?? ESTADOS[0]
 
@@ -171,6 +207,17 @@ function TopBar({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) => void 
       <nav aria-label="Secciones del panel" className="flex gap-1">
         <TabButton active={tab === 'conversaciones'} onClick={() => onTabChange('conversaciones')}>
           Conversaciones
+          {sinLeer > 0 && (
+            <>
+              <span
+                aria-hidden="true"
+                className="ml-1.5 inline-grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold text-white"
+              >
+                {sinLeer}
+              </span>
+              <span className="sr-only">({sinLeer} sin leer)</span>
+            </>
+          )}
         </TabButton>
         <TabButton active={tab === 'descuentos'} onClick={() => onTabChange('descuentos')}>
           Descuentos educativos
@@ -259,6 +306,7 @@ function InboxColumn({
   status,
   selectedId,
   onSelect,
+  unreadIds,
   bandeja,
   onBandejaChange,
 }: {
@@ -266,6 +314,7 @@ function InboxColumn({
   status: 'loading' | 'ready' | 'demo' | 'error'
   selectedId: string | null
   onSelect: (id: string) => void
+  unreadIds: Set<string>
   bandeja: Bandeja
   onBandejaChange: (next: Bandeja) => void
 }) {
@@ -312,6 +361,7 @@ function InboxColumn({
         <ul>
           {items.map(({ conversation, lastMessage, visitor }) => {
             const active = conversation.id === selectedId
+            const sinLeer = unreadIds.has(conversation.id)
             return (
               <li key={conversation.id}>
                 <button
@@ -334,14 +384,33 @@ function InboxColumn({
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium text-ink">
+                      <p
+                        className={
+                          'truncate text-sm text-ink ' +
+                          (sinLeer ? 'font-bold' : 'font-medium')
+                        }
+                      >
                         {visitorDisplayName(visitor, conversation.visitor_id)}
                       </p>
+                      {sinLeer && (
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full bg-danger"
+                          // El punto es decorativo: quien use lector de
+                          // pantalla necesita la palabra, no el color.
+                          aria-hidden="true"
+                        />
+                      )}
+                      {sinLeer && <span className="sr-only">Sin leer.</span>}
                       <span className="ml-auto shrink-0 text-[11px] text-ink/50">
                         {formatRelative(conversation.ultimo_mensaje_at)}
                       </span>
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-ink/60">
+                    <p
+                      className={
+                        'mt-0.5 truncate text-xs ' +
+                        (sinLeer ? 'font-semibold text-ink' : 'text-ink/60')
+                      }
+                    >
                       {lastMessage
                         ? `${lastMessage.autor === 'visitor' ? '' : lastMessage.autor === 'agent' ? 'Tú: ' : 'Bot: '}${lastMessage.texto}`
                         : 'Sin mensajes todavía'}

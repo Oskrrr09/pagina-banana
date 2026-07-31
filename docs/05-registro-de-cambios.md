@@ -1,12 +1,48 @@
 ---
 tipo: cambios
-actualizado: 2026-07-30
+actualizado: 2026-07-31
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-07-31 — Aplicaciones: panel como PWA y tienda como app nativa
+
+- **Panel de agentes instalable como aplicación**: `manifest-agente.webmanifest`
+  con nombre e iconos propios (negro con el plátano amarillo, para
+  distinguirlo de la tienda en el Dock). El manifest y las etiquetas de
+  iOS **solo existen mientras se está en `/agente`**; las inyecta y las
+  retira `AgentAppScope`, que envuelve el panel y su pantalla de acceso,
+  para que ninguna página pública ofrezca instalar el panel interno.
+- **Service worker generado en el build** (`scripts/generate-sw.mjs`): la
+  lista de precache sale del `index.html` ya construido, con los hashes
+  reales, y la versión de la caché se deriva del contenido. Navegación a
+  red primero, assets con hash a caché primero, imágenes y fuentes
+  stale-while-revalidate, y Supabase siempre a la red. Solo se registra
+  en producción, nunca en el dev server.
+- **Conversaciones sin leer**: contador en la pestaña del panel y sobre el
+  icono del Dock (Badging API), negrita y punto en la bandeja, y
+  notificación del sistema al llegar un mensaje con la ventana de fondo.
+  El permiso se pide con un clic, nunca al cargar. Se calcula en el
+  navegador del agente (`src/lib/agentUnread.ts`).
+- **Barra de estado de la app** bajo la cabecera del panel: sin conexión,
+  versión nueva disponible, invitación a instalar y permiso de avisos.
+  Un aviso como mucho a la vez, y ninguno roba el foco.
+- **Iconos generados desde el vector** (`npm run icons`) con el Chromium
+  de Playwright, en vez de escalar el PNG de 144 px. Incluye variante
+  `maskable` con zona segura y las pantallas de carga nativas.
+- **App nativa de la tienda con Capacitor**: `capacitor.config.ts`,
+  `npm run build:app` (mismo código, `--base=/`), proyectos `ios/` y
+  `android/` versionados. **Sin compilar** — ver
+  [[04-problemas-pendientes#APP-001 — La app nativa está configurada pero nunca se ha compilado]]
+  y la guía [[06-app-nativa]].
+- **Corregido**: el `<link rel="preload">` del hero llevaba
+  `/pagina-banana/` escrito a mano en `index.html` y habría dado 404
+  dentro de la app nativa. Ahora la base la antepone Vite en cada build.
+- **Pruebas**: `tests/e2e/pwa.spec.ts`, 7 casos nuevos. Suite completa en
+  219, en verde.
 
 ## 2026-07-30 — Chat de Bananito en tiempo real + panel /agente (Fase 1)
 
