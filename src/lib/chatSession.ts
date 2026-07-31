@@ -58,6 +58,11 @@ export interface ChatSession {
     estrellas: number,
     observacion: string,
   ) => Promise<{ error: string | null }>
+  /**
+   * Abre una conversación nueva dejando atrás la cerrada, sin recargar la
+   * página. El historial anterior sigue en la base de datos.
+   */
+  empezarNuevaConversacion: () => void
 }
 
 function readStored(key: string): string | null {
@@ -66,6 +71,15 @@ function readStored(key: string): string | null {
     return window.localStorage.getItem(key)
   } catch {
     return null
+  }
+}
+
+function removeStored(key: string) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(key)
+  } catch {
+    /* localStorage puede estar deshabilitada; ignoramos */
   }
 }
 
@@ -394,6 +408,18 @@ export function useVisitorChatSession(
     [conversationId],
   )
 
+  // Al soltar la conversación actual, el efecto de inicialización vuelve a
+  // entrar (depende de `conversationId`) y, como la anterior quedó
+  // cerrada, `ensureConversation` crea una nueva en vez de reutilizarla.
+  const empezarNuevaConversacion = useCallback(() => {
+    removeStored(CONVERSATION_STORAGE_KEY)
+    seenIdsRef.current = new Set()
+    setMessages([])
+    setConversation(null)
+    setConversationId(null)
+    setStatus(supabaseEnabled ? 'loading' : 'demo')
+  }, [])
+
   return {
     messages,
     sendMessage,
@@ -408,6 +434,7 @@ export function useVisitorChatSession(
       valoracionEnviada: conversation?.valoracion_estrellas != null,
     },
     enviarValoracion,
+    empezarNuevaConversacion,
   }
 }
 

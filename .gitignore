@@ -23,10 +23,13 @@ docs/.obsidian/
 # Vite
 .vite/
 
-# Variables de entorno — solo se versiona `.env.example`.
+# Variables de entorno — solo se versionan `.env.example` y `.env.test`.
+# `.env.test` no contiene secretos: deja las credenciales vacías para que
+# las pruebas E2E corran en modo demo y no escriban en el Supabase real.
 .env
 .env.*
 !.env.example
+!.env.test
 
 # TypeScript — caché incremental (se regenera con `tsc -b`, no se versiona)
 *.tsbuildinfo

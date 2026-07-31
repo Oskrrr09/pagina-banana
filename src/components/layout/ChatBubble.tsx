@@ -499,7 +499,7 @@ function GuestGate({
  * valoración, se muestra el formulario de estrellas; si no, solo el aviso.
  */
 function ClosedFooter({ session }: { session: ReturnType<typeof useVisitorChatSession> }) {
-  const { cierre, enviarValoracion } = session
+  const { cierre, enviarValoracion, empezarNuevaConversacion } = session
   const [estrellas, setEstrellas] = useState(0)
   const [observacion, setObservacion] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -512,6 +512,7 @@ function ClosedFooter({ session }: { session: ReturnType<typeof useVisitorChatSe
       <div className="border-t border-line bg-surface px-3 py-4 text-center">
         <p className="text-sm font-semibold text-ink">¡Gracias por tu valoración!</p>
         <p className="mt-1 text-xs text-ink/60">La conversación está cerrada.</p>
+        <NuevaConversacionButton onClick={empezarNuevaConversacion} />
       </div>
     )
   }
@@ -521,9 +522,9 @@ function ClosedFooter({ session }: { session: ReturnType<typeof useVisitorChatSe
       <div className="border-t border-line bg-surface px-3 py-4 text-center">
         <p className="text-sm font-semibold text-ink">Chat cerrado</p>
         <p className="mt-1 text-xs text-ink/60">
-          Un agente ha cerrado esta conversación. Escríbenos otra vez cuando
-          quieras y abriremos una nueva.
+          Un agente ha cerrado esta conversación.
         </p>
+        <NuevaConversacionButton onClick={empezarNuevaConversacion} />
       </div>
     )
   }
@@ -600,7 +601,23 @@ function ClosedFooter({ session }: { session: ReturnType<typeof useVisitorChatSe
       >
         {enviando ? 'Enviando…' : 'Enviar valoración'}
       </button>
+
+      {/* También se puede pasar de valorar y escribir directamente. */}
+      <NuevaConversacionButton onClick={empezarNuevaConversacion} />
     </form>
+  )
+}
+
+/** Abre una conversación nueva sin recargar la página. */
+function NuevaConversacionButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mt-3 w-full cursor-pointer rounded-full border border-line px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-neutral"
+    >
+      Escribir otra consulta
+    </button>
   )
 }
 

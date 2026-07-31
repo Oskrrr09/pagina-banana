@@ -40,7 +40,21 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port ' + PORT,
+    command: `npm run dev -- --mode test --host 127.0.0.1 --port ${PORT}`,
+    // Las pruebas corren SIEMPRE en modo demo, sin backend.
+    //
+    // Sin esto, un `npx playwright test` en local creaba visitantes y
+    // conversaciones de mentira en el Supabase de verdad del proyecto,
+    // mezclados con los reales. Además así local y CI prueban lo mismo:
+    // el workflow tampoco tiene credenciales.
+    //
+    // Se pasan por `env` y no solo con `.env.test` porque Vite da máxima
+    // prioridad a las variables que ya existen en el entorno: un
+    // `.env.local` con credenciales no puede volver a colarse.
+    env: {
+      VITE_SUPABASE_URL: '',
+      VITE_SUPABASE_ANON_KEY: '',
+    },
     url: `${HOST}${BASE_PATH}`,
     reuseExistingServer: !process.env.CI,
     stdout: 'ignore',

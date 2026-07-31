@@ -476,6 +476,22 @@ No atribuye motivaciones que el repositorio no documenta.
   conversación viva. No hay papelera — lo borrado no se recupera — así
   que la confirmación deja claro que es irreversible.
 
+## D-038 — El visitante puede abrir otra conversación sin recargar
+
+- Fecha: 2026-07-31.
+- Estado: vigente.
+- Decisión: cuando el agente cierra una conversación, el visitante ve un
+  botón "Escribir otra consulta" que suelta la conversación cerrada y
+  abre una nueva en el sitio.
+- Motivo: antes el `conversationId` se quedaba fijo en el estado del
+  componente, así que quien tenía el chat abierto se quedaba mirando una
+  conversación cerrada y **solo podía volver a escribir recargando la
+  página**.
+- Implementación: se borra la conversación de `localStorage` y se pone
+  `conversationId` a null; el efecto de inicialización vuelve a entrar y,
+  como la anterior quedó cerrada, `ensureConversation` crea una nueva en
+  vez de reutilizarla. El historial anterior no se toca.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

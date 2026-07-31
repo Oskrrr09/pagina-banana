@@ -355,6 +355,25 @@ del repositorio. No se corrigen en la preparación documental.
   tiene el enlace directo; sólo evita indexación y enlazado desde
   buscadores. La protección real sigue pendiente de Fase 2 (auth).
 
+## QA-002 — Las pruebas E2E escribían en el Supabase real
+
+- Estado: **cerrado el 2026-07-31**.
+- Evidencia: ejecutar `npx playwright test` en local levantaba Vite con
+  `.env.local`, así que `supabaseEnabled` era true y las pruebas del chat
+  creaban visitantes y conversaciones de mentira ("Elena R.") en la base
+  de datos de verdad del proyecto, mezclados con los reales. Se detectó
+  al revisar por qué el panel mostraba visitantes sin nombre.
+- Resolución: el `webServer` de `playwright.config.ts` pasa
+  `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` vacías por `env`. Vite da
+  máxima prioridad a las variables ya presentes en el entorno, así que un
+  `.env.local` con credenciales no puede volver a colarse. Se añade
+  también `.env.test` (versionado, sin secretos) para dejar constancia.
+- Comprobación: contando filas de `visitantes` antes y después de la
+  suite completa — 34 → 34.
+- Nota: quedan en la base de datos las filas creadas antes del arreglo
+  (nombre "Elena R.", email `elena@example.test`). Se pueden borrar sin
+  consecuencias.
+
 ## CHAT-002 — El aviso por email al visitante no existe
 
 - Estado: **abierto**. Es la razón por la que se pide el email, así que
