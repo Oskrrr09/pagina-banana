@@ -14,6 +14,7 @@ import {
   useAgentInbox,
   useAgentNames,
   useConversationVisitor,
+  visitorDisplayName,
   type InboxItem,
 } from '../lib/chatSession'
 import { useAgentAuth } from '../lib/agentAuth'
@@ -309,7 +310,7 @@ function InboxColumn({
           </p>
         )}
         <ul>
-          {items.map(({ conversation, lastMessage }) => {
+          {items.map(({ conversation, lastMessage, visitor }) => {
             const active = conversation.id === selectedId
             return (
               <li key={conversation.id}>
@@ -334,7 +335,7 @@ function InboxColumn({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-medium text-ink">
-                        Visitante {shortId(conversation.visitor_id)}
+                        {visitorDisplayName(visitor, conversation.visitor_id)}
                       </p>
                       <span className="ml-auto shrink-0 text-[11px] text-ink/50">
                         {formatRelative(conversation.ultimo_mensaje_at)}
@@ -410,12 +411,11 @@ function ConversationColumn({
     el.scrollTop = el.scrollHeight
   }, [messages])
 
-  // Con cuenta iniciada mostramos quién es; si no, un identificador corto.
-  const visitorLabel = visitor?.nombre?.trim()
-    ? visitor.nombre
-    : conversationId
-      ? `Visitante ${shortId(conversationId)}`
-      : ''
+  // Nombre si lo tenemos (de la cuenta o del formulario de invitado); si
+  // no, un identificador corto para poder distinguir conversaciones.
+  const visitorLabel = conversationId
+    ? visitorDisplayName(visitor, conversation?.visitor_id ?? conversationId)
+    : ''
 
   if (!conversationId) {
     return (
@@ -664,7 +664,7 @@ function ConversationColumn({
               : 'Agente'
             : isBot
               ? 'Bananito · automático'
-              : (visitor?.nombre?.trim() || 'Visitante')
+              : visitorDisplayName(visitor)
 
           return (
             <div
@@ -677,7 +677,7 @@ function ConversationColumn({
                   aria-hidden
                 >
                   <span className="text-[10px] font-bold text-white">
-                    {(visitor?.nombre?.trim()?.[0] ?? 'V').toUpperCase()}
+                    {visitorDisplayName(visitor).charAt(0)}
                   </span>
                 </span>
               )}
@@ -836,7 +836,11 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
               </div>
               <div>
                 <dt className="text-xs text-ink/60">Nombre</dt>
-                <dd className="text-ink">{visitor?.nombre ?? 'No facilitado'}</dd>
+                <dd className="text-ink">
+                  {visitor?.nombre?.trim()
+                    ? visitorDisplayName(visitor)
+                    : 'No facilitado'}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-ink/60">Teléfono</dt>

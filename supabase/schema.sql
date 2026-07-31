@@ -597,5 +597,13 @@ begin
   ) then
     execute 'alter publication supabase_realtime add table public.conversaciones';
   end if;
+  -- Para que la bandeja del agente refresque el nombre en cuanto el
+  -- visitante se identifica, sin esperar a su siguiente mensaje.
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'visitantes'
+  ) then
+    execute 'alter publication supabase_realtime add table public.visitantes';
+  end if;
 end
 $$;

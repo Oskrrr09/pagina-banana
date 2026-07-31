@@ -378,6 +378,8 @@ del repositorio. No se corrigen en la preparación documental.
     vez de un UUID.
   - `mensajes.agente_id` — sin esto no se puede saber qué agente escribió
     cada respuesta cuando hay más de uno.
+  - `visitantes` publicada en `supabase_realtime`, para que la bandeja
+    refresque el nombre en cuanto el visitante se identifica.
   - Columnas de valoración en `conversaciones`
     (`valoracion_solicitada`, `valoracion_estrellas`,
     `valoracion_observacion`, `valoracion_at`, `cerrada_at`), la función

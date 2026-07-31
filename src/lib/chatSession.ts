@@ -421,6 +421,34 @@ export function useVisitorChatSession(
 export interface InboxItem {
   conversation: DbConversation
   lastMessage: DbMessage | null
+  visitor: DbVisitor | null
+}
+
+/**
+ * Nombre con el que mostrar a quien escribe. Fuerza mayúscula inicial en
+ * cada palabra: la gente escribe su nombre en minúsculas al abrir el
+ * chat y en el panel queda pobre. El resto de cada palabra se respeta,
+ * para no romper cosas como "McCarthy" o siglas.
+ *
+ * Sin nombre cae a "Visitante ab12cd34", que al menos permite
+ * distinguir conversaciones entre sí.
+ */
+export function visitorDisplayName(
+  visitor: { nombre: string | null; email?: string | null } | null | undefined,
+  fallbackId?: string | null,
+): string {
+  const nombre = visitor?.nombre?.trim()
+  if (nombre) {
+    return nombre
+      .split(/\s+/)
+      .map((palabra) => palabra.charAt(0).toUpperCase() + palabra.slice(1))
+      .join(' ')
+  }
+  // Alguien con cuenta pero sin nombre en el perfil: el email identifica
+  // mejor que un uuid opaco.
+  const email = visitor?.email?.trim()
+  if (email) return email
+  return fallbackId ? `Visitante ${fallbackId.slice(0, 8)}` : 'Visitante'
 }
 
 /**
@@ -450,25 +478,39 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
       setStatus('error')
       return
     }
-    // Para cada conversación, buscar el último mensaje.
+    // Para cada conversación, su último mensaje y quién la escribe. Se
+    // piden en lote (dos consultas) en vez de una por fila.
     const ids = (convs ?? []).map((c) => c.id)
-    let lastByConv: Record<string, DbMessage> = {}
+    const visitorIds = [...new Set((convs ?? []).map((c) => c.visitor_id))]
+
+    const lastByConv: Record<string, DbMessage> = {}
+    const visitorById: Record<string, DbVisitor> = {}
+
     if (ids.length > 0) {
-      const { data: msgs } = await supabaseAgent
-        .from('mensajes')
-        .select('*')
-        .in('conversacion_id', ids)
-        .order('created_at', { ascending: false })
+      const [{ data: msgs }, { data: visitantes }] = await Promise.all([
+        supabaseAgent
+          .from('mensajes')
+          .select('*')
+          .in('conversacion_id', ids)
+          .order('created_at', { ascending: false }),
+        supabaseAgent.from('visitantes').select('*').in('id', visitorIds),
+      ])
+
       // Nos quedamos con el primer mensaje que veamos por conversación (el
       // más reciente porque venimos ordenados desc).
       for (const m of (msgs ?? []) as DbMessage[]) {
         if (!lastByConv[m.conversacion_id]) lastByConv[m.conversacion_id] = m
       }
+      for (const v of (visitantes ?? []) as DbVisitor[]) {
+        visitorById[v.id] = v
+      }
     }
+
     setItems(
       (convs ?? []).map((c) => ({
         conversation: c as DbConversation,
         lastMessage: lastByConv[c.id] ?? null,
+        visitor: visitorById[(c as DbConversation).visitor_id] ?? null,
       })),
     )
     setStatus('ready')
@@ -496,6 +538,16 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'conversaciones' },
+        () => {
+          void reload()
+        },
+      )
+      // Un visitante que ya existía puede identificarse después (al dar sus
+      // datos o al iniciar sesión). Sin esto, la bandeja seguiría enseñando
+      // "Visitante ab12cd34" hasta el siguiente mensaje.
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'visitantes' },
         () => {
           void reload()
         },
