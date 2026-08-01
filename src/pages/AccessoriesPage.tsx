@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useT } from '../lib/i18n'
+import { conNegritas, useCatalogo, useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ButtonLink } from '../components/ui/Button'
@@ -25,8 +25,11 @@ type CompatibilityFilter =
   | 'airpods'
   | 'airtag'
 
+// El `label` de «todas» es el único que se traduce: el resto son nombres de
+// producto. Se resuelve al pintar, no aquí, porque aquí no hay contexto de
+// idioma.
 const COMPAT_OPTIONS: { slug: CompatibilityFilter; label: string }[] = [
-  { slug: 'todas', label: 'Todas' },
+  { slug: 'todas', label: 'accessories.all' },
   { slug: 'iphone', label: 'iPhone' },
   { slug: 'ipad', label: 'iPad' },
   { slug: 'mac', label: 'Mac' },
@@ -37,6 +40,7 @@ const COMPAT_OPTIONS: { slug: CompatibilityFilter; label: string }[] = [
 
 export function AccessoriesPage() {
   const t = useT()
+  const cat = useCatalogo()
   const [category, setCategory] = useState<AccessoryCategory | 'todas'>('todas')
   const [compat, setCompat] = useState<CompatibilityFilter>('todas')
 
@@ -47,38 +51,35 @@ export function AccessoriesPage() {
     <Container className="py-10">
       <header className="max-w-3xl">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
-          Accesorios
+          {t('accessories.kicker')}
         </p>
         <h1 className="mt-1 text-3xl font-extrabold text-ink sm:text-4xl">
-          Accesorios Apple
+          {t('accessories.title')}
         </h1>
-        <p className="mt-2 text-muted">
-          Selección inicial de accesorios oficiales de Apple mostrados por
-          Banana Computer. Los precios son{' '}
-          <span className="font-semibold text-ink">demostrativos</span> y la
-          disponibilidad debe validarse en tienda.
-        </p>
+        <p className="mt-2 text-muted">{conNegritas(t('accessories.intro'))}</p>
       </header>
 
       {/* Filtros */}
       <section aria-labelledby="filters" className="mt-8 space-y-4">
         <h2 id="filters" className="sr-only">
-          Filtros
+          {t('accessories.filters')}
         </h2>
         <FilterGroup
-          legend="Categoría"
+          legend={t('accessories.category')}
           value={category}
           onChange={(v) => setCategory(v as AccessoryCategory | 'todas')}
           options={[
-            { slug: 'todas', label: 'Todas las categorías' },
-            ...ACCESSORY_CATEGORIES.map((c) => ({ slug: c.slug, label: c.label })),
+            { slug: 'todas', label: t('accessories.allCategories') },
+            ...ACCESSORY_CATEGORIES.map((c) => ({ slug: c.slug, label: cat(c.label) })),
           ]}
         />
         <FilterGroup
-          legend="Compatibilidad"
+          legend={t('accessories.compatibility')}
           value={compat}
           onChange={(v) => setCompat(v as CompatibilityFilter)}
-          options={COMPAT_OPTIONS}
+          options={COMPAT_OPTIONS.map((o) =>
+            o.slug === 'todas' ? { ...o, label: t('accessories.all') } : o,
+          )}
         />
         {dirty && (
           <button
@@ -89,7 +90,7 @@ export function AccessoriesPage() {
             }}
             className="text-sm font-semibold text-ink underline underline-offset-2"
           >
-            Limpiar filtros
+            {t('accessories.clearFilters')}
           </button>
         )}
       </section>
@@ -97,15 +98,15 @@ export function AccessoriesPage() {
       {/* Grid */}
       <section aria-labelledby="grid" className="mt-8">
         <h2 id="grid" className="sr-only">
-          Resultados
+          {t('accessories.results')}
         </h2>
         {results.length === 0 ? (
           <div className="rounded-[12px] border border-dashed border-line py-16 text-center">
             <p className="text-lg font-semibold text-ink">
-              No hay accesorios que combinen esos filtros.
+              {t('accessories.emptyTitle')}
             </p>
             <p className="mt-2 text-muted">
-              Quita algún filtro o revisa las categorías principales.
+              {t('accessories.emptyBody')}
             </p>
             <button
               type="button"
@@ -130,18 +131,17 @@ export function AccessoriesPage() {
       {/* CTA */}
       <section className="mt-12 rounded-[16px] border border-line bg-neutral p-6">
         <h2 className="text-lg font-bold text-ink">
-          ¿Necesitas confirmar disponibilidad?
+          {t('accessories.ctaTitle')}
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Consulta stock y precio actualizado en tu tienda Banana Computer o
-          desde el centro de soporte.
+          {t('accessories.ctaBody')}
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <ButtonLink to="/tiendas" variant="secondary">
-            Consultar en tiendas <Icon name="chevron-right" size={14} aria-hidden="true" />
+            {t('accessories.ctaStores')} <Icon name="chevron-right" size={14} aria-hidden="true" />
           </ButtonLink>
           <ButtonLink to="/soporte" variant="tertiary">
-            Ir al centro de soporte ›
+            {t('accessories.ctaSupport')}
           </ButtonLink>
         </div>
       </section>

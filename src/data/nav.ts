@@ -125,8 +125,9 @@ export const familiesNav: FamilyNav[] = families
   .map((f) => buildFamilyNav(f.slug, f.name))
   .concat(buildFamilyNav('accesorios', 'Accesorios'))
 
-export const directLinks = [
-  { label: 'Servicios', to: '/servicios' },
+// `label` es una clave de traducción, no texto.
+export const directLinks: { label: ClaveTexto; to: string }[] = [
+  { label: 'services.title', to: '/servicios' },
 ]
 
 // Enlaces institucionales que aparecen en la barra superior (escritorio) y en

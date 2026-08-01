@@ -641,6 +641,7 @@ function EducationalDiscountSection() {
 }
 
 function FavoritesSection() {
+  const t = useT()
   const { favorites } = useStore()
   const { favoriteStore } = useStorePreference()
 
@@ -671,7 +672,7 @@ function FavoritesSection() {
             to="/tiendas"
             className="mt-3 inline-block text-sm font-semibold text-ink underline"
           >
-            Ver tiendas
+            {t('common.viewStores')}
           </Link>
         </div>
       </div>

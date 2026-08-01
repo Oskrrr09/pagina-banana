@@ -13,6 +13,7 @@ import { ALTURA_TAB_BAR } from './AppTabBar'
 // Nunca se muestra dentro de /checkout/* para no interferir con la compra.
 // El estado de "cerrado" persiste en banana:favorite-store-prompt.
 export function FavoriteStoreDialogs() {
+  const t = useT()
   const { favoriteSlug, favoriteStore, promptDismissed, setFavorite, dismissPrompt } =
     useStorePreference()
   const { pathname } = useLocation()
@@ -101,7 +102,7 @@ export function FavoriteStoreDialogs() {
       {/* Aria-live silencioso para lectores de pantalla mientras cargan páginas */}
       {favoriteStore && (
         <span aria-live="polite" className="sr-only">
-          Tienda favorita: {favoriteStore.name}.
+          {t('favStore.current', { tienda: favoriteStore.name })}
         </span>
       )}
     </>
@@ -157,13 +158,13 @@ function FavoriteStorePrompt({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-              Tu tienda Banana
+              {t('favStore.kicker')}
             </p>
             <h2 id="fav-store-title" className="mt-1 text-lg font-bold text-ink">
-              ¿Cuál es tu tienda Banana habitual?
+              {t('favStore.title')}
             </h2>
             <p id="fav-store-desc" className="mt-1 text-sm text-muted">
-              Podemos mostrarte primero sus horarios, servicios y disponibilidad de ejemplo.
+              {t('favStore.desc')}
             </p>
           </div>
           <button

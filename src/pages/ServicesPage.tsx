@@ -16,14 +16,13 @@ export function ServicesPage() {
         <Container className="py-12 md:py-16">
           <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">{t('services.title')}</h1>
           <p className="mt-3 max-w-2xl text-lg text-muted">
-            Comprar en Banana es más que un producto: financiación, envíos a toda Canarias, Plan Renove, seguro y
-            descuento educativo.
+            {t('services.intro')}
           </p>
         </Container>
       </section>
 
       <Section>
-        <SectionHeader title="Todo lo que te ofrecemos" />
+        <SectionHeader title={t('services.allTitle')} />
         <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((s) => (
             <StaggerItem key={s.slug}>
@@ -41,7 +40,7 @@ export function ServicesPage() {
                   variant="tertiary"
                   className="mt-4"
                 >
-                  Más información <Icon name="arrow-right" size={16} />
+                  {t('services.more')} <Icon name="arrow-right" size={16} />
                 </ButtonLink>
               </div>
             </StaggerItem>
@@ -58,12 +57,12 @@ export function ServicesPage() {
 
       <Section>
         <Reveal className="rounded-[20px] border border-line bg-neutral p-8 text-center">
-          <h2 className="text-2xl font-bold text-ink">¿Tienes dudas sobre algún servicio?</h2>
-          <p className="mt-2 text-muted">Nuestro equipo te ayuda en tienda o desde el centro de soporte.</p>
+          <h2 className="text-2xl font-bold text-ink">{t('services.doubtsTitle')}</h2>
+          <p className="mt-2 text-muted">{t('services.doubtsBody')}</p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <ButtonLink to="/soporte">Ir a soporte</ButtonLink>
             <ButtonLink to="/tiendas" variant="secondary">
-              Ver tiendas
+              {t('common.viewStores')}
             </ButtonLink>
           </div>
         </Reveal>

@@ -166,12 +166,49 @@ function normalizarColor(nombre: string): string {
  * Traductor de textos del catálogo: reclamos de modelo, características y
  * especificaciones. Ver `src/i18n/catalogo.ts`.
  */
-export function useCatalogo(): (texto: string) => string {
+export function useCatalogo(): (texto: string, valores?: Record<string, string>) => string {
   const { idioma } = useIdioma()
-  return (texto) => traducirCatalogo(texto, idioma)
+  return (texto, valores) => traducirCatalogo(texto, idioma, valores)
+}
+
+/**
+ * Traduce un motivo del asistente «Encuentra tu Apple».
+ *
+ * Es `useCatalogo()` con la forma que devuelve el motor de decisión —texto más
+ * valores— para no repetir el desempaquetado en los cuatro sitios que los
+ * pintan.
+ */
+export function useMotivo(): (motivo: { texto: string; valores?: Record<string, string> }) => string {
+  const cat = useCatalogo()
+  return (motivo) => cat(motivo.texto, motivo.valores)
 }
 
 /** Atajo para el caso habitual: solo traducir. */
 export function useT(): EstadoIdioma['t'] {
   return useIdioma().t
+}
+
+/**
+ * Convierte los `<b>…</b>` de un texto traducido en `<strong>`.
+ *
+ * Un par de textos necesitan una palabra en negrita —«los precios son
+ * **demostrativos**»— y esa palabra no cae en el mismo sitio en cada idioma:
+ * en alemán el adjetivo se va al final de la frase. Partir la clave en tres
+ * («los precios son» + «demostrativos» + «y la disponibilidad…») obligaría al
+ * traductor a respetar un orden que su idioma no tiene, así que la marca viaja
+ * dentro del texto.
+ *
+ * Deliberadamente entiende una sola etiqueta y nada más: no es un renderizador
+ * de HTML, y el texto nunca llega a `innerHTML`.
+ */
+export function conNegritas(texto: string): ReactNode[] {
+  return texto.split(/(<b>.*?<\/b>)/g).map((trozo, i) =>
+    trozo.startsWith('<b>') ? (
+      <strong key={i} className="font-semibold text-ink">
+        {trozo.slice(3, -4)}
+      </strong>
+    ) : (
+      trozo
+    ),
+  )
 }

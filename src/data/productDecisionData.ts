@@ -1004,8 +1004,14 @@ export function buildDecisionSummary(contexts: DecisionContext[]): DecisionSumma
 
 // -----------------------------------------------------------------------
 
-function formatEuros(value: number): string {
-  return new Intl.NumberFormat('es-ES', {
+/**
+ * El `intl` por defecto es el castellano porque la mayoría de llamadas son de
+ * la tabla comparativa, que aún no lo recibe. Donde el importe acaba delante
+ * del usuario en otro idioma —los motivos del asistente y las bandas de
+ * presupuesto— se pasa explícitamente.
+ */
+function formatEuros(value: number, intl = 'es-ES'): string {
+  return new Intl.NumberFormat(intl, {
     style: 'currency',
     currency: 'EUR',
     maximumFractionDigits: 0,
@@ -1052,7 +1058,9 @@ export type BudgetFlex = 'strict' | 'flex' | 'reference'
 /** Un tramo de presupuesto. `max: null` = sin límite. */
 export interface BudgetOption {
   value: string
+  /** Castellano, con marcador `{importe}` si lleva cifra. Ver `Motivo`. */
   label: string
+  labelValores?: Record<string, string>
   max: number | null
 }
 
@@ -1065,6 +1073,7 @@ export interface BudgetOption {
 export function getBudgetOptionsForFamily(
   family: FamilySlug,
   models: readonly Model[],
+  intl = 'es-ES',
 ): BudgetOption[] {
   const prices = models
     .map((m) => m.fromPrice)
@@ -1085,7 +1094,8 @@ export function getBudgetOptionsForFamily(
   const sortedBands = Array.from(bands).sort((a, b) => a - b)
   const opts: BudgetOption[] = sortedBands.map((v) => ({
     value: `hasta-${v}`,
-    label: `Hasta ${formatEuros(v)}`,
+    label: 'Hasta {importe}',
+    labelValores: { importe: formatEuros(v, intl) },
     max: v,
   }))
   opts.push({ value: 'sin-limite', label: 'Sin límite', max: null })
@@ -1368,10 +1378,25 @@ export function emptyAnswers(): FinderAnswers {
 // Sugerencia de familia ("No lo tengo claro") — ranking por intención.
 // -----------------------------------------------------------------------
 
+/**
+ * Un motivo que el asistente muestra para justificar una recomendación.
+ *
+ * `texto` es el castellano y hace de identificador: `src/i18n/asistente.ts` se
+ * indexa por él. Cuando el motivo lleva un valor dentro —un importe, una
+ * talla— el texto conserva el marcador `{clave}` sin sustituir y el valor
+ * viaja en `valores`. Sustituirlo aquí dejaría la frase fuera del mapa, y en
+ * inglés el símbolo del euro va delante de la cifra, así que la posición no se
+ * puede fijar en castellano.
+ */
+export interface Motivo {
+  texto: string
+  valores?: Record<string, string>
+}
+
 export interface FamilyCandidate {
   family: FamilySlug
   score: number
-  reasons: string[]
+  reasons: Motivo[]
 }
 
 /**
@@ -1493,7 +1518,7 @@ export function isFamilyEligibleForIntent(
 function scoreFamilyForIntent(
   family: FamilySlug,
   general: FinderAnswers['general'],
-): { score: number; reasons: string[] } {
+): { score: number; reasons: Motivo[] } {
   const use = general.use
   const role = general.productRole ?? 'unknown'
   const workType = general.workType
@@ -1501,10 +1526,10 @@ function scoreFamilyForIntent(
   const portability = general.portability
 
   let score = 0
-  const reasons: string[] = []
+  const reasons: Motivo[] = []
   const push = (n: number, r: string) => {
     score += n
-    if (r) reasons.push(r)
+    if (r) reasons.push({ texto: r })
   }
 
   // ----- Uso principal (base) -----
@@ -1694,49 +1719,50 @@ const MAC_DESKTOP_SLUGS = new Set(['imac-24-m4', 'mac-mini-m4', 'mac-studio'])
 
 export interface HardFilterFailure {
   slug: string
-  reason: string
+  reason: Motivo
 }
 
 /** Restricciones duras — un modelo que las incumple NO se recomienda. */
 export function filterEligibleModels(
   models: readonly Model[],
   answers: FinderAnswers,
+  intl = 'es-ES',
 ): { eligible: Model[]; excluded: HardFilterFailure[] } {
   const eligible: Model[] = []
   const excluded: HardFilterFailure[] = []
   const budget = resolveBudgetMax(answers)
   for (const m of models) {
     const meta = MODEL_META[m.slug] ?? {}
-    let reason: string | null = null
+    let reason: Motivo | null = null
 
     if (answers.family === 'mac') {
       const form = answers.specific['mac.form']
       if (form === 'portable' && !MAC_PORTABLE_SLUGS.has(m.slug)) {
-        reason = 'Formato: has pedido portátil.'
+        reason = { texto: 'Formato: has pedido portátil.' }
       } else if (form === 'desktop' && !MAC_DESKTOP_SLUGS.has(m.slug)) {
-        reason = 'Formato: has pedido sobremesa.'
+        reason = { texto: 'Formato: has pedido sobremesa.' }
       }
     }
 
     if (!reason && answers.family === 'airpods') {
       const fit = answers.specific['airpods.fit'] as AirPodsFit | 'flex' | undefined
       if (fit && fit !== 'flex' && meta.airpodsFit && fit !== meta.airpodsFit) {
-        reason = 'Formato de ajuste distinto al indicado.'
+        reason = { texto: 'Formato de ajuste distinto al indicado.' }
       }
     }
 
     if (!reason && answers.family === 'ipad') {
       if (answers.specific['ipad.pencil'] === 'si' && meta.supportsPencil === false) {
-        reason = 'No es compatible con Apple Pencil.'
+        reason = { texto: 'No es compatible con Apple Pencil.' }
       }
       if (!reason && answers.specific['ipad.keyboard'] === 'si' && meta.supportsKeyboard === false) {
-        reason = 'No es compatible con Magic Keyboard.'
+        reason = { texto: 'No es compatible con Magic Keyboard.' }
       }
     }
 
     if (!reason && answers.family === 'apple-watch') {
       if (answers.specific['watch.cellular'] === 'si' && meta.hasCellular === false) {
-        reason = 'No ofrece variante Cellular en el prototipo.'
+        reason = { texto: 'No ofrece variante Cellular en el prototipo.' }
       }
     }
 
@@ -1746,7 +1772,10 @@ export function filterEligibleModels(
       answers.general.budgetFlex === 'strict' &&
       m.fromPrice > budget
     ) {
-      reason = `Precio ${formatEuros(m.fromPrice)} por encima del presupuesto (${formatEuros(budget)}).`
+      reason = {
+        texto: 'Precio {precio} por encima del presupuesto ({importe}).',
+        valores: { precio: formatEuros(m.fromPrice, intl), importe: formatEuros(budget, intl) },
+      }
     }
     if (
       !reason &&
@@ -1754,7 +1783,10 @@ export function filterEligibleModels(
       answers.general.budgetFlex === 'flex' &&
       m.fromPrice > Math.ceil(budget * 1.15)
     ) {
-      reason = `Precio por encima incluso del margen del 15 % (${formatEuros(Math.ceil(budget * 1.15))}).`
+      reason = {
+        texto: 'Precio por encima incluso del margen del 15 % ({importe}).',
+        valores: { importe: formatEuros(Math.ceil(budget * 1.15), intl) },
+      }
     }
 
     if (reason) excluded.push({ slug: m.slug, reason })
@@ -1787,8 +1819,8 @@ function budgetMaxFromValue(family: FamilySlug, value: string): number | null {
 
 export interface ScoreResult {
   score: number
-  positives: string[]
-  caveats: string[]
+  positives: Motivo[]
+  caveats: Motivo[]
 }
 
 /**
@@ -1857,9 +1889,13 @@ export function scoreEligibleModel(model: Model, answers: FinderAnswers): ScoreR
 // Razones y compromisos derivados de las respuestas.
 // -----------------------------------------------------------------------
 
-export function buildRecommendationReasons(model: Model, answers: FinderAnswers): string[] {
+export function buildRecommendationReasons(
+  model: Model,
+  answers: FinderAnswers,
+  intl = 'es-ES',
+): Motivo[] {
   const meta = MODEL_META[model.slug] ?? {}
-  const reasons: string[] = []
+  const reasons: Motivo[] = []
   const family = answers.family
   const familyUse = family ? answers.specific[`${family}.use`] : undefined
   const use = familyUse ?? answers.general.use
@@ -1867,28 +1903,31 @@ export function buildRecommendationReasons(model: Model, answers: FinderAnswers)
   const budget = resolveBudgetMax(answers)
 
   if (family === 'mac' && answers.specific['mac.form'] === 'portable' && MAC_PORTABLE_SLUGS.has(model.slug))
-    reasons.push('Encaja con el formato portátil que pediste.')
+    reasons.push({ texto: 'Encaja con el formato portátil que pediste.' })
   if (family === 'mac' && answers.specific['mac.form'] === 'desktop' && MAC_DESKTOP_SLUGS.has(model.slug))
-    reasons.push('Encaja con el formato sobremesa que pediste.')
+    reasons.push({ texto: 'Encaja con el formato sobremesa que pediste.' })
   if (family === 'airpods' && meta.airpodsFit && answers.specific['airpods.fit'] === meta.airpodsFit)
-    reasons.push(`Ajuste ${airpodsFitLabel(meta.airpodsFit)} coincide con tu preferencia.`)
+    reasons.push({
+      texto: 'Ajuste {ajuste} coincide con tu preferencia.',
+      valores: { ajuste: airpodsFitLabel(meta.airpodsFit) },
+    })
   if (family === 'ipad' && answers.specific['ipad.pencil'] === 'si' && meta.supportsPencil)
-    reasons.push('Compatible con Apple Pencil, como pediste.')
+    reasons.push({ texto: 'Compatible con Apple Pencil, como pediste.' })
   if (family === 'ipad' && answers.specific['ipad.keyboard'] === 'si' && meta.supportsKeyboard)
-    reasons.push('Compatible con Magic Keyboard, como pediste.')
+    reasons.push({ texto: 'Compatible con Magic Keyboard, como pediste.' })
   if (family === 'apple-watch' && answers.specific['watch.cellular'] === 'si' && meta.hasCellular)
-    reasons.push('Incluye variante Cellular disponible.')
+    reasons.push({ texto: 'Incluye variante Cellular disponible.' })
 
   if (priority === 'camera' && meta.cameraLevel === 3)
-    reasons.push('Cámara destacada, tu prioridad principal.')
+    reasons.push({ texto: 'Cámara destacada, tu prioridad principal.' })
   if (priority === 'battery' && meta.batteryLevel === 3)
-    reasons.push('Muy buena autonomía, tu prioridad principal.')
+    reasons.push({ texto: 'Muy buena autonomía, tu prioridad principal.' })
   if (priority === 'performance' && meta.performanceLevel === 3)
-    reasons.push('Máxima potencia de la familia.')
+    reasons.push({ texto: 'Máxima potencia de la familia.' })
   if (priority === 'portability' && meta.portabilityLevel === 3)
-    reasons.push('Muy portátil, como pediste.')
+    reasons.push({ texto: 'Muy portátil, como pediste.' })
   if (priority === 'value' && meta.valueLevel === 3)
-    reasons.push('Excelente relación calidad-precio.')
+    reasons.push({ texto: 'Excelente relación calidad-precio.' })
 
   if (family === 'iphone' && answers.specific['iphone.size'] && meta.sizeCategory) {
     const want = answers.specific['iphone.size']
@@ -1897,48 +1936,57 @@ export function buildRecommendationReasons(model: Model, answers: FinderAnswers)
       (want === 'compacto' && meta.sizeCategory === 'compact') ||
       (want === 'equilibrado' && meta.sizeCategory === 'balanced')
     ) {
-      reasons.push(`Tamaño ${want} como preferiste.`)
+      reasons.push({ texto: 'Tamaño {tamano} como preferiste.', valores: { tamano: want } })
     }
   }
 
-  if (use === 'aventura' && meta.batteryLevel === 3) reasons.push('Batería para deportes largos.')
-  if (use === 'viajes' && meta.hasNoiseCancellation) reasons.push('Cancelación de ruido para viajes.')
+  if (use === 'aventura' && meta.batteryLevel === 3) reasons.push({ texto: 'Batería para deportes largos.' })
+  if (use === 'viajes' && meta.hasNoiseCancellation) reasons.push({ texto: 'Cancelación de ruido para viajes.' })
   if (use === 'estudio' && meta.valueLevel && meta.valueLevel >= 2)
-    reasons.push('Buena opción para estudio.')
+    reasons.push({ texto: 'Buena opción para estudio.' })
 
   if (budget != null && model.fromPrice <= budget)
-    reasons.push(`Entra en tu presupuesto (${formatEuros(budget)}).`)
+    reasons.push({
+      texto: 'Entra en tu presupuesto ({importe}).',
+      valores: { importe: formatEuros(budget, intl) },
+    })
 
   return dedupe(reasons).slice(0, 3)
 }
 
-export function buildRecommendationCaveats(model: Model, answers: FinderAnswers): string[] {
+export function buildRecommendationCaveats(
+  model: Model,
+  answers: FinderAnswers,
+  intl = 'es-ES',
+): Motivo[] {
   const meta = MODEL_META[model.slug] ?? {}
-  const caveats: string[] = []
+  const caveats: Motivo[] = []
   const budget = resolveBudgetMax(answers)
 
   if (answers.family === 'iphone') {
     const size = answers.specific['iphone.size']
     if (size && size !== 'flex' && meta.sizeCategory) {
       const wanted = size === 'grande' ? 'large' : size === 'compacto' ? 'compact' : 'balanced'
-      if (meta.sizeCategory !== wanted) caveats.push('Tamaño distinto al que preferías.')
+      if (meta.sizeCategory !== wanted) caveats.push({ texto: 'Tamaño distinto al que preferías.' })
     }
   }
   if (answers.family === 'apple-watch' && answers.specific['watch.cellular'] === 'si' && !meta.hasCellular) {
-    caveats.push('Requiere elegir explícitamente la variante Cellular al comprar.')
+    caveats.push({ texto: 'Requiere elegir explícitamente la variante Cellular al comprar.' })
   }
   if (answers.family === 'ipad' && answers.specific['ipad.pencil'] === 'si' && meta.supportsPencil === false) {
-    caveats.push('No es compatible con Apple Pencil.')
+    caveats.push({ texto: 'No es compatible con Apple Pencil.' })
   }
   if (budget != null && model.fromPrice > budget && answers.general.budgetFlex === 'flex') {
-    caveats.push(
-      `Ligeramente por encima del presupuesto (${formatEuros(model.fromPrice)} vs ${formatEuros(budget)}).`,
-    )
+    caveats.push({
+      texto: 'Ligeramente por encima del presupuesto ({precio} vs {importe}).',
+      valores: { precio: formatEuros(model.fromPrice, intl), importe: formatEuros(budget, intl) },
+    })
   }
   if (budget != null && model.fromPrice > budget && answers.general.budgetFlex === 'reference') {
-    caveats.push(
-      `Por encima de tu referencia (${formatEuros(model.fromPrice)} vs ${formatEuros(budget)}).`,
-    )
+    caveats.push({
+      texto: 'Por encima de tu referencia ({precio} vs {importe}).',
+      valores: { precio: formatEuros(model.fromPrice, intl), importe: formatEuros(budget, intl) },
+    })
   }
   return dedupe(caveats).slice(0, 2)
 }
@@ -1957,8 +2005,8 @@ export interface FinderResult {
   model: Model
   role: FinderRole
   score: number
-  positives: string[]
-  caveats: string[]
+  positives: Motivo[]
+  caveats: Motivo[]
 }
 
 export interface FinderComputation {
@@ -1978,8 +2026,12 @@ export interface FinderComputation {
  *    fortaleza diferente al best-fit (o simplemente el siguiente).
  *  - Nunca incluir modelos filtrados por restricción dura.
  */
-export function computeFinderResults(models: readonly Model[], answers: FinderAnswers): FinderComputation {
-  const { eligible, excluded } = filterEligibleModels(models, answers)
+export function computeFinderResults(
+  models: readonly Model[],
+  answers: FinderAnswers,
+  intl = 'es-ES',
+): FinderComputation {
+  const { eligible, excluded } = filterEligibleModels(models, answers, intl)
   if (eligible.length === 0) {
     return { results: [], eligibleCount: 0, excluded, noMatch: true }
   }
@@ -1996,8 +2048,8 @@ export function computeFinderResults(models: readonly Model[], answers: FinderAn
     model: best.model,
     role: 'best-fit',
     score: best.score,
-    positives: buildRecommendationReasons(best.model, answers),
-    caveats: buildRecommendationCaveats(best.model, answers),
+    positives: buildRecommendationReasons(best.model, answers, intl),
+    caveats: buildRecommendationCaveats(best.model, answers, intl),
   }
   const results: FinderResult[] = [bestFit]
 
@@ -2020,8 +2072,8 @@ export function computeFinderResults(models: readonly Model[], answers: FinderAn
       model: bestValue.model,
       role: 'best-value',
       score: bestValue.score,
-      positives: buildRecommendationReasons(bestValue.model, answers),
-      caveats: buildRecommendationCaveats(bestValue.model, answers),
+      positives: buildRecommendationReasons(bestValue.model, answers, intl),
+      caveats: buildRecommendationCaveats(bestValue.model, answers, intl),
     })
   }
 
@@ -2034,8 +2086,8 @@ export function computeFinderResults(models: readonly Model[], answers: FinderAn
       model: other.model,
       role: 'other',
       score: other.score,
-      positives: buildRecommendationReasons(other.model, answers),
-      caveats: buildRecommendationCaveats(other.model, answers),
+      positives: buildRecommendationReasons(other.model, answers, intl),
+      caveats: buildRecommendationCaveats(other.model, answers, intl),
     })
   }
 

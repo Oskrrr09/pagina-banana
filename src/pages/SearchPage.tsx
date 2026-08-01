@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useT } from '../lib/i18n'
+import { useCatalogo, useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ProductCard } from '../components/product/ProductCard'
@@ -16,6 +16,7 @@ import { getAccessory } from '../data/accessories'
 // determinista y agrupado que el autocompletado del Header. Sincroniza el
 // input con `q` en la URL.
 export function SearchPage() {
+  const t = useT()
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
   const [input, setInput] = useState(q)
@@ -51,7 +52,7 @@ export function SearchPage() {
 
       {hasQuery && (
         <p className="mt-4 text-sm text-muted">
-          Resultados para <span className="font-semibold text-ink">“{q}”</span>
+          {t('search.resultsFor')} <span className="font-semibold text-ink">“{q}”</span>
         </p>
       )}
 
@@ -75,6 +76,7 @@ export function SearchPage() {
 }
 
 function ResultsSections({ results }: { results: SearchResults }) {
+  const cat = useCatalogo()
   const { exactMatch, appleDevices, relatedProducts, appleAccessories, compatibleAccessories, services, help, intent } = results
 
   const devicesBlock = appleDevices.length > 0 && (
@@ -134,7 +136,7 @@ function ResultsSections({ results }: { results: SearchResults }) {
                   <Icon name="chevron-right" size={16} className="text-muted" />
                   <span>{s.name}</span>
                   {s.description && (
-                    <span className="text-sm text-muted">— {s.description}</span>
+                    <span className="text-sm text-muted">— {cat(s.description)}</span>
                   )}
                 </Link>
               </li>
@@ -152,7 +154,7 @@ function ResultsSections({ results }: { results: SearchResults }) {
                 <Link to={h.route ?? '/soporte'} className="font-medium text-ink hover:text-ink">
                   {h.name}
                 </Link>
-                {h.description && <p className="mt-0.5 text-sm text-muted">{h.description}</p>}
+                {h.description && <p className="mt-0.5 text-sm text-muted">{cat(h.description)}</p>}
               </li>
             ))}
           </ul>
@@ -163,6 +165,7 @@ function ResultsSections({ results }: { results: SearchResults }) {
 }
 
 function ExactMatchCard({ item }: { item: SearchItem }) {
+  const cat = useCatalogo()
   const t = useT()
   // Familias y dispositivos usan tarjeta enriquecida cuando existe modelo real.
   if (item.kind === 'apple-device') {
@@ -183,7 +186,7 @@ function ExactMatchCard({ item }: { item: SearchItem }) {
       >
         <p className="text-xs font-bold uppercase tracking-widest text-muted">Familia Apple</p>
         <p className="mt-1 text-xl font-extrabold text-ink">{item.name}</p>
-        {item.description && <p className="mt-1 text-sm text-muted">{item.description}</p>}
+        {item.description && <p className="mt-1 text-sm text-muted">{cat(item.description)}</p>}
         <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-ink">
           {t('common.allModels')} <Icon name="chevron-right" size={14} />
         </span>
@@ -205,6 +208,7 @@ function ExactMatchCard({ item }: { item: SearchItem }) {
 }
 
 function DeviceGrid({ items }: { items: SearchItem[] }) {
+  const cat = useCatalogo()
   const t = useT()
   // Dispositivos Apple: si la entrada es familia, tarjeta destacada; si es
   // modelo real, ProductCard.
@@ -219,7 +223,7 @@ function DeviceGrid({ items }: { items: SearchItem[] }) {
         >
           <p className="text-xs font-bold uppercase tracking-widest text-muted">Familia Apple</p>
           <p className="mt-1 text-xl font-extrabold text-ink">{item.name}</p>
-          {item.description && <p className="mt-1 text-sm text-muted">{item.description}</p>}
+          {item.description && <p className="mt-1 text-sm text-muted">{cat(item.description)}</p>}
           <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-ink">
             {t('common.allModels')} <Icon name="chevron-right" size={14} />
           </span>

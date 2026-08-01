@@ -3,6 +3,7 @@ import { euro, monthlyQuote } from '../../lib/format'
 import { Modal } from '../ui/Modal'
 import { Chip } from '../ui/Chip'
 import { ProvisionalBadge } from '../ui/Tag'
+import { useT } from '../../lib/i18n'
 
 // Simulador de financiación (§6): cuota orientativa. La etiqueta "orientativo"
 // es siempre legible, no solo en letra pequeña. Sin conexión a financiera real.
@@ -19,6 +20,7 @@ export function FinanceSimulator({
   price: number
   productName: string
 }) {
+  const t = useT()
   const [months, setMonths] = useState(24)
   const quote = monthlyQuote(price, months)
 
@@ -46,7 +48,7 @@ export function FinanceSimulator({
           <span className="text-lg font-medium text-muted">/mes</span>
         </p>
         <div className="mt-3 flex items-center justify-center gap-2">
-          <ProvisionalBadge label="Precio demostrativo" />
+          <ProvisionalBadge label={t('common.demoPrice')} />
         </div>
       </div>
 

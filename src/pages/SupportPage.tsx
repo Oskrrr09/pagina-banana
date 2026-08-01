@@ -97,14 +97,13 @@ export function SupportPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-2xl">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                  Servicio técnico
+                  {t('repair.kicker')}
                 </p>
                 <h2 id="sat-callout" className="mt-1 text-2xl font-extrabold text-ink">
-                  ¿Necesitas reparar un dispositivo Apple?
+                  {t('support.repairTitle')}
                 </h2>
                 <p className="mt-2 text-sm text-ink">
-                  Consulta cómo entregar tu dispositivo, qué preparar antes, y las condiciones en
-                  garantía y fuera de garantía. No necesitas cita previa.
+                  {t('support.repairBody')}
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -158,7 +157,7 @@ export function SupportPage() {
             className="mt-12 rounded-[20px] border border-line bg-neutral p-8 text-center"
           >
             <h2 id="support-more" className="text-xl font-bold text-ink">
-              ¿No encuentras lo que buscas?
+              {t('support.notFoundTitle')}
             </h2>
             <p className="mt-2 text-muted">{t('support.channels')}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
@@ -166,13 +165,13 @@ export function SupportPage() {
                 to="/tiendas"
                 className="inline-flex items-center gap-2 rounded-[12px] bg-action px-6 py-3 font-semibold text-ink hover:bg-action-600"
               >
-                Ver tiendas y horarios
+                {t('support.storesCta')}
               </Link>
               <Link
                 to="/servicios"
                 className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-6 py-3 font-semibold text-ink hover:border-ink/30"
               >
-                Más servicios de Banana
+                {t('support.servicesCta')}
               </Link>
             </div>
           </section>

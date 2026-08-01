@@ -59,10 +59,18 @@ castellano** (D-047).
   usa nadie. Los nombres propios —«USB-C», «IP68», «Face ID», «Apple M5»—
   están en una lista de excepciones explícita.
 
-  **Lo que sigue en castellano** (medido con el barrido, unos 100 textos):
-  los accesorios enteros, las diapositivas y bloques destacados de la
-  portada, el asistente «Encuentra tu Apple», los cuerpos de servicio
-  técnico y Plan Renove, el comparador, favoritos y la página de perfil (asistente, banner del Plan Renove,
+  Y con esto la web queda traducida entera. Un barrido que carga cada ruta
+  en inglés y extrae el texto visible pasó de 244 restos a 7, y esos 7 son
+  las direcciones de las tiendas y sus nombres —«Calle Triana, 105», «Banana
+  La Laguna»—, que no se traducen porque son datos reales.
+
+  Lo que ha entrado en esta tanda: los 18 accesorios completos (incluidas
+  sus notas de compatibilidad), la portada, el carrusel, el asistente
+  «Encuentra tu Apple» entero, servicio técnico, Plan Renove, servicios,
+  soporte, comparador, favoritos, tiendas, buscador, perfil y el 404.
+
+  Tres pruebas nuevas vigilan que no se descuelgue nada
+  (`tests/e2e/catalogo-i18n.spec.ts`) (asistente, banner del Plan Renove,
   ventajas, preguntas frecuentes, reseñas y newsletter). Servicios, Plan
   Renove, soporte, servicio técnico, tiendas y el checkout siguen pendientes.
 - Suite en 255, con nueve pruebas nuevas de idioma. Hubo que fijar `locale: 'es-ES'` en la configuración de

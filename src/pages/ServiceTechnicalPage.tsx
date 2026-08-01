@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useT } from '../lib/i18n'
+import { conNegritas, useIdioma } from '../lib/i18n'
+import { euro } from '../lib/format'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ProvisionalBadge } from '../components/ui/Tag'
@@ -16,23 +17,26 @@ import { DevicePreparationGuide } from '../components/support/DevicePreparationG
 //
 // No implementa reserva de cita, calendario, pago online, seguimiento de
 // reparación ni recogida a domicilio.
+// Importes y plazos que la página repite en varios sitios. Estaban escritos a
+// mano en cada frase —«35 €» tres veces, «3 días» dos—, así que cambiar la
+// tarifa obligaba a acordarse de los cinco puntos y a hacerlo en cinco idiomas.
+const COSTE_ENVIO_SAT = 35
+const DIAS_TRASLADO = 3
+
 export function ServiceTechnicalPage() {
-  const t = useT()
+  const { t, intl } = useIdioma()
   const [guideOpen, setGuideOpen] = useState(false)
   return (
     <>
       <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
         <Container className="py-12 md:py-16">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-            Servicio técnico
+            {t('repair.kicker')}
           </p>
           <h1 className="mt-2 text-4xl font-extrabold text-ink sm:text-5xl">
-            Servicio Técnico Autorizado
+            {t('repair.title')}
           </h1>
-          <p className="mt-3 max-w-2xl text-lg text-muted">
-            Cómo entregar tu dispositivo Apple, qué preparar antes y qué
-            condiciones se aplican según esté dentro o fuera de garantía.
-          </p>
+          <p className="mt-3 max-w-2xl text-lg text-muted">{t('repair.intro')}</p>
         </Container>
       </section>
 
@@ -45,10 +49,10 @@ export function ServiceTechnicalPage() {
               </span>
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                  Cómo funciona
+                  {t('repair.howKicker')}
                 </p>
                 <h2 id="sat-heading" className="mt-1 text-2xl font-extrabold text-ink sm:text-3xl">
-                  Sin cita previa, en horario de tienda
+                  {t('repair.noAppointment')}
                 </h2>
               </div>
             </div>
@@ -60,17 +64,10 @@ export function ServiceTechnicalPage() {
             >
               <p className="flex items-center gap-2 text-sm font-bold text-ink">
                 <Icon name="check" size={18} aria-hidden="true" />
-                No necesitas cita previa
+                {t('repair.noAppointmentBadge')}
               </p>
-              <p className="mt-2 text-sm text-ink">
-                No necesitas cita previa. Puedes acudir directamente durante el horario de
-                apertura. Antes de entregar tu dispositivo, asegúrate de haber realizado una
-                copia de seguridad y de haber desactivado las funciones de seguridad necesarias.
-              </p>
-              <p className="mt-2 text-xs text-muted">
-                No se garantiza atención inmediata ni un plazo total concreto de diagnóstico o
-                reparación.
-              </p>
+              <p className="mt-2 text-sm text-ink">{t('repair.noAppointmentBody')}</p>
+              <p className="mt-2 text-xs text-muted">{t('repair.noAppointmentNote')}</p>
             </div>
 
             {/* Preparación del dispositivo — orden correcto:
@@ -78,10 +75,7 @@ export function ServiceTechnicalPage() {
                  (el modo antirrobo debe estar desactivado antes que Buscar). */}
             <div className="mt-6 rounded-[12px] border border-line bg-surface p-5">
               <h3 className="text-lg font-bold text-ink">{t('repair.prepareTitle')}</h3>
-              <p className="mt-1 text-sm text-muted">
-                Estas funciones de seguridad pueden impedir que el servicio técnico revise,
-                diagnostique o gestione correctamente tu dispositivo. Hazlo en este orden.
-              </p>
+              <p className="mt-1 text-sm text-muted">{t('repair.prepareIntro')}</p>
               <ol className="mt-4 space-y-3 text-sm text-ink">
                 <li className="flex items-start gap-3">
                   <span
@@ -90,10 +84,7 @@ export function ServiceTechnicalPage() {
                   >
                     1
                   </span>
-                  <span>
-                    <strong className="font-semibold">{t('repair.backup')}</strong>{' '}
-                    actualizada de tus datos.
-                  </span>
+                  <span>{conNegritas(t('repair.step1'))}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span
@@ -102,13 +93,7 @@ export function ServiceTechnicalPage() {
                   >
                     2
                   </span>
-                  <span>
-                    <strong className="font-semibold">
-                      Desactiva la Protección del dispositivo en caso de robo
-                    </strong>{' '}
-                    (modo antirrobo o función equivalente), cuando esté activada o disponible.
-                    Debe desactivarse antes que la función "Buscar".
-                  </span>
+                  <span>{conNegritas(t('repair.step2'))}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span
@@ -117,11 +102,7 @@ export function ServiceTechnicalPage() {
                   >
                     3
                   </span>
-                  <span>
-                    <strong className="font-semibold">{t('repair.findMy')}</strong>:
-                    Buscar mi iPhone, Buscar mi iPad, Buscar mi Mac o la opción equivalente según
-                    el dispositivo.
-                  </span>
+                  <span>{conNegritas(t('repair.step3'))}</span>
                 </li>
               </ol>
             </div>
@@ -131,22 +112,16 @@ export function ServiceTechnicalPage() {
               <div className="rounded-[12px] border border-line bg-surface p-5">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
                   <Icon name="store" size={18} aria-hidden="true" />
-                  Entrega directa
+                  {t('repair.dropInStore')}
                 </h3>
-                <p className="mt-2 text-sm text-ink">
-                  Puedes entregar el dispositivo directamente en un establecimiento Banana que
-                  gestione el servicio técnico.
-                </p>
+                <p className="mt-2 text-sm text-ink">{t('repair.dropInStoreBody')}</p>
               </div>
               <div className="rounded-[12px] border border-line bg-surface p-5">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
                   <Icon name="truck" size={18} aria-hidden="true" />
-                  Dejarlo en cualquier tienda Banana
+                  {t('repair.dropAnyStore')}
                 </h3>
-                <p className="mt-2 text-sm text-ink">
-                  También puedes dejar el dispositivo en el resto de tiendas Banana. El equipo
-                  será recogido y enviado al servicio técnico para su revisión.
-                </p>
+                <p className="mt-2 text-sm text-ink">{t('repair.dropAnyStoreBody')}</p>
               </div>
             </div>
 
@@ -155,43 +130,30 @@ export function ServiceTechnicalPage() {
               <div className="rounded-[12px] border border-line bg-surface p-5">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-available">
                   <Icon name="shield" size={18} aria-hidden="true" />
-                  Dispositivo en garantía
+                  {t('repair.inWarranty')}
                 </h3>
-                <p className="mt-3 text-sm text-ink">
-                  Si el dispositivo está en garantía,{' '}
-                  <strong className="font-semibold">el envío al servicio técnico es gratuito</strong>.
-                  Tras la revisión, se te informará del diagnóstico y del presupuesto cuando sea
-                  necesario. La cobertura de la reparación dependerá del diagnóstico y de las
-                  condiciones de garantía aplicables.
-                </p>
-                <p className="mt-3 text-xs text-muted">
-                  Que un dispositivo esté dentro del periodo de garantía no significa que
-                  cualquier avería esté cubierta.
-                </p>
+                <p className="mt-3 text-sm text-ink">{conNegritas(t('repair.inWarrantyBody'))}</p>
+                <p className="mt-3 text-xs text-muted">{t('repair.inWarrantyNote')}</p>
               </div>
               <div className="rounded-[12px] border border-line bg-surface p-5">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
                   <Icon name="package" size={18} aria-hidden="true" />
-                  Dispositivo fuera de garantía
+                  {t('repair.outWarranty')}
                 </h3>
                 <p className="mt-3 text-sm text-ink">
-                  Si el dispositivo está fuera de garantía, el envío al servicio técnico tiene un
-                  coste de <strong className="font-semibold">35 €</strong>. Tras la revisión
-                  recibirás un presupuesto.
+                  {conNegritas(t('repair.outWarrantyBody', { importe: euro(COSTE_ENVIO_SAT, intl) }))}
                 </p>
                 <ul className="mt-3 space-y-2 text-sm text-ink">
                   <li className="flex items-start gap-2">
                     <Icon name="check" size={16} className="mt-0.5 text-available" aria-hidden="true" />
                     <span>
-                      Si <strong className="font-semibold">aceptas la reparación</strong>, esos
-                      35 € se descontarán del precio final.
+                      {conNegritas(t('repair.outWarrantyAccept', { importe: euro(COSTE_ENVIO_SAT, intl) }))}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Icon name="info" size={16} className="mt-0.5 text-muted" aria-hidden="true" />
                     <span>
-                      Si <strong className="font-semibold">decides no reparar</strong> el
-                      dispositivo, el importe de 35 € no será reembolsable.
+                      {conNegritas(t('repair.outWarrantyDecline', { importe: euro(COSTE_ENVIO_SAT, intl) }))}
                     </span>
                   </li>
                 </ul>
@@ -202,10 +164,7 @@ export function ServiceTechnicalPage() {
             <div className="mt-6 rounded-[12px] border border-line bg-surface p-5">
               <h3 className="text-lg font-bold text-ink">{t('repair.estimates')}</h3>
               <p className="mt-2 text-sm text-ink">
-                Cuando el dispositivo se envía desde una tienda al servicio técnico, el traslado
-                suele tardar un mínimo de <strong className="font-semibold">3 días</strong>. A
-                este plazo hay que añadir el tiempo necesario para diagnosticar el equipo y,
-                cuando corresponda, el tiempo de reparación tras la aceptación del presupuesto.
+                {conNegritas(t('repair.timesBody', { dias: t('repair.days', { n: DIAS_TRASLADO }) }))}
               </p>
               <div
                 role="note"
@@ -213,19 +172,15 @@ export function ServiceTechnicalPage() {
               >
                 <p className="flex items-center gap-2 font-semibold">
                   <Icon name="info" size={16} aria-hidden="true" />
-                  Aclaración importante
+                  {t('repair.importantNote')}
                 </p>
                 <p className="mt-1">
-                  Los 3 días corresponden únicamente al traslado orientativo al servicio técnico,
-                  no al plazo total de diagnóstico y reparación.
+                  {t('repair.importantNoteBody', { dias: t('repair.days', { n: DIAS_TRASLADO }) })}
                 </p>
               </div>
-              <p className="mt-3 text-xs text-muted">
-                El plazo total puede variar según la avería, el diagnóstico, la disponibilidad de
-                piezas y el tipo de reparación.
-              </p>
+              <p className="mt-3 text-xs text-muted">{t('repair.timesNote')}</p>
               <div className="mt-3">
-                <ProvisionalBadge label="Información operativa · condiciones sujetas a Banana Computer" />
+                <ProvisionalBadge label={t('repair.operationalBadge')} />
               </div>
             </div>
 
@@ -236,20 +191,20 @@ export function ServiceTechnicalPage() {
                 onClick={() => setGuideOpen(true)}
                 className="inline-flex items-center gap-2 rounded-[12px] bg-action px-5 py-3 text-sm font-semibold text-ink hover:bg-action-600"
               >
-                Preparar mi dispositivo
+                {t('repair.prepareCta')}
                 <Icon name="arrow-right" size={16} aria-hidden="true" />
               </button>
               <Link
                 to="/tiendas"
                 className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-5 py-3 text-sm font-semibold text-ink hover:border-ink/30"
               >
-                Consultar tiendas y horarios
+                {t('repair.storesCta')}
               </Link>
               <Link
                 to="/soporte"
                 className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-5 py-3 text-sm font-semibold text-ink hover:border-ink/30"
               >
-                Más información de soporte
+                {t('repair.supportCta')}
               </Link>
             </div>
           </div>

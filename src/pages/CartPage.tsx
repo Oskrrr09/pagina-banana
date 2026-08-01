@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useColorName, useT } from '../lib/i18n'
+import { useCatalogo, useColorName, useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
@@ -41,7 +41,7 @@ export function CartPage() {
         <h1 className="mt-4 text-2xl font-bold text-ink">{t('cart.emptyTitle')}</h1>
         <p className="mt-2 text-muted">{t('cart.emptyBody')}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <ButtonLink to="/iphone">Ver iPhone</ButtonLink>
+          <ButtonLink to="/iphone">{t('common.viewIphone')}</ButtonLink>
           <ButtonLink to="/buscar" variant="secondary">
             Explorar catálogo
           </ButtonLink>
@@ -242,6 +242,7 @@ function CrossSellSuggestions({
   cart: ReturnType<typeof useStore>['cart']
 }) {
   const t = useT()
+  const cat = useCatalogo()
   const suggestions = useMemo(() => {
     const inCart = new Set(cart.filter((l) => l.kind === 'accessory').map((l) => l.modelSlug))
     const deviceFamilies = new Set<FamilySlug>(
@@ -295,14 +296,14 @@ function CrossSellSuggestions({
             >
               <ProductImage
                 src={a.image}
-                alt={a.name}
+                alt={cat(a.name)}
                 ratio="1 / 1"
                 bgColor={a.imageBg}
                 pad={!a.imageBg}
                 blend={!a.imageBg}
               />
               <div className="flex flex-1 flex-col p-3">
-                <p className="text-sm font-semibold text-ink">{a.name}</p>
+                <p className="text-sm font-semibold text-ink">{cat(a.name)}</p>
                 {a.price != null && (
                   <p className="mt-1 text-xs text-muted">
                     {t('common.priceDemo', { precio: euro(a.price) })}

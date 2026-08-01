@@ -6,6 +6,7 @@ import { StockIndicator } from '../ui/StockIndicator'
 import { ProvisionalBadge } from '../ui/Tag'
 import type { Availability } from '../../data/types'
 import { useStorePreference, sortStoresWithFavoriteFirst } from '../../lib/storePreference'
+import { useT } from '../../lib/i18n'
 
 // Selector de tienda / stock por tienda (flujo B, §6). Modal en escritorio,
 // panel deslizante en móvil (lo gestiona <Modal>). Stock de ejemplo.
@@ -30,6 +31,7 @@ export function StorePicker({
   onClose: () => void
   variantLabel: string
 }) {
+  const t = useT()
   const { favoriteSlug } = useStorePreference()
   const ordered = sortStoresWithFavoriteFirst(stores.slice(), favoriteSlug)
 
@@ -67,7 +69,7 @@ export function StorePicker({
                 to={`/tiendas/${store.slug}`}
                 className="shrink-0 text-sm font-semibold text-ink hover:underline"
               >
-                Ver tienda ›
+                {t('common.viewStoreArrow')}
               </Link>
             </li>
           )

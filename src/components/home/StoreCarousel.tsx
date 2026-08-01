@@ -3,12 +3,14 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
 import { getTodayHours, stores } from '../../data/stores'
+import { useT } from '../../lib/i18n'
 
 // Carrusel de tiendas para la home: avanza solo cada pocos segundos y permite
 // navegar con las flechas o los puntos. Se pausa al pasar el cursor por encima.
 const INTERVAL = 5000
 
 export function StoreCarousel() {
+  const t = useT()
   const [index, setIndex] = useState(0)
   const [dir, setDir] = useState(1)
   const [paused, setPaused] = useState(false)
@@ -71,7 +73,7 @@ export function StoreCarousel() {
               to={`/tiendas/${store.slug}`}
               className="mt-auto inline-flex items-center gap-1 pt-6 font-semibold text-ink transition-all hover:gap-2"
             >
-              Ver tienda <Icon name="arrow-right" size={16} />
+              {t('common.viewStore')} <Icon name="arrow-right" size={16} />
             </Link>
           </motion.div>
         </AnimatePresence>

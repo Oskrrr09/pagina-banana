@@ -66,8 +66,7 @@ export function RegisterPage() {
       <div className="mx-auto max-w-md">
         <h1 className="text-2xl font-bold text-ink">{t('account.signUp')}</h1>
         <p className="mt-2 text-sm text-muted">
-          Guarda tus direcciones, sigue tus pedidos y gestiona reservas. Cuenta de
-          demostración: no se realizan cobros ni envíos reales.
+          {t('account.signUpIntro')}
         </p>
 
         {!supabaseEnabled ? (

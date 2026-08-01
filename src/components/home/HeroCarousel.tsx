@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
+import { euro } from '../../lib/format'
+import { useIdioma } from '../../lib/i18n'
+import type { ClaveTexto } from '../../lib/i18n'
 
 // Carrusel principal (§4.1): rota 4 slides con autoplay pausable. Cada slide
 // combina fondo específico + texto a la izquierda + imagen de producto a la
@@ -11,10 +14,12 @@ const IMG = `${import.meta.env.BASE_URL}img/products`
 
 interface Slide {
   key: string
+  /** Nombre de producto: igual en los cinco idiomas. */
   eyebrow: string
-  title: string
-  subtitle: string
-  cta: string
+  titleKey: ClaveTexto
+  /** Cifra desnuda: el «desde» y el símbolo los pone el idioma activo. */
+  fromPrice: number
+  ctaKey: ClaveTexto
   to: string
   image: string
   bg: string
@@ -25,9 +30,9 @@ const slides: Slide[] = [
   {
     key: 'iphone-17-pro',
     eyebrow: 'iPhone 17 Pro',
-    title: 'Titanio. Cámara Pro. Chip A19.',
-    subtitle: 'desde 1.229 €',
-    cta: 'Comprar',
+    titleKey: 'hero.iphone.title',
+    fromPrice: 1229,
+    ctaKey: 'hero.cta.buy',
     to: '/iphone/17-pro',
     image: `${IMG}/17pro-plata.webp`,
     bg: 'linear-gradient(135deg,#0a0a0c 0%,#1c1d20 55%,#2a2a2e 100%)',
@@ -36,9 +41,9 @@ const slides: Slide[] = [
   {
     key: 'macbook-air-m5',
     eyebrow: 'MacBook Air M5',
-    title: 'Fino, ligero y superpotenciado.',
-    subtitle: 'desde 1.319 €',
-    cta: 'Descubrir',
+    titleKey: 'hero.mac.title',
+    fromPrice: 1319,
+    ctaKey: 'hero.cta.discover',
     to: '/mac/macbook-air-m5',
     image: `${IMG}/macbook-air-medianoche.webp`,
     bg: 'linear-gradient(135deg,#dbe9f5 0%,#e5dff2 50%,#ffeed1 100%)',
@@ -47,9 +52,9 @@ const slides: Slide[] = [
   {
     key: 'ipad-pro',
     eyebrow: 'iPad Pro M5',
-    title: 'La pantalla Ultra Retina XDR OLED, ahora con M5.',
-    subtitle: 'desde 1.229 €',
-    cta: 'Ver iPad Pro',
+    titleKey: 'hero.ipad.title',
+    fromPrice: 1229,
+    ctaKey: 'hero.cta.viewIpadPro',
     to: '/ipad/ipad-pro',
     image: `${IMG}/ipad-pro-13-negro.webp`,
     bg: 'linear-gradient(135deg,#111 0%,#22222b 55%,#3a3a45 100%)',
@@ -58,9 +63,9 @@ const slides: Slide[] = [
   {
     key: 'watch-ultra-3',
     eyebrow: 'Apple Watch Ultra 3',
-    title: 'Sin límites para tus aventuras.',
-    subtitle: 'desde 909 €',
-    cta: 'Descubrir',
+    titleKey: 'hero.watch.title',
+    fromPrice: 909,
+    ctaKey: 'hero.cta.discover',
     to: '/apple-watch/watch-ultra-3',
     image: `${IMG}/watch-ultra-3-natural-alpine.webp`,
     bg: 'linear-gradient(135deg,#131413 0%,#25231e 50%,#3a3128 100%)',
@@ -71,6 +76,7 @@ const slides: Slide[] = [
 const AUTOPLAY_MS = 6000
 
 export function HeroCarousel() {
+  const { t, intl } = useIdioma()
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const timer = useRef<number | null>(null)
@@ -122,7 +128,7 @@ export function HeroCarousel() {
                 transition={{ duration: 0.55, delay: 0.1 }}
                 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-4xl md:text-5xl"
               >
-                {slide.title}
+                {t(slide.titleKey)}
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 14 }}
@@ -130,7 +136,7 @@ export function HeroCarousel() {
                 transition={{ duration: 0.55, delay: 0.15 }}
                 className={`mt-4 text-lg font-semibold ${light ? 'text-white/85' : 'text-muted'}`}
               >
-                {slide.subtitle}
+                {t('hero.from', { importe: euro(slide.fromPrice, intl) })}
               </motion.p>
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
@@ -142,7 +148,7 @@ export function HeroCarousel() {
                   to={slide.to}
                   className="inline-flex items-center gap-2 rounded-full bg-banana px-6 py-3 text-sm font-bold text-ink shadow-[var(--shadow-rest)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-raised)]"
                 >
-                  {slide.cta} <Icon name="arrow-right" size={16} />
+                  {t(slide.ctaKey)} <Icon name="arrow-right" size={16} />
                 </Link>
                 <Link
                   to={slide.to}
@@ -152,7 +158,7 @@ export function HeroCarousel() {
                       : 'border-ink/25 text-ink hover:bg-ink/5'
                   }`}
                 >
-                  Más info
+                  {t('common.moreInfoShort')}
                 </Link>
               </motion.div>
             </div>

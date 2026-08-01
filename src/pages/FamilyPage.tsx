@@ -15,11 +15,15 @@ import { NotFound } from './NotFound'
 
 // Página de familia genérica (§4.5): encabezado, modelos, acceso al comparador
 // y filtro rápido por precio. Sirve para iPhone, Mac, iPad, Watch y AirPods.
+// Los tramos se guardan como cifras y el rótulo se compone al pintar: el
+// símbolo del euro no va en el mismo sitio en todos los idiomas («900 €» pero
+// «€900»), así que dejarlo escrito en el dato lo dejaría mal en cuatro de los
+// cinco. La selección va por índice, no por rótulo.
 const PRICE_RANGES = [
-  { label: 'Todos', min: 0, max: Infinity },
-  { label: 'Hasta 900 €', min: 0, max: 900 },
-  { label: '900 – 1.500 €', min: 900, max: 1500 },
-  { label: 'Más de 1.500 €', min: 1500, max: Infinity },
+  { min: 0, max: Infinity },
+  { min: 0, max: 900 },
+  { min: 900, max: 1500 },
+  { min: 1500, max: Infinity },
 ]
 
 export function FamilyPage() {
@@ -79,12 +83,12 @@ export function FamilyPage() {
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
-              <Icon name="filter" size={16} /> Filtrar por precio
+              <Icon name="filter" size={16} /> {t('family.filterByPrice')}
             </p>
             <div className="flex flex-wrap gap-2">
               {PRICE_RANGES.map((r, i) => (
-                <Chip key={r.label} selected={range === i} onClick={() => setRange(i)}>
-                  {r.label}
+                <Chip key={i} selected={range === i} onClick={() => setRange(i)}>
+                  {etiquetaTramo(r, t, intl)}
                 </Chip>
               ))}
             </div>
@@ -164,7 +168,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                         className="block h-full w-full object-contain object-center transition-transform duration-300 group-hover:scale-105"
                       />
                     </span>
-                    <span className="mt-2 text-sm font-semibold leading-tight text-ink">{model.name}</span>
+                    <span className="mt-2 text-sm font-semibold leading-tight text-ink">{cat(model.name)}</span>
                     <span className="mt-1 text-xs text-muted">{t('common.from', { precio: euro(model.fromPrice, intl) })}</span>
                   </Link>
                 </li>
@@ -182,7 +186,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
               {t('catalog.featuredIn', { familia: family.name })}
             </h2>
             <p className="mt-3 text-muted">
-              Precios demostrativos pendientes de validación con Banana Computer.
+              {t('family.demoPrices')}
             </p>
           </div>
 
@@ -202,7 +206,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <OfferBadge>{t('common.offer')}</OfferBadge>
-                      <h3 className="mt-3 text-2xl font-extrabold text-ink">{model.name}</h3>
+                      <h3 className="mt-3 text-2xl font-extrabold text-ink">{cat(model.name)}</h3>
                       <p className="mt-1 text-sm text-muted">{cat(model.tagline)}</p>
                     </div>
                     <Icon name="arrow-right" className="shrink-0 text-ink transition-transform group-hover:translate-x-1" />
@@ -219,7 +223,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                     </div>
                     <ProductImage
                       src={firstColor.image}
-                      alt={`${model.name} ${firstColor.name}`}
+                      alt={`${cat(model.name)} ${firstColor.name}`}
                       ratio="1 / 1"
                       bgColor={firstColor.imageBg}
                       pad={!firstColor.imageBg}
@@ -248,4 +252,16 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
       </Container>
     </>
   )
+}
+
+/** Compone el rótulo de un tramo de precio en el idioma activo. */
+function etiquetaTramo(
+  { min, max }: { min: number; max: number },
+  t: ReturnType<typeof useIdioma>['t'],
+  intl: string,
+): string {
+  if (min === 0 && max === Infinity) return t('family.priceAll')
+  if (min === 0) return t('family.priceUpTo', { importe: euro(max, intl) })
+  if (max === Infinity) return t('family.priceOver', { importe: euro(min, intl) })
+  return t('family.priceBetween', { desde: euro(min, intl), hasta: euro(max, intl) })
 }

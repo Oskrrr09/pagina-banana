@@ -97,8 +97,7 @@ export function ModelPage() {
         </div>
 
         <p className="mt-8 text-sm text-muted">
-          Consulta rápida: cada tarjeta permite ver stock por tienda y la cuota de financiación sin salir de la
-          página.
+          {t('product.quickTip')}
         </p>
 
         <CompatibleAccessoriesSection family={family.slug} modelSlug={model.slug} />
@@ -203,7 +202,7 @@ function ColorCard({
         </Button>
         <div className="flex items-center justify-between text-sm">
           <button onClick={() => setStoreOpen(true)} className="font-semibold text-ink hover:underline">
-            Ver stock por tienda ›
+            {t('product.stockByStore')}
           </button>
           <button onClick={() => setFinanceOpen(true)} className="text-muted hover:text-ink">
             desde {euro(model.financeFrom.monthly)}/mes*
@@ -228,7 +227,7 @@ function ColorCard({
             }
             className="h-4 w-4 accent-[var(--color-brand)]"
           />
-          Añadir a comparar
+          {t('product.addToCompare')}
           {!isComparing(compareId) && compareFull && <span className="text-xs">(máx. 3)</span>}
         </label>
       </div>
@@ -259,6 +258,7 @@ function CompatibleAccessoriesSection({
   modelSlug: string
 }) {
   const t = useT()
+  const cat = useCatalogo()
   const items = getAccessoriesForModel(`${family}/${modelSlug}`).slice(0, 4)
   if (items.length === 0) return null
   return (
@@ -283,7 +283,7 @@ function CompatibleAccessoriesSection({
             >
               <AccessoryImage
                 src={a.image}
-                alt={a.name}
+                alt={cat(a.name)}
                 size="card"
                 presentation={a.imagePresentation}
                 imageBg={a.imageBg}
@@ -291,7 +291,7 @@ function CompatibleAccessoriesSection({
                 height={400}
               />
               <div className="p-3">
-                <p className="text-sm font-semibold text-ink">{a.name}</p>
+                <p className="text-sm font-semibold text-ink">{cat(a.name)}</p>
                 {a.price != null && (
                   <p className="mt-1 text-xs text-muted">{t('common.priceDemo', { precio: euro(a.price) })}</p>
                 )}

@@ -473,7 +473,7 @@ export function VariantPage() {
                   ))}
                 </dl>
                 <button className="mt-4 text-sm font-semibold text-ink hover:underline">
-                  Ver ficha técnica completa ›
+                  {t('product.fullSpecs')}
                 </button>
               </div>
             )}
@@ -673,14 +673,15 @@ function VariantAccessorySuggestions({
   family: string
   modelSlug: string
 }) {
-  const t = useT()
+  const { t, intl } = useIdioma()
+  const cat = useCatalogo()
   const items = getAccessoriesForModel(`${family}/${modelSlug}`).slice(0, 4)
   if (items.length === 0) return null
   return (
     <section aria-labelledby="variant-cross-sell" className="mt-12">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="variant-cross-sell" className="text-xl font-bold text-ink">
-          Complementa tu compra
+          {t('product.crossSell')}
         </h2>
         <Link
           to="/accesorios"
@@ -701,7 +702,7 @@ function VariantAccessorySuggestions({
               >
                 <img
                   src={a.image}
-                  alt={a.name}
+                  alt={cat(a.name)}
                   width={400}
                   height={400}
                   loading="lazy"
@@ -710,12 +711,13 @@ function VariantAccessorySuggestions({
                 />
               </div>
               <div className="p-3">
-                <p className="text-sm font-semibold text-ink">{a.name}</p>
+                <p className="text-sm font-semibold text-ink">{cat(a.name)}</p>
                 {a.price != null && (
                   <p className="mt-1 text-xs text-muted">
-                    {a.price === Math.floor(a.price)
-                      ? `${a.price} € · precio demostrativo`
-                      : `${a.price.toFixed(2).replace('.', ',')} € · precio demostrativo`}
+                    {/* El ternario que había aquí distinguía precios enteros
+                        de decimales para escribir la coma a mano. `euro()` ya
+                        lo hace, y además con el separador de cada idioma. */}
+                    {t('product.accessoryPriceDemo', { importe: euro(a.price, intl) })}
                   </p>
                 )}
               </div>

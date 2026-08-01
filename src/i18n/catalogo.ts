@@ -1,4 +1,6 @@
 import type { Idioma } from '../lib/i18n'
+import { ACCESORIOS } from './catalogo-accesorios'
+import { ASISTENTE } from './asistente'
 
 /**
  * Textos del catálogo: reclamos de modelo, características y especificaciones.
@@ -24,6 +26,32 @@ export type Traducciones = [string, string, string, string]
 const ORDEN: Exclude<Idioma, 'es'>[] = ['en', 'de', 'fr', 'it']
 
 export const CATALOGO: Record<string, Traducciones> = {
+  // ---- Datos de tienda y buscador ----
+  // `Servicio técnico` es a la vez el rótulo que se ve y la cadena con la que
+  // se filtran las tiendas: se traduce al pintar, nunca en el dato.
+  'Click & Collect': ['Click & Collect', 'Click & Collect', 'Click & Collect', 'Click & Collect'],
+  'Parking gratuito': ['Free parking', 'Kostenloses Parken', 'Parking gratuit', 'Parcheggio gratuito'],
+  'Financiación presencial': ['In-store financing', 'Finanzierung im Store', 'Financement en magasin', 'Finanziamento in negozio'],
+  'Servicios disponibles': ['Services available', 'Verfügbare Services', 'Services disponibles', 'Servizi disponibili'],
+  'Servicio técnico': ['Repair service', 'Reparaturservice', 'Service technique', 'Assistenza tecnica'],
+  'Horario consultado el {fecha}. Puede variar en festivos; confirma antes de desplazarte.': ['Opening hours checked on {fecha}. They may change on public holidays; confirm before travelling.', 'Öffnungszeiten geprüft am {fecha}. An Feiertagen abweichend; bitte vorher bestätigen.', 'Horaires vérifiés le {fecha}. Ils peuvent varier les jours fériés ; confirmez avant de vous déplacer.', 'Orari verificati il {fecha}. Possono variare nei festivi; conferma prima di spostarti.'],
+  'Auriculares Beats Solo': ['Beats Solo headphones', 'Beats Solo Kopfhörer', 'Casque Beats Solo', 'Cuffie Beats Solo'],
+  'Auriculares Sony WH': ['Sony WH headphones', 'Sony WH Kopfhörer', 'Casque Sony WH', 'Cuffie Sony WH'],
+  'Auriculares Bose QuietComfort': ['Bose QuietComfort headphones', 'Bose QuietComfort Kopfhörer', 'Casque Bose QuietComfort', 'Cuffie Bose QuietComfort'],
+  'Funda protectora para AirPods': ['Protective case for AirPods', 'Schutzhülle für AirPods', 'Étui de protection pour AirPods', 'Custodia protettiva per AirPods'],
+  'Kit de limpieza para auriculares': ['Cleaning kit for headphones', 'Reinigungsset für Kopfhörer', 'Kit de nettoyage pour écouteurs', 'Kit di pulizia per cuffie'],
+  'Estuche protector para AirPods': ['Protective case for AirPods', 'Schutzetui für AirPods', 'Boîtier de protection pour AirPods', 'Astuccio protettivo per AirPods'],
+  'Funda transparente para iPhone': ['Clear case for iPhone', 'Transparente Hülle für das iPhone', 'Coque transparente pour iPhone', 'Custodia trasparente per iPhone'],
+  'Protector de pantalla para iPhone': ['Screen protector for iPhone', 'Displayschutz für das iPhone', 'Protection d’écran pour iPhone', 'Proteggi schermo per iPhone'],
+  'Funda con soporte para iPad': ['Case with stand for iPad', 'Hülle mit Ständer für das iPad', 'Étui avec support pour iPad', 'Custodia con supporto per iPad'],
+  'Funda tipo sleeve para MacBook': ['Sleeve for MacBook', 'Sleeve für das MacBook', 'Housse pour MacBook', 'Custodia a busta per MacBook'],
+  'Compatible con {productos}': ['Works with {productos}', 'Kompatibel mit {productos}', 'Compatible avec {productos}', 'Compatibile con {productos}'],
+
+  // ---- Nombres de modelo ----
+  // Casi todos son nombres propios idénticos en los cinco idiomas; este es el
+  // único que lleva castellano dentro.
+  'AirPods 4 con Cancelación Activa de Ruido': ['AirPods 4 with Active Noise Cancellation', 'AirPods 4 mit aktiver Geräuschunterdrückung', 'AirPods 4 avec réduction active du bruit', 'AirPods 4 con cancellazione attiva del rumore'],
+
   // ---- Etiquetas de especificaciones ----
   'Pantalla': ['Display', 'Display', 'Écran', 'Display'],
   'Chip': ['Chip', 'Chip', 'Puce', 'Chip'],
@@ -174,10 +202,33 @@ export const CATALOGO: Record<string, Traducciones> = {
   "Fundas, cargadores y más": ["Cases, chargers and more", "Hüllen, Ladegeräte und mehr", "Coques, chargeurs et plus", "Custodie, caricatori e altro"],
 }
 
-/** Traduce un texto del catálogo. Lo que no esté, sale en castellano. */
-export function traducirCatalogo(texto: string, idioma: Idioma): string {
-  if (idioma === 'es') return texto
-  const fila = CATALOGO[texto]
-  if (!fila) return texto
-  return fila[ORDEN.indexOf(idioma)] ?? texto
+/**
+ * Traduce un texto que viene de la capa de datos. Lo que no esté, sale en
+ * castellano.
+ *
+ * Consulta los tres mapas —productos, accesorios y asistente— porque el mismo
+ * texto puede venir de cualquiera: la ficha de un iPhone y la de su funda
+ * comparten «Material», y el asistente reutiliza «Cámara» o «Batería».
+ *
+ * Acepta marcadores `{clave}` en el texto para los pocos casos con un valor
+ * dentro (un importe, una talla). El texto castellano **con los marcadores sin
+ * sustituir** es la clave; los valores se aplican después de traducir, porque
+ * cada idioma los coloca en un sitio distinto de la frase.
+ */
+export function traducirCatalogo(
+  texto: string,
+  idioma: Idioma,
+  valores?: Record<string, string>,
+): string {
+  let salida = texto
+  if (idioma !== 'es') {
+    const fila = CATALOGO[texto] ?? ACCESORIOS[texto] ?? ASISTENTE[texto]
+    if (fila) salida = fila[ORDEN.indexOf(idioma)] ?? texto
+  }
+  if (valores) {
+    for (const [clave, valor] of Object.entries(valores)) {
+      salida = salida.split(`{${clave}}`).join(valor)
+    }
+  }
+  return salida
 }

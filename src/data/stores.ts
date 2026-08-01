@@ -24,8 +24,11 @@ export const UNIVERSAL_SERVICES = [
 
 // Solo se listan/filtran los servicios que diferencian a unas tiendas de otras.
 export const ALL_SERVICES = ['Servicio técnico'] as const
+/** Fecha de la última comprobación de horarios. */
+export const STORE_HOURS_CHECKED_ON = '26/07/2026'
+/** Texto castellano con marcador; se traduce al pintar. */
 export const STORE_HOURS_NOTICE =
-  'Horario consultado el 26/07/2026. Puede variar en festivos; confirma antes de desplazarte.'
+  'Horario consultado el {fecha}. Puede variar en festivos; confirma antes de desplazarte.'
 
 export const stores: Store[] = [
   {

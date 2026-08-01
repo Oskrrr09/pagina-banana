@@ -4,6 +4,7 @@ import { Icon } from '../ui/Icon'
 import { ProductImage } from '../product/ProductImage'
 import { euro } from '../../lib/format'
 import type { Model } from '../../data/types'
+import { useCatalogo } from '../../lib/i18n'
 
 // Diálogo del comparador para elegir o cambiar el modelo de una columna.
 // Accesibilidad: reutiliza <Modal /> (focus trap + Escape + restauración de
@@ -33,6 +34,7 @@ export function ModelPickerDialog({
   familyName,
   mode,
 }: ModelPickerDialogProps) {
+  const cat = useCatalogo()
   const [query, setQuery] = useState('')
   const title = mode === 'add' ? `Elegir modelo de ${familyName}` : `Cambiar modelo de ${familyName}`
 
@@ -96,7 +98,7 @@ export function ModelPickerDialog({
                   <ProductImage src={m.colors[0].image} alt="" ratio="1 / 1" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-ink">{m.name}</p>
+                  <p className="truncate text-sm font-semibold text-ink">{cat(m.name)}</p>
                   <p className="text-xs font-medium text-ink">desde {euro(m.fromPrice)}</p>
                   {badge && (
                     <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-neutral px-2 py-0.5 text-[11px] font-semibold text-ink">

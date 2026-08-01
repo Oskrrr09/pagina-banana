@@ -4,6 +4,7 @@ import { euro } from '../../lib/format'
 import type { Accessory } from '../../data/accessories'
 import { accessoryPath } from '../../data/accessories'
 import { ProductImage } from './ProductImage'
+import { useCatalogo, useT } from '../../lib/i18n'
 
 // Tarjeta de accesorio (§4.5). Comparte la jerarquía visual con
 // `ProductCard` (mismo borde, radio, padding, altura mínima, hover,
@@ -13,12 +14,15 @@ import { ProductImage } from './ProductImage'
 // NO añade favoritos, carrito, comparador ni seguro — los accesorios
 // no participan en esos flujos en esta fase.
 export function AccessoryCard({ accessory }: { accessory: Accessory }) {
+  const t = useT()
+  const cat = useCatalogo()
+
   return (
     <div className="group relative flex h-full min-h-[400px] flex-col rounded-[12px] border border-line bg-surface p-4 transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]">
       <Link
         to={accessoryPath(accessory.slug)}
         className="block focus-visible:outline-none"
-        aria-label={accessory.name}
+        aria-label={cat(accessory.name)}
       >
         {/* Imagen decorativa dentro del enlace: el nombre lo aporta el
             aria-label del Link + el h3. Alt vacío evita el aviso
@@ -31,11 +35,11 @@ export function AccessoryCard({ accessory }: { accessory: Accessory }) {
           blend={!accessory.imageBg}
         />
         <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">
-          {accessory.name}
+          {cat(accessory.name)}
         </h3>
       </Link>
 
-      <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{accessory.tagline}</p>
+      <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{cat(accessory.tagline)}</p>
 
       <div className="mt-auto pt-3">
         {accessory.price != null ? (
@@ -49,7 +53,7 @@ export function AccessoryCard({ accessory }: { accessory: Accessory }) {
       </div>
       {accessory.price != null && (
         <div className="mt-2">
-          <ProvisionalBadge label="Precio demostrativo" />
+          <ProvisionalBadge label={t('common.demoPrice')} />
         </div>
       )}
     </div>

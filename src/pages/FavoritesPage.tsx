@@ -27,6 +27,7 @@ import type { Model } from '../data/types'
 // - No se envían emails ni se realizan peticiones de red.
 // -----------------------------------------------------------------------
 export function FavoritesPage() {
+  const t = useT()
   const { favorites, toggleFavorite } = useStore()
   const { favoriteStore, setFavorite: setFavoriteStore } = useStorePreference()
   const {
@@ -56,7 +57,7 @@ export function FavoritesPage() {
       <header>
         <h1 className="text-3xl font-extrabold text-ink">Favoritos</h1>
         <p className="mt-1 text-muted">
-          Guarda productos y sigue su disponibilidad de ejemplo en tu tienda favorita.
+          {t('favorites.intro')}
         </p>
       </header>
 
@@ -69,7 +70,7 @@ export function FavoritesPage() {
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <ButtonLink to="/iphone">Explorar iPhone</ButtonLink>
             <ButtonLink to="/elige-tu-apple" variant="secondary">
-              ¿No sabes cuál elegir? Encuentra tu Apple
+              {t('favorites.finderCta')}
             </ButtonLink>
           </div>
         </div>
@@ -216,7 +217,7 @@ export function FavoritesPage() {
       )}
 
       <div className="mt-8">
-        <ProvisionalBadge label="Disponibilidad de ejemplo · sin envío de correos" />
+        <ProvisionalBadge label={t('favorites.demoBadge')} />
       </div>
     </Container>
   )
@@ -239,6 +240,7 @@ function FavoriteCard({
   onFollow: (storeSlug: string, offerAsFavorite: boolean) => void
   onDisable: () => void
 }) {
+  const t = useT()
   const productId = `${model.family}/${model.slug}`
   const activeStoreSlug = alert?.storeSlug ?? favoriteStoreSlug
   const activeStore = activeStoreSlug ? getStore(activeStoreSlug) : null
@@ -254,7 +256,7 @@ function FavoriteCard({
       <h3 className="mt-2 text-sm font-semibold text-ink">{model.name}</h3>
       <p className="text-xs text-muted">desde {euro(model.fromPrice)}</p>
       <div className="mt-2">
-        <ProvisionalBadge label="Precio demostrativo" />
+        <ProvisionalBadge label={t('common.demoPrice')} />
       </div>
 
       {label && activeStore && (

@@ -105,12 +105,11 @@ export function Footer() {
         <div className="mt-10 flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
           <Logo />
           <p className="text-xs leading-relaxed text-muted">
-            Prototipo de demostración · Contenido de ejemplo, sin sistemas reales. Ningún precio o condición es
-            definitivo.
+            {t('footer.demoNotice')}
           </p>
           <div className="flex items-center gap-3 text-muted">
-            <button aria-label="Tienda favorita" className="text-sm hover:text-ink">
-              Tienda favorita: Triana
+            <button aria-label={t('favStore.aria')} className="text-sm hover:text-ink">
+              {t('favStore.current', { tienda: 'Triana' })}
             </button>
           </div>
         </div>

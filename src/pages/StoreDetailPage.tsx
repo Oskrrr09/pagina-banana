@@ -1,9 +1,16 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useT } from '../lib/i18n'
+import { useT, useCatalogo } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
-import { currentStoreDay, getStore, isOpenNow, STORE_HOURS_NOTICE, UNIVERSAL_SERVICES } from '../data/stores'
+import {
+  currentStoreDay,
+  getStore,
+  isOpenNow,
+  STORE_HOURS_CHECKED_ON,
+  STORE_HOURS_NOTICE,
+  UNIVERSAL_SERVICES,
+} from '../data/stores'
 import { allModels } from '../data/products'
 import { useStorePreference } from '../lib/storePreference'
 import { NotFound } from './NotFound'
@@ -11,6 +18,7 @@ import { NotFound } from './NotFound'
 // Ficha de una tienda (§4.14).
 export function StoreDetailPage() {
   const t = useT()
+  const cat = useCatalogo()
   const { slug } = useParams()
   const store = getStore(slug ?? '')
   const [product, setProduct] = useState('')
@@ -87,18 +95,18 @@ export function StoreDetailPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
             >
-              <Icon name="map-pin" size={18} /> Cómo llegar
+              <Icon name="map-pin" size={18} /> {t('store.directions')}
             </a>
             <FavoriteStoreControl storeSlug={store.slug} storeName={store.name} />
           </div>
 
           {/* 3 — Servicios disponibles */}
           <div className="mt-6">
-            <p className="mb-2 font-semibold text-ink">Servicios disponibles</p>
+            <p className="mb-2 font-semibold text-ink">{cat('Servicios disponibles')}</p>
             <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {services.map((s) => (
                 <li key={s} className="flex items-center gap-2 text-sm text-ink">
-                  <Icon name="check" size={16} className="text-available" /> {s}
+                  <Icon name="check" size={16} className="text-available" /> {cat(s)}
                 </li>
               ))}
             </ul>
@@ -129,21 +137,21 @@ export function StoreDetailPage() {
             </tbody>
           </table>
           <p className="mt-3 text-xs leading-relaxed text-muted">
-            {STORE_HOURS_NOTICE}{' '}
+            {cat(STORE_HOURS_NOTICE, { fecha: STORE_HOURS_CHECKED_ON })}{' '}
             <a
               href={store.hoursSource}
               target="_blank"
               rel="noreferrer"
               className="font-semibold text-ink underline underline-offset-2"
             >
-              Consultar la fuente oficial
+              {t('store.officialSource')}
             </a>
           </p>
         </div>
 
         {/* 5 — Consultar stock en esta tienda (menú desplegable) */}
         <div>
-          <h2 className="mb-3 font-bold text-ink">Consultar stock en esta tienda</h2>
+          <h2 className="mb-3 font-bold text-ink">{t('store.checkStock')}</h2>
           <label htmlFor="stock-product" className="mb-1.5 block text-sm text-muted">
             {t('stores.chooseProduct')}
           </label>
@@ -156,7 +164,7 @@ export function StoreDetailPage() {
             <option value="">Selecciona un producto…</option>
             {allModels.map((m) => (
               <option key={`${m.family}/${m.slug}`} value={m.name}>
-                {m.name}
+                {cat(m.name)}
               </option>
             ))}
           </select>
@@ -179,6 +187,7 @@ export function StoreDetailPage() {
 }
 
 function FavoriteStoreControl({ storeSlug, storeName }: { storeSlug: string; storeName: string }) {
+  const t = useT()
   const { favoriteSlug, setFavorite, clearFavorite } = useStorePreference()
   const isFavorite = favoriteSlug === storeSlug
 
@@ -202,7 +211,7 @@ function FavoriteStoreControl({ storeSlug, storeName }: { storeSlug: string; sto
       onClick={() => setFavorite(storeSlug)}
       className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink hover:border-ink/30"
     >
-      <Icon name="star" size={16} aria-hidden="true" /> Marcar como mi tienda
+      <Icon name="star" size={16} aria-hidden="true" /> {t('store.setFavorite')}
       <span className="sr-only"> ({storeName})</span>
     </button>
   )

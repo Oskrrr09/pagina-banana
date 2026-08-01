@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useT } from '../lib/i18n'
+import { useCatalogo, useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Chip } from '../components/ui/Chip'
@@ -10,6 +10,7 @@ import { useStorePreference, sortStoresWithFavoriteFirst } from '../lib/storePre
 
 // Página de tiendas (§4.13): mapa, filtros y lista.
 export function StoresPage() {
+  const cat = useCatalogo()
   const t = useT()
   // `null` = todas. Guardar aquí el rótulo traducido haría que al cambiar de
   // idioma el filtro dejase de coincidir consigo mismo y la lista se vaciara.
@@ -89,7 +90,7 @@ export function StoresPage() {
           className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink"
         >
           <Icon name="chevron-right" className="rotate-180" size={12} />
-          Ver todas las tiendas en el mapa
+          {t('stores.allOnMap')}
         </button>
       )}
 
@@ -115,7 +116,7 @@ export function StoresPage() {
           <div className="flex flex-wrap gap-2 px-0.5 py-1.5">
             {ALL_SERVICES.map((s) => (
               <Chip key={s} selected={service === s} onClick={() => setService(service === s ? null : s)}>
-                {s}
+                {cat(s)}
               </Chip>
             ))}
           </div>
@@ -197,7 +198,7 @@ export function StoresPage() {
                   to={`/tiendas/${store.slug}`}
                   className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-ink/85"
                 >
-                  Ver detalles
+                  {t('stores.details')}
                 </Link>
                 <a
                   href={directionsUrl}
@@ -205,14 +206,14 @@ export function StoresPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-full bg-neutral px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-banana/40"
                 >
-                  <Icon name="arrow-right" size={13} aria-hidden="true" /> Cómo llegar
+                  <Icon name="arrow-right" size={13} aria-hidden="true" /> {t('store.directions')}
                 </a>
                 <button
                   type="button"
                   onClick={focusMap}
                   className="inline-flex items-center gap-1.5 rounded-full bg-brand-050 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-brand/30"
                 >
-                  <Icon name="map-pin" size={13} aria-hidden="true" /> Enfocar en el mapa
+                  <Icon name="map-pin" size={13} aria-hidden="true" /> {t('stores.focusOnMap')}
                 </button>
               </div>
             </div>

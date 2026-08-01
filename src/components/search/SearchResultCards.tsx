@@ -2,11 +2,13 @@ import { Link } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
 import { ProvisionalBadge } from '../ui/Tag'
 import type { SearchItem } from '../../data/searchIndex'
+import { useCatalogo } from '../../lib/i18n'
 
 // Tarjeta compacta para productos relacionados y accesorios (Apple o
 // compatibles). NO muestra precio, stock, financiación ni CTA de compra.
 // Cuando el ítem es demostrativo lo etiqueta como "Contenido demostrativo".
 export function CompactSearchCard({ item }: { item: SearchItem }) {
+  const cat = useCatalogo()
   const iconByKind: Record<string, string> = {
     'apple-accessory': 'shield',
     'compatible-accessory': 'shield',
@@ -18,7 +20,7 @@ export function CompactSearchCard({ item }: { item: SearchItem }) {
   }
   const iconName = iconByKind[item.kind] ?? 'search'
   const brand = item.brand ?? 'Genérica'
-  const relLabel = describeRelation(item)
+  const relLabel = describeRelation(item, cat)
 
   const inner = (
     <div className="flex items-start gap-3">
@@ -26,7 +28,7 @@ export function CompactSearchCard({ item }: { item: SearchItem }) {
         <Icon name={iconName} size={16} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-ink">{item.name}</p>
+        <p className="text-sm font-semibold text-ink">{cat(item.name)}</p>
         <p className="mt-0.5 text-xs text-muted">
           {brand}
           {relLabel ? ` · ${relLabel}` : ''}
@@ -57,9 +59,9 @@ export function CompactSearchCard({ item }: { item: SearchItem }) {
   )
 }
 
-function describeRelation(item: SearchItem): string {
+function describeRelation(item: SearchItem, cat: (t: string, v?: Record<string, string>) => string): string {
   if (item.compatibleWith && item.compatibleWith.length > 0) {
-    return `Compatible con ${item.compatibleWith.join(', ')}`
+    return cat('Compatible con {productos}', { productos: item.compatibleWith.join(', ') })
   }
   if (item.category) return item.category
   return ''

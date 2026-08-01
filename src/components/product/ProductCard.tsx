@@ -37,7 +37,11 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
     <div className="group relative flex h-full min-h-[400px] flex-col rounded-[12px] border border-line bg-surface p-4 transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]">
       <button
         onClick={() => toggleFavorite(favId)}
-        aria-label={fav ? `Quitar ${model.name} de favoritos` : `Añadir ${model.name} a favoritos`}
+        aria-label={
+          fav
+            ? t('favorites.removeNamed', { nombre: cat(model.name) })
+            : t('favorites.addNamed', { nombre: cat(model.name) })
+        }
         aria-pressed={fav}
         className="absolute right-5 top-5 z-10 grid h-9 w-9 place-items-center rounded-full bg-surface/80 text-muted backdrop-blur transition-colors hover:text-danger"
       >
@@ -58,11 +62,11 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
       <Link to={variantPath(model)} className="block focus-visible:outline-none">
         <ProductImage
           src={model.colors[0].image}
-          alt={`${model.name} ${model.colors[0].name}`}
+          alt={`${cat(model.name)} ${model.colors[0].name}`}
           bgColor={model.colors[0].imageBg}
           pad={!model.colors[0].imageBg}
         />
-        <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">{model.name}</h3>
+        <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">{cat(model.name)}</h3>
       </Link>
 
       <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{cat(model.tagline)}</p>
@@ -82,7 +86,7 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
         )}
       </div>
       <div className="mt-2">
-        <ProvisionalBadge label="Precio demostrativo" />
+        <ProvisionalBadge label={t('common.demoPrice')} />
       </div>
     </div>
   )

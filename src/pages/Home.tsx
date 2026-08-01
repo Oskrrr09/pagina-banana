@@ -177,7 +177,7 @@ export function Home() {
                 <Icon name="refresh" size={18} /> Valorar mi dispositivo
               </ButtonLink>
               <ButtonLink to="/tiendas" variant="tertiary">
-                Ver tiendas
+                {t('common.viewStores')}
               </ButtonLink>
             </div>
           </div>
@@ -231,7 +231,7 @@ export function Home() {
               </span>
               <p className="text-sm font-bold text-ink">{cat.label}</p>
               <p className="text-xs font-semibold text-muted transition-colors group-hover:text-ink">
-                Ver todo ›
+                {t('common.viewAll')}
               </p>
             </Link>
           ))}
@@ -254,11 +254,11 @@ export function Home() {
               <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
                 <Icon name="credit-card" size={20} />
               </span>
-              <h3 className="mt-4 text-lg font-extrabold">Financiación al 0 %</h3>
-              <p className="mt-1 text-sm text-ink/80">Hasta 24 meses sin intereses.</p>
+              <h3 className="mt-4 text-lg font-extrabold">{t('home.tile.financeTitle')}</h3>
+              <p className="mt-1 text-sm text-ink/80">{t('home.tile.financeDesc')}</p>
             </div>
             <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
-              Simular cuota <Icon name="arrow-right" size={16} />
+              {t('home.tile.financeCta')} <Icon name="arrow-right" size={16} />
             </span>
           </button>
           <Link
@@ -269,11 +269,11 @@ export function Home() {
               <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
                 <Icon name="refresh" size={20} />
               </span>
-              <h3 className="mt-4 text-lg font-extrabold">Plan Renove</h3>
-              <p className="mt-1 text-sm text-ink/80">Hasta 400 € por tu Apple actual.</p>
+              <h3 className="mt-4 text-lg font-extrabold">{t('home.tile.renoveTitle')}</h3>
+              <p className="mt-1 text-sm text-ink/80">{t('home.tile.renoveDesc')}</p>
             </div>
             <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
-              Valorar mi dispositivo <Icon name="arrow-right" size={16} />
+              {t('home.tile.renoveCta')} <Icon name="arrow-right" size={16} />
             </span>
           </Link>
           <Link
@@ -284,11 +284,11 @@ export function Home() {
               <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
                 <Icon name="wrench" size={20} />
               </span>
-              <h3 className="mt-4 text-lg font-extrabold">Servicio técnico</h3>
-              <p className="mt-1 text-sm text-ink/80">Reparaciones oficiales Apple.</p>
+              <h3 className="mt-4 text-lg font-extrabold">{t('home.tile.repairTitle')}</h3>
+              <p className="mt-1 text-sm text-ink/80">{t('home.tile.repairDesc')}</p>
             </div>
             <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
-              Ver taller <Icon name="arrow-right" size={16} />
+              {t('home.tile.repairCta')} <Icon name="arrow-right" size={16} />
             </span>
           </Link>
           <Link
@@ -299,11 +299,11 @@ export function Home() {
               <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
                 <Icon name="graduation" size={20} />
               </span>
-              <h3 className="mt-4 text-lg font-extrabold">Formación Banana</h3>
-              <p className="mt-1 text-sm text-ink/80">Talleres gratis en tienda.</p>
+              <h3 className="mt-4 text-lg font-extrabold">{t('home.tile.trainingTitle')}</h3>
+              <p className="mt-1 text-sm text-ink/80">{t('home.tile.trainingDesc')}</p>
             </div>
             <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold transition-all group-hover:gap-2">
-              Ver próximos <Icon name="arrow-right" size={16} />
+              {t('home.tile.trainingCta')} <Icon name="arrow-right" size={16} />
             </span>
           </Link>
         </MobileScroller>
@@ -322,7 +322,7 @@ export function Home() {
               city: 'Las Palmas',
               product: 'iPhone 17 Pro',
               stars: 5,
-              text: 'Compra rápida y el iPhone en 24 h en casa. Me atendieron por WhatsApp para elegir el modelo, súper cercano.',
+              text: t('home.review.1'),
               hue: '#ffe08a',
             },
             {
@@ -330,7 +330,7 @@ export function Home() {
               city: 'Santa Cruz de Tenerife',
               product: 'MacBook Air M5',
               stars: 5,
-              text: 'Financié el Mac al 0 % y me dieron un buen precio por mi portátil anterior con el Plan Renove. Todo transparente.',
+              text: t('home.review.2'),
               hue: '#dbeaf9',
             },
             {
@@ -338,7 +338,7 @@ export function Home() {
               city: 'Arrecife',
               product: 'Apple Watch Ultra 3',
               stars: 4,
-              text: 'Me explicaron todo antes de comprar, incluso el seguro. Volveré para los AirPods sin duda.',
+              text: t('home.review.3'),
               hue: '#dbf1e5',
             },
           ].map((resena) => (
@@ -372,7 +372,7 @@ export function Home() {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <SectionHeader eyebrow={t('home.section.storesEyebrow')} title={t('home.section.storesTitle')} className="mb-0" />
           <ButtonLink to="/tiendas" variant="tertiary">
-            Ver todas las tiendas <Icon name="arrow-right" size={16} />
+            {t('home.allStores')} <Icon name="arrow-right" size={16} />
           </ButtonLink>
         </div>
         <Reveal>
@@ -408,11 +408,11 @@ export function Home() {
               type="submit"
               className="inline-flex min-h-12 w-full items-center justify-center rounded-[12px] bg-ink px-8 py-3 font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5 sm:w-auto"
             >
-              Suscribirme
+              {t('home.newsletter.submit')}
             </button>
           </form>
           <p className="mt-3 text-xs text-ink/80">
-            Demostración: el formulario no envía datos reales.
+            {t('home.newsletter.demo')}
           </p>
         </Reveal>
       </Section>

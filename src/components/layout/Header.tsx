@@ -13,13 +13,14 @@ import { MobileMenu } from './MobileMenu'
 import { HeaderSearch } from '../search/HeaderSearch'
 import { isNativeApp } from '../../lib/nativeApp'
 import { LanguagePicker } from './LanguagePicker'
-import { useT } from '../../lib/i18n'
+import { useT, useCatalogo } from '../../lib/i18n'
 
 // Cabecera fija (sticky) en escritorio y móvil.
 // Integración visual: barra promocional oscura arriba, cabecera principal en
 // glass amarillo semi-transparente con blur, y sombra que aparece al scrollear
 // (sin borde duro), evitando que corte el hero de golpe.
 export function Header() {
+  const cat = useCatalogo()
   const { cartCount, favorites, compare } = useStore()
   const { session: customerSession } = useCustomerAuth()
   const t = useT()
@@ -147,7 +148,7 @@ export function Header() {
                   }`}
                   onFocus={() => openMega(fam.slug)}
                 >
-                  {fam.name}
+                  {cat(fam.name)}
                 </Link>
               </div>
             ))}
@@ -157,7 +158,7 @@ export function Header() {
                 to={l.to}
                 className="rounded-full px-2 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 2xl:px-3"
               >
-                {l.label}
+                {t(l.label)}
               </Link>
             ))}
           </nav>
@@ -369,7 +370,7 @@ function FavoriteStoreMenu() {
           className="absolute right-0 top-full z-30 mt-1 w-72 rounded-[12px] border border-line bg-surface p-2 text-left text-ink shadow-[var(--shadow-raised)]"
         >
           <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-            Tu tienda Banana
+            {t('favStore.kicker')}
           </p>
           <ul className="mt-1 space-y-1">
             {stores.map((store) => {
