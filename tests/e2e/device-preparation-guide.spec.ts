@@ -123,15 +123,33 @@ test.describe('DevicePreparationGuide — apertura y contenido', () => {
     await openGuide(page)
     const dialog = page.getByRole('dialog', { name: 'Preparar mi dispositivo' })
     // Recorremos ~10 tabs y comprobamos que el foco sigue dentro del panel.
-    for (let i = 0; i < 10; i++) {
-      await page.keyboard.press('Tab')
-      const inside = await dialog.evaluate((el) => el.contains(document.activeElement))
-      expect(inside).toBe(true)
+    //
+    // El fallo se describe con el elemento que quedó enfocado, no con un
+    // `true`/`false`: cuando esto falló solo en el runner de Linux (QA-003),
+    // el log de CI no permitía saber por dónde se había escapado el foco.
+    async function focoActual() {
+      return dialog.evaluate((el) => {
+        const activo = document.activeElement as HTMLElement | null
+        return {
+          dentro: el.contains(activo),
+          descripcion: activo
+            ? `<${activo.tagName.toLowerCase()}> ${
+                activo.getAttribute('aria-label') ?? activo.textContent?.trim().slice(0, 40) ?? ''
+              }`.trim()
+            : 'ninguno',
+        }
+      })
     }
-    for (let i = 0; i < 10; i++) {
-      await page.keyboard.press('Shift+Tab')
-      const inside = await dialog.evaluate((el) => el.contains(document.activeElement))
-      expect(inside).toBe(true)
+
+    for (const [direccion, tecla] of [
+      ['Tab', 'Tab'],
+      ['Shift+Tab', 'Shift+Tab'],
+    ] as const) {
+      for (let i = 0; i < 10; i++) {
+        await page.keyboard.press(tecla)
+        const { dentro, descripcion } = await focoActual()
+        expect(dentro, `${direccion} nº ${i + 1} sacó el foco a: ${descripcion}`).toBe(true)
+      }
     }
   })
 

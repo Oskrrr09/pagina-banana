@@ -1,6 +1,6 @@
 ---
 tipo: problemas
-actualizado: 2026-07-31
+actualizado: 2026-08-01
 ---
 
 # Problemas pendientes
@@ -547,23 +547,37 @@ del repositorio. No se corrigen en la preparación documental.
   con `vite preview` en vez del dev server. No se hace ahora para no
   duplicar el arranque de la suite por una superficie pequeña.
 
-## QA-003 — La trampa de foco de la guía escapa con Shift+Tab, solo en CI
+## QA-003 — La trampa de foco de la guía escapaba con Shift+Tab
 
-- Estado: detectado el 2026-07-31, sin resolver.
-- Impacto: bajo en la web publicada; alto como ruido de CI, porque deja el
-  workflow en rojo.
-- Evidencia: `tests/e2e/device-preparation-guide.spec.ts:122` falla en el
-  runner de GitHub (Linux) en la línea 134, la del bucle de **Shift+Tab**;
-  el bucle de Tab hacia delante pasa. Falló las tres veces, incluidos los
-  dos reintentos, en el run del commit `687126a`.
-- **No se reproduce en local**: 4 repeticiones seguidas del fichero, la
-  suite entera, y la suite entera con `CI=1` (219) pasan todas. Es
-  específico del entorno del runner.
-- Descartado como causa el cambio de esa sesión: la PWA no toca
-  `DevicePreparationGuide` ni `/soporte`. Lo único global que se añadió es
-  una `<meta name="theme-color">` en `index.html` y el registro del
-  service worker, que no se ejecuta en desarrollo.
-- Pendiente de investigar: qué elemento recibe el foco al salir hacia
-  atrás. El test comprueba `dialog.contains(document.activeElement)` pero
-  no registra **quién** queda enfocado, así que el log de CI no lo dice.
-  Primer paso sería que el propio test lo informe.
+- Estado: **cerrado el 2026-08-01**.
+- Impacto mientras estuvo abierto: bajo en la web publicada; alto como
+  ruido de CI, porque dejaba el workflow en rojo de forma intermitente.
+- Evidencia: `tests/e2e/device-preparation-guide.spec.ts` falló tres veces
+  seguidas —incluidos los dos reintentos— en el runner de Linux del commit
+  `687126a`, siempre en el bucle de **Shift+Tab**. En el commit siguiente
+  (`3237e71`, solo documentación) pasó. Nunca se reprodujo en local: ni
+  repitiendo el fichero, ni con la suite entera, ni con `CI=1`.
+- Causa: la trampa **solo interceptaba los extremos**. Comparaba el
+  elemento activo con el primero y el último de su lista y, en medio,
+  dejaba tabular al navegador. Eso obliga a que esa lista y el orden de
+  tabulación real coincidan exactamente, y el selector no filtraba
+  elementos presentes en el DOM pero no alcanzables. Basta una
+  discrepancia —un control que el navegador se salta, o el botón
+  "Siguiente" al pasar de `disabled` a activo— para que un Shift+Tab salga
+  del diálogo sin que nadie lo impida. Que dependiera del navegador
+  explica que solo apareciera en Linux.
+- Resolución: `DevicePreparationGuide` gobierna ahora el recorrido
+  **completo**. Siempre hace `preventDefault()`, calcula la posición del
+  elemento activo en la lista y salta al anterior o al siguiente con vuelta
+  circular. La lista se filtra a los controles realmente alcanzables
+  (`getClientRects().length > 0` y fuera de subárboles `inert`). Si no
+  queda ninguno, el foco cae en el propio panel, que pasa a tener
+  `tabIndex={-1}`.
+- El test informa ahora **qué elemento** recibió el foco al escaparse, en
+  vez de un `true`/`false`: era lo que faltaba para diagnosticarlo desde el
+  log de CI.
+- Validación: 219 en verde en local, incluida la suite completa con `CI=1`,
+  y el fichero repetido 3 veces.
+- Nota: el mismo patrón de "interceptar solo los extremos" existe en otros
+  overlays (`src/components/ui/Modal.tsx`, el chat). No se han tocado en
+  esta sesión y no han dado fallos, pero comparten la fragilidad.

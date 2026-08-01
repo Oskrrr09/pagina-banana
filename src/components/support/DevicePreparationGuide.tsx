@@ -31,6 +31,20 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
+/**
+ * Controles del panel que el navegador puede enfocar de verdad.
+ *
+ * El selector por sí solo no basta: devuelve también elementos que están en
+ * el DOM pero no son alcanzables (ocultos, o dentro de un subárbol `inert`).
+ * Enfocar uno de esos es una operación vacía, y entonces el foco se queda
+ * donde estaba —o se va fuera del diálogo.
+ */
+function focusablesDentro(panel: HTMLElement): HTMLElement[] {
+  return Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (el) => el.getClientRects().length > 0 && !el.closest('[inert]'),
+  )
+}
+
 export function DevicePreparationGuide({
   open,
   onClose,
@@ -98,26 +112,34 @@ export function DevicePreparationGuide({
       if (event.key !== 'Tab') return
       const panel = panelRef.current
       if (!panel) return
-      const focusables = panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      const focusables = focusablesDentro(panel)
       if (focusables.length === 0) {
         event.preventDefault()
+        panel.focus()
         return
       }
-      const first = focusables[0]
-      const last = focusables[focusables.length - 1]
+
+      // Se gobierna el recorrido **completo**, no solo los extremos.
+      //
+      // Antes solo se interceptaba al llegar al primero o al último y en
+      // medio tabulaba el navegador. Eso obliga a que nuestra lista y el
+      // orden de tabulación real coincidan exactamente, y basta una
+      // discrepancia —un control que el navegador se salta, o uno que se
+      // desactiva al cambiar de paso— para que un Shift+Tab salga del
+      // diálogo sin que nadie lo impida. Fallaba así, de forma intermitente,
+      // solo en el runner de Linux (QA-003).
+      event.preventDefault()
       const active = document.activeElement as HTMLElement | null
-      if (!panel.contains(active)) {
-        event.preventDefault()
-        ;(event.shiftKey ? last : first).focus()
-        return
-      }
-      if (event.shiftKey && active === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault()
-        first.focus()
-      }
+      const actual = active ? focusables.indexOf(active) : -1
+      const siguiente =
+        actual === -1
+          ? // El foco no está en ningún control del panel (por ejemplo en
+            // `body` tras un re-render): se entra por el extremo que toque.
+            event.shiftKey
+            ? focusables.length - 1
+            : 0
+          : (actual + (event.shiftKey ? -1 : 1) + focusables.length) % focusables.length
+      focusables[siguiente].focus()
     }
 
     document.addEventListener('keydown', onKeyDown)
@@ -173,6 +195,10 @@ export function DevicePreparationGuide({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        // Enfocable por código pero fuera del recorrido de Tab (el selector
+        // de focusables excluye `tabindex="-1"`). Es el sitio donde aterriza
+        // el foco si el panel se queda sin ningún control enfocable.
+        tabIndex={-1}
         aria-labelledby={titleId}
         aria-describedby={descId}
         className="relative z-10 flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-[20px] bg-surface shadow-[var(--shadow-raised)] outline-none sm:max-h-[80vh] sm:max-w-lg sm:rounded-[20px]"
