@@ -194,12 +194,15 @@ export function Header() {
               <IconBadge to="/carrito" icon="cart" label={t('header.cart')} count={cartCount} />
             )}
 
-            {/* Selector de idioma — a la derecha del todo. Solo en la web:
-                dentro de la app no se monta esta cabecera.
-                Separado con una línea para que el bloque de iconos no parezca
-                pegado al menú de dispositivos. */}
-            <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-ink/15 xl:block" />
-            <LanguagePicker />
+            {/* Selector de idioma — pegado al borde derecho, y separado del
+                resto de accesos con una línea y su propio margen. Al asomar
+                sobre el relleno del contenedor arrastra a los demás iconos
+                algo más a la derecha, que es lo que despeja el menú central
+                (ver UI-001). */}
+            <span aria-hidden="true" className="ml-2 hidden h-5 w-px bg-ink/15 xl:block" />
+            <span className="-mr-2 ml-1 sm:-mr-3">
+              <LanguagePicker />
+            </span>
 
             {/* Móvil: botón de menú */}
             <button

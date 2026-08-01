@@ -590,8 +590,10 @@ del repositorio. No se corrigen en la preparación documental.
   se echa encima del menú**. Al añadir el selector de idioma se midió un
   solape real de 9px, no un simple apretón visual.
 - Mitigación aplicada: selector compacto (bandera y flecha, sin el código de
-  idioma) y enlaces del menú algo menos holgados. El hueco queda en 43px a
-  1280px, medido.
+  idioma), enlaces del menú algo menos holgados, y el selector pegado al
+  borde derecho asomando sobre el relleno del contenedor, lo que arrastra al
+  resto de accesos algo más a la derecha. El hueco queda en **51px a
+  1280px**, medido.
 - Queda la asimetría de fondo: del logo al menú sobran 271px y del menú a los
   iconos hay 43px. Es consecuencia de centrar respecto al contenedor.
   Arreglarlo de verdad exige centrar el menú respecto al hueco entre logo e
