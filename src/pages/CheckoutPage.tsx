@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { useT, type ClaveTexto } from '../lib/i18n'
+import { useColorName, useT, type ClaveTexto } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
@@ -33,6 +33,7 @@ const STEPS: ClaveTexto[] = [
 
 export function CheckoutPage() {
   const t = useT()
+  const nombreColor = useColorName()
   const { step } = useParams()
   const parsedStep = Number(step)
   const current = (parsedStep === 1 || parsedStep === 2 || parsedStep === 3 ? parsedStep : 1) as 1 | 2 | 3
@@ -351,7 +352,7 @@ export function CheckoutPage() {
                         <span>
                           <span className="block font-semibold">Seguro para {line.name}</span>
                           <span className="block text-xs text-muted">
-                            {line.capacity} · {line.color} · +{euro(insurancePrice)}/mes* por unidad
+                            {line.capacity} · {nombreColor(line.color)} · +{euro(insurancePrice)}/mes* por unidad
                           </span>
                         </span>
                       </label>
@@ -516,7 +517,7 @@ export function CheckoutPage() {
                         {!isAccessory && line.capacity ? ` ${line.capacity}` : ''}
                       </p>
                       <p className="text-muted">
-                        {isAccessory ? t('checkout.appleAccessory') : line.color} · {t('checkout.units', { n: line.qty })}
+                        {isAccessory ? t('checkout.appleAccessory') : nombreColor(line.color)} · {t('checkout.units', { n: line.qty })}
                       </p>
                       <p className="font-semibold text-ink">{euro(line.price * line.qty)}</p>
                       {line.insured && (

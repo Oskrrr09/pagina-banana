@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useT } from '../lib/i18n'
+import { useColorName, useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
@@ -16,6 +16,7 @@ import type { FamilySlug } from '../data/productDecisionData'
 
 export function CartPage() {
   const t = useT()
+  const nombreColor = useColorName()
   const {
     cart,
     setQty,
@@ -70,7 +71,7 @@ export function CartPage() {
                 : `${line.name} ${line.color}`
               const subLabel = isAccessory
                 ? 'Accesorio Apple'
-                : `${line.capacity} · ${line.color}`
+                : `${line.capacity} · ${nombreColor(line.color)}`
               return (
                 <li key={line.id} className="flex gap-4 py-5">
                   <div className="w-20 shrink-0 sm:w-24">

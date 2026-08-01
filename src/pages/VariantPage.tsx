@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useIdioma, useT, type ClaveTexto } from '../lib/i18n'
+import { useColorName, useIdioma, useT, type ClaveTexto } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
@@ -48,6 +48,7 @@ function tintHex(hex: string, amount: number) {
 
 export function VariantPage() {
   const { t, intl } = useIdioma()
+  const nombreColor = useColorName()
   const { family: familySlug, model: modelSlug, variant } = useParams()
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
@@ -228,7 +229,7 @@ export function VariantPage() {
                     setCapacity(c.capacities[0].capacity)
                   }
                 }}
-                aria-label={`Ver en ${c.name}`}
+                aria-label={t('product.viewIn', { color: nombreColor(c.name) })}
                 aria-pressed={c.color === color.color}
                 className={`h-8 w-8 rounded-full border transition-transform hover:scale-110 ${
                   c.color === color.color ? 'border-ink ring-2 ring-ink ring-offset-2' : 'border-black/15'
@@ -267,7 +268,7 @@ export function VariantPage() {
 
           {/* Selector de color */}
           <div className="mt-6">
-            <p className="mb-2 text-sm font-semibold text-ink">{t('product.colorLabel', { color: color.name })}</p>
+            <p className="mb-2 text-sm font-semibold text-ink">{t('product.colorLabel', { color: nombreColor(color.name) })}</p>
             <div className="flex flex-wrap gap-2">
               {model.colors.map((c) => (
                 <Chip
@@ -280,9 +281,9 @@ export function VariantPage() {
                     }
                   }}
                   swatch={c.hex}
-                  ariaLabel={`Color ${c.name}`}
+                  ariaLabel={t('product.colorAria', { color: nombreColor(c.name) })}
                 >
-                  {c.name}
+                  {nombreColor(c.name)}
                 </Chip>
               ))}
             </div>

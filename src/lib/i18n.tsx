@@ -132,6 +132,35 @@ export function useIdioma(): EstadoIdioma {
   return contexto
 }
 
+/**
+ * Nombre de color traducido.
+ *
+ * Los colores viven en `src/data/products/` con su nombre en castellano, que
+ * hace además de identificador. En vez de meter una clave al lado de cada uno
+ * —son 39 repartidos por seis ficheros— se deriva la clave del propio nombre.
+ *
+ * Un color que se añada al catálogo y no esté traducido **sale en castellano**
+ * en vez de mostrar la clave en crudo: es un dato de producto, no un rótulo, y
+ * verlo en castellano molesta menos que ver `color.turquesa`.
+ */
+export function useColorName(): (nombre: string) => string {
+  const { t } = useIdioma()
+  return (nombre) => {
+    const clave = `color.${normalizarColor(nombre)}` as ClaveTexto
+    return clave in es ? t(clave) : nombre
+  }
+}
+
+function normalizarColor(nombre: string): string {
+  return nombre
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/·/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 /** Atajo para el caso habitual: solo traducir. */
 export function useT(): EstadoIdioma['t'] {
   return useIdioma().t
