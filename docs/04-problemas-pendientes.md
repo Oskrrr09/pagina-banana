@@ -599,13 +599,20 @@ del repositorio. No se corrigen en la preparación documental.
     ancho.
   - El menú vuelve a estar **centrado respecto a la ventana**, con desvío 0
     respecto al eje de la barra utilitaria.
-  - Los accesos van **pegados entre sí, sin separación**. La única
-    separación del grupo es la del selector de idioma, con su línea y sus
-    márgenes.
+  - Los accesos van **pegados entre sí** en su propio contenedor con
+    `-space-x-2`. `gap-0` no bastaba: los botones miden 40px con un dibujo
+    de 24 dentro, así que aun sin separación quedaban 20px de aire. Ahora
+    quedan 12px entre dibujos y 49px hasta la bandera.
+  - La única separación del grupo es la del selector de idioma, con su línea
+    a media altura y el mismo aire a cada lado.
 - Para que el centrado quepa a 1280px, los enlaces del menú van algo menos
   holgados en ese tramo y recuperan su holgura a partir de 1536px.
-- **Lo medido**: hueco entre el menú y los accesos de 57px a 1280px y 167px
-  a 1500px. Juntar los accesos liberó 28px que se los llevó ese hueco. Si
+- **Lo medido**: 12px entre dibujos de los accesos, 49px del último al
+  selector de idioma, y hueco entre el menú y los accesos de 57px a 1280px y
+  167px a 1500px.
+- Nota de método: medir las **cajas** de los botones despistaba, porque son
+  bastante mayores que el dibujo que contienen. Lo que se ve —y lo que hay
+  que medir— es la distancia entre los `svg`. Si
   alguna vez queda corto, la salida es quitar un acceso de la derecha —al
   comparador se llega igual desde la ficha y desde favoritos—, no volver a
   mover márgenes.

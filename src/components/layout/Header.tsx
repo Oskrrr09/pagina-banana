@@ -163,12 +163,14 @@ export function Header() {
           </nav>
 
           {/* Accesos permanentes */}
-          <div
-            // Sin separación entre los accesos: van pegados como un bloque.
-            // La única separación de este grupo es la del selector de idioma,
-            // que lleva su propia línea y márgenes.
-            className="ml-auto flex items-center gap-0"
-          >
+          <div className="ml-auto flex items-center">
+            {/* Los accesos van pegados como un bloque.
+                Los botones miden 40px con un dibujo de 24 dentro, así que con
+                `gap-0` aún quedaban 20px de aire entre iconos. `-space-x-2`
+                los solapa lo justo para dejar 4px, que es lo que se ve como
+                "juntos". La única separación de este grupo es la del selector
+                de idioma. */}
+            <div className="flex items-center -space-x-2">
             {/* Escritorio: lupa, favoritos, comparador, cuenta */}
             <button
               ref={desktopSearchButtonRef}
@@ -207,13 +209,12 @@ export function Header() {
             {!isNativeApp && (
               <IconBadge to="/carrito" icon="cart" label={t('header.cart')} count={cartCount} />
             )}
+            </div>
 
-            {/* Selector de idioma — pegado al borde derecho, y separado del
-                resto de accesos con una línea y su propio margen. Al asomar
-                sobre el relleno del contenedor arrastra a los demás iconos
-                algo más a la derecha, que es lo que despeja el menú central
-                (ver UI-001). */}
-            <span aria-hidden="true" className="ml-4 mr-3 hidden h-5 w-px bg-ink/15 xl:block" />
+            {/* Selector de idioma — pegado al borde derecho y claramente
+                separado del bloque de accesos, con una línea a media altura y
+                el mismo aire a cada lado de ella. */}
+            <span aria-hidden="true" className="mx-4 hidden h-5 w-px bg-ink/15 xl:block" />
             <LanguagePicker />
 
             {/* Móvil: botón de menú */}
