@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useT, type ClaveTexto } from '../lib/i18n'
+import { useIdioma, useT, type ClaveTexto } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
@@ -47,7 +47,7 @@ function tintHex(hex: string, amount: number) {
 }
 
 export function VariantPage() {
-  const t = useT()
+  const { t, intl } = useIdioma()
   const { family: familySlug, model: modelSlug, variant } = useParams()
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
@@ -254,20 +254,20 @@ export function VariantPage() {
           </div>
 
           <div className="mt-3 flex flex-wrap items-end gap-3">
-            <span className="text-3xl font-bold text-ink">{euro(current.price)}</span>
+            <span className="text-3xl font-bold text-ink">{euro(current.price, intl)}</span>
             {current.previousPrice && (
               <span className="pb-1 text-ink">
-                {euro(current.previousPrice)} · ahorra {euro(current.previousPrice - current.price)}
+                {euro(current.previousPrice, intl)} · {t('product.save', { importe: euro(current.previousPrice - current.price, intl) })}
               </span>
             )}
           </div>
           <div className="mt-2">
-            <ProvisionalBadge label="Precio demostrativo" />
+            <ProvisionalBadge label={t('common.demoPrice')} />
           </div>
 
           {/* Selector de color */}
           <div className="mt-6">
-            <p className="mb-2 text-sm font-semibold text-ink">Color: {color.name}</p>
+            <p className="mb-2 text-sm font-semibold text-ink">{t('product.colorLabel', { color: color.name })}</p>
             <div className="flex flex-wrap gap-2">
               {model.colors.map((c) => (
                 <Chip
@@ -321,7 +321,7 @@ export function VariantPage() {
           {/* Selector de capacidad */}
           <div className="mt-5">
             <p className="mb-2 text-sm font-semibold text-ink">
-              Capacidad: {displayCap(current.capacity)}
+              {t('product.capacityLabel', { capacidad: displayCap(current.capacity) })}
             </p>
             <div className="flex flex-wrap gap-2">
               {visibleCapacities.map((cap) => (
@@ -330,7 +330,7 @@ export function VariantPage() {
                   selected={cap.capacity === current.capacity}
                   onClick={() => setCapacity(cap.capacity)}
                   disabled={cap.availability === 'agotado'}
-                  ariaLabel={`${displayCap(cap.capacity)} · ${euro(cap.price)}${cap.availability === 'agotado' ? ' · agotado' : ''}`}
+                  ariaLabel={`${displayCap(cap.capacity)} · ${euro(cap.price, intl)}${cap.availability === 'agotado' ? ` · ${t('availability.soldOut')}` : ''}`}
                 >
                   {displayCap(cap.capacity)}
                 </Chip>
@@ -347,7 +347,7 @@ export function VariantPage() {
             <p className="font-semibold text-ink">{t('product.deliveryOrPickup')}</p>
             <p className="text-sm text-muted">{t('product.shippingNote')}</p>
             <button onClick={() => setStoreOpen(true)} className="mt-1 text-sm font-semibold text-ink hover:underline">
-              Ver stock por tienda ›
+              {t('product.stockByStore')}
             </button>
           </div>
 
@@ -355,7 +355,7 @@ export function VariantPage() {
           <div className="mt-5 border-t border-line pt-5">
             <p className="font-semibold text-ink">{t('product.financing')}</p>
             <button onClick={() => setFinanceOpen(true)} className="text-sm text-muted hover:text-ink">
-              desde {euro(model.financeFrom.monthly)}/mes (TIN/TAE de ejemplo, a validar)* ·{' '}
+              {t('product.financeFrom', { cuota: euro(model.financeFrom.monthly, intl) })} ·{' '}
               <span className="font-semibold text-ink">{t('product.simulate')}</span>
             </button>
           </div>
@@ -385,7 +385,7 @@ export function VariantPage() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 <Button size="lg" className="w-full" onClick={buyNow}>
-                  Comprar
+                  {t('common.buy')}
                 </Button>
                 <div className="flex gap-2">
                   <Button size="lg" variant="secondary" className="min-w-0 flex-1" onClick={addAndContinue}>
@@ -414,7 +414,7 @@ export function VariantPage() {
                 <span>
                   <span className="block text-sm font-semibold text-ink">{t('product.insurance')}</span>
                   <span className="block text-xs text-muted">
-                    Añade {euro(insurancePrice)}/mes* por unidad
+                    {t('product.insuranceAdd', { precio: euro(insurancePrice, intl) })}
                   </span>
                 </span>
               </span>
@@ -506,7 +506,7 @@ export function VariantPage() {
                   <div key={a} className="w-40 shrink-0">
                     <Placeholder label={a} ratio="1 / 1" />
                     <p className="mt-2 text-sm text-ink">{a}</p>
-                    <p className="text-xs text-muted">Precio demostrativo</p>
+                    <p className="text-xs text-muted">{t('common.demoPrice')}</p>
                   </div>
                 ))}
               </div>
@@ -533,9 +533,9 @@ export function VariantPage() {
           >
             <div className="flex items-center gap-2 px-4 py-3">
               <div>
-                <p className="text-lg font-bold leading-none text-ink">{euro(current.price)}</p>
+                <p className="text-lg font-bold leading-none text-ink">{euro(current.price, intl)}</p>
                 {current.previousPrice && (
-                  <p className="text-xs text-ink">antes {euro(current.previousPrice)}</p>
+                  <p className="text-xs text-ink">{t('product.before', { precio: euro(current.previousPrice, intl) })}</p>
                 )}
               </div>
               {needsReservation ? (
@@ -559,7 +559,7 @@ export function VariantPage() {
                     </Button>
                   )}
                   <Button size="lg" onClick={buyNow} className="px-4">
-                    Comprar
+                    {t('common.buy')}
                   </Button>
                 </>
               )}

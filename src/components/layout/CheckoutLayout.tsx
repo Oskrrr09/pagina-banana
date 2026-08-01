@@ -1,9 +1,11 @@
 import { Link, Outlet, useParams } from 'react-router-dom'
+import { useT } from '../../lib/i18n'
 import { Container } from '../ui/Container'
 import { Icon } from '../ui/Icon'
 import { Logo } from './Logo'
 
 export function CheckoutLayout() {
+  const t = useT()
   const { step } = useParams()
   const showCartLink = step !== '3'
 
@@ -22,7 +24,7 @@ export function CheckoutLayout() {
           <div className="flex items-center gap-3 sm:gap-5">
             <span className="hidden items-center gap-1.5 text-sm font-semibold text-ink sm:flex">
               <Icon name="shield" size={18} />
-              Compra segura
+              {t('checkout.secure')}
             </span>
             {showCartLink && (
               <Link
@@ -30,7 +32,7 @@ export function CheckoutLayout() {
                 className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-muted hover:text-ink"
               >
                 <Icon name="chevron-right" size={16} className="rotate-180" />
-                Volver al carrito
+                {t('checkout.backToCart')}
               </Link>
             )}
           </div>

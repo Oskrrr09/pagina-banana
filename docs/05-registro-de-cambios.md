@@ -34,11 +34,14 @@ castellano** (D-047).
   pestañas, el selector de color y los botones de carrito y reserva. También
   el carrito.
 
-  **Lo que sigue en castellano en la ficha**, comprobado con captura en
-  alemán: el botón "Comprar", la etiqueta de precio demostrativo, los
-  rótulos "Color:" y "Capacidad:", los nombres de color, la lista de
-  características y la tabla de especificaciones. Estas dos últimas son
-  datos de producto, no interfaz, y van con el resto del contenido (asistente, banner del Plan Renove,
+  La **ficha de producto completa** y el **checkout entero** —pasos,
+  entrega, pago, resumen, confirmación y sus formularios—, comprobados con
+  capturas en alemán y francés.
+
+  **Lo que sigue en castellano**: los nombres de color (39 distintos en el
+  catálogo), la lista de características y la tabla de especificaciones de
+  cada producto, y las páginas de servicios, Plan Renove, soporte, servicio
+  técnico, tiendas y cuenta. Son datos de producto y contenido, no interfaz (asistente, banner del Plan Renove,
   ventajas, preguntas frecuentes, reseñas y newsletter). Servicios, Plan
   Renove, soporte, servicio técnico, tiendas y el checkout siguen pendientes.
 - Suite en 255, con nueve pruebas nuevas de idioma. Hubo que fijar `locale: 'es-ES'` en la configuración de
