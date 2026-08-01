@@ -14,12 +14,12 @@ import { HeroCarousel } from '../components/home/HeroCarousel'
 import { MobileScroller } from '../components/ui/MobileScroller'
 import { families, iphoneModels, modelsByFamily } from '../data/products'
 import { homeFaq } from '../data/content'
-import { useT } from '../lib/i18n'
+import { useIdioma } from '../lib/i18n'
 import { claim } from '../data/commercialClaims'
 import { euro } from '../lib/format'
 
 export function Home() {
-  const t = useT()
+  const { t, intl } = useIdioma()
   const [financeOpen, setFinanceOpen] = useState(false)
   const launches = iphoneModels.slice(0, 3)
   const offers = iphoneModels.filter((m) => m.colors[0].capacities[0].previousPrice != null).slice(0, 3)
@@ -81,7 +81,7 @@ export function Home() {
 
       {/* 02b — Bento de destacados (producto estrella + servicios clave) */}
       <Section>
-        <SectionHeader eyebrow="Banana Computer" title="Todo lo Apple, cerca de ti" />
+        <SectionHeader eyebrow={t('home.section.brand')} title={t('home.section.brandTitle')} />
         <Reveal>
           <BentoShowcase />
         </Reveal>
@@ -89,7 +89,7 @@ export function Home() {
 
       {/* 03 — Categorías principales (tiles grandes con foto) */}
       <Section>
-        <SectionHeader title="Explora por categoría" desc="Toda la gama Apple organizada por familia." />
+        <SectionHeader title={t('home.section.categories')} desc={t('home.section.categoriesDesc')} />
         <StaggerGroup className="-mx-5 flex snap-x gap-4 overflow-x-auto px-5 py-3 no-scrollbar sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 sm:pb-0 md:grid-cols-3 lg:grid-cols-6">
           {families.map((fam) => {
             const cover = modelsByFamily[fam.slug]?.[0]?.colors[0].image
@@ -121,10 +121,10 @@ export function Home() {
                     )}
                   </div>
                   <div className="flex flex-1 flex-col p-4 text-center">
-                    <p className="font-display text-base font-bold text-ink">{fam.name}</p>
-                    <p className="mt-0.5 text-xs text-muted">{fam.tagline}</p>
+                    <p className="font-display text-base font-bold text-ink">{fam.nameKey ? t(fam.nameKey) : fam.name}</p>
+                    <p className="mt-0.5 text-xs text-muted">{fam.taglineKey ? t(fam.taglineKey) : fam.tagline}</p>
                     <p className="mt-2 text-sm font-semibold text-ink">
-                      {developed ? `desde ${euro(fam.fromPrice)}` : 'Próximamente'}
+                      {developed ? t('common.from', { precio: euro(fam.fromPrice, intl) }) : t('common.comingSoon')}
                     </p>
                   </div>
                 </Link>
@@ -136,7 +136,7 @@ export function Home() {
 
       {/* 04 — Lanzamientos */}
       <Section alt>
-        <SectionHeader eyebrow="Novedades" title="Últimos lanzamientos" />
+        <SectionHeader eyebrow={t('home.section.newsEyebrow')} title={t('home.section.newsTitle')} />
         <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {launches.map((m) => (
             <StaggerItem key={m.slug}>
@@ -149,7 +149,7 @@ export function Home() {
       {/* 05 — Ofertas · Rincón del chollo */}
       {offers.length > 0 && (
         <Section>
-          <SectionHeader eyebrow="Rincón del chollo" title="Ofertas destacadas" desc="Precios demostrativos, pendientes de validación." />
+          <SectionHeader eyebrow={t('home.section.dealsEyebrow')} title={t('home.section.dealsTitle')} desc={t('home.section.dealsDesc')} />
           <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {offers.map((m) => (
               <StaggerItem key={m.slug}>
@@ -206,7 +206,7 @@ export function Home() {
 
       {/* 07 — Complementa tu Apple (categorías de accesorios) */}
       <Section>
-        <SectionHeader eyebrow="Personaliza tu Apple" title="Complementa tu equipo" desc="Todo lo que necesitas para sacarle partido a tu Apple." />
+        <SectionHeader eyebrow={t('home.section.accessoriesEyebrow')} title={t('home.section.accessoriesTitle')} desc={t('home.section.accessoriesDesc')} />
         <MobileScroller
           desktopClass="sm:grid sm:grid-cols-3 sm:gap-4 lg:grid-cols-5"
           itemClass="w-[65vw] sm:w-auto"
@@ -240,7 +240,7 @@ export function Home() {
 
       {/* 08 — Servicios Banana (4 tiles coloridos) */}
       <Section alt>
-        <SectionHeader eyebrow="Servicios Banana" title="Más que una tienda" desc="Servicios pensados para que tu Apple funcione al 100 %." />
+        <SectionHeader eyebrow={t('home.section.servicesEyebrow')} title={t('home.section.servicesTitle')} desc={t('home.section.servicesDesc')} />
         <MobileScroller
           desktopClass="sm:grid sm:grid-cols-2 sm:gap-5 lg:grid-cols-4"
           itemClass="w-[80vw] sm:w-auto"
@@ -311,7 +311,7 @@ export function Home() {
 
       {/* 09 — Testimonios (contenido demostrativo) */}
       <Section>
-        <SectionHeader eyebrow="Lo que dicen de nosotros" title="Clientes que ya son familia" desc="Contenido demostrativo, pendiente de validar con opiniones reales." />
+        <SectionHeader eyebrow={t('home.section.reviewsEyebrow')} title={t('home.section.reviewsTitle')} desc={t('home.section.reviewsDesc')} />
         <MobileScroller
           desktopClass="sm:grid sm:grid-cols-2 sm:gap-5 md:grid-cols-3"
           itemClass="w-[calc(100vw-2.5rem)] sm:w-auto"
@@ -370,7 +370,7 @@ export function Home() {
       {/* 09 — Tiendas físicas (carrusel) */}
       <Section>
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <SectionHeader eyebrow="Estamos cerca" title="Tiendas físicas en Canarias" className="mb-0" />
+          <SectionHeader eyebrow={t('home.section.storesEyebrow')} title={t('home.section.storesTitle')} className="mb-0" />
           <ButtonLink to="/tiendas" variant="tertiary">
             Ver todas las tiendas <Icon name="arrow-right" size={16} />
           </ButtonLink>
@@ -383,7 +383,7 @@ export function Home() {
       {/* 11 — FAQ */}
       <Section alt>
         <div className="mx-auto max-w-3xl">
-          <SectionHeader title="Preguntas frecuentes" />
+          <SectionHeader title={t('home.section.faqTitle')} />
           <Accordion items={homeFaq.map((f) => ({ q: t(f.q), a: t(f.a), note: t(f.note) }))} />
         </div>
       </Section>

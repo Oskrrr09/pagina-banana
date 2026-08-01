@@ -1,3 +1,5 @@
+import type { ClaveTexto } from '../lib/i18n'
+
 // Tipos del catálogo. En el prototipo, los datos son de ejemplo (apartado 7):
 // ningún precio, plazo o stock es real.
 
@@ -39,6 +41,11 @@ export interface Model {
 }
 
 export interface Family {
+  /** Clave de traducción del nombre. Solo cuando el nombre no es una marca:
+      "iPhone" o "Mac" no se traducen, "Accesorios" sí. */
+  nameKey?: ClaveTexto
+  /** Clave de traducción del reclamo. */
+  taglineKey?: ClaveTexto
   slug: string
   name: string
   tagline: string

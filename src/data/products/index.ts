@@ -14,12 +14,12 @@ import { airpodsModels } from './airpods'
 
 // Familias para la home y el mega-menú.
 export const families: Family[] = [
-  { slug: 'mac', name: 'Mac', tagline: 'Potencia de sobremesa y portátil', fromPrice: 719 },
-  { slug: 'iphone', name: 'iPhone', tagline: 'El iPhone que buscas, al mejor precio en Canarias', fromPrice: 959 },
-  { slug: 'ipad', name: 'iPad', tagline: 'Versátil, ligero, para todo', fromPrice: 409 },
-  { slug: 'apple-watch', name: 'Watch', tagline: 'Tu salud, en la muñeca', fromPrice: 279 },
-  { slug: 'airpods', name: 'AirPods', tagline: 'Sonido sin cables', fromPrice: 279 },
-  { slug: 'accesorios', name: 'Accesorios', tagline: 'Fundas, cargadores y más', fromPrice: 29 },
+  { slug: 'mac', name: 'Mac', tagline: 'Potencia de sobremesa y portátil', taglineKey: 'family.mac.tagline', fromPrice: 719 },
+  { slug: 'iphone', name: 'iPhone', tagline: 'El iPhone que buscas, al mejor precio en Canarias', taglineKey: 'family.iphone.tagline', fromPrice: 959 },
+  { slug: 'ipad', name: 'iPad', tagline: 'Versátil, ligero, para todo', taglineKey: 'family.ipad.tagline', fromPrice: 409 },
+  { slug: 'apple-watch', name: 'Watch', tagline: 'Tu salud, en la muñeca', taglineKey: 'family.watch.tagline', fromPrice: 279 },
+  { slug: 'airpods', name: 'AirPods', tagline: 'Sonido sin cables', taglineKey: 'family.airpods.tagline', fromPrice: 279 },
+  { slug: 'accesorios', name: 'Accesorios', tagline: 'Fundas, cargadores y más', taglineKey: 'family.accessories.tagline', nameKey: 'family.accessories.name', fromPrice: 29 },
 ]
 
 // Re-export de los arrays por familia (compat con imports actuales).
