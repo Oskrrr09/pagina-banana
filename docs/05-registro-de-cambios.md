@@ -29,10 +29,18 @@ castellano** (D-047).
 - **Los precios cambian de formato, no de divisa**: "1.229 €" en castellano,
   "€1,229" en inglés. El euro sigue siendo el euro.
 - Traducidos por ahora: barra superior, cabecera, pie, menú, vocabulario
-  común y **la portada entera** (asistente, banner del Plan Renove,
-  ventajas, preguntas frecuentes, reseñas y newsletter). El resto del
-  contenido —servicios, Plan Renove, soporte, servicio técnico, tiendas y
-  las fichas de producto— va por secciones en las siguientes entregas.
+  común, **la portada entera**, la disponibilidad en todo el catálogo, y de
+  la ficha de producto: favoritos, entrega, financiación, seguro, las
+  pestañas, el selector de color y los botones de carrito y reserva. También
+  el carrito.
+
+  **Lo que sigue en castellano en la ficha**, comprobado con captura en
+  alemán: el botón "Comprar", la etiqueta de precio demostrativo, los
+  rótulos "Color:" y "Capacidad:", los nombres de color, la lista de
+  características y la tabla de especificaciones. Estas dos últimas son
+  datos de producto, no interfaz, y van con el resto del contenido (asistente, banner del Plan Renove,
+  ventajas, preguntas frecuentes, reseñas y newsletter). Servicios, Plan
+  Renove, soporte, servicio técnico, tiendas y el checkout siguen pendientes.
 - Suite en 255, con nueve pruebas nuevas de idioma. Hubo que fijar `locale: 'es-ES'` en la configuración de
   Playwright: con la detección activa, la suite entera pasó a ejecutarse
   contra la versión inglesa.

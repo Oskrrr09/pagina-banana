@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useT, type ClaveTexto } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
@@ -21,6 +22,18 @@ import { NotFound } from './NotFound'
 
 const TABS = ['Características', 'Comparar', 'Plan Renove', 'Garantía', 'Accesorios', 'FAQ'] as const
 
+// Los rótulos de las pestañas son además el identificador del estado, así que
+// el castellano se queda como identificador y la traducción se aplica solo al
+// pintarlos.
+const TAB_LABEL: Record<(typeof TABS)[number], ClaveTexto> = {
+  'Características': 'product.features',
+  'Comparar': 'compare.title',
+  'Plan Renove': 'product.tradeIn',
+  'Garantía': 'product.warranty',
+  'Accesorios': 'product.tab.accessories',
+  FAQ: 'product.tab.faq',
+}
+
 // Aclara un color hacia el blanco (amount 0–1). Se usa para teñir suavemente el
 // fondo de la galería según el color elegido, al estilo de las fichas de Apple.
 function tintHex(hex: string, amount: number) {
@@ -34,6 +47,7 @@ function tintHex(hex: string, amount: number) {
 }
 
 export function VariantPage() {
+  const t = useT()
   const { family: familySlug, model: modelSlug, variant } = useParams()
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
@@ -223,7 +237,7 @@ export function VariantPage() {
               />
             ))}
           </div>
-          <p className="mt-3 text-center text-xs text-muted">Elige un color · imagen de ejemplo</p>
+          <p className="mt-3 text-center text-xs text-muted">{t('product.chooseColor')}</p>
         </div>
 
         <div ref={buyBoxRef}>
@@ -330,8 +344,8 @@ export function VariantPage() {
 
           {/* Entrega / recogida */}
           <div className="mt-6 border-t border-line pt-5">
-            <p className="font-semibold text-ink">Entrega o recogida</p>
-            <p className="text-sm text-muted">Envío a toda Canarias · Recogida gratuita en tienda</p>
+            <p className="font-semibold text-ink">{t('product.deliveryOrPickup')}</p>
+            <p className="text-sm text-muted">{t('product.shippingNote')}</p>
             <button onClick={() => setStoreOpen(true)} className="mt-1 text-sm font-semibold text-ink hover:underline">
               Ver stock por tienda ›
             </button>
@@ -339,10 +353,10 @@ export function VariantPage() {
 
           {/* Financiación resumida */}
           <div className="mt-5 border-t border-line pt-5">
-            <p className="font-semibold text-ink">Financiación</p>
+            <p className="font-semibold text-ink">{t('product.financing')}</p>
             <button onClick={() => setFinanceOpen(true)} className="text-sm text-muted hover:text-ink">
               desde {euro(model.financeFrom.monthly)}/mes (TIN/TAE de ejemplo, a validar)* ·{' '}
-              <span className="font-semibold text-ink">Simular ›</span>
+              <span className="font-semibold text-ink">{t('product.simulate')}</span>
             </button>
           </div>
 
@@ -352,8 +366,8 @@ export function VariantPage() {
               <div className="rounded-[12px] border border-line bg-neutral p-4">
                 <p className="text-sm font-semibold text-ink">
                   {soldOut
-                    ? 'Esta variante está agotada.'
-                    : 'Esta variante es bajo pedido.'}
+                    ? t('product.soldOutNote')
+                    : t('product.backorderNote')}
                 </p>
                 <p className="mt-1 text-sm text-muted">
                   Puedes reservarla: entras en la lista de espera y se sirve por
@@ -375,7 +389,7 @@ export function VariantPage() {
                 </Button>
                 <div className="flex gap-2">
                   <Button size="lg" variant="secondary" className="min-w-0 flex-1" onClick={addAndContinue}>
-                    {lineInCart ? 'Añadir otra' : 'Añadir al carrito'}
+                    {lineInCart ? t('product.addAnother') : t('common.addToCart')}
                   </Button>
                   {lineInCart && (
                     <QuantityControl
@@ -398,7 +412,7 @@ export function VariantPage() {
               <span className="flex min-w-0 items-center gap-2">
                 <Icon name="shield" size={18} />
                 <span>
-                  <span className="block text-sm font-semibold text-ink">Seguro a todo riesgo</span>
+                  <span className="block text-sm font-semibold text-ink">{t('product.insurance')}</span>
                   <span className="block text-xs text-muted">
                     Añade {euro(insurancePrice)}/mes* por unidad
                   </span>
@@ -423,17 +437,17 @@ export function VariantPage() {
       <div className="border-t border-line bg-neutral">
         <Container className="py-8">
           <div className="mb-6 flex gap-2 overflow-x-auto pb-1 no-scrollbar" role="tablist">
-            {TABS.map((t) => (
+            {TABS.map((pestana) => (
               <button
-                key={t}
+                key={pestana}
                 role="tab"
-                aria-selected={tab === t}
-                onClick={() => setTab(t)}
+                aria-selected={tab === pestana}
+                onClick={() => setTab(pestana)}
                 className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                  tab === t ? 'bg-ink text-surface' : 'bg-surface text-ink hover:bg-neutral'
+                  tab === pestana ? 'bg-ink text-surface' : 'bg-surface text-ink hover:bg-neutral'
                 }`}
               >
-                {t}
+                {t(TAB_LABEL[pestana])}
               </button>
             ))}
           </div>
@@ -463,7 +477,7 @@ export function VariantPage() {
             )}
             {tab === 'Comparar' && (
               <div className="text-center">
-                <p className="text-muted">Compara este modelo con hasta 2 más.</p>
+                <p className="text-muted">{t('product.compareHint')}</p>
                 <Button variant="secondary" className="mt-4" onClick={() => navigate('/comparar')}>
                   <Icon name="compare" size={18} /> Ir al comparador
                 </Button>
@@ -471,7 +485,7 @@ export function VariantPage() {
             )}
             {tab === 'Plan Renove' && (
               <div>
-                <p className="text-ink">Entrega tu dispositivo actual y ahorra en esta compra.</p>
+                <p className="text-ink">{t('product.tradeInNote')}</p>
                 <p className="mt-2 text-sm text-muted">
                   La tasación es siempre presencial y orientativa online.
                 </p>
@@ -624,6 +638,7 @@ function FavoriteToggle({
   isFavorite: boolean
   onToggle: () => void
 }) {
+  const t = useT()
   void favId
   return (
     <button
@@ -639,7 +654,7 @@ function FavoriteToggle({
         className={isFavorite ? 'fill-danger text-danger' : ''}
         aria-hidden="true"
       />
-      {isFavorite ? 'En favoritos' : 'Añadir a favoritos'}
+      {isFavorite ? t('product.inFavorites') : t('favorites.add')}
     </button>
   )
 }

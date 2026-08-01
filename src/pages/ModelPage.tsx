@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
@@ -20,6 +21,7 @@ import { NotFound } from './NotFound'
 type SortKey = 'relevancia' | 'precio' | 'novedad'
 
 export function ModelPage() {
+  const t = useT()
   const { family: familySlug, model: modelSlug } = useParams()
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
@@ -72,9 +74,9 @@ export function ModelPage() {
               onChange={(e) => setSort(e.target.value as SortKey)}
               className="h-11 rounded-[12px] border border-line bg-surface px-3 text-sm outline-none"
             >
-              <option value="relevancia">Relevancia</option>
-              <option value="precio">Precio</option>
-              <option value="novedad">Novedad</option>
+              <option value="relevancia">{t('product.sortRelevance')}</option>
+              <option value="precio">{t('product.sortPrice')}</option>
+              <option value="novedad">{t('product.new')}</option>
             </select>
           </div>
         </div>
@@ -118,6 +120,7 @@ function ColorCard({
   capFilter: string | null
   inStockOnly: boolean
 }) {
+  const t = useT()
   const { toggleFavorite, isFavorite, toggleCompare, isComparing, compareFull } = useStore()
   const navigate = useNavigate()
   const [storeOpen, setStoreOpen] = useState(false)
@@ -145,7 +148,7 @@ function ColorCard({
       <div className="relative">
         <button
           onClick={() => toggleFavorite(favId)}
-          aria-label={isFavorite(favId) ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+          aria-label={isFavorite(favId) ? t('favorites.remove') : t('favorites.add')}
           aria-pressed={isFavorite(favId)}
           className="absolute right-2 top-2 z-10 grid h-9 w-9 place-items-center rounded-full bg-surface/80 text-muted backdrop-blur hover:text-danger"
         >
@@ -162,7 +165,7 @@ function ColorCard({
       </div>
 
       {/* Selector de capacidad */}
-      <p className="mt-4 mb-2 text-xs font-semibold text-muted">Selecciona capacidad:</p>
+      <p className="mt-4 mb-2 text-xs font-semibold text-muted">{t('product.chooseCapacity')}</p>
       <div className="flex flex-wrap gap-2">
         {color.capacities.map((cap) => (
           <Chip
@@ -195,7 +198,7 @@ function ColorCard({
         {/* Sin stock inmediato se reserva en vez de comprar. El flujo
             completo vive en la ficha, así que aquí solo se navega. */}
         <Button onClick={openVariant} variant={needsReservation ? 'secondary' : 'primary'}>
-          {needsReservation ? 'Reservar' : 'Comprar'}
+          {needsReservation ? t('common.reserve') : t('common.buy')}
         </Button>
         <div className="flex items-center justify-between text-sm">
           <button onClick={() => setStoreOpen(true)} className="font-semibold text-ink hover:underline">

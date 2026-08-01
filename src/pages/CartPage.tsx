@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
@@ -14,6 +15,7 @@ import type { Accessory } from '../data/accessories'
 import type { FamilySlug } from '../data/productDecisionData'
 
 export function CartPage() {
+  const t = useT()
   const {
     cart,
     setQty,
@@ -35,8 +37,8 @@ export function CartPage() {
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-neutral text-muted">
           <Icon name="cart" size={28} />
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-ink">Tu cesta está vacía</h1>
-        <p className="mt-2 text-muted">Descubre las novedades y las mejores ofertas.</p>
+        <h1 className="mt-4 text-2xl font-bold text-ink">{t('cart.emptyTitle')}</h1>
+        <p className="mt-2 text-muted">{t('cart.emptyBody')}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <ButtonLink to="/iphone">Ver iPhone</ButtonLink>
           <ButtonLink to="/buscar" variant="secondary">
@@ -134,7 +136,7 @@ export function CartPage() {
                         />
                         <Icon name="shield" size={18} />
                         <span>
-                          <span className="font-semibold">Seguro a todo riesgo</span>
+                          <span className="font-semibold">{t('product.insurance')}</span>
                           <span className="block text-xs text-muted">
                             +{euro(insurancePrice)}/mes* por unidad
                           </span>
@@ -149,7 +151,7 @@ export function CartPage() {
 
           {/* Entrega o recogida (resumen) */}
           <div className="mt-6 rounded-[12px] border border-line p-5">
-            <p className="mb-3 font-semibold text-ink">Entrega o recogida</p>
+            <p className="mb-3 font-semibold text-ink">{t('product.deliveryOrPickup')}</p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <DeliveryOption
                 active={delivery === 'envio'}
@@ -166,7 +168,7 @@ export function CartPage() {
                 desc="Gratis · según disponibilidad"
               />
             </div>
-            <p className="mt-2 text-xs text-muted">Condiciones pendientes de validación.</p>
+            <p className="mt-2 text-xs text-muted">{t('cart.pendingConditions')}</p>
           </div>
 
           {/* Cupón */}
@@ -178,7 +180,7 @@ export function CartPage() {
                   aria-label="Código de cupón"
                   className="h-11 flex-1 rounded-[12px] border border-line px-4 text-sm outline-none"
                 />
-                <Button variant="secondary">Aplicar</Button>
+                <Button variant="secondary">{t('cart.apply')}</Button>
               </div>
             ) : (
               <button onClick={() => setCouponOpen(true)} className="text-sm font-semibold text-ink hover:underline">
@@ -191,25 +193,25 @@ export function CartPage() {
         {/* Resumen */}
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-[12px] border border-line bg-neutral p-6">
-            <h2 className="font-bold text-ink">Resumen</h2>
+            <h2 className="font-bold text-ink">{t('cart.summary')}</h2>
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted">Subtotal</dt>
+                <dt className="text-muted">{t('cart.subtotal')}</dt>
                 <dd className="font-medium text-ink">{euro(cartSubtotal)}</dd>
               </div>
               {cartInsuranceTotal > 0 && (
                 <div className="flex justify-between">
-                  <dt className="text-muted">Seguro a todo riesgo</dt>
+                  <dt className="text-muted">{t('product.insurance')}</dt>
                   <dd className="font-medium text-ink">{euro(cartInsuranceTotal)}/mes*</dd>
                 </div>
               )}
               <div className="flex justify-between">
-                <dt className="text-muted">Envío estimado</dt>
-                <dd className="font-medium text-available">Gratis*</dd>
+                <dt className="text-muted">{t('cart.estimatedShipping')}</dt>
+                <dd className="font-medium text-available">{t('cart.free')}</dd>
               </div>
             </dl>
             <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
-              <span className="font-bold text-ink">Total</span>
+              <span className="font-bold text-ink">{t('cart.total')}</span>
               <span className="text-xl font-bold text-ink">{euro(total)}</span>
             </div>
             <ButtonLink to="/checkout/1" size="lg" className="mt-5 w-full">
@@ -238,6 +240,7 @@ function CrossSellSuggestions({
 }: {
   cart: ReturnType<typeof useStore>['cart']
 }) {
+  const t = useT()
   const suggestions = useMemo(() => {
     const inCart = new Set(cart.filter((l) => l.kind === 'accessory').map((l) => l.modelSlug))
     const deviceFamilies = new Set<FamilySlug>(
@@ -274,7 +277,7 @@ function CrossSellSuggestions({
   return (
     <div className="mt-12">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-bold text-ink">Complementa tu compra</h2>
+        <h2 className="text-xl font-bold text-ink">{t('cart.complete')}</h2>
         <Link
           to="/accesorios"
           className="text-sm font-semibold text-ink underline-offset-2 hover:underline"

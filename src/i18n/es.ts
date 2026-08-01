@@ -222,6 +222,40 @@ export const es = {
 
   'catalog.compareAndChoose': 'Compara modelos y elige el tuyo.',
 
+  // ---- Ficha de producto ----
+  'product.chooseColor': 'Elige un color · imagen de ejemplo',
+  'product.chooseCapacity': 'Selecciona capacidad:',
+  'product.features': 'Características',
+  'product.warranty': 'Garantía',
+  'product.financing': 'Financiación',
+  'product.simulate': 'Simular ›',
+  'product.insurance': 'Seguro a todo riesgo',
+  'product.deliveryOrPickup': 'Entrega o recogida',
+  'product.shippingNote': 'Envío a toda Canarias · Recogida gratuita en tienda',
+  'product.tradeIn': 'Plan Renove',
+  'product.tradeInNote': 'Entrega tu dispositivo actual y ahorra en esta compra.',
+  'product.backorderNote': 'Esta variante es bajo pedido.',
+  'product.soldOutNote': 'Esta variante está agotada.',
+  'product.compareHint': 'Compara este modelo con hasta 2 más.',
+  'product.inFavorites': 'En favoritos',
+  'product.addAnother': 'Añadir otra',
+  'product.new': 'Novedad',
+  'product.sortRelevance': 'Relevancia',
+  'product.sortPrice': 'Precio',
+
+  // ---- Carrito ----
+  'cart.emptyTitle': 'Tu cesta está vacía',
+  'cart.emptyBody': 'Descubre las novedades y las mejores ofertas.',
+  'cart.summary': 'Resumen',
+  'cart.estimatedShipping': 'Envío estimado',
+  'cart.free': 'Gratis*',
+  'cart.apply': 'Aplicar',
+  'cart.complete': 'Complementa tu compra',
+  'cart.pendingConditions': 'Condiciones pendientes de validación.',
+
+  'product.tab.accessories': 'Accesorios',
+  'product.tab.faq': 'Preguntas',
+
   // ---- Navegación de la app ----
   'app.home': 'Inicio',
   'app.explore': 'Explorar',
