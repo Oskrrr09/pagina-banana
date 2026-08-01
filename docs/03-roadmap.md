@@ -1,6 +1,6 @@
 ---
 tipo: roadmap
-actualizado: 2026-07-31
+actualizado: 2026-08-01
 ---
 
 # Roadmap
@@ -216,9 +216,11 @@ distintas en vez de una, ver
 
 - [x] `capacitor.config.ts`, `npm run build:app`, proyectos `ios/` y
       `android/`, iconos y pantallas de carga.
-- [ ] Compilar y ejecutar el binario. Requiere Xcode completo, Android
-      Studio y JDK, ver
-      [[04-problemas-pendientes#APP-001 — La app nativa está configurada pero nunca se ha compilado]].
+- [x] Compilar y ejecutar el binario de **Android** (2026-08-01): APK
+      generado y verificado en emulador, con navegación profunda dentro
+      del WebView.
+- [ ] Compilar y ejecutar el binario de **iOS**. Requiere Xcode completo,
+      ver [[04-problemas-pendientes#APP-001 — La app nativa: Android verificada, iOS sin compilar]].
 - [ ] Publicar en App Store y Google Play. **No es trabajo de código**:
       exige autorización de Banana, sus cuentas de desarrollador
       (99 €/año + 25 $) y sustituir los datos demostrativos por reales.

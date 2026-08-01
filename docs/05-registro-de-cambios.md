@@ -1,12 +1,31 @@
 ---
 tipo: cambios
-actualizado: 2026-07-31
+actualizado: 2026-08-01
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-01 — La app de Android compila y arranca; arreglada la trampa de foco
+
+- **APK de Android generado y verificado** (`APP-001` cerrado para
+  Android): `app-debug.apk`, 12 MB, `com.bananacomputer.tienda`,
+  `targetSdk` 36. Instalado en un emulador Pixel arm64 con Android 36:
+  arranca, la tienda renderiza dentro del WebView y la navegación
+  profunda funciona, que era el riesgo real de meter un `BrowserRouter`
+  en un WebView. Sin errores en `logcat`. Se hizo sin Android Studio,
+  solo con JDK 21 y las herramientas de línea de comandos; la receta
+  exacta está en [[06-app-nativa]]. **iOS sigue sin compilar**: necesita
+  Xcode completo.
+- **`QA-003` cerrado**: la trampa de foco de la guía "Preparar mi
+  dispositivo" solo interceptaba los extremos y dejaba tabular al
+  navegador en medio, así que un Shift+Tab podía salir del diálogo. Solo
+  se manifestaba en el runner de Linux. Ahora gobierna el recorrido
+  completo sobre una lista filtrada a los controles realmente
+  alcanzables. El test informa además qué elemento recibió el foco al
+  escaparse.
 
 ## 2026-07-31 — Aplicaciones: panel como PWA y tienda como app nativa
 
@@ -36,7 +55,7 @@ autores, diffs y marcas de tiempo.
 - **App nativa de la tienda con Capacitor**: `capacitor.config.ts`,
   `npm run build:app` (mismo código, `--base=/`), proyectos `ios/` y
   `android/` versionados. **Sin compilar** — ver
-  [[04-problemas-pendientes#APP-001 — La app nativa está configurada pero nunca se ha compilado]]
+  [[04-problemas-pendientes#APP-001 — La app nativa: Android verificada, iOS sin compilar]]
   y la guía [[06-app-nativa]].
 - **Corregido**: el `<link rel="preload">` del hero llevaba
   `/pagina-banana/` escrito a mano en `index.html` y habría dado 404

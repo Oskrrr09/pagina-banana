@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-07-31
+actualizado: 2026-08-01
 ---
 
 # Estado actual
@@ -114,9 +114,11 @@ Dos aplicaciones distintas, por públicos distintos. Ver
 - `capacitor.config.ts`, `npm run build:app` (mismo código, `--base=/`),
   proyectos `ios/` y `android/` generados, e iconos y pantallas de carga
   en todos los tamaños.
-- **El binario no se ha compilado ni ejecutado nunca**: hacen falta Xcode
-  completo, Android Studio y un JDK, que no estaban instalados. Ver
-  [[04-problemas-pendientes#APP-001 — La app nativa está configurada pero nunca se ha compilado]].
+- **Android verificado el 2026-08-01**: `app-debug.apk` compilado (12 MB,
+  `targetSdk` 36) e instalado en un emulador Pixel arm64, donde arranca,
+  renderiza la tienda dentro del WebView y navega a rutas profundas sin
+  errores. **iOS sigue sin compilar**: necesita Xcode completo. Ver
+  [[04-problemas-pendientes#APP-001 — La app nativa: Android verificada, iOS sin compilar]].
 - Publicarla de verdad no depende del código: exige autorización de
   Banana, cuentas de desarrollador de pago y sustituir los datos
   demostrativos. Todo detallado en [[06-app-nativa]].

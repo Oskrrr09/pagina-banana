@@ -506,25 +506,27 @@ del repositorio. No se corrigen en la preparación documental.
   gestor de foco único entre los overlays globales (chat, aviso de
   tienda favorita, y futuros). Fuera de alcance de esta sesión.
 
-## APP-001 — La app nativa está configurada pero nunca se ha compilado
+## APP-001 — La app nativa: Android verificada, iOS sin compilar
 
-- Estado: detectado el 2026-07-31, abierto por dependencia externa.
-- Impacto: alto si se da por hecho que la app funciona; nulo para la web,
-  que no depende de esto.
-- Evidencia: `capacitor.config.ts`, `npm run build:app`, y los proyectos
-  `ios/` y `android/` existen y se generaron sin errores. Pero en el
-  equipo donde se montó no había Xcode completo (solo Command Line
-  Tools), ni Android SDK, ni JDK, ni CocoaPods; se comprobó antes de
-  empezar. Capacitor 8 no necesita CocoaPods, pero sí los otros tres.
-- Riesgo: la configuración es coherente y el build web para la app se
-  verificó (`dist-app/` sale con rutas en la raíz), pero **el binario no
-  se ha ejecutado nunca**. Puede haber ajustes que solo aparezcan al
-  abrirlo en Xcode o Android Studio.
-- Resolución: instalar las herramientas y abrir el proyecto. Pasos en
+- Estado: **Android cerrado el 2026-08-01. iOS sigue abierto**, por
+  dependencia externa.
+- **Android — resuelto y comprobado de punta a punta.** Se instalaron JDK 21
+  y las herramientas de línea de comandos del SDK por Homebrew, sin Android
+  Studio y sin `sudo`. `./gradlew assembleDebug` produce `app-debug.apk`
+  (12 MB, `com.bananacomputer.tienda`, `targetSdk` 36). En un emulador
+  Pixel arm64 con Android 36: instala, arranca, la tienda renderiza dentro
+  del WebView y **la navegación profunda funciona** (portada → ficha de
+  producto), sin errores en `logcat`. Eso despeja el riesgo real que tenía
+  esto: meter un `BrowserRouter` en un WebView. Receta exacta en
   [[06-app-nativa]].
-- No confundir con lo que sí bloquea publicar: autorización de Banana,
-  cuentas de desarrollador de pago y datos reales en vez de
-  demostrativos. Eso no es un problema técnico.
+- **iOS — sigue sin compilar.** Requiere **Xcode completo** (~15 GB, App
+  Store, con Apple ID); las Command Line Tools no bastan y no es
+  instalable sin intervención de Oscar. El proyecto `ios/` está generado y
+  con sus iconos, pero **el binario no se ha ejecutado nunca** y afirmar
+  que arranca sería inventar.
+- No confundir con lo que bloquea *publicar*, que no es técnico:
+  autorización de Banana, cuentas de desarrollador de pago y datos reales
+  en vez de demostrativos.
 
 ## PWA-001 — El service worker no lo cubren las pruebas E2E
 

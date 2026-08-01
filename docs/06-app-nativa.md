@@ -1,6 +1,6 @@
 ---
 tipo: guia
-actualizado: 2026-07-31
+actualizado: 2026-08-01
 ---
 
 # Aplicación nativa de la tienda (iOS y Android)
@@ -55,33 +55,76 @@ basta instalarla en un dispositivo o un simulador, como se explica más abajo.
 - El service worker se desactiva dentro de la app nativa: los ficheros ya
   viajan en el binario y no hay nada que cachear (`src/lib/pwa.ts`).
 
-**No hecho, y no se puede hacer desde este repositorio:**
+**Android: compilado, instalado y ejecutado** (2026-08-01).
 
-- **Compilar el binario.** Requiere herramientas que no estaban instaladas en
-  el equipo cuando se montó esto: Xcode completo (~15 GB, no bastan las
-  Command Line Tools), Android Studio con su SDK, y un JDK.
-- Firmar, subir y pasar revisión.
+- `app-debug.apk`, 12 MB, `com.bananacomputer.tienda`, etiqueta "Banana
+  Computer", `targetSdk` 36.
+- Verificado en un emulador Pixel arm64 con Android 36: instala, arranca,
+  la tienda renderiza dentro del WebView y **la navegación profunda
+  funciona** (`/` → ficha de producto), que era el riesgo real de meter un
+  `BrowserRouter` en un WebView. Sin errores en `logcat`.
+- No hizo falta Android Studio: basta el JDK y las herramientas de línea de
+  comandos.
 
-Es decir: la configuración está puesta y es coherente, pero **el binario no se
-ha compilado ni ejecutado nunca**. Hasta que alguien lo abra en Xcode o Android
-Studio, dar por hecho que arranca a la primera sería inventar.
+**iOS: sin compilar.** Necesita **Xcode completo** (~15 GB, desde la App
+Store con tu Apple ID; las Command Line Tools no bastan). No se ha podido
+instalar, así que el binario de iOS **no se ha compilado ni ejecutado
+nunca** y dar por hecho que arranca sería inventar. El proyecto `ios/` está
+generado y con sus iconos, pero sin verificar.
+
+**Publicar** —firmar, subir y pasar revisión— sigue pendiente en ambas, y
+depende de lo del bloque anterior, no del código.
 
 ---
 
 ## Instalar las herramientas
 
-| Herramienta | Para qué | Cómo |
-|---|---|---|
-| Xcode (completo) | iOS | App Store. ~15 GB. Después: `sudo xcode-select -s /Applications/Xcode.app` |
-| Android Studio | Android | <https://developer.android.com/studio>. Incluye el SDK |
-| JDK 21 | Android | `brew install openjdk@21` |
+### Android — receta comprobada
 
-Capacitor 8 usa Swift Package Manager para iOS, así que **CocoaPods ya no hace
-falta**.
+Sin Android Studio y sin `sudo`. Esto es exactamente lo que se ejecutó para
+producir el APK verificado:
+
+```bash
+brew install openjdk@21
+brew install --cask android-commandlinetools
+
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+mkdir -p "$ANDROID_HOME"
+
+yes | sdkmanager --sdk_root="$ANDROID_HOME" --licenses
+sdkmanager --sdk_root="$ANDROID_HOME" \
+  "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+```
+
+`android-36` y `build-tools;36.0.0` salen de `compileSdkVersion` en
+`android/variables.gradle`: si esa versión cambia, hay que instalar la nueva.
+
+Para probar en un emulador, además:
+
+```bash
+sdkmanager --sdk_root="$ANDROID_HOME" \
+  "emulator" "system-images;android-36;google_apis;arm64-v8a" "cmdline-tools;latest"
+
+# El avdmanager que instala Homebrew usa OTRA raíz de SDK y no encuentra las
+# imágenes; hay que llamar al que queda dentro de $ANDROID_HOME.
+"$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
+  -n banana-test -k "system-images;android-36;google_apis;arm64-v8a"
+```
+
+### iOS
+
+| Herramienta | Cómo |
+|---|---|
+| Xcode completo | App Store, ~15 GB. Las Command Line Tools **no** bastan. Después: `sudo xcode-select -s /Applications/Xcode.app` |
+
+Capacitor 8 usa Swift Package Manager, así que **CocoaPods ya no hace falta**.
 
 ---
 
 ## Compilar y abrir
+
+Con los IDE instalados:
 
 ```bash
 npm run app:ios       # build + sync + abre Xcode
@@ -95,6 +138,23 @@ copia del build dentro, y esa copia no se actualiza sola.
 Desde ahí, el botón de ejecutar de cada IDE instala la app en un simulador o en
 un dispositivo conectado. Para un iPhone físico basta una cuenta de Apple
 gratuita: la app caduca a los 7 días, pero para enseñarla sobra.
+
+Sin Android Studio, el APK se genera y se prueba así (comprobado):
+
+```bash
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+
+npm run app:sync
+(cd android && ./gradlew assembleDebug)
+# → android/app/build/outputs/apk/debug/app-debug.apk
+
+"$ANDROID_HOME/platform-tools/adb" install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Con un móvil Android conectado y la depuración USB activada, ese `adb
+install` ya deja la app en el dispositivo: es la forma más rápida de
+enseñarla sin pasar por Google Play.
 
 Si cambia el logo:
 
