@@ -40,9 +40,12 @@ castellano** (D-047).
 
   Los **39 nombres de color** del catálogo y la página de **tiendas**.
 
+  El **contenido de servicios, Plan Renove y centro de soporte**
+  (`src/data/content.ts` entero).
+
   **Lo que sigue en castellano**: la lista de características y la tabla de
-  especificaciones de cada producto, y las páginas de servicios, Plan
-  Renove, soporte, servicio técnico y cuenta (asistente, banner del Plan Renove,
+  especificaciones de cada producto, los titulares propios de las páginas de
+  soporte y servicio técnico, y las páginas de cuenta (asistente, banner del Plan Renove,
   ventajas, preguntas frecuentes, reseñas y newsletter). Servicios, Plan
   Renove, soporte, servicio técnico, tiendas y el checkout siguen pendientes.
 - Suite en 255, con nueve pruebas nuevas de idioma. Hubo que fijar `locale: 'es-ES'` en la configuración de

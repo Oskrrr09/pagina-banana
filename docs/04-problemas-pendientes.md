@@ -621,3 +621,17 @@ del repositorio. No se corrigen en la preparación documental.
   problema era de estructura, y hasta que no se midieron las tres opciones no
   se vio cuál era.
 
+
+## A11Y-004 — `/soporte` tiene dos `<main>` anidados
+
+- Estado: detectado el 2026-08-01, sin resolver.
+- Impacto: bajo, pero es HTML inválido.
+- Evidencia: `SupportPage` monta su propio `<main>` dentro del `<main
+  id="contenido">` de `Layout`. Se vio al intentar seleccionar `main` desde
+  una comprobación y obtener dos elementos.
+- Riesgo: un lector de pantalla puede anunciar dos regiones principales.
+  La suite de axe no lo detecta porque `landmark-no-duplicate-main` es una
+  regla de buenas prácticas, no de WCAG, y la suite solo ejecuta las
+  etiquetas `wcag2a`, `wcag2aa` y `wcag21a`.
+- Resolución: quitar el `<main>` de la página y dejar solo el del layout.
+  Conviene revisar si alguna otra página hace lo mismo.

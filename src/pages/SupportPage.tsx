@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Accordion } from '../components/ui/Accordion'
@@ -12,19 +13,25 @@ import { supportQuickLinks, supportTopics } from '../data/content'
 //   `/servicio-tecnico`. Aquí se muestra un acceso rápido y el activador de la
 //   guía interactiva "Preparar mi dispositivo" (DevicePreparationGuide).
 export function SupportPage() {
+  const t = useT()
   const [q, setQ] = useState('')
   const [guideOpen, setGuideOpen] = useState(false)
   const term = q.trim().toLowerCase()
 
+  // El filtro busca sobre el texto TRADUCIDO, no sobre las claves: desde que
+  // el contenido pasó a claves, buscar en `q`/`a` habría sido buscar dentro de
+  // `supportFaq.track.q` y no dentro de la pregunta.
   const filteredTopics = useMemo(() => {
     if (!term) return supportTopics
     return supportTopics
-      .map((t) => ({
-        ...t,
-        items: t.items.filter((i) => i.q.toLowerCase().includes(term) || i.a.toLowerCase().includes(term)),
+      .map((tema) => ({
+        ...tema,
+        items: tema.items.filter(
+          (i) => t(i.q).toLowerCase().includes(term) || t(i.a).toLowerCase().includes(term),
+        ),
       }))
-      .filter((t) => t.items.length > 0)
-  }, [term])
+      .filter((tema) => tema.items.length > 0)
+  }, [term, t])
 
   return (
     <>
@@ -53,7 +60,7 @@ export function SupportPage() {
                 interactiva; el resto navegan a anclas o secciones. */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {supportQuickLinks.map((l) =>
-              l.title === 'Preparar mi dispositivo' ? (
+              l.title === 'support.prepare.title' ? (
                 <button
                   key={l.title}
                   type="button"
@@ -63,8 +70,8 @@ export function SupportPage() {
                   <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-brand-050 text-ink">
                     <Icon name={l.icon} size={22} aria-hidden="true" />
                   </span>
-                  <p className="mt-3 font-semibold text-ink">{l.title}</p>
-                  <p className="mt-0.5 text-sm text-muted">{l.desc}</p>
+                  <p className="mt-3 font-semibold text-ink">{t(l.title)}</p>
+                  <p className="mt-0.5 text-sm text-muted">{t(l.desc)}</p>
                 </button>
               ) : (
                 <Link
@@ -75,8 +82,8 @@ export function SupportPage() {
                   <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-brand-050 text-ink">
                     <Icon name={l.icon} size={22} aria-hidden="true" />
                   </span>
-                  <p className="mt-3 font-semibold text-ink">{l.title}</p>
-                  <p className="mt-0.5 text-sm text-muted">{l.desc}</p>
+                  <p className="mt-3 font-semibold text-ink">{t(l.title)}</p>
+                  <p className="mt-0.5 text-sm text-muted">{t(l.desc)}</p>
                 </Link>
               ),
             )}
@@ -131,10 +138,14 @@ export function SupportPage() {
               </div>
             ) : (
               <div className="grid gap-8 md:grid-cols-2">
-                {filteredTopics.map((t) => (
-                  <div key={t.topic}>
-                    <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-ink">{t.topic}</h3>
-                    <Accordion items={t.items} />
+                {filteredTopics.map((tema) => (
+                  <div key={tema.topic}>
+                    <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-ink">
+                      {t(tema.topic)}
+                    </h3>
+                    <Accordion
+                      items={tema.items.map((i) => ({ q: t(i.q), a: t(i.a), note: t(i.note) }))}
+                    />
                   </div>
                 ))}
               </div>

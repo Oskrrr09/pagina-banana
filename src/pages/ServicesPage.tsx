@@ -1,4 +1,5 @@
 import { Container, Section, SectionHeader } from '../components/ui/Container'
+import { useT } from '../lib/i18n'
 import { Icon } from '../components/ui/Icon'
 import { Accordion } from '../components/ui/Accordion'
 import { ProvisionalBadge } from '../components/ui/Tag'
@@ -8,6 +9,7 @@ import { services, serviceFaq } from '../data/content'
 
 // Página de servicios (§4.11).
 export function ServicesPage() {
+  const t = useT()
   return (
     <>
       <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
@@ -29,10 +31,10 @@ export function ServicesPage() {
                 <span className="grid h-12 w-12 place-items-center rounded-[12px] bg-brand-050 text-ink">
                   <Icon name={s.icon} size={24} />
                 </span>
-                <h3 className="mt-4 text-lg font-bold text-ink">{s.name}</h3>
-                <p className="mt-1 flex-1 text-sm text-muted">{s.line}</p>
+                <h3 className="mt-4 text-lg font-bold text-ink">{t(s.name)}</h3>
+                <p className="mt-1 flex-1 text-sm text-muted">{t(s.line)}</p>
                 <div className="mt-3">
-                  <ProvisionalBadge label={s.note} />
+                  <ProvisionalBadge label={t(s.note)} />
                 </div>
                 <ButtonLink
                   to={s.slug === 'plan-renove' ? '/plan-renove' : '/servicios'}
@@ -50,7 +52,7 @@ export function ServicesPage() {
       <Section alt>
         <div className="mx-auto max-w-3xl">
           <SectionHeader title="Preguntas frecuentes de servicios" />
-          <Accordion items={serviceFaq} />
+          <Accordion items={serviceFaq.map((f) => ({ q: t(f.q), a: t(f.a), note: t(f.note) }))} />
         </div>
       </Section>
 

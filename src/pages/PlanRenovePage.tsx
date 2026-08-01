@@ -1,4 +1,5 @@
 import { Container, Section, SectionHeader } from '../components/ui/Container'
+import { useT } from '../lib/i18n'
 import { Icon } from '../components/ui/Icon'
 import { Accordion } from '../components/ui/Accordion'
 import { ButtonLink } from '../components/ui/Button'
@@ -45,6 +46,7 @@ const RENOVE_STEPS: Array<{ title: string; body: string }> = [
 // Página de Plan Renove (§4.12). Aviso claro y destacado: la tasación final es
 // presencial y orientativa online (riesgo detectado en auditoría).
 export function PlanRenovePage() {
+  const t = useT()
   return (
     <>
       <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
@@ -132,7 +134,7 @@ export function PlanRenovePage() {
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand text-sm font-bold text-ink">
                     {i + 1}
                   </span>
-                  <p className="pt-1.5 text-ink">{step}</p>
+                  <p className="pt-1.5 text-ink">{t(step)}</p>
                 </li>
               ))}
             </ol>
@@ -173,7 +175,7 @@ export function PlanRenovePage() {
       <Section>
         <div className="mx-auto max-w-3xl">
           <SectionHeader title="Preguntas frecuentes" />
-          <Accordion items={planRenoveFaq} />
+          <Accordion items={planRenoveFaq.map((f) => ({ q: t(f.q), a: t(f.a), note: t(f.note) }))} />
         </div>
       </Section>
     </>
