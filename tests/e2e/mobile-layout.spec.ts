@@ -65,9 +65,16 @@ test.describe('sin desbordamiento horizontal', () => {
           if (el.scrollWidth > el.clientWidth + 4) el.scrollLeft = el.scrollWidth
         }
       })
-      const desborde = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      )
+      // En la app el que se desplaza es el contenedor de contenido, no el
+      // documento: hay que medir los dos.
+      const desborde = await page.evaluate(() => {
+        const de = document.documentElement
+        const contenido = document.getElementById('contenido')
+        return Math.max(
+          de.scrollWidth - de.clientWidth,
+          contenido ? contenido.scrollWidth - contenido.clientWidth : 0,
+        )
+      })
       expect(desborde, `${ruta} desborda ${desborde}px en la app`).toBeLessThanOrEqual(1)
     }
   })

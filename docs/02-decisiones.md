@@ -640,6 +640,34 @@ No atribuye motivaciones que el repositorio no documenta.
 - Evidencia: `public/apple-touch-icon.png` (fuente),
   `scripts/generate-icons.mjs`.
 
+## D-046 — Dentro de la app, el documento no se desplaza
+
+- Fecha: 2026-08-01.
+- Estado: vigente.
+- Decisión: en la app, `html` y `body` van a `overflow: hidden` y la
+  pantalla es una columna de altura completa: barra de búsqueda, contenido,
+  barra de navegación. **Solo el contenido se desplaza.** Ninguna de las dos
+  barras usa `position: fixed`.
+- Motivo: en WKWebView los elementos fijos **se recolocan al terminar el
+  gesto, no durante**. Mientras arrastras parecen despegarse: las barras
+  flotaban, el contenido asomaba por encima de la de búsqueda y el menú de
+  "Explorar" se desplazaba con la página.
+- Historia del arreglo, porque las dos primeras veces no bastó:
+  1. Se pasó de `sticky` a `fixed`, pensando que el problema era la
+     interacción de `sticky` con el `overflow-x: clip` del documento.
+     No era eso.
+  2. Se reprodujo en el WebKit de escritorio que trae Playwright: **ahí
+     funciona bien**, lo que descartó el `clip` y señaló al comportamiento
+     propio de WKWebView en iOS.
+  3. Se quitó el scroll del documento. Sin scroll de documento no hay nada
+     que recolocar y las barras se quedan quietas por construcción.
+- Consecuencia: al cambiar de ruta hay que desplazar el contenedor, no la
+  ventana (`Layout`). Y quien mida desbordamiento horizontal tiene que
+  mirar el contenedor además del documento.
+- La web **no cambia**: sigue con scroll de documento y su cabecera
+  `sticky`. El interruptor es el atributo `data-app-shell`, que `Layout`
+  pone solo dentro del binario.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

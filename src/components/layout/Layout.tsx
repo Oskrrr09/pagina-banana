@@ -1,23 +1,34 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
 import { FavoriteStoreDialogs } from './FavoriteStoreDialogs'
-import { ALTURA_TAB_BAR, AppTabBar } from './AppTabBar'
+import { AppTabBar } from './AppTabBar'
 import { AppTopBar } from './AppTopBar'
 import { isNativeApp } from '../../lib/nativeApp'
 
 // Layout general. Al cambiar de ruta, sube al inicio (salvo anclas #).
 export function Layout() {
   const { pathname, hash } = useLocation()
+  const contenidoRef = useRef<HTMLElement>(null)
+
+  // Marca el documento para que el CSS le quite el scroll: en la app manda
+  // el contenedor de contenido, no la ventana.
+  useEffect(() => {
+    if (!isNativeApp) return
+    document.documentElement.setAttribute('data-app-shell', '')
+    return () => document.documentElement.removeAttribute('data-app-shell')
+  }, [])
 
   useEffect(() => {
     if (hash) return
-    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+    // En la app el que se desplaza es el contenedor, no la ventana.
+    if (isNativeApp) contenidoRef.current?.scrollTo({ top: 0 })
+    else window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
   }, [pathname, hash])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className={isNativeApp ? 'flex h-[100dvh] flex-col' : 'flex min-h-screen flex-col'}>
       <a
         href="#contenido"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[200] focus:rounded-[8px] focus:bg-brand focus:px-4 focus:py-2 focus:text-ink"
@@ -29,18 +40,18 @@ export function Layout() {
       {isNativeApp ? <AppTopBar /> : <Header />}
       <main
         id="contenido"
+        ref={contenidoRef}
         // Enfocable por código, fuera del recorrido de Tab: es el destino del
         // enlace "Saltar al contenido" y el sitio al que vuelve el foco
         // cuando se cierra el chat de la app y no queda un origen al que
         // regresar.
         tabIndex={-1}
-        className="flex-1 outline-none"
-        // En la app la barra superior es fija y la inferior también, así que
-        // el contenido reserva sitio para las dos.
-        style={
+        // En la app este es el ÚNICO elemento que se desplaza. Las dos barras
+        // son hermanas suyas y no se mueven porque nada las mueve.
+        className={
           isNativeApp
-            ? { paddingTop: 'var(--app-topbar-h, 0px)', paddingBottom: ALTURA_TAB_BAR }
-            : undefined
+            ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none'
+            : 'flex-1 outline-none'
         }
       >
         <Outlet />

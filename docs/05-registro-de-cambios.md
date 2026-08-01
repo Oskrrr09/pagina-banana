@@ -8,6 +8,22 @@ actualizado: 2026-08-01
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-01 — Las barras de la app dejan de moverse al desplazar
+
+- **Arreglado de raíz**: en la app, el documento ya no se desplaza. La
+  pantalla es una columna —barra de búsqueda, contenido, barra de
+  navegación— y solo se desplaza el contenido. Ninguna barra usa
+  `position: fixed`.
+- La causa era de WKWebView: en iOS los elementos fijos se recolocan **al
+  terminar** el gesto, no durante, y por eso las barras parecían
+  despegarse, el contenido asomaba por encima del buscador y el menú de
+  "Explorar" se movía con la página. Pasar de `sticky` a `fixed` no lo
+  arregló; se reprodujo en el WebKit de escritorio de Playwright, donde
+  **sí funciona**, lo que descartó el CSS y señaló al WebView (D-046).
+- La web no cambia: el interruptor es un atributo que solo se pone dentro
+  del binario.
+- Suite en 245, y verificado arrastrando en el emulador de Android.
+
 ## 2026-08-01 — Icono oficial, y correcciones sobre el dispositivo
 
 - **El icono de la app pasa a ser el oficial de Banana** (plátano abierto

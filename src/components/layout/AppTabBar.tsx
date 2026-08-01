@@ -44,7 +44,10 @@ export function AppTabBar() {
         // `env(safe-area-inset-bottom)` deja sitio al indicador de inicio del
         // iPhone y a la barra de gestos de Android. En un navegador normal
         // vale cero, así que no estorba.
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]"
+        //
+        // No es `fixed`: es el último hermano de la columna que ocupa la
+        // pantalla. Ver el comentario de `AppTopBar`.
+        className="z-50 shrink-0 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]"
       >
         <ul className="mx-auto flex max-w-lg items-stretch">
           <Tab to="/" icon="home" label="Inicio" activa={esActiva('/')} />

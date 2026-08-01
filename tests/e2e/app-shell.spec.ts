@@ -40,47 +40,50 @@ test.describe('interfaz de la app nativa', () => {
     await expect(page.getByRole('contentinfo')).toHaveCount(0)
   })
 
-  test('la barra queda pegada abajo y el contenido no se esconde detrás', async ({ page }) => {
+  test('las dos barras enmarcan la pantalla y solo se desplaza el centro', async ({ page }) => {
+    // Regresión de lo que Oscar vio en el iPhone: las barras "flotaban" al
+    // arrastrar y el contenido se colaba por encima de la de búsqueda.
+    //
+    // La causa era `position: fixed`: en WKWebView los elementos fijos se
+    // recolocan al TERMINAR el gesto, no durante. La solución no es ajustar
+    // el fixed, es que el documento no se desplace: las barras son hermanas
+    // del contenido y solo se desplaza el contenido.
     await comoApp(page)
     await page.goto('./')
 
-    const caja = await page.locator('[data-app-tab-bar]').boundingBox()
-    expect(caja).not.toBeNull()
     const alto = page.viewportSize()!.height
-    // Pegada al borde inferior de la ventana.
-    expect(Math.round(caja!.y + caja!.height)).toBe(alto)
-
-    // El contenido reserva sitio para ella: sin esto, el final de cada
-    // pantalla quedaría debajo de la barra y sin poder alcanzarse.
-    const relleno = await page
-      .locator('#contenido')
-      .evaluate((el) => getComputedStyle(el).paddingBottom)
-    expect(parseFloat(relleno)).toBeGreaterThan(0)
-  })
-
-  test('la barra de búsqueda es el tope y el contenido empieza debajo', async ({ page }) => {
-    // Regresión del parpadeo blanco sobre la cabecera al desplazar: era una
-    // barra `sticky` dentro de un documento con `overflow-x: clip`. Ahora va
-    // `fixed` y publica su altura para que el contenido no quede debajo.
-    await comoApp(page)
-    await page.goto('./')
-
     const cabecera = page.getByRole('banner')
-    await expect(cabecera).toHaveCSS('position', 'fixed')
+    const barraInferior = page.locator('[data-app-tab-bar]')
 
-    const caja = (await cabecera.boundingBox())!
-    expect(Math.round(caja.y)).toBe(0)
+    // Ni una ni otra están fijas: no hace falta, y es lo que fallaba.
+    await expect(cabecera).not.toHaveCSS('position', 'fixed')
+    await expect(barraInferior).not.toHaveCSS('position', 'fixed')
 
-    const arriba = await page
+    const arriba = (await cabecera.boundingBox())!
+    const abajo = (await barraInferior.boundingBox())!
+    expect(Math.round(arriba.y)).toBe(0)
+    expect(Math.round(abajo.y + abajo.height)).toBe(alto)
+
+    // El documento no se desplaza; el contenedor de contenido sí.
+    const documentoFijo = await page.evaluate(
+      () => document.documentElement.scrollHeight <= window.innerHeight + 1,
+    )
+    expect(documentoFijo, 'el documento no debería poder desplazarse').toBe(true)
+
+    const hayQueDesplazar = await page
       .locator('#contenido')
-      .evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))
-    expect(arriba).toBeGreaterThanOrEqual(caja.height - 1)
+      .evaluate((el) => el.scrollHeight > el.clientHeight + 1)
+    expect(hayQueDesplazar, 'el contenido debería tener scroll propio').toBe(true)
 
-    // Y al desplazar sigue pegada arriba, sin dejar hueco.
-    await page.mouse.wheel(0, 600)
+    // Y tras desplazar el contenido, las barras siguen exactamente donde
+    // estaban: no hay nada que recolocar.
+    await page.locator('#contenido').evaluate((el) => el.scrollTo({ top: 900 }))
     await page.waitForTimeout(300)
-    const despues = (await cabecera.boundingBox())!
-    expect(Math.round(despues.y)).toBe(0)
+    const arribaDespues = (await cabecera.boundingBox())!
+    const abajoDespues = (await barraInferior.boundingBox())!
+    expect(Math.round(arribaDespues.y)).toBe(0)
+    expect(Math.round(abajoDespues.y + abajoDespues.height)).toBe(alto)
+    expect(await page.locator('#contenido').evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
   })
 
   test('el menú de la app no repite lo que ya está en la barra inferior', async ({ page }) => {

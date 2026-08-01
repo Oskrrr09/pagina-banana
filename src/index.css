@@ -83,6 +83,22 @@ body {
   overscroll-behavior-x: none;
 }
 
+/* Dentro de la app nativa, el documento NO se desplaza.
+   Se desplaza únicamente el contenido entre la barra de búsqueda y la de
+   navegación, que son hermanos suyos en una columna que ocupa la pantalla.
+
+   El motivo es de WKWebView: en iOS los elementos `position: fixed` se
+   recolocan al TERMINAR el gesto, no durante, así que mientras arrastras
+   parecen flotar y despegarse. Con dos barras fijas se notaba en las dos, y
+   también en el menú de "Explorar". Sin scroll de documento no hay nada que
+   recolocar y las barras se quedan quietas por construcción. */
+html[data-app-shell],
+html[data-app-shell] body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* iOS amplía la página al enfocar un campo cuyo texto mida menos de 16px, y
    una vez ampliada la página se puede arrastrar de lado: es la causa de que
    "se descuadre lateralmente" al tocar el buscador o el chat. El zoom no se
