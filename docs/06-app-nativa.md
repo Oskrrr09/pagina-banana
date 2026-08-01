@@ -114,9 +114,45 @@ sdkmanager --sdk_root="$ANDROID_HOME" \
 
 ### iOS
 
-| Herramienta | Cómo |
-|---|---|
-| Xcode completo | App Store, ~15 GB. Las Command Line Tools **no** bastan. Después: `sudo xcode-select -s /Applications/Xcode.app` |
+Solo falta **Xcode**. El SDK de iOS existe únicamente dentro de Xcode: no hay
+descarga suelta, así que sin él no se puede compilar para iPhone, se publique
+o no.
+
+Instalarlo pide la contraseña de administrador, por eso no puede hacerlo un
+proceso automático:
+
+```bash
+mas install 497799835     # Xcode, ~15 GB. Pedirá tu contraseña.
+# o abrir la App Store y buscar "Xcode"
+
+sudo xcode-select -s /Applications/Xcode.app
+xcodebuild -runFirstLaunch
+```
+
+Hecho eso, se compila y se prueba **en el simulador sin cuenta de
+desarrollador, sin firmar y sin subir nada a ninguna tienda**:
+
+```bash
+npm run app:sync
+cd ios/App
+xcodebuild -scheme App -sdk iphonesimulator -configuration Debug \
+  -derivedDataPath build build
+
+xcrun simctl boot "iPhone 16"
+xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/App.app
+xcrun simctl launch booted com.bananacomputer.tienda
+```
+
+El esquema `App` está versionado en
+`ios/App/App.xcodeproj/xcshareddata/xcschemes/`. Xcode lo genera solo al abrir
+el proyecto, pero lo deja en `xcuserdata/`, fuera de git; sin un esquema
+compartido `xcodebuild -scheme App` falla y solo se podría compilar desde el
+GUI.
+
+Para un **iPhone físico** basta una cuenta de Apple gratuita (no los 99 €/año):
+abrir `ios/App/App.xcodeproj`, elegir tu Apple ID en *Signing & Capabilities* y
+darle a ejecutar. La app caduca a los 7 días y hay que reinstalarla, pero para
+enseñarla sobra.
 
 Capacitor 8 usa Swift Package Manager, así que **CocoaPods ya no hace falta**.
 
