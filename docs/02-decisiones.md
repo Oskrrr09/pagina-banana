@@ -568,8 +568,11 @@ No atribuye motivaciones que el repositorio no documenta.
   navegador: la cabecera necesita `env(safe-area-inset-top)` o queda bajo la
   Dynamic Island, y el aviso de tienda favorita tapaba la barra inferior.
 - Forma final (2026-08-01, tras revisarla con Oscar en el emulador):
-  - **Arriba no hay cabecera**: la sustituye un buscador con filtros rápidos
-    por familia (`AppTopBar`). Ni logo ni menú: la navegación vive abajo.
+  - **Arriba no hay cabecera**: la sustituye un buscador (`AppTopBar`). Ni
+    logo ni menú: la navegación vive abajo.
+  - **Los filtros por familia van dentro del contenido**, no de la
+    cabecera, para que se escondan bajo el buscador al bajar y el amarillo
+    se encoja hasta dejar solo lo que conviene tener siempre a mano.
   - **Abajo**: Inicio · Favoritos · Explorar · Carrito · Cuenta.
     "Explorar" no es una ruta, es el menú de categorías, que en la web abre
     la hamburguesa de la cabecera.
@@ -675,6 +678,10 @@ No atribuye motivaciones que el repositorio no documenta.
   más sobre el buscador. Ahora el WebView va a `contentInset: 'never'` y el
   hueco lo reserva solo el CSS, que además pinta el amarillo por detrás de
   la barra de estado.
+- Con el WebView a sangre, las capas a pantalla completa (el menú de
+  "Explorar", el buscador) también quedaban bajo el reloj y la batería.
+  Se resuelve con la clase `.app-safe-area`, que solo hace algo dentro de
+  la app.
 
 ## Cómo añadir una decisión
 

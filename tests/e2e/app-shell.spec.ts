@@ -242,13 +242,41 @@ test.describe('interfaz de la app nativa', () => {
     ).toBeVisible()
 
     // Filtros rápidos por familia, con las categorías reales del catálogo.
-    const categorias = cabecera.getByRole('navigation', { name: 'Categorías' })
+    // Van dentro del contenido, no de la cabecera: ver la prueba siguiente.
+    const categorias = page.getByRole('navigation', { name: 'Categorías' })
     await expect(categorias.getByRole('link', { name: 'iPhone' })).toBeVisible()
     await expect(categorias.getByRole('link', { name: 'Accesorios' })).toBeVisible()
 
     // El menú y el mega-menú de la web ya no están arriba: el menú lo abre
     // "Explorar", abajo.
     await expect(cabecera.getByRole('button', { name: 'Abrir menú' })).toHaveCount(0)
+  })
+
+  test('solo el buscador queda fijo: los filtros se esconden al bajar', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./')
+
+    const buscador = page.getByRole('button', { name: 'Buscar en Banana Computer' })
+    const categorias = page.getByRole('navigation', { name: 'Categorías' })
+
+    const buscadorAntes = (await buscador.boundingBox())!
+    const filtrosAntes = (await categorias.boundingBox())!
+    expect(filtrosAntes.y).toBeGreaterThan(buscadorAntes.y)
+
+    await page.locator('#contenido').evaluate((el) => el.scrollTo({ top: 400 }))
+    await page.waitForTimeout(300)
+
+    // El buscador no se mueve.
+    const buscadorDespues = (await buscador.boundingBox())!
+    expect(Math.round(buscadorDespues.y)).toBe(Math.round(buscadorAntes.y))
+
+    // Los filtros sí: se van hacia arriba y quedan fuera del contenedor,
+    // recortados justo bajo la barra de búsqueda.
+    const contenedor = (await page.locator('#contenido').boundingBox())!
+    const filtrosDespues = await categorias.boundingBox()
+    const escondidos =
+      filtrosDespues === null || filtrosDespues.y + filtrosDespues.height <= contenedor.y + 1
+    expect(escondidos, 'los filtros deberían haberse escondido bajo el buscador').toBe(true)
   })
 
   test('el buscador de arriba abre el mismo buscador a pantalla completa', async ({ page }) => {

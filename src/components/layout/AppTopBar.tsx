@@ -20,7 +20,6 @@ import { HeaderSearch } from '../search/HeaderSearch'
 export function AppTopBar() {
   const [searchOpen, setSearchOpen] = useState(false)
   const searchButtonRef = useRef<HTMLButtonElement>(null)
-  const { pathname } = useLocation()
 
   return (
     <>
@@ -34,7 +33,7 @@ export function AppTopBar() {
         // debajo de la Dynamic Island y del reloj.
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="flex items-center gap-2 px-4 pb-2 pt-2.5">
+        <div className="flex items-center gap-2 px-4 pb-2.5 pt-2.5">
           <button
             ref={searchButtonRef}
             type="button"
@@ -48,31 +47,6 @@ export function AppTopBar() {
           </button>
         </div>
 
-        {/* Filtros rápidos: las familias del catálogo. Se desplazan en
-            horizontal dentro de su propia caja; el `clip` del documento evita
-            que ese desplazamiento arrastre la página. */}
-        <nav aria-label="Categorías" className="pb-2.5">
-          <ul className="no-scrollbar flex gap-2 overflow-x-auto px-4">
-            {FILTROS.map((filtro) => {
-              const activo = pathname === filtro.to
-              return (
-                <li key={filtro.to} className="shrink-0">
-                  <Link
-                    to={filtro.to}
-                    aria-current={activo ? 'page' : undefined}
-                    className={`inline-flex min-h-8 items-center rounded-full px-3 py-1 text-[13px] font-semibold transition-colors ${
-                      activo
-                        ? 'bg-ink text-white'
-                        : 'bg-white/55 text-ink hover:bg-white/80'
-                    }`}
-                  >
-                    {filtro.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
       </header>
 
       {searchOpen && (
@@ -80,7 +54,7 @@ export function AppTopBar() {
           role="dialog"
           aria-label="Buscar"
           aria-modal="true"
-          className="fixed inset-0 z-[85] flex flex-col bg-surface"
+          className="app-safe-area fixed inset-0 z-[85] flex flex-col bg-surface"
         >
           <HeaderSearch
             mode="mobile"
@@ -90,6 +64,42 @@ export function AppTopBar() {
         </div>
       )}
     </>
+  )
+}
+
+/**
+ * Filtros rápidos por categoría.
+ *
+ * Van DENTRO del contenedor que se desplaza, no en la cabecera: así se
+ * esconden bajo la barra de búsqueda al bajar y el amarillo se encoge hasta
+ * dejar solo el buscador, que es lo único que conviene tener siempre a mano.
+ * Llevan su propio fondo amarillo para que, mientras están a la vista, se lean
+ * como continuación de la cabecera.
+ */
+export function AppCategoryChips() {
+  const { pathname } = useLocation()
+
+  return (
+    <nav aria-label="Categorías" className="bg-banana pb-2.5">
+      <ul className="no-scrollbar flex gap-2 overflow-x-auto px-4">
+        {FILTROS.map((filtro) => {
+          const activo = pathname === filtro.to
+          return (
+            <li key={filtro.to} className="shrink-0">
+              <Link
+                to={filtro.to}
+                aria-current={activo ? 'page' : undefined}
+                className={`inline-flex min-h-8 items-center rounded-full px-3 py-1 text-[13px] font-semibold transition-colors ${
+                  activo ? 'bg-ink text-white' : 'bg-white/55 text-ink hover:bg-white/80'
+                }`}
+              >
+                {filtro.label}
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </nav>
   )
 }
 

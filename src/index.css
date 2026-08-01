@@ -99,6 +99,15 @@ html[data-app-shell] body {
   overscroll-behavior: none;
 }
 
+/* Capas a pantalla completa dentro de la app (el menú de "Explorar", el
+   buscador). Como el WebView llega al borde de la pantalla, sin esto su
+   contenido queda debajo del reloj y de la batería.
+   Fuera de la app la clase no hace nada. */
+html[data-app-shell] .app-safe-area {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* iOS amplía la página al enfocar un campo cuyo texto mida menos de 16px, y
    una vez ampliada la página se puede arrastrar de lado: es la causa de que
    "se descuadre lateralmente" al tocar el buscador o el chat. El zoom no se

@@ -4,7 +4,7 @@ import { Header } from './Header'
 import { Footer } from './Footer'
 import { FavoriteStoreDialogs } from './FavoriteStoreDialogs'
 import { AppTabBar } from './AppTabBar'
-import { AppTopBar } from './AppTopBar'
+import { AppCategoryChips, AppTopBar } from './AppTopBar'
 import { isNativeApp } from '../../lib/nativeApp'
 
 // Layout general. Al cambiar de ruta, sube al inicio (salvo anclas #).
@@ -48,12 +48,20 @@ export function Layout() {
         tabIndex={-1}
         // En la app este es el ÚNICO elemento que se desplaza. Las dos barras
         // son hermanas suyas y no se mueven porque nada las mueve.
+        // `overscroll-none` en vez de `contain`: además de evitar que el
+        // gesto se propague, quita el rebote al llegar al tope. Con rebote,
+        // al tirar hacia abajo estando arriba del todo el contenido se
+        // separaba de la barra de búsqueda y dejaba ver una franja del fondo
+        // entre el amarillo de la barra y el de los filtros.
         className={
           isNativeApp
-            ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none'
+            ? 'min-h-0 flex-1 overflow-y-auto overscroll-none outline-none'
             : 'flex-1 outline-none'
         }
       >
+        {/* Dentro del contenedor que se desplaza, para que se escondan bajo
+            la barra de búsqueda al bajar. */}
+        {isNativeApp && <AppCategoryChips />}
         <Outlet />
       </main>
       {/* El pie de página es un mapa del sitio: en la web orienta, pero

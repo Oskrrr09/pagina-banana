@@ -27,6 +27,16 @@ autores, diffs y marcas de tiempo.
   de forma permanente, y el CSS volvía a desplazarlo: quedaba una franja
   blanca del fondo nativo y otra amarilla de más sobre el buscador. Ahora
   el WebView va a sangre y el hueco lo reserva solo el CSS.
+- **Solo el buscador queda fijo.** Los filtros por familia pasan a ser el
+  primer elemento del contenido, así que se esconden bajo él al bajar y el
+  amarillo se encoge. Verificado arrastrando en el emulador.
+- **Sin rebote en el contenido** (`overscroll-behavior: none`): con rebote,
+  al tirar hacia abajo estando arriba del todo el contenido se separaba de
+  la barra de búsqueda y asomaba una franja del fondo entre el amarillo de
+  la barra y el de los filtros.
+- **Las capas a pantalla completa respetan la zona segura**: con el
+  WebView a sangre, el menú de "Explorar" y el buscador quedaban bajo el
+  reloj y la batería. Nueva clase `.app-safe-area`, activa solo en la app.
 - Suite en 245, verificado arrastrando en el emulador de Android y con
   capturas del simulador de iPhone.
 

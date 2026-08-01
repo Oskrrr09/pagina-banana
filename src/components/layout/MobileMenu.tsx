@@ -90,7 +90,7 @@ export function MobileMenu({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[90] flex flex-col bg-surface xl:hidden"
+          className="app-safe-area fixed inset-0 z-[90] flex flex-col bg-surface xl:hidden"
         >
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <Logo onClick={onClose} />
