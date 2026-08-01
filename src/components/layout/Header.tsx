@@ -133,7 +133,7 @@ export function Header() {
               <div key={fam.slug} onMouseEnter={() => openMega(fam.slug)} onMouseLeave={scheduleClose}>
                 <Link
                   to={fam.demo ? '/iphone' : `/${fam.slug}`}
-                  className={`rounded-full px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 ${
+                  className={`rounded-full px-2 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 ${
                     activeFamily === fam.slug ? 'bg-black/5 font-semibold' : ''
                   }`}
                   onFocus={() => openMega(fam.slug)}
@@ -146,7 +146,7 @@ export function Header() {
               <Link
                 key={l.to}
                 to={l.to}
-                className="rounded-full px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5"
+                className="rounded-full px-2 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5"
               >
                 {l.label}
               </Link>
@@ -154,7 +154,7 @@ export function Header() {
           </nav>
 
           {/* Accesos permanentes */}
-          <div className="ml-auto flex items-center gap-1 pl-6">
+          <div className="ml-auto flex items-center gap-1">
             {/* Escritorio: lupa, favoritos, comparador, cuenta */}
             <button
               ref={desktopSearchButtonRef}

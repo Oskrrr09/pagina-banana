@@ -578,3 +578,24 @@ del repositorio. No se corrigen en la preparación documental.
 - Nota: el patrón de "interceptar solo los extremos" existe también en
   `src/components/ui/Modal.tsx` y en el chat. No se han tocado y no han
   dado fallos, pero comparten la fragilidad.
+
+## UI-001 — El menú de dispositivos va centrado respecto al contenedor, no al hueco
+
+- Estado: detectado el 2026-08-01, mitigado.
+- Evidencia: el `<nav>` principal de la cabecera se posiciona con
+  `absolute left-1/2 -translate-x-1/2`, es decir centrado respecto al
+  contenedor, para compartir eje vertical con la barra utilitaria de arriba.
+  El bloque de accesos de la derecha, en cambio, va en flujo con `ml-auto`.
+- Riesgo: los dos son independientes, así que **si el bloque derecho crece,
+  se echa encima del menú**. Al añadir el selector de idioma se midió un
+  solape real de 9px, no un simple apretón visual.
+- Mitigación aplicada: selector compacto (bandera y flecha, sin el código de
+  idioma) y enlaces del menú algo menos holgados. El hueco queda en 43px a
+  1280px, medido.
+- Queda la asimetría de fondo: del logo al menú sobran 271px y del menú a los
+  iconos hay 43px. Es consecuencia de centrar respecto al contenedor.
+  Arreglarlo de verdad exige centrar el menú respecto al hueco entre logo e
+  iconos, lo que **rompería la alineación con la barra utilitaria**, que es
+  la razón por la que está así. Es una decisión de diseño, no un bug.
+- Cualquier acceso nuevo en la derecha vuelve a comerse ese hueco: conviene
+  medirlo antes de añadir nada.
