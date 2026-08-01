@@ -131,3 +131,28 @@ test('el prompt no aparece dentro del checkout', async ({ page }) => {
     page.getByRole('dialog', { name: /¿Cuál es tu tienda Banana habitual\?/ }),
   ).toHaveCount(0)
 })
+
+test('el aviso no aparece encima de un diálogo modal ni le roba el foco', async ({ page }) => {
+  // Regresión de A11Y-003. El aviso toma el foco al montarse, así que
+  // apareciendo sobre un diálogo abierto se lo robaba a algo que la persona
+  // estaba usando. Se manifestaba además como un fallo intermitente de la
+  // trampa de foco de la guía en CI (QA-003): el temporizador de 800 ms caía
+  // dentro del recorrido de tabulación del test.
+  await page.goto('./soporte')
+
+  await page.getByRole('button', { name: 'Preparar mi dispositivo' }).first().click()
+  const guia = page.getByRole('dialog', { name: 'Preparar mi dispositivo' })
+  await expect(guia).toBeVisible()
+
+  // Bastante más que los 800 ms del temporizador.
+  await page.waitForTimeout(2500)
+
+  await expect(page.locator('[data-favorite-store-prompt]')).toHaveCount(0)
+  const foco = await guia.evaluate((el) => el.contains(document.activeElement))
+  expect(foco, 'la guía perdió el foco mientras estaba abierta').toBe(true)
+
+  // Al cerrar la guía, el aviso sí puede aparecer: solo estaba esperando.
+  await page.keyboard.press('Escape')
+  await expect(guia).toBeHidden()
+  await expect(page.locator('[data-favorite-store-prompt]')).toBeVisible({ timeout: 5000 })
+})

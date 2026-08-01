@@ -19,13 +19,20 @@ autores, diffs y marcas de tiempo.
   solo con JDK 21 y las herramientas de línea de comandos; la receta
   exacta está en [[06-app-nativa]]. **iOS sigue sin compilar**: necesita
   Xcode completo.
-- **`QA-003` cerrado**: la trampa de foco de la guía "Preparar mi
-  dispositivo" solo interceptaba los extremos y dejaba tabular al
-  navegador en medio, así que un Shift+Tab podía salir del diálogo. Solo
-  se manifestaba en el runner de Linux. Ahora gobierna el recorrido
-  completo sobre una lista filtrada a los controles realmente
-  alcanzables. El test informa además qué elemento recibió el foco al
-  escaparse.
+- **`A11Y-003` y `QA-003` cerrados, y el diagnóstico corregido.** El fallo
+  intermitente de CI no era la trampa de foco de la guía, como se pensó
+  primero: era el **aviso de tienda favorita**, que aparecía 800 ms
+  después de cargar y tomaba el foco aunque hubiera un diálogo modal
+  abierto. En el runner de Linux ese temporizador caía dentro del
+  recorrido de tabulación del test. Se vio en cuanto el test empezó a
+  informar de **qué elemento** recibía el foco en vez de un
+  `true`/`false`.
+  - El aviso ya no se muestra mientras haya un diálogo modal abierto; no
+    se descarta, se reintenta y aparece al cerrarlo.
+  - La trampa de foco de la guía se reescribió igualmente para gobernar el
+    recorrido completo sobre una lista filtrada a los controles realmente
+    alcanzables: no era la causa, pero era frágil.
+  - Regresión cubierta en `favorite-store.spec.ts`. Suite en 220.
 
 ## 2026-07-31 — Aplicaciones: panel como PWA y tienda como app nativa
 

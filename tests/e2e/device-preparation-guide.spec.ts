@@ -4,6 +4,13 @@ import { test, expect, type Page } from '@playwright/test'
 // Se prueba desde /soporte (donde vive el quick-link y el callout SAT).
 
 async function openGuide(page: Page) {
+  // El aviso de tienda favorita aparece a los 800 ms y toma el foco. Ya no
+  // se muestra sobre un diálogo modal abierto (ver la regresión de A11Y-003
+  // en `favorite-store.spec.ts`), pero esta suite mide la guía y solo la
+  // guía: se descarta para que ningún otro overlay entre en la ecuación.
+  await page.addInitScript(() => {
+    localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
+  })
   await page.goto('./soporte')
   // El callout SAT expone el botón "Preparar mi dispositivo" (el mismo
   // diálogo se abre también desde el quick-link).

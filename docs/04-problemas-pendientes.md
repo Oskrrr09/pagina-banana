@@ -485,26 +485,26 @@ del repositorio. No se corrigen en la preparación documental.
   (`closeRef`), que está disponible de inmediato independientemente
   del estado de carga.
 
-## A11Y-003 — El aviso de "tienda favorita" puede robar el foco al chat
+## A11Y-003 — El aviso de "tienda favorita" robaba el foco a los diálogos abiertos
 
-- Estado: detectado el 2026-07-30, sin resolver.
-- Impacto: bajo/raro — requiere que ambos widgets coincidan en el
-  tiempo.
-- Evidencia: `FavoriteStorePrompt` (`src/components/layout/FavoriteStoreDialogs.tsx`)
-  aparece 800 ms después de montar `Layout` si no hay tienda favorita
-  guardada, y en ese momento guarda `document.activeElement` como
-  `previous` y enfoca su propio botón de cerrar. Si el chat de
-  Bananito está abierto en ese instante, le roba el foco; al cerrarse
-  el aviso, su `previous?.focus()` devuelve el foco a lo que tuviera
-  el chat en ese momento, no necesariamente a donde el usuario espera.
-  Ambos componentes también registran su propio listener global de
-  `Escape` de forma independiente.
-- Riesgo: un usuario que abra el chat justo en la ventana de ~800 ms
-  tras cargar la página puede ver el foco saltar de forma inesperada
-  entre el chat y el aviso de tienda favorita.
-- Resolución planificada: ninguna todavía — requeriría coordinar un
-  gestor de foco único entre los overlays globales (chat, aviso de
-  tienda favorita, y futuros). Fuera de alcance de esta sesión.
+- Estado: detectado el 2026-07-30, **cerrado el 2026-08-01**.
+- Impacto real, mayor de lo que se estimó al detectarlo: se anotó como
+  "bajo/raro, requiere que ambos widgets coincidan en el tiempo". Ocurría
+  lo bastante como para tumbar el CI de forma intermitente durante tres
+  días (ver QA-003, más abajo).
+- Evidencia: `FavoriteStorePrompt`
+  (`src/components/layout/FavoriteStoreDialogs.tsx`) aparecía 800 ms
+  después de montar `Layout` y enfocaba su propio botón de cerrar. Si en
+  ese instante había un diálogo abierto —la guía de preparación, el chat de
+  Bananito o cualquier `Modal`, los tres `aria-modal="true"`— le robaba el
+  foco a algo que la persona estaba usando.
+- Resolución: el aviso ya no se muestra mientras haya un
+  `[role="dialog"][aria-modal="true"]` en el documento. No se descarta, se
+  **reintenta**: en cuanto se cierra el diálogo, aparece. Sigue siendo
+  `aria-modal="false"`, que es lo correcto para una notificación.
+- Regresión cubierta en `tests/e2e/favorite-store.spec.ts`: con la guía
+  abierta el aviso no aparece y la guía conserva el foco; al cerrarla, el
+  aviso sale.
 
 ## APP-001 — La app nativa: Android verificada, iOS sin compilar
 
@@ -552,34 +552,26 @@ del repositorio. No se corrigen en la preparación documental.
 ## QA-003 — La trampa de foco de la guía escapaba con Shift+Tab
 
 - Estado: **cerrado el 2026-08-01**.
-- Impacto mientras estuvo abierto: bajo en la web publicada; alto como
-  ruido de CI, porque dejaba el workflow en rojo de forma intermitente.
-- Evidencia: `tests/e2e/device-preparation-guide.spec.ts` falló tres veces
-  seguidas —incluidos los dos reintentos— en el runner de Linux del commit
-  `687126a`, siempre en el bucle de **Shift+Tab**. En el commit siguiente
-  (`3237e71`, solo documentación) pasó. Nunca se reprodujo en local: ni
-  repitiendo el fichero, ni con la suite entera, ni con `CI=1`.
-- Causa: la trampa **solo interceptaba los extremos**. Comparaba el
-  elemento activo con el primero y el último de su lista y, en medio,
-  dejaba tabular al navegador. Eso obliga a que esa lista y el orden de
-  tabulación real coincidan exactamente, y el selector no filtraba
-  elementos presentes en el DOM pero no alcanzables. Basta una
-  discrepancia —un control que el navegador se salta, o el botón
-  "Siguiente" al pasar de `disabled` a activo— para que un Shift+Tab salga
-  del diálogo sin que nadie lo impida. Que dependiera del navegador
-  explica que solo apareciera en Linux.
-- Resolución: `DevicePreparationGuide` gobierna ahora el recorrido
-  **completo**. Siempre hace `preventDefault()`, calcula la posición del
-  elemento activo en la lista y salta al anterior o al siguiente con vuelta
-  circular. La lista se filtra a los controles realmente alcanzables
-  (`getClientRects().length > 0` y fuera de subárboles `inert`). Si no
-  queda ninguno, el foco cae en el propio panel, que pasa a tener
-  `tabIndex={-1}`.
-- El test informa ahora **qué elemento** recibió el foco al escaparse, en
-  vez de un `true`/`false`: era lo que faltaba para diagnosticarlo desde el
-  log de CI.
-- Validación: 219 en verde en local, incluida la suite completa con `CI=1`,
-  y el fichero repetido 3 veces.
-- Nota: el mismo patrón de "interceptar solo los extremos" existe en otros
-  overlays (`src/components/ui/Modal.tsx`, el chat). No se han tocado en
-  esta sesión y no han dado fallos, pero comparten la fragilidad.
+- Síntoma: `tests/e2e/device-preparation-guide.spec.ts` fallaba de forma
+  intermitente en el runner de Linux, siempre en el bucle de **Shift+Tab**,
+  y nunca en local. Falló en `687126a` y en `2503327` —este último tocaba
+  solo documentación— y pasó en `2f79d9f`.
+- **Primer diagnóstico, equivocado**: se atribuyó al diseño de la trampa de
+  foco, que solo interceptaba los extremos y en medio dejaba tabular al
+  navegador. Se reescribió para gobernar el recorrido completo (`2f79d9f`)
+  y el fallo **volvió a aparecer** en el commit siguiente. Esa reescritura
+  sigue siendo una mejora real de robustez, pero no era la causa.
+- **Causa real**: el aviso de tienda favorita, es decir
+  [[04-problemas-pendientes#A11Y-003 — El aviso de "tienda favorita" robaba el foco a los diálogos abiertos]],
+  que llevaba abierto desde el 2026-07-30. Su temporizador de 800 ms caía,
+  en el runner de Linux, dentro del recorrido de tabulación del test.
+- **Lo que permitió verlo**: se cambió el test para que informase de **qué
+  elemento** recibía el foco, en vez de un `true`/`false`. El primer fallo
+  posterior lo dijo sin ambigüedad: `<button> Cerrar aviso de tienda
+  favorita`. Sin ese dato el diagnóstico habría seguido siendo a ciegas.
+- Resolución: se arregló A11Y-003 y, además, `openGuide` descarta el aviso,
+  porque esa suite mide la guía y solo la guía.
+- Validación: 220 en verde en local, incluida la suite completa con `CI=1`.
+- Nota: el patrón de "interceptar solo los extremos" existe también en
+  `src/components/ui/Modal.tsx` y en el chat. No se han tocado y no han
+  dado fallos, pero comparten la fragilidad.

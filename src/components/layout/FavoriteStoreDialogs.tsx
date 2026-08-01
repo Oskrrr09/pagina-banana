@@ -21,13 +21,27 @@ export function FavoriteStoreDialogs() {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   // Damos margen para que la primera vista se pinte antes de aparecer.
+  //
+  // Y **nunca aparece encima de un diálogo modal abierto** (la guía de
+  // preparación, el chat de Bananito, cualquier `Modal`): este aviso toma el
+  // foco al montarse, así que se lo robaría a algo que la persona está usando
+  // en ese momento. Era A11Y-003, y se manifestaba como un fallo intermitente
+  // de la trampa de foco de la guía en CI (QA-003), donde el temporizador
+  // caía justo dentro del recorrido de tabulación.
+  //
+  // Se reintenta en vez de descartarse: en cuanto se cierre el diálogo, el
+  // aviso aparece.
   useEffect(() => {
     if (!shouldShowPrompt) {
       setDialogOpen(false)
       return
     }
-    const timer = window.setTimeout(() => setDialogOpen(true), 800)
-    return () => window.clearTimeout(timer)
+    const timer = window.setInterval(() => {
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
+      setDialogOpen(true)
+      window.clearInterval(timer)
+    }, 800)
+    return () => window.clearInterval(timer)
   }, [shouldShowPrompt])
 
   function handleChoose(slug: string) {
