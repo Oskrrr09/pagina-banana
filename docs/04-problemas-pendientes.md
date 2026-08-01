@@ -599,13 +599,14 @@ del repositorio. No se corrigen en la preparación documental.
     ancho.
   - El menú vuelve a estar **centrado respecto a la ventana**, con desvío 0
     respecto al eje de la barra utilitaria.
-  - Los accesos van agrupados y el selector de idioma separado de ellos con
-    su propia línea y márgenes.
+  - Los accesos van **pegados entre sí, sin separación**. La única
+    separación del grupo es la del selector de idioma, con su línea y sus
+    márgenes.
 - Para que el centrado quepa a 1280px, los enlaces del menú van algo menos
   holgados en ese tramo y recuperan su holgura a partir de 1536px.
-- **Lo medido**: hueco entre el menú y los accesos de 29px a 1280px, 139px a
-  1500px y 321px a 1920px. A 1280px es ajustado pero no hay solape. Si
-  alguna vez molesta, la salida es quitar un acceso de la derecha —el
+- **Lo medido**: hueco entre el menú y los accesos de 57px a 1280px y 167px
+  a 1500px. Juntar los accesos liberó 28px que se los llevó ese hueco. Si
+  alguna vez queda corto, la salida es quitar un acceso de la derecha —al
   comparador se llega igual desde la ficha y desde favoritos—, no volver a
   mover márgenes.
 - Lección para la próxima: dos intentos previos fueron a base de mover

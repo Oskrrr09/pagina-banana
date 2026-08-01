@@ -163,7 +163,12 @@ export function Header() {
           </nav>
 
           {/* Accesos permanentes */}
-          <div className="ml-auto flex items-center gap-1">
+          <div
+            // Sin separación entre los accesos: van pegados como un bloque.
+            // La única separación de este grupo es la del selector de idioma,
+            // que lleva su propia línea y márgenes.
+            className="ml-auto flex items-center gap-0"
+          >
             {/* Escritorio: lupa, favoritos, comparador, cuenta */}
             <button
               ref={desktopSearchButtonRef}
