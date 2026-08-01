@@ -8,6 +8,27 @@ actualizado: 2026-08-01
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-01 — La app tiene interfaz de app, y compila en iOS y Android
+
+- **Interfaz propia dentro del binario**: barra de navegación inferior con
+  Inicio, Buscar, Favoritos, Carrito y Cuenta —con contadores— y sin pie de
+  página. El carrito deja de estar duplicado en la cabecera. La web no
+  cambia: todo va condicionado a `window.Capacitor`, que Capacitor inyecta
+  antes de cargar el bundle, así que sigue habiendo un solo código.
+- **El chat sale de la burbuja flotante y entra en "Contacta con
+  nosotros"**, dentro del menú, junto al centro de ayuda y las tiendas.
+- **iOS compilado y ejecutado por primera vez** (Xcode 26.6, SDK 26.5) en un
+  simulador de iPhone 17 Pro. Hizo falta versionar el esquema compartido de
+  Xcode, que se genera en `xcuserdata/` y queda fuera de git.
+- **Tres fallos que solo aparecieron ejecutando los binarios**, no en el
+  navegador ni en las pruebas:
+  - la cabecera quedaba bajo la Dynamic Island (`env(safe-area-inset-top)`);
+  - el aviso de tienda favorita tapaba la barra de navegación inferior;
+  - ese mismo aviso se colaba encima del chat al pasar del menú al chat,
+    porque la comprobación de A11Y-003 se hacía una sola vez y no de forma
+    continua. Ahora se vigila con un `MutationObserver`.
+- Suite en 230, con `tests/e2e/app-shell.spec.ts` (10 casos nuevos).
+
 ## 2026-08-01 — La app de Android compila y arranca; arreglada la trampa de foco
 
 - **APK de Android generado y verificado** (`APP-001` cerrado para

@@ -2,6 +2,7 @@ import type { SVGProps } from 'react'
 
 // Iconos lineales, trazo 1.5 sobre rejilla de 24px (§5.4, estilo Lucide, MIT).
 const paths: Record<string, string> = {
+  home: 'M4 11l8-7 8 7M6 10v9h12v-9M10 19v-5h4v5',
   menu: 'M4 6h16M4 12h16M4 18h16',
   close: 'M6 6l12 12M18 6L6 18',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.35-4.35',

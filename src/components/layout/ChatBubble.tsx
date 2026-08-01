@@ -4,6 +4,9 @@ import { Icon } from '../ui/Icon'
 import { useVisitorChatSession } from '../../lib/chatSession'
 import { useCustomerAuth } from '../../lib/customerAuth'
 import type { DbMessage } from '../../lib/supabase'
+import { isNativeApp } from '../../lib/nativeApp'
+import { useChatOpenRequest } from '../../lib/chatLauncher'
+import { ALTURA_TAB_BAR } from './AppTabBar'
 
 // Chat "Bananito" — burbuja del visitante.
 // - Botón flotante circular con Bananito en azul del nav utilitario.
@@ -98,6 +101,14 @@ function toUIMessage(m: DbMessage): UIMessage {
 
 export function ChatBubble() {
   const [open, setOpen] = useState(false)
+
+  // En la app nativa el chat se abre desde "Contacta con nosotros", no desde
+  // una burbuja flotante; esto es lo que escucha esa petición.
+  useChatOpenRequest(
+    useCallback(() => {
+      setOpen(true)
+    }, []),
+  )
   // `mounted` mantiene el panel en el DOM durante la animación de salida.
   // `visible` conmuta la clase CSS que dispara el transform/opacity.
   const [mounted, setMounted] = useState(false)
@@ -133,6 +144,7 @@ export function ChatBubble() {
   const messages = session.demo ? demoMessages : supabaseMessages
 
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const restoreFocusRef = useRef(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -144,7 +156,11 @@ export function ChatBubble() {
 
   const close = useCallback(() => {
     setOpen(false)
-    buttonRef.current?.focus()
+    // El foco NO se devuelve aquí: mientras el chat está abierto el resto del
+    // documento está marcado como `inert`, así que enfocar cualquier cosa de
+    // fuera sería una operación vacía. Se hace en un efecto, que corre
+    // después de que se levante el `inert`.
+    restoreFocusRef.current = true
   }, [])
 
   // Coreografía de montaje/animación:
@@ -224,6 +240,26 @@ export function ChatBubble() {
     }
   }, [open, mounted])
 
+  // Devolución del foco al cerrar. Va DESPUÉS del efecto que aplica `inert`:
+  // React ejecuta primero todas las limpiezas y luego los efectos, así que
+  // aquí el resto del documento ya vuelve a ser enfocable.
+  useEffect(() => {
+    if (open || !restoreFocusRef.current) return
+    restoreFocusRef.current = false
+
+    // En la web, de vuelta a la burbuja. En la app no existe, así que el
+    // foco va al contenido principal.
+    //
+    // No se intenta volver a quien abrió el chat: en la app siempre es una
+    // entrada del menú, y ese menú se cierra con una animación de salida, por
+    // lo que sigue en el DOM y parece válido justo cuando ya está
+    // desapareciendo. Devolverle el foco lo dejaría en `body` un instante
+    // después. Además, el propio menú ya devuelve el foco a su botón al
+    // desmontarse.
+    const destino = buttonRef.current ?? document.getElementById('contenido')
+    destino?.focus()
+  }, [open])
+
   // Auto-scroll al final cuando llegan mensajes nuevos.
   useEffect(() => {
     const el = scrollRef.current
@@ -267,7 +303,13 @@ export function ChatBubble() {
   const showError = !session.demo && session.status === 'error'
 
   return (
-    <div data-chat-root className="fixed bottom-6 right-4 z-[75] sm:right-6">
+    <div
+      data-chat-root
+      className="fixed bottom-6 right-4 z-[75] sm:right-6"
+      // En la app nativa la barra de navegación vive abajo: sin esto, la
+      // burbuja quedaría justo encima o pisada por ella.
+      style={isNativeApp ? { bottom: `calc(1.5rem + ${ALTURA_TAB_BAR})` } : undefined}
+    >
       {mounted && (
         <div
           ref={panelRef}
@@ -389,7 +431,10 @@ export function ChatBubble() {
         </div>
       )}
 
-      {/* Botón flotante con Bananito */}
+      {/* Botón flotante con Bananito. Dentro de la app nativa no se pinta:
+          es un patrón de web, y ahí compite con la barra de navegación
+          inferior. Allí el chat se abre desde el menú. */}
+      {!isNativeApp && (
       <button
         ref={buttonRef}
         type="button"
@@ -413,6 +458,7 @@ export function ChatBubble() {
           />
         )}
       </button>
+      )}
     </div>
   )
 }

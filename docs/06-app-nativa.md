@@ -66,14 +66,21 @@ basta instalarla en un dispositivo o un simulador, como se explica más abajo.
 - No hizo falta Android Studio: basta el JDK y las herramientas de línea de
   comandos.
 
-**iOS: sin compilar.** Necesita **Xcode completo** (~15 GB, desde la App
-Store con tu Apple ID; las Command Line Tools no bastan). No se ha podido
-instalar, así que el binario de iOS **no se ha compilado ni ejecutado
-nunca** y dar por hecho que arranca sería inventar. El proyecto `ios/` está
-generado y con sus iconos, pero sin verificar.
+**iOS: compilado, instalado y ejecutado** (2026-08-01), con Xcode 26.6 y el
+SDK de iOS 26.5. Arranca en un simulador de iPhone 17 Pro y se ve
+correctamente.
+
+**Ambas con interfaz propia de app**: barra de navegación inferior, sin pie
+de página, y el chat dentro de "Contacta con nosotros" en el menú
+([[02-decisiones#D-042 — La app nativa usa la navegación de una app, no la de la web]]).
 
 **Publicar** —firmar, subir y pasar revisión— sigue pendiente en ambas, y
 depende de lo del bloque anterior, no del código.
+
+> [!warning] Xcode 26 no trae los simuladores
+> Después de instalar Xcode hay que bajar el runtime aparte, son 8,5 GB:
+> `xcodebuild -downloadPlatform iOS`. Sin él, `xcodebuild` falla con
+> "iOS 26.5 is not installed" aunque el SDK sí aparezca en `-showsdks`.
 
 ---
 

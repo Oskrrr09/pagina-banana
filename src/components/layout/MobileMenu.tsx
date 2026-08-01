@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { Link } from 'react-router-dom'
 import { familiesNav, utilityLinks } from '../../data/nav'
+import { isNativeApp } from '../../lib/nativeApp'
+import { openChat } from '../../lib/chatLauncher'
 import { useStorePreference } from '../../lib/storePreference'
 import { stores } from '../../data/stores'
 import { Icon } from '../ui/Icon'
@@ -164,6 +166,73 @@ export function MobileMenu({
             </nav>
 
             <FavoriteStoreMobileBlock onClose={onClose} />
+
+            {/* Contacta con nosotros — solo en la app.
+                En la web el chat se abre desde su burbuja flotante; dentro de
+                la app esa burbuja no existe (competiría con la barra de
+                navegación inferior), así que el chat entra por aquí. */}
+            {isNativeApp && (
+              <div className="mt-6 rounded-[16px] border border-line p-4">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
+                  Contacta con nosotros
+                </p>
+                <ul className="grid gap-1">
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose()
+                        openChat()
+                      }}
+                      className="flex w-full items-center gap-3 rounded-[10px] px-2 py-2.5 text-left text-[14px] font-medium text-ink hover:bg-neutral"
+                    >
+                      <span
+                        className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full"
+                        style={{ background: '#0768A9' }}
+                      >
+                        <img
+                          src={`${import.meta.env.BASE_URL}img/chat/bananito-square.png`}
+                          alt=""
+                          width={32}
+                          height={32}
+                          className="h-6 w-6 object-contain"
+                        />
+                      </span>
+                      <span>
+                        Chatea con Bananito
+                        <span className="block text-xs font-normal text-muted">
+                          Te responde una persona del equipo
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                  <li>
+                    <Link
+                      to="/soporte"
+                      onClick={onClose}
+                      className="flex items-center gap-3 rounded-[10px] px-2 py-2.5 text-[14px] font-medium text-ink hover:bg-neutral"
+                    >
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral">
+                        <Icon name="info" size={16} className="text-muted" />
+                      </span>
+                      Centro de ayuda
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/tiendas"
+                      onClick={onClose}
+                      className="flex items-center gap-3 rounded-[10px] px-2 py-2.5 text-[14px] font-medium text-ink hover:bg-neutral"
+                    >
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral">
+                        <Icon name="store" size={16} className="text-muted" />
+                      </span>
+                      Tiendas y horarios
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            )}
 
             {/* Servicios y ayuda — mismos enlaces que la barra superior de escritorio */}
             <div className="mt-6 rounded-[16px] bg-neutral p-4">

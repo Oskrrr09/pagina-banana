@@ -4,7 +4,11 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/banana-icon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- `viewport-fit=cover` habilita las variables `env(safe-area-inset-*)`,
+         que la app nativa usa para no meter la barra de navegación inferior
+         bajo el indicador de inicio del iPhone. En un navegador normal valen
+         cero y no cambian nada. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <!-- Color de la barra del sistema. El panel de agentes lo sobrescribe con
          su amarillo al montarse (ver src/lib/pwa.ts). -->
     <meta name="theme-color" content="#ffffff" />

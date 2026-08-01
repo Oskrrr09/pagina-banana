@@ -109,16 +109,23 @@ Dos aplicaciones distintas, por públicos distintos. Ver
   tienda ofrezca instalar el panel interno. Cubierto por
   `tests/e2e/pwa.spec.ts`.
 
-**Tienda como app nativa (Capacitor) — configurada, sin compilar.**
+**Tienda como app nativa (Capacitor) — compilada y ejecutada en iOS y
+Android (2026-08-01).**
 
 - `capacitor.config.ts`, `npm run build:app` (mismo código, `--base=/`),
   proyectos `ios/` y `android/` generados, e iconos y pantallas de carga
   en todos los tamaños.
-- **Android verificado el 2026-08-01**: `app-debug.apk` compilado (12 MB,
-  `targetSdk` 36) e instalado en un emulador Pixel arm64, donde arranca,
-  renderiza la tienda dentro del WebView y navega a rutas profundas sin
-  errores. **iOS sigue sin compilar**: necesita Xcode completo. Ver
-  [[04-problemas-pendientes#APP-001 — La app nativa: Android verificada, iOS sin compilar]].
+- **Interfaz propia de app** dentro del binario: barra de navegación
+  inferior con cinco destinos y sin pie de página, y el chat dentro de
+  "Contacta con nosotros" en el menú, sin burbuja flotante. La web no
+  cambia. Ver [[02-decisiones#D-042 — La app nativa usa la navegación de una app, no la de la web]]
+  y [[02-decisiones#D-043 — En la app, el chat vive en "Contacta con nosotros"]].
+- **Android**: `app-debug.apk` (12 MB, `targetSdk` 36) instalado en un
+  emulador Pixel arm64. Arranca, navega a rutas profundas y el chat se abre
+  desde el menú, todo comprobado a mano.
+- **iOS**: compilado con Xcode 26.6 contra el SDK 26.5 e instalado en un
+  simulador de iPhone 17 Pro, donde arranca y se ve correctamente.
+- Ver [[04-problemas-pendientes#APP-001 — La app nativa: compilada y ejecutada en iOS y Android]].
 - Publicarla de verdad no depende del código: exige autorización de
   Banana, cuentas de desarrollador de pago y sustituir los datos
   demostrativos. Todo detallado en [[06-app-nativa]].

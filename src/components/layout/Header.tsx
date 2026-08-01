@@ -11,6 +11,7 @@ import { Logo } from './Logo'
 import { MegaMenu } from './MegaMenu'
 import { MobileMenu } from './MobileMenu'
 import { HeaderSearch } from '../search/HeaderSearch'
+import { isNativeApp } from '../../lib/nativeApp'
 
 // Cabecera fija (sticky) en escritorio y móvil.
 // Integración visual: barra promocional oscura arriba, cabecera principal en
@@ -74,7 +75,14 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40">
+      <header
+        className={`sticky top-0 z-40 ${isNativeApp ? 'bg-banana' : ''}`}
+        // En la app, el WebView llega hasta el borde de la pantalla
+        // (`viewport-fit=cover`), así que sin esto la cabecera quedaría
+        // debajo de la Dynamic Island y del reloj. El amarillo se extiende
+        // por detrás de la barra de estado, que es como se ve bien.
+        style={isNativeApp ? { paddingTop: 'env(safe-area-inset-top)' } : undefined}
+      >
         {/* Barra superior de servicios — sólo escritorio; en móvil viven en el
              menú. Cian claro (cielo Canarias); mantiene contraste AA con el
              texto blanco gracias a `text-shadow` cuando cae en la parte más
@@ -176,8 +184,12 @@ export function Header() {
               <Icon name="search" />
             </button>
 
-            {/* Carrito (siempre visible) */}
-            <IconBadge to="/carrito" icon="cart" label="Carrito" count={cartCount} />
+            {/* Carrito. En la app nativa no se repite aquí: vive en la barra
+                inferior, y tener el mismo destino dos veces en pantalla
+                confunde más que ayuda. */}
+            {!isNativeApp && (
+              <IconBadge to="/carrito" icon="cart" label="Carrito" count={cartCount} />
+            )}
 
             {/* Móvil: botón de menú */}
             <button

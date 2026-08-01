@@ -548,6 +548,45 @@ No atribuye motivaciones que el repositorio no documenta.
   agente que entre desde otro equipo empieza con todo sin leer.
 - Evidencia: `src/lib/agentUnread.ts`, clave `banana:agente-visto`.
 
+## D-042 — La app nativa usa la navegación de una app, no la de la web
+
+- Fecha: 2026-08-01.
+- Estado: vigente.
+- Decisión: dentro del binario, la tienda cambia de esqueleto: **barra de
+  navegación inferior** con cinco destinos (Inicio, Buscar, Favoritos,
+  Carrito, Cuenta) y **sin pie de página**. La web no cambia.
+- Motivo: quien descarga una app de una tienda espera el pulgar abajo y las
+  secciones principales siempre a la vista. Una cabecera con mega-menú y un
+  pie con mapa del sitio son correctos en la web y se notan prestados en una
+  app.
+- Implementación: mismo código. `src/lib/nativeApp.ts` resuelve una sola vez
+  si existe `window.Capacitor`, que Capacitor inyecta antes de cargar el
+  bundle. No contradice
+  [[02-decisiones#D-040 — Un único código para web y app nativa]]: sigue
+  habiendo un solo código y un solo build; lo que cambia es el esqueleto.
+- Detalles que solo aparecieron al ejecutarlo en un dispositivo, no en el
+  navegador: la cabecera necesita `env(safe-area-inset-top)` o queda bajo la
+  Dynamic Island, y el aviso de tienda favorita tapaba la barra inferior.
+- Evidencia: `src/components/layout/AppTabBar.tsx`, `tests/e2e/app-shell.spec.ts`.
+
+## D-043 — En la app, el chat vive en "Contacta con nosotros"
+
+- Fecha: 2026-08-01.
+- Estado: vigente.
+- Decisión: dentro de la app no hay burbuja flotante de Bananito. El chat se
+  abre desde un bloque "Contacta con nosotros" en el menú, junto al centro de
+  ayuda y las tiendas.
+- Motivo: la burbuja flotante es un patrón de web y, con la barra de
+  navegación abajo, competiría por el mismo sitio y el mismo pulgar.
+- Implementación: `src/lib/chatLauncher.ts` con un evento del documento.
+  Se eligió un evento y no un contexto porque `ChatBubble` se monta fuera de
+  `Layout` (ver `src/App.tsx`) y un proveedor tendría que envolver toda la
+  aplicación solo para esto.
+- Consecuencia que hubo que resolver: sin burbuja no hay elemento al que
+  devolver el foco al cerrar. Va al contenido principal, y **después** de que
+  se levante el `inert` que el chat aplica al resto del documento: hacerlo
+  antes era una operación vacía y el foco acababa en `body`.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

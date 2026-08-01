@@ -506,27 +506,30 @@ del repositorio. No se corrigen en la preparación documental.
   abierta el aviso no aparece y la guía conserva el foco; al cerrarla, el
   aviso sale.
 
-## APP-001 — La app nativa: Android verificada, iOS sin compilar
+## APP-001 — La app nativa: compilada y ejecutada en iOS y Android
 
-- Estado: **Android cerrado el 2026-08-01. iOS sigue abierto**, por
-  dependencia externa.
-- **Android — resuelto y comprobado de punta a punta.** Se instalaron JDK 21
-  y las herramientas de línea de comandos del SDK por Homebrew, sin Android
-  Studio y sin `sudo`. `./gradlew assembleDebug` produce `app-debug.apk`
-  (12 MB, `com.bananacomputer.tienda`, `targetSdk` 36). En un emulador
-  Pixel arm64 con Android 36: instala, arranca, la tienda renderiza dentro
-  del WebView y **la navegación profunda funciona** (portada → ficha de
-  producto), sin errores en `logcat`. Eso despeja el riesgo real que tenía
-  esto: meter un `BrowserRouter` en un WebView. Receta exacta en
+- Estado: **cerrado el 2026-08-01**.
+- **Android**: JDK 21 y herramientas de línea de comandos del SDK por
+  Homebrew, sin Android Studio y sin `sudo`. `./gradlew assembleDebug`
+  produce `app-debug.apk` (12 MB, `com.bananacomputer.tienda`,
+  `targetSdk` 36). Verificado en un emulador Pixel arm64 con Android 36:
+  arranca, la tienda renderiza dentro del WebView, la navegación profunda
+  funciona y el chat se abre desde el menú. Sin errores en `logcat`.
+- **iOS**: Oscar instaló Xcode 26.6; el runtime del simulador se bajó
+  aparte (`xcodebuild -downloadPlatform iOS`, 8,5 GB — Xcode 26 ya no lo
+  incluye). `xcodebuild -scheme App -sdk iphonesimulator` compila, y la app
+  instalada en un simulador de iPhone 17 Pro arranca y se ve bien.
+- Hizo falta versionar el **esquema compartido** de Xcode: lo genera al
+  abrir el proyecto pero lo deja en `xcuserdata/`, fuera de git, así que
+  `xcodebuild -scheme App` fallaba y solo se podía compilar desde el GUI.
+- **Dos fallos que solo aparecieron al ejecutarlo en un dispositivo**, no en
+  el navegador ni en las pruebas: la cabecera quedaba bajo la Dynamic
+  Island (faltaba `env(safe-area-inset-top)`) y el aviso de tienda favorita
+  tapaba la barra de navegación inferior. Los dos arreglados y comprobados
+  con capturas del simulador y del emulador.
+- Lo que sigue pendiente **no es técnico**: autorización de Banana, cuentas
+  de desarrollador de pago y datos reales en vez de demostrativos. Ver
   [[06-app-nativa]].
-- **iOS — sigue sin compilar.** Requiere **Xcode completo** (~15 GB, App
-  Store, con Apple ID); las Command Line Tools no bastan y no es
-  instalable sin intervención de Oscar. El proyecto `ios/` está generado y
-  con sus iconos, pero **el binario no se ha ejecutado nunca** y afirmar
-  que arranca sería inventar.
-- No confundir con lo que bloquea *publicar*, que no es técnico:
-  autorización de Banana, cuentas de desarrollador de pago y datos reales
-  en vez de demostrativos.
 
 ## PWA-001 — El service worker no lo cubren las pruebas E2E
 

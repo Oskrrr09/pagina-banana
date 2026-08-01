@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
 import { stores, isOpenNow, getTodayHours } from '../../data/stores'
 import { useStorePreference } from '../../lib/storePreference'
+import { isNativeApp } from '../../lib/nativeApp'
+import { ALTURA_TAB_BAR } from './AppTabBar'
 
 // Componente global (montado en Layout) que orquesta:
 //   - el bottom sheet inicial que pregunta la tienda favorita;
@@ -22,26 +24,45 @@ export function FavoriteStoreDialogs() {
 
   // Damos margen para que la primera vista se pinte antes de aparecer.
   //
-  // Y **nunca aparece encima de un diálogo modal abierto** (la guía de
-  // preparación, el chat de Bananito, cualquier `Modal`): este aviso toma el
-  // foco al montarse, así que se lo robaría a algo que la persona está usando
-  // en ese momento. Era A11Y-003, y se manifestaba como un fallo intermitente
-  // de la trampa de foco de la guía en CI (QA-003), donde el temporizador
-  // caía justo dentro del recorrido de tabulación.
+  // Y **nunca convive con un diálogo modal abierto** (el menú de la app, la
+  // guía de preparación, el chat de Bananito, cualquier `Modal`): este aviso
+  // toma el foco al montarse, así que se lo robaría a algo que la persona
+  // está usando. Era A11Y-003, y se manifestaba además como un fallo
+  // intermitente de la trampa de foco de la guía en CI (QA-003).
   //
-  // Se reintenta en vez de descartarse: en cuanto se cierre el diálogo, el
-  // aviso aparece.
+  // La presencia de modales se vigila de forma **continua**, no solo al
+  // aparecer: comprobarlo una vez dejaba un hueco entre que se cierra un
+  // diálogo y se abre el siguiente —pasar del menú al chat, en la app— por
+  // el que el aviso se colaba encima del chat.
   useEffect(() => {
     if (!shouldShowPrompt) {
       setDialogOpen(false)
       return
     }
-    const timer = window.setInterval(() => {
-      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
-      setDialogOpen(true)
-      window.clearInterval(timer)
+
+    const hayModal = () => Boolean(document.querySelector('[role="dialog"][aria-modal="true"]'))
+
+    // El margen inicial solo aplica a la primera aparición.
+    let listo = false
+    const evaluar = () => {
+      if (listo) setDialogOpen(!hayModal())
+    }
+
+    const timer = window.setTimeout(() => {
+      listo = true
+      evaluar()
     }, 800)
-    return () => window.clearInterval(timer)
+
+    // Un observador en vez de un intervalo: reacciona en el mismo momento en
+    // que se monta o desmonta un diálogo, sin dejarlo visible encima durante
+    // el tiempo que tardase el siguiente tic.
+    const observador = new MutationObserver(evaluar)
+    observador.observe(document.body, { childList: true, subtree: true })
+
+    return () => {
+      window.clearTimeout(timer)
+      observador.disconnect()
+    }
   }, [shouldShowPrompt])
 
   function handleChoose(slug: string) {
@@ -71,6 +92,7 @@ export function FavoriteStoreDialogs() {
         <div
           role="status"
           className="pointer-events-none fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-raised)]"
+          style={isNativeApp ? { bottom: `calc(1.5rem + ${ALTURA_TAB_BAR})` } : undefined}
         >
           {confirmationText}
         </div>
@@ -117,7 +139,10 @@ function FavoriteStorePrompt({
   return (
     <div
       data-favorite-store-prompt
-      className="fixed bottom-0 left-0 right-0 z-[85] flex justify-center px-4 pb-5 sm:pb-8"
+      className="fixed bottom-0 left-0 right-0 z-[70] flex justify-center px-4 pb-5 sm:pb-8"
+      // En la app hay una barra de navegación pegada abajo: sin esto el
+      // aviso la taparía por completo.
+      style={isNativeApp ? { paddingBottom: `calc(1.25rem + ${ALTURA_TAB_BAR})` } : undefined}
     >
       <div
         ref={panelRef}
