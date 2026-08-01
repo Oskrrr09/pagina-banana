@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { familiesNav, utilityLinks } from '../../data/nav'
 import { isNativeApp } from '../../lib/nativeApp'
 import { openChat } from '../../lib/chatLauncher'
+import { useT } from '../../lib/i18n'
 import { useStorePreference } from '../../lib/storePreference'
 import { stores } from '../../data/stores'
 import { Icon } from '../ui/Icon'
@@ -22,6 +23,7 @@ export function MobileMenu({
   onClose: () => void
   returnFocusRef: RefObject<HTMLButtonElement>
 }) {
+  const t = useT()
   const [expanded, setExpanded] = useState<string | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -236,7 +238,7 @@ export function MobileMenu({
                       className="flex items-center gap-2 rounded-[10px] px-2 py-2.5 text-[14px] font-medium text-ink hover:bg-surface"
                     >
                       <Icon name={l.icon} size={16} className="shrink-0 text-muted" />
-                      <span className="truncate">{l.label}</span>
+                      <span className="truncate">{t(l.label)}</span>
                     </Link>
                   </li>
                 ))}

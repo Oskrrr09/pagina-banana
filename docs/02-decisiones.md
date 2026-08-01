@@ -683,6 +683,46 @@ No atribuye motivaciones que el repositorio no documenta.
   Se resuelve con la clase `.app-safe-area`, que solo hace algo dentro de
   la app.
 
+## D-047 — La tienda se ofrece en cinco idiomas, la app solo en castellano
+
+- Fecha: 2026-08-01.
+- Estado: vigente.
+- Decisión: la **web** se ofrece en castellano, inglés, alemán, francés e
+  italiano, con selector de banderas a la derecha de la barra amarilla. La
+  **app no lleva selector** y va siempre en castellano.
+- Motivo: Canarias vende a mucho visitante extranjero, y ese visitante entra
+  por la web. Quien se descarga la app de una tienda de Canarias vive aquí.
+  Ofrecer un idioma dentro de la app sin manera de cambiarlo sería peor que
+  no ofrecerlo.
+- Implementación: el castellano es la fuente de verdad **y el tipo**. Los
+  otros cuatro diccionarios se declaran como `Diccionario`, así que si falta
+  o sobra una clave el build falla; no hay que acordarse de revisarlo.
+- El idioma se detecta del navegador la primera vez y se recuerda. Un idioma
+  que no se ofrece cae al castellano.
+- Banderas en **SVG, no emoji**: Windows no trae la fuente de banderas y allí
+  un emoji de bandera se ve como las dos letras del país.
+- Efecto colateral que hubo que atender: con la detección activa, la suite de
+  pruebas —escrita en castellano— pasó a ejecutarse contra la versión
+  inglesa, porque el navegador de Playwright viene en inglés. Se fija
+  `locale: 'es-ES'` en la configuración; las pruebas de detección lo
+  sobrescriben.
+
+## D-048 — Las traducciones son demostrativas y se avisa
+
+- Fecha: 2026-08-01.
+- Estado: vigente.
+- Decisión: fuera del castellano se muestra un aviso, encima del contenido,
+  de que la traducción la ha generado el prototipo y de que la versión válida
+  es la española.
+- Motivo: el prototipo traduce también condiciones de garantía,
+  financiación, seguro y Plan Renove. Una traducción aproximada de una
+  condición puede afirmar algo que Banana no ofrece. Mientras el texto no lo
+  dé Banana en cada idioma, hay que decirlo.
+- Va en el flujo y no como capa flotante: un aviso que tapa media pantalla se
+  cierra sin leerlo. Se puede descartar y ofrece volver al castellano.
+- Es coherente con lo que ya se hace con los precios, marcados como
+  demostrativos desde el principio.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

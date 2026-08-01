@@ -12,6 +12,8 @@ import { MegaMenu } from './MegaMenu'
 import { MobileMenu } from './MobileMenu'
 import { HeaderSearch } from '../search/HeaderSearch'
 import { isNativeApp } from '../../lib/nativeApp'
+import { LanguagePicker } from './LanguagePicker'
+import { useT } from '../../lib/i18n'
 
 // Cabecera fija (sticky) en escritorio y móvil.
 // Integración visual: barra promocional oscura arriba, cabecera principal en
@@ -20,6 +22,7 @@ import { isNativeApp } from '../../lib/nativeApp'
 export function Header() {
   const { cartCount, favorites, compare } = useStore()
   const { session: customerSession } = useCustomerAuth()
+  const t = useT()
   const [activeFamily, setActiveFamily] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -100,7 +103,7 @@ export function Header() {
                 to={link.to}
                 className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white transition-colors hover:bg-white/15"
               >
-                <Icon name={link.icon} size={14} /> {link.label}
+                <Icon name={link.icon} size={14} /> {t(link.label)}
               </Link>
             ))}
           </div>
@@ -156,18 +159,18 @@ export function Header() {
             <button
               ref={desktopSearchButtonRef}
               onClick={() => setSearchOpen((v) => !v)}
-              aria-label="Buscar"
+              aria-label={t('header.search')}
               aria-expanded={searchOpen}
               className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
             >
               <Icon name="search" />
             </button>
-            <IconBadge to="/favoritos" icon="heart" label="Favoritos" count={favorites.length} desktopOnly />
-            <IconBadge to="/comparar" icon="compare" label="Comparador" count={compare.length} desktopOnly />
+            <IconBadge to="/favoritos" icon="heart" label={t('header.favorites')} count={favorites.length} desktopOnly />
+            <IconBadge to="/comparar" icon="compare" label={t('header.compare')} count={compare.length} desktopOnly />
             <NotificationsBell />
             <Link
               to={customerSession ? '/cuenta' : '/login'}
-              aria-label={customerSession ? 'Mi cuenta' : 'Iniciar sesión'}
+              aria-label={customerSession ? t('header.account') : t('header.signIn')}
               className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
             >
               <Icon name="user" />
@@ -177,7 +180,7 @@ export function Header() {
             <button
               ref={mobileSearchButtonRef}
               onClick={() => setSearchOpen((v) => !v)}
-              aria-label="Buscar"
+              aria-label={t('header.search')}
               aria-expanded={searchOpen}
               className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:hidden"
             >
@@ -188,14 +191,18 @@ export function Header() {
                 inferior, y tener el mismo destino dos veces en pantalla
                 confunde más que ayuda. */}
             {!isNativeApp && (
-              <IconBadge to="/carrito" icon="cart" label="Carrito" count={cartCount} />
+              <IconBadge to="/carrito" icon="cart" label={t('header.cart')} count={cartCount} />
             )}
+
+            {/* Selector de idioma — a la derecha del todo. Solo en la web:
+                dentro de la app no se monta esta cabecera. */}
+            <LanguagePicker />
 
             {/* Móvil: botón de menú */}
             <button
               ref={mobileMenuButtonRef}
               onClick={() => setMobileOpen(true)}
-              aria-label="Abrir menú"
+              aria-label={t('header.openMenu')}
               aria-expanded={mobileOpen}
               aria-controls="mobile-navigation-dialog"
               className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:hidden"
@@ -232,7 +239,7 @@ export function Header() {
       {searchOpen && (
         <div
           role="dialog"
-          aria-label="Buscar"
+          aria-label={t('header.search')}
           aria-modal="true"
           className="fixed inset-0 z-[85] flex flex-col bg-surface xl:hidden"
         >

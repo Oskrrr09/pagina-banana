@@ -2,46 +2,52 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from './Logo'
 import { Icon } from '../ui/Icon'
+import { useT } from '../../lib/i18n'
+import type { ClaveTexto } from '../../lib/i18n'
 
 // Pie de página (§2.9): acordeones cerrados en móvil y columnas en escritorio.
-const blocks: { title: string; links: { label: string; to: string }[] }[] = [
+//
+// Los rótulos son claves de traducción, no texto: el pie se ve en todas las
+// páginas y es de lo primero que mira quien navega en otro idioma.
+const blocks: { title: ClaveTexto; links: { label: ClaveTexto; to: string }[] }[] = [
   {
-    title: 'Contáctanos',
+    title: 'footer.contact',
     links: [
-      { label: 'Centro de soporte', to: '/soporte' },
-      { label: 'Nuestras tiendas', to: '/tiendas' },
-      { label: 'Chat y teléfono', to: '/soporte' },
+      { label: 'footer.supportCenter', to: '/soporte' },
+      { label: 'footer.ourStores', to: '/tiendas' },
+      { label: 'footer.chatAndPhone', to: '/soporte' },
     ],
   },
   {
-    title: 'Más sobre Banana',
+    title: 'footer.aboutBanana',
     links: [
-      { label: 'Quiénes somos', to: '/servicios' },
-      { label: 'Empresas', to: '/servicios' },
-      { label: 'Blog', to: '/' },
+      { label: 'footer.aboutUs', to: '/servicios' },
+      { label: 'footer.business', to: '/servicios' },
+      { label: 'footer.blog', to: '/' },
     ],
   },
   {
-    title: 'Ayuda y servicios',
+    title: 'footer.helpAndServices',
     links: [
-      { label: 'Financiación', to: '/servicios#financiacion' },
-      { label: 'Envíos', to: '/servicios#envios' },
-      { label: 'Plan Renove', to: '/plan-renove' },
-      { label: 'Seguimiento de pedido', to: '/soporte' },
-      { label: 'Servicio técnico', to: '/soporte' },
+      { label: 'footer.financing', to: '/servicios#financiacion' },
+      { label: 'footer.shipping', to: '/servicios#envios' },
+      { label: 'footer.tradeIn', to: '/plan-renove' },
+      { label: 'footer.orderTracking', to: '/soporte' },
+      { label: 'footer.repairService', to: '/soporte' },
     ],
   },
   {
-    title: 'Condiciones de compra',
+    title: 'footer.purchaseTerms',
     links: [
-      { label: 'Ver todos los productos', to: '/buscar' },
-      { label: 'Comparador', to: '/comparar' },
-      { label: 'Educación', to: '/servicios' },
+      { label: 'footer.allProducts', to: '/buscar' },
+      { label: 'footer.compare', to: '/comparar' },
+      { label: 'footer.education', to: '/servicios' },
     ],
   },
 ]
 
 export function Footer() {
+  const t = useT()
   const [openBlocks, setOpenBlocks] = useState<string[]>([])
 
   function toggleBlock(title: string) {
@@ -67,7 +73,7 @@ export function Footer() {
                   onClick={() => toggleBlock(block.title)}
                   className="flex min-h-11 w-full items-center justify-between py-2 text-left text-sm font-bold text-ink"
                 >
-                  {block.title}
+                  {t(block.title)}
                   <Icon
                     name="chevron-down"
                     size={16}
@@ -89,7 +95,7 @@ export function Footer() {
                 id={`footer-desktop-heading-${index}`}
                 className="pb-4 text-sm font-bold text-ink"
               >
-                {block.title}
+                {t(block.title)}
               </h2>
               <FooterLinks links={block.links} />
             </section>
@@ -117,9 +123,10 @@ function FooterLinks({
   links,
   className = '',
 }: {
-  links: { label: string; to: string }[]
+  links: { label: ClaveTexto; to: string }[]
   className?: string
 }) {
+  const t = useT()
   return (
     <ul className={`min-w-0 space-y-2 ${className}`}>
       {links.map((link) => (
@@ -128,7 +135,7 @@ function FooterLinks({
             to={link.to}
             className="break-words text-sm text-muted transition-colors hover:text-ink"
           >
-            {link.label}
+            {t(link.label)}
           </Link>
         </li>
       ))}

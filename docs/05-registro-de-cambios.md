@@ -8,6 +8,32 @@ actualizado: 2026-08-01
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-01 — La web habla cinco idiomas
+
+Primera entrega de idiomas: **castellano, inglés, alemán, francés e
+italiano**. Canarias vende a mucho visitante extranjero y ese visitante
+entra por la web, así que el selector va en la web y **la app se queda en
+castellano** (D-047).
+
+- **Maquinaria con claves tipadas**: el castellano es la fuente de verdad y
+  además el tipo, así que si a un idioma le falta una clave **el build
+  falla**. No hay que acordarse de revisarlo.
+- **Selector con banderas** a la derecha del todo de la barra amarilla.
+  Dibujadas en SVG y no con emoji: Windows no trae la fuente de banderas y
+  allí un emoji de bandera se ve como las letras del país.
+- **Detección del navegador** la primera vez, recordada después. Un idioma
+  que no ofrecemos cae al castellano.
+- **Aviso de traducción demostrativa** fuera del castellano, con enlace para
+  volver (D-048). Importa porque se traducen también condiciones de
+  garantía, financiación y seguro.
+- **Los precios cambian de formato, no de divisa**: "1.229 €" en castellano,
+  "€1,229" en inglés. El euro sigue siendo el euro.
+- Traducidos por ahora: barra superior, cabecera, pie, menú y vocabulario
+  común. El resto del contenido va por secciones en las siguientes entregas.
+- Suite en 255. Hubo que fijar `locale: 'es-ES'` en la configuración de
+  Playwright: con la detección activa, la suite entera pasó a ejecutarse
+  contra la versión inglesa.
+
 ## 2026-08-01 — Las barras de la app dejan de moverse al desplazar
 
 - **Arreglado de raíz**: en la app, el documento ya no se desplaza. La

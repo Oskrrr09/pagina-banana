@@ -1,3 +1,4 @@
+import type { ClaveTexto } from '../lib/i18n'
 import { families, modelsByFamily, variantPath } from './products'
 
 // Navegación principal (§2.2). Las familias abren mega-menú (§2.4);
@@ -130,11 +131,13 @@ export const directLinks = [
 
 // Enlaces institucionales que aparecen en la barra superior (escritorio) y en
 // el menú móvil como sección de servicios/ayuda.
-export const utilityLinks = [
-  { label: 'Encuentra tu Apple', to: '/elige-tu-apple', icon: 'chat' },
-  { label: 'Tiendas', to: '/tiendas', icon: 'store' },
-  { label: 'Empresas', to: '/servicios', icon: 'package' },
-  { label: 'Educación', to: '/servicios', icon: 'graduation' },
-  { label: 'Servicio técnico', to: '/servicio-tecnico', icon: 'wrench' },
-  { label: 'Soporte', to: '/soporte', icon: 'info' },
+// `label` es una clave de traducción, no texto: estos enlaces se ven en la
+// barra superior y en el menú móvil, en todos los idiomas.
+export const utilityLinks: { label: ClaveTexto; to: string; icon: string }[] = [
+  { label: 'header.utility.finder', to: '/elige-tu-apple', icon: 'chat' },
+  { label: 'header.utility.stores', to: '/tiendas', icon: 'store' },
+  { label: 'header.utility.business', to: '/servicios', icon: 'package' },
+  { label: 'header.utility.education', to: '/servicios', icon: 'graduation' },
+  { label: 'header.utility.repair', to: '/servicio-tecnico', icon: 'wrench' },
+  { label: 'header.utility.support', to: '/soporte', icon: 'info' },
 ]

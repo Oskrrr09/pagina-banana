@@ -5,6 +5,7 @@ import { Footer } from './Footer'
 import { FavoriteStoreDialogs } from './FavoriteStoreDialogs'
 import { AppTabBar } from './AppTabBar'
 import { AppCategoryChips, AppTopBar } from './AppTopBar'
+import { TranslationNotice } from './TranslationNotice'
 import { isNativeApp } from '../../lib/nativeApp'
 
 // Layout general. Al cambiar de ruta, sube al inicio (salvo anclas #).
@@ -38,6 +39,9 @@ export function Layout() {
       {/* Dentro de la app, arriba no hay ni logo ni menú: la navegación vive
           abajo, así que ese sitio se aprovecha para buscar. */}
       {isNativeApp ? <AppTopBar /> : <Header />}
+      {/* Solo se pinta fuera del castellano; en la app nunca, porque allí no
+          hay más idioma que el castellano. */}
+      <TranslationNotice />
       <main
         id="contenido"
         ref={contenidoRef}

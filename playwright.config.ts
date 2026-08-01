@@ -20,6 +20,11 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: `${HOST}${BASE_PATH}`,
+    // La tienda detecta el idioma del navegador, y el de Playwright viene en
+    // inglés. Sin fijarlo aquí, toda la suite —escrita en castellano— se
+    // ejecutaría contra la versión inglesa. Las pruebas que miden la
+    // detección lo sobrescriben con su propio `test.use({ locale })`.
+    locale: 'es-ES',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
