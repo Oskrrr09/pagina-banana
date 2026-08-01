@@ -52,10 +52,17 @@ castellano** (D-047).
   pasó a un barrido que carga las rutas en inglés y extrae el texto que
   sigue en castellano. Mide lo que se ve, no lo que hay escrito.
 
-  **Lo que sigue en castellano**: las características y la tabla de
-  especificaciones de cada producto, las descripciones de accesorios, las
-  reseñas de la portada, la página de perfil, y textos sueltos de
-  favoritos, servicio técnico y Plan Renove (asistente, banner del Plan Renove,
+  Los **reclamos, características y especificaciones de los 29 modelos**
+  del catálogo, con una prueba que comprueba la cobertura
+  (`tests/e2e/catalogo-i18n.spec.ts`): recorre el catálogo real y falla si
+  algún texto no tiene sus cuatro traducciones, o si sobra alguna que ya no
+  usa nadie. Los nombres propios —«USB-C», «IP68», «Face ID», «Apple M5»—
+  están en una lista de excepciones explícita.
+
+  **Lo que sigue en castellano** (medido con el barrido, unos 100 textos):
+  los accesorios enteros, las diapositivas y bloques destacados de la
+  portada, el asistente «Encuentra tu Apple», los cuerpos de servicio
+  técnico y Plan Renove, el comparador, favoritos y la página de perfil (asistente, banner del Plan Renove,
   ventajas, preguntas frecuentes, reseñas y newsletter). Servicios, Plan
   Renove, soporte, servicio técnico, tiendas y el checkout siguen pendientes.
 - Suite en 255, con nueve pruebas nuevas de idioma. Hubo que fijar `locale: 'es-ES'` en la configuración de

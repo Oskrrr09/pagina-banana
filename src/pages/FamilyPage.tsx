@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useIdioma } from '../lib/i18n'
+import { useCatalogo, useIdioma } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { ProductCard } from '../components/product/ProductCard'
 import { Button, ButtonLink } from '../components/ui/Button'
@@ -124,6 +124,7 @@ export function FamilyPage() {
 
 function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[] }) {
   const { t, intl } = useIdioma()
+  const cat = useCatalogo()
   const offerModels = models.filter((model) =>
     model.colors.some((color) => color.capacities.some((capacity) => capacity.previousPrice != null)),
   )
@@ -202,7 +203,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                     <div>
                       <OfferBadge>{t('common.offer')}</OfferBadge>
                       <h3 className="mt-3 text-2xl font-extrabold text-ink">{model.name}</h3>
-                      <p className="mt-1 text-sm text-muted">{model.tagline}</p>
+                      <p className="mt-1 text-sm text-muted">{cat(model.tagline)}</p>
                     </div>
                     <Icon name="arrow-right" className="shrink-0 text-ink transition-transform group-hover:translate-x-1" />
                   </div>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useT } from '../lib/i18n'
+import { useCatalogo, useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
@@ -22,6 +22,7 @@ type SortKey = 'relevancia' | 'precio' | 'novedad'
 
 export function ModelPage() {
   const t = useT()
+  const cat = useCatalogo()
   const { family: familySlug, model: modelSlug } = useParams()
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
@@ -50,7 +51,7 @@ export function ModelPage() {
         <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-ink">{model.name}</h1>
-            <p className="mt-1 max-w-xl text-muted">{model.tagline}</p>
+            <p className="mt-1 max-w-xl text-muted">{cat(model.tagline)}</p>
           </div>
         </div>
 

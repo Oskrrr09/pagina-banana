@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useColorName, useIdioma, useT, type ClaveTexto } from '../lib/i18n'
+import { useCatalogo, useColorName, useIdioma, useT, type ClaveTexto } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Chip } from '../components/ui/Chip'
 import { Button } from '../components/ui/Button'
@@ -49,6 +49,7 @@ function tintHex(hex: string, amount: number) {
 export function VariantPage() {
   const { t, intl } = useIdioma()
   const nombreColor = useColorName()
+  const cat = useCatalogo()
   const { family: familySlug, model: modelSlug, variant } = useParams()
   const family = familyInfo(familySlug ?? '')
   const model = getModel(familySlug ?? '', modelSlug ?? '')
@@ -459,15 +460,15 @@ export function VariantPage() {
                 <ul className="grid gap-2 sm:grid-cols-2">
                   {model.highlights.map((h) => (
                     <li key={h} className="flex items-center gap-2 text-ink">
-                      <Icon name="check" size={18} className="text-available" /> {h}
+                      <Icon name="check" size={18} className="text-available" /> {cat(h)}
                     </li>
                   ))}
                 </ul>
                 <dl className="mt-6 grid gap-x-8 gap-y-2 border-t border-line pt-4 sm:grid-cols-2">
                   {model.specs.map((s) => (
                     <div key={s.label} className="flex justify-between border-b border-line py-2">
-                      <dt className="text-muted">{s.label}</dt>
-                      <dd className="font-medium text-ink">{s.value}</dd>
+                      <dt className="text-muted">{cat(s.label)}</dt>
+                      <dd className="font-medium text-ink">{cat(s.value)}</dd>
                     </div>
                   ))}
                 </dl>

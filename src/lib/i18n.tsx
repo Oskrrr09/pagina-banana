@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { isNativeApp } from './nativeApp'
+import { traducirCatalogo } from '../i18n/catalogo'
 import { es } from '../i18n/es'
 import { en } from '../i18n/en'
 import { de } from '../i18n/de'
@@ -159,6 +160,15 @@ function normalizarColor(nombre: string): string {
     .replace(/·/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+}
+
+/**
+ * Traductor de textos del catálogo: reclamos de modelo, características y
+ * especificaciones. Ver `src/i18n/catalogo.ts`.
+ */
+export function useCatalogo(): (texto: string) => string {
+  const { idioma } = useIdioma()
+  return (texto) => traducirCatalogo(texto, idioma)
 }
 
 /** Atajo para el caso habitual: solo traducir. */

@@ -6,12 +6,13 @@ import { ProductImage } from './ProductImage'
 import { ProvisionalBadge, OfferBadge } from '../ui/Tag'
 import { Icon } from '../ui/Icon'
 import { variantPath } from '../../data/products'
-import { useIdioma } from '../../lib/i18n'
+import { useCatalogo, useIdioma } from '../../lib/i18n'
 
 // Tarjeta de producto (§6): resume un modelo para decidir si entrar a la ficha.
 // Precio y disponibilidad en texto, no solo en color. Favorito con estado.
 export function ProductCard({ model, loading = false }: { model: Model; loading?: boolean }) {
   const { t, intl } = useIdioma()
+  const cat = useCatalogo()
   const { toggleFavorite, isFavorite } = useStore()
   const favId = `${model.family}/${model.slug}`
   const fav = isFavorite(favId)
@@ -64,7 +65,7 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
         <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">{model.name}</h3>
       </Link>
 
-      <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{model.tagline}</p>
+      <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{cat(model.tagline)}</p>
 
       <div className="mt-auto pt-3">
         {hasOffer && firstCap.previousPrice ? (
