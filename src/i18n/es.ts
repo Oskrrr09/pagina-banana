@@ -217,6 +217,11 @@ export const es = {
   'common.comingSoon': 'Próximamente',
   'common.offer': 'Oferta',
 
+  'catalog.model': 'modelo',
+  'catalog.models': 'modelos',
+
+  'catalog.compareAndChoose': 'Compara modelos y elige el tuyo.',
+
   // ---- Navegación de la app ----
   'app.home': 'Inicio',
   'app.explore': 'Explorar',

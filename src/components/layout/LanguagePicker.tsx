@@ -60,13 +60,16 @@ export function LanguagePicker() {
         aria-expanded={abierto}
         aria-haspopup="menu"
         aria-label={t('lang.current', { idioma: actual.label })}
-        className="flex h-10 items-center gap-1.5 rounded-full px-2 text-ink hover:bg-black/5"
+        // Compacto a propósito: solo bandera y flecha. Con el código de
+        // idioma al lado ("ES", "EN") el grupo de iconos crecía lo justo para
+        // comerse el aire que lo separaba del menú de dispositivos. El nombre
+        // del idioma sigue estando en la etiqueta accesible y en el desplegable.
+        className="flex h-10 items-center gap-1 rounded-full px-1.5 text-ink hover:bg-black/5"
       >
         <Flag code={actual.bandera} />
-        <span className="text-[13px] font-semibold uppercase">{actual.code}</span>
         <Icon
           name="chevron-down"
-          size={14}
+          size={12}
           aria-hidden="true"
           className={`transition-transform ${abierto ? 'rotate-180' : ''}`}
         />

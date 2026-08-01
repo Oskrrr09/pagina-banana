@@ -154,7 +154,7 @@ export function Header() {
           </nav>
 
           {/* Accesos permanentes */}
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1 pl-6">
             {/* Escritorio: lupa, favoritos, comparador, cuenta */}
             <button
               ref={desktopSearchButtonRef}
@@ -195,7 +195,10 @@ export function Header() {
             )}
 
             {/* Selector de idioma — a la derecha del todo. Solo en la web:
-                dentro de la app no se monta esta cabecera. */}
+                dentro de la app no se monta esta cabecera.
+                Separado con una línea para que el bloque de iconos no parezca
+                pegado al menú de dispositivos. */}
+            <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-ink/15 xl:block" />
             <LanguagePicker />
 
             {/* Móvil: botón de menú */}

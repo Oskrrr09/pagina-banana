@@ -192,6 +192,11 @@ export const de: Diccionario = {
   'common.comingSoon': 'Demnächst',
   'common.offer': 'Angebot',
 
+  'catalog.model': 'Modell',
+  'catalog.models': 'Modelle',
+
+  'catalog.compareAndChoose': 'Vergleiche Modelle und finde deins.',
+
   'app.home': 'Start',
   'app.explore': 'Entdecken',
   'app.categories': 'Kategorien',

@@ -6,10 +6,12 @@ import { ProductImage } from './ProductImage'
 import { ProvisionalBadge, OfferBadge } from '../ui/Tag'
 import { Icon } from '../ui/Icon'
 import { variantPath } from '../../data/products'
+import { useIdioma } from '../../lib/i18n'
 
 // Tarjeta de producto (§6): resume un modelo para decidir si entrar a la ficha.
 // Precio y disponibilidad en texto, no solo en color. Favorito con estado.
 export function ProductCard({ model, loading = false }: { model: Model; loading?: boolean }) {
+  const { t, intl } = useIdioma()
   const { toggleFavorite, isFavorite } = useStore()
   const favId = `${model.family}/${model.slug}`
   const fav = isFavorite(favId)
@@ -48,7 +50,7 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
               -{discount}%
             </span>
           )}
-          <OfferBadge>Oferta</OfferBadge>
+          <OfferBadge>{t('common.offer')}</OfferBadge>
         </div>
       )}
 
@@ -68,14 +70,14 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
         {hasOffer && firstCap.previousPrice ? (
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-extrabold leading-none text-danger">
-              {euro(model.fromPrice)}
+              {euro(model.fromPrice, intl)}
             </span>
             <span className="text-sm font-semibold text-muted line-through decoration-2">
-              {euro(firstCap.previousPrice)}
+              {euro(firstCap.previousPrice, intl)}
             </span>
           </div>
         ) : (
-          <span className="text-lg font-bold text-ink">desde {euro(model.fromPrice)}</span>
+          <span className="text-lg font-bold text-ink">{t('common.from', { precio: euro(model.fromPrice, intl) })}</span>
         )}
       </div>
       <div className="mt-2">

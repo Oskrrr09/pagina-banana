@@ -192,6 +192,11 @@ export const en: Diccionario = {
   'common.comingSoon': 'Coming soon',
   'common.offer': 'Offer',
 
+  'catalog.model': 'model',
+  'catalog.models': 'models',
+
+  'catalog.compareAndChoose': 'Compare models and pick yours.',
+
   'app.home': 'Home',
   'app.explore': 'Explore',
   'app.categories': 'Categories',

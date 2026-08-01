@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useIdioma } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { ProductCard } from '../components/product/ProductCard'
 import { Button, ButtonLink } from '../components/ui/Button'
@@ -22,6 +23,7 @@ const PRICE_RANGES = [
 ]
 
 export function FamilyPage() {
+  const { t, intl } = useIdioma()
   const { family: familySlug } = useParams()
   const [range, setRange] = useState(0)
 
@@ -51,7 +53,7 @@ export function FamilyPage() {
           <div className="grid items-center gap-8 md:grid-cols-2">
             <div>
               <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">{family.name}</h1>
-              <p className="mt-3 max-w-md text-lg text-muted">{family.tagline}. Compara modelos y elige el tuyo.</p>
+              <p className="mt-3 max-w-md text-lg text-muted">{family.taglineKey ? t(family.taglineKey) : family.tagline}. {t('catalog.compareAndChoose')}</p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <ButtonLink to={`/comparar?familia=${family.slug}`} variant="secondary">
                   <Icon name="compare" size={18} /> Comparar modelos
@@ -88,7 +90,7 @@ export function FamilyPage() {
             </div>
           </div>
           <p className="text-sm text-muted">
-            {filtered.length} {filtered.length === 1 ? 'modelo' : 'modelos'} · desde {euro(minPrice)}
+            {filtered.length} {filtered.length === 1 ? t('catalog.model') : t('catalog.models')} · {t('common.from', { precio: euro(minPrice, intl) })}
           </p>
         </div>
 
@@ -121,6 +123,7 @@ export function FamilyPage() {
 }
 
 function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[] }) {
+  const { t, intl } = useIdioma()
   const offerModels = models.filter((model) =>
     model.colors.some((color) => color.capacities.some((capacity) => capacity.previousPrice != null)),
   )
@@ -161,7 +164,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                       />
                     </span>
                     <span className="mt-2 text-sm font-semibold leading-tight text-ink">{model.name}</span>
-                    <span className="mt-1 text-xs text-muted">desde {euro(model.fromPrice)}</span>
+                    <span className="mt-1 text-xs text-muted">{t('common.from', { precio: euro(model.fromPrice, intl) })}</span>
                   </Link>
                 </li>
               ))}
@@ -197,7 +200,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <OfferBadge>Oferta</OfferBadge>
+                      <OfferBadge>{t('common.offer')}</OfferBadge>
                       <h3 className="mt-3 text-2xl font-extrabold text-ink">{model.name}</h3>
                       <p className="mt-1 text-sm text-muted">{model.tagline}</p>
                     </div>
