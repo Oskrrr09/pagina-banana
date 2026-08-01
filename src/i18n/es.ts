@@ -317,6 +317,27 @@ export const es = {
   'product.viewIn': 'Ver en {color}',
   'product.colorAria': 'Color {color}',
 
+  // ---- Tiendas ----
+  'stores.title': 'Nuestras tiendas',
+  'stores.subtitle': 'Encuentra tu Banana más cercana en Canarias.',
+  'stores.island': 'Isla',
+  'stores.all': 'Todas',
+  'stores.allStores': 'Todas las tiendas',
+  'stores.today': 'Hoy:',
+  'stores.checkHours': 'Consulta el horario',
+  'stores.commonServices': 'Servicios comunes de Banana',
+  'stores.serviceAvailable': 'Servicio disponible',
+  'stores.mapAlt': 'Mapa de tiendas Banana Computer en Canarias',
+
+  'stores.mapOf': 'Mapa de {tienda}',
+
+  'stores.allOffer': 'ofrecen',
+
+  'stores.openInMaps': 'Abrir en Maps',
+  'header.myStoreIs': 'Mi tienda: {tienda}',
+
+  'stores.choose': 'Elegir tienda',
+
   // ---- Colores del catálogo ----
   'color.aluminio-blanco-estrella': 'Aluminio blanco estrella',
   'color.aluminio-gris-espacial': 'Aluminio gris espacial',

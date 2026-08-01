@@ -4,6 +4,7 @@ import { Icon } from '../ui/Icon'
 import { stores, isOpenNow, getTodayHours } from '../../data/stores'
 import { useStorePreference } from '../../lib/storePreference'
 import { isNativeApp } from '../../lib/nativeApp'
+import { useT } from '../../lib/i18n'
 import { ALTURA_TAB_BAR } from './AppTabBar'
 
 // Componente global (montado en Layout) que orquesta:
@@ -114,6 +115,7 @@ function FavoriteStorePrompt({
   onChoose: (slug: string) => void
   onLater: () => void
 }) {
+  const t = useT()
   const panelRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const [showList, setShowList] = useState(false)
@@ -182,7 +184,7 @@ function FavoriteStorePrompt({
               onClick={() => setShowList(true)}
               className="inline-flex items-center gap-2 rounded-[10px] bg-action px-4 py-2 text-sm font-semibold text-ink hover:bg-action-600"
             >
-              Elegir tienda
+              {t('stores.choose')}
             </button>
             <button
               type="button"

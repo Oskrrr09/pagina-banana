@@ -273,6 +273,7 @@ export function MobileMenu({
 }
 
 function FavoriteStoreMobileBlock({ onClose }: { onClose: () => void }) {
+  const t = useT()
   const { favoriteStore, setFavorite, clearFavorite } = useStorePreference()
   const [expanded, setExpanded] = useState(false)
   return (
@@ -288,7 +289,7 @@ function FavoriteStoreMobileBlock({ onClose }: { onClose: () => void }) {
       >
         <span className="flex items-center gap-2">
           <Icon name="star" size={16} className="shrink-0 text-muted" />
-          {favoriteStore ? `Mi tienda: ${favoriteStore.name}` : 'Elegir tienda favorita'}
+          {favoriteStore ? t('header.myStoreIs', { tienda: favoriteStore.name }) : t('header.chooseStore')}
         </span>
         <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size={14} className="text-muted" />
       </button>

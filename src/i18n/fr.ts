@@ -289,6 +289,26 @@ export const fr: Diccionario = {
   'product.viewIn': 'Voir en {color}',
   'product.colorAria': 'Couleur {color}',
 
+  'stores.title': 'Nos boutiques',
+  'stores.subtitle': 'Trouvez la boutique Banana la plus proche aux Canaries.',
+  'stores.island': 'Île',
+  'stores.all': 'Toutes',
+  'stores.allStores': 'Toutes les boutiques',
+  'stores.today': "Aujourd'hui :",
+  'stores.checkHours': 'Voir les horaires',
+  'stores.commonServices': 'Services proposés chez Banana',
+  'stores.serviceAvailable': 'Service disponible',
+  'stores.mapAlt': 'Carte des boutiques Banana Computer aux Canaries',
+
+  'stores.mapOf': 'Carte de {tienda}',
+
+  'stores.allOffer': 'proposent',
+
+  'stores.openInMaps': 'Ouvrir dans Maps',
+  'header.myStoreIs': 'Ma boutique : {tienda}',
+
+  'stores.choose': 'Choisir une boutique',
+
   'color.aluminio-blanco-estrella': 'Aluminium lumière stellaire',
   'color.aluminio-gris-espacial': 'Aluminium gris sidéral',
   'color.aluminio-medianoche': 'Aluminium minuit',

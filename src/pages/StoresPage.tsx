@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Chip } from '../components/ui/Chip'
@@ -9,7 +10,10 @@ import { useStorePreference, sortStoresWithFavoriteFirst } from '../lib/storePre
 
 // Página de tiendas (§4.13): mapa, filtros y lista.
 export function StoresPage() {
-  const [island, setIsland] = useState('Todas')
+  const t = useT()
+  // `null` = todas. Guardar aquí el rótulo traducido haría que al cambiar de
+  // idioma el filtro dejase de coincidir consigo mismo y la lista se vaciara.
+  const [island, setIsland] = useState<string | null>(null)
   const [service, setService] = useState<string | null>(null)
   const [activeStore, setActiveStore] = useState<string | null>(null)
   // Zoom del mapa (rango Google Maps: 3–20). Se resetea al cambiar de tienda.
@@ -18,7 +22,7 @@ export function StoresPage() {
   const { favoriteSlug } = useStorePreference()
   const filtered = useMemo<Store[]>(() => {
     const list: Store[] = stores.filter(
-      (s) => (island === 'Todas' || s.island === island) && (!service || s.services.includes(service)),
+      (s) => (island === null || s.island === island) && (!service || s.services.includes(service)),
     )
     return sortStoresWithFavoriteFirst(list, favoriteSlug)
   }, [island, service, favoriteSlug])
@@ -41,8 +45,8 @@ export function StoresPage() {
 
   return (
     <Container className="py-10">
-      <h1 className="text-3xl font-extrabold text-ink">Nuestras tiendas</h1>
-      <p className="mt-1 text-muted">Encuentra tu Banana más cercana en Canarias.</p>
+      <h1 className="text-3xl font-extrabold text-ink">{t('stores.title')}</h1>
+      <p className="mt-1 text-muted">{t('stores.subtitle')}</p>
 
       {/* 1 — Mapa interactivo (Google Maps). Al pulsar una tienda de la lista
              se centra el mapa en ella con su nombre como pin. Botones +/−
@@ -50,7 +54,7 @@ export function StoresPage() {
       <div className="relative mt-6 overflow-hidden rounded-[16px] border border-line">
         <iframe
           key={mapSrc}
-          title={focus ? `Mapa de ${focus.name}` : 'Mapa de tiendas Banana Computer en Canarias'}
+          title={focus ? t('stores.mapOf', { tienda: focus.name }) : t('stores.mapAlt')}
           src={mapSrc}
           className="block h-[340px] w-full sm:h-[420px]"
           loading="lazy"
@@ -92,17 +96,22 @@ export function StoresPage() {
       {/* 2 — Filtros */}
       <div className="mt-6 space-y-3">
         <div>
-          <p className="mb-2 text-sm font-semibold text-ink">Isla</p>
+          <p className="mb-2 text-sm font-semibold text-ink">{t('stores.island')}</p>
           <div className="flex flex-wrap gap-2">
-            {islands.map((i) => (
-              <Chip key={i} selected={island === i} onClick={() => setIsland(i)}>
-                {i}
-              </Chip>
-            ))}
+            <Chip selected={island === null} onClick={() => setIsland(null)}>
+              {t('stores.all')}
+            </Chip>
+            {islands
+              .filter((i) => i !== 'Todas')
+              .map((i) => (
+                <Chip key={i} selected={island === i} onClick={() => setIsland(i)}>
+                  {i}
+                </Chip>
+              ))}
           </div>
         </div>
         <div>
-          <p className="mb-2 text-sm font-semibold text-ink">Servicio disponible</p>
+          <p className="mb-2 text-sm font-semibold text-ink">{t('stores.serviceAvailable')}</p>
           <div className="flex flex-wrap gap-2 px-0.5 py-1.5">
             {ALL_SERVICES.map((s) => (
               <Chip key={s} selected={service === s} onClick={() => setService(service === s ? null : s)}>
@@ -116,7 +125,7 @@ export function StoresPage() {
       {/* Servicios comunes a todas las tiendas */}
       <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[12px] bg-neutral px-4 py-3 text-sm text-muted">
         <Icon name="check" size={16} className="text-available" />
-        <span className="font-semibold text-ink">Todas las tiendas</span> ofrecen{' '}
+        <span className="font-semibold text-ink">{t('stores.allStores')}</span> {t('stores.allOffer')}{' '}
         {UNIVERSAL_SERVICES.join(' · ')}.
       </p>
 
@@ -148,7 +157,7 @@ export function StoresPage() {
                   }`}
                 >
                   <span className={`h-2 w-2 rounded-full ${open ? 'bg-[#2e9a5a]' : 'bg-[#c14545]'}`} />
-                  {open ? 'Abierto ahora' : 'Cerrado'}
+                  {open ? t('availability.openNow') : t('availability.closed')}
                 </span>
               </div>
               {favoriteSlug === store.slug && (
@@ -157,7 +166,7 @@ export function StoresPage() {
                 </p>
               )}
               <p className="mt-1 text-xs text-muted">
-                <span className="font-semibold text-ink">Hoy:</span> {todayHours?.time ?? 'Consulta el horario'}
+                <span className="font-semibold text-ink">{t('stores.today')}</span> {todayHours?.time ?? t('stores.checkHours')}
               </p>
               <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
                 <Icon name="map-pin" size={15} /> {store.address}
@@ -170,7 +179,7 @@ export function StoresPage() {
                     </span>
                   ))
                 ) : (
-                  <span className="text-[11px] text-muted">Servicios comunes de Banana</span>
+                  <span className="text-[11px] text-muted">{t('stores.commonServices')}</span>
                 )}
               </div>
               {isActive && (

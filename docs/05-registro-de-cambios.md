@@ -38,10 +38,11 @@ castellano** (D-047).
   entrega, pago, resumen, confirmación y sus formularios—, comprobados con
   capturas en alemán y francés.
 
-  **Lo que sigue en castellano**: los nombres de color (39 distintos en el
-  catálogo), la lista de características y la tabla de especificaciones de
-  cada producto, y las páginas de servicios, Plan Renove, soporte, servicio
-  técnico, tiendas y cuenta. Son datos de producto y contenido, no interfaz (asistente, banner del Plan Renove,
+  Los **39 nombres de color** del catálogo y la página de **tiendas**.
+
+  **Lo que sigue en castellano**: la lista de características y la tabla de
+  especificaciones de cada producto, y las páginas de servicios, Plan
+  Renove, soporte, servicio técnico y cuenta (asistente, banner del Plan Renove,
   ventajas, preguntas frecuentes, reseñas y newsletter). Servicios, Plan
   Renove, soporte, servicio técnico, tiendas y el checkout siguen pendientes.
 - Suite en 255, con nueve pruebas nuevas de idioma. Hubo que fijar `locale: 'es-ES'` en la configuración de

@@ -311,6 +311,7 @@ function IconBadge({
 // accesible para cambiarla o quitarla. La lógica de persistencia vive en
 // `useStorePreference`.
 function FavoriteStoreMenu() {
+  const t = useT()
   const { favoriteStore, setFavorite, clearFavorite } = useStorePreference()
   const [open, setOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -353,12 +354,12 @@ function FavoriteStoreMenu() {
         aria-label={
           favoriteStore
             ? `Mi tienda: ${favoriteStore.name}. Cambiar o quitar.`
-            : 'Elegir tienda favorita'
+            : t('header.chooseStore')
         }
         className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-medium text-white transition-colors hover:bg-white/15"
       >
         <Icon name="star" size={14} aria-hidden="true" />
-        {favoriteStore ? `Mi tienda: ${favoriteStore.name}` : 'Elegir tienda'}
+        {favoriteStore ? t('header.myStoreIs', { tienda: favoriteStore.name }) : t('stores.choose')}
       </button>
       {open && (
         <div

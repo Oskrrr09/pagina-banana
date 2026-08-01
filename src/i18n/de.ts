@@ -289,6 +289,26 @@ export const de: Diccionario = {
   'product.viewIn': 'In {color} ansehen',
   'product.colorAria': 'Farbe {color}',
 
+  'stores.title': 'Unsere Filialen',
+  'stores.subtitle': 'Finde deine nächste Banana-Filiale auf den Kanarischen Inseln.',
+  'stores.island': 'Insel',
+  'stores.all': 'Alle',
+  'stores.allStores': 'Alle Filialen',
+  'stores.today': 'Heute:',
+  'stores.checkHours': 'Öffnungszeiten ansehen',
+  'stores.commonServices': 'Services bei Banana',
+  'stores.serviceAvailable': 'Service verfügbar',
+  'stores.mapAlt': 'Karte der Banana-Computer-Filialen auf den Kanarischen Inseln',
+
+  'stores.mapOf': 'Karte von {tienda}',
+
+  'stores.allOffer': 'bieten',
+
+  'stores.openInMaps': 'In Maps öffnen',
+  'header.myStoreIs': 'Meine Filiale: {tienda}',
+
+  'stores.choose': 'Filiale wählen',
+
   'color.aluminio-blanco-estrella': 'Aluminium Polarstern',
   'color.aluminio-gris-espacial': 'Aluminium Space Grau',
   'color.aluminio-medianoche': 'Aluminium Mitternacht',
