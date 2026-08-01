@@ -593,15 +593,21 @@ del repositorio. No se corrigen en la preparación documental.
      pantalla ancha eso deja el selector al borde del **contenedor**, con una
      franja amarilla vacía a su derecha, mientras la barra utilitaria de
      arriba sí llegaba al borde de la ventana.
-- Resolución: la barra usa todo el ancho, como la de arriba, y el menú se
-  centra en el hueco **entre** el logo y los accesos. Queda equilibrado a
-  cualquier ancho: 125px a cada lado a 1280px, 235px a 1500px.
-- **Contrapartida asumida**: el eje del menú deja de coincidir con el de los
-  enlaces de la barra utilitaria, que era la intención original. El desvío es
-  de 118px. Se probó mantener el centrado respecto a la ventana con la barra
-  ya a todo lo ancho, pero **a 1280px —justo el ancho al que aparece este
-  menú, y el de un portátil corriente— el hueco caía a 7px**. Entre alinear
-  ejes y no colisionar, se eligió no colisionar.
+- Resolución (forma final, decidida con Oscar):
+  - La barra usa **todo el ancho**, como la de arriba.
+  - El logo lleva un margen izquierdo de **52px**, la mitad de sus 101px de
+    ancho.
+  - El menú vuelve a estar **centrado respecto a la ventana**, con desvío 0
+    respecto al eje de la barra utilitaria.
+  - Los accesos van agrupados y el selector de idioma separado de ellos con
+    su propia línea y márgenes.
+- Para que el centrado quepa a 1280px, los enlaces del menú van algo menos
+  holgados en ese tramo y recuperan su holgura a partir de 1536px.
+- **Lo medido**: hueco entre el menú y los accesos de 29px a 1280px, 139px a
+  1500px y 321px a 1920px. A 1280px es ajustado pero no hay solape. Si
+  alguna vez molesta, la salida es quitar un acceso de la derecha —el
+  comparador se llega igual desde la ficha y desde favoritos—, no volver a
+  mover márgenes.
 - Lección para la próxima: dos intentos previos fueron a base de mover
   márgenes y solo movieron el hueco de 43 a 51px, que no se aprecia. El
   problema era de estructura, y hasta que no se midieron las tres opciones no

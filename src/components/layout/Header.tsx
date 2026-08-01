@@ -124,27 +124,25 @@ export function Header() {
           // limitado a 1280px y centrado, en una pantalla ancha el selector
           // de idioma quedaba al borde del CONTENEDOR y dejaba una franja
           // amarilla vacía a su derecha.
-          className="banana-header-bar relative flex h-16 w-full items-center px-4 sm:px-6 lg:px-8"
+          className="banana-header-bar relative flex h-16 w-full items-center py-0 pl-6 pr-4 sm:pl-10 sm:pr-6 lg:pl-[52px] lg:pr-8"
         >
           <Logo />
 
-          {/* Escritorio: el menú se centra en el hueco que queda ENTRE el logo
-              y los accesos de la derecha, no respecto a la ventana.
-              Centrarlo respecto a la ventana alinearía su eje con el de la
-              barra utilitaria de arriba —era la intención original— pero a
-              1280px, que es justo el ancho al que aparece este menú y el de
-              un portátil corriente, el hueco con los accesos caía a 7px.
-              Medido. Así se equilibra solo a cualquier ancho, a cambio de un
-              desvío de ~45px respecto a ese eje, que no se aprecia. */}
+          {/* Escritorio: menú centrado respecto a la ventana, compartiendo eje
+              con los enlaces de la barra utilitaria de arriba.
+              Los enlaces van algo menos holgados que el resto de la cabecera
+              para que a 1280px —el ancho al que aparece este menú, y el de un
+              portátil corriente— siga quedando aire con los accesos de la
+              derecha. Ver UI-001. */}
           <nav
-            className="hidden flex-1 items-center justify-center gap-1 xl:flex"
+            className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 xl:flex"
             aria-label="Principal"
           >
             {familiesNav.map((fam) => (
               <div key={fam.slug} onMouseEnter={() => openMega(fam.slug)} onMouseLeave={scheduleClose}>
                 <Link
                   to={fam.demo ? '/iphone' : `/${fam.slug}`}
-                  className={`rounded-full px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 ${
+                  className={`rounded-full px-2 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 2xl:px-3 ${
                     activeFamily === fam.slug ? 'bg-black/5 font-semibold' : ''
                   }`}
                   onFocus={() => openMega(fam.slug)}
@@ -157,7 +155,7 @@ export function Header() {
               <Link
                 key={l.to}
                 to={l.to}
-                className="rounded-full px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5"
+                className="rounded-full px-2 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 2xl:px-3"
               >
                 {l.label}
               </Link>
@@ -210,7 +208,7 @@ export function Header() {
                 sobre el relleno del contenedor arrastra a los demás iconos
                 algo más a la derecha, que es lo que despeja el menú central
                 (ver UI-001). */}
-            <span aria-hidden="true" className="mx-2 hidden h-5 w-px bg-ink/15 xl:block" />
+            <span aria-hidden="true" className="ml-4 mr-3 hidden h-5 w-px bg-ink/15 xl:block" />
             <LanguagePicker />
 
             {/* Móvil: botón de menú */}
