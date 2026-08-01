@@ -1,3 +1,5 @@
+import type { ClaveTexto } from '../lib/i18n'
+
 // Textos de marketing y datos de secundarias (apartado 7). Todo de ejemplo.
 
 export const services = [
@@ -38,29 +40,18 @@ export const services = [
   },
 ]
 
-export const advantages = [
-  { icon: 'truck', title: 'Envío a toda Canarias', note: 'Condiciones pendientes de validación' },
-  { icon: 'store', title: 'Recogida en tienda', note: 'Condiciones pendientes de validación' },
-  { icon: 'star', title: 'Especialistas Apple', note: 'Contenido provisional' },
-  { icon: 'shield', title: 'Seguro a todo riesgo', note: 'Condiciones pendientes de validación' },
+// `title` y `note` son claves de traducción, no texto.
+export const advantages: { icon: string; title: ClaveTexto; note: ClaveTexto }[] = [
+  { icon: 'truck', title: 'advantage.shipping', note: 'note.pendingValidation' },
+  { icon: 'store', title: 'advantage.pickup', note: 'note.pendingValidation' },
+  { icon: 'star', title: 'advantage.specialists', note: 'note.provisional' },
+  { icon: 'shield', title: 'advantage.insurance', note: 'note.pendingValidation' },
 ]
 
-export const homeFaq = [
-  {
-    q: '¿Cuánto tarda el envío entre islas?',
-    a: 'Los pedidos a Canarias se entregan normalmente en 24/72h laborables. El plazo exacto depende de la isla de destino.',
-    note: 'Condiciones pendientes de validación',
-  },
-  {
-    q: '¿Puedo financiar mi compra?',
-    a: 'Sí. Puedes simular tu cuota en la propia ficha de producto. La contratación de la financiación se completa hoy de forma presencial en tienda.',
-    note: 'Condiciones pendientes de validación',
-  },
-  {
-    q: '¿Cómo funciona el Plan Renove?',
-    a: 'Llevas tu dispositivo actual a una tienda Banana, un especialista lo tasa y el descuento se aplica a tu nueva compra. La tasación es siempre presencial y orientativa online.',
-    note: 'Contenido provisional',
-  },
+export const homeFaq: { q: ClaveTexto; a: ClaveTexto; note: ClaveTexto }[] = [
+  { q: 'faq.shipping.q', a: 'faq.shipping.a', note: 'note.pendingValidation' },
+  { q: 'faq.financing.q', a: 'faq.financing.a', note: 'note.pendingValidation' },
+  { q: 'faq.tradeIn.q', a: 'faq.tradeIn.a', note: 'note.provisional' },
 ]
 
 export const serviceFaq = [

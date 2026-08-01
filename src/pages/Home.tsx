@@ -14,10 +14,12 @@ import { HeroCarousel } from '../components/home/HeroCarousel'
 import { MobileScroller } from '../components/ui/MobileScroller'
 import { families, iphoneModels, modelsByFamily } from '../data/products'
 import { homeFaq } from '../data/content'
+import { useT } from '../lib/i18n'
 import { claim } from '../data/commercialClaims'
 import { euro } from '../lib/format'
 
 export function Home() {
+  const t = useT()
   const [financeOpen, setFinanceOpen] = useState(false)
   const launches = iphoneModels.slice(0, 3)
   const offers = iphoneModels.filter((m) => m.colors[0].capacities[0].previousPrice != null).slice(0, 3)
@@ -52,10 +54,7 @@ export function Home() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-[11px] text-muted">
-            Algunas condiciones son <span className="italic">demostrativas</span>: pendientes de
-            validación con Banana Computer.
-          </p>
+          <p className="mt-3 text-[11px] text-muted">{t('home.demoConditions')}</p>
         </Container>
       </section>
 
@@ -66,13 +65,10 @@ export function Home() {
         <Container className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-              ¿No sabes cuál elegir?
+              {t('home.finder.eyebrow')}
             </p>
-            <h2 className="text-lg font-bold text-ink">Encuentra tu Apple</h2>
-            <p className="text-sm text-muted">
-              Responde unas preguntas y te sugerimos opciones del catálogo. Orientación
-              demostrativa.
-            </p>
+            <h2 className="text-lg font-bold text-ink">{t('home.finder.title')}</h2>
+            <p className="text-sm text-muted">{t('home.finder.body')}</p>
           </div>
           <Link
             to="/elige-tu-apple"
@@ -168,15 +164,14 @@ export function Home() {
       <section className="banana-surface bg-banana text-ink">
         <Container className="grid items-center gap-8 py-12 md:grid-cols-2 md:py-16">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-ink/70">Plan Renove</p>
-            <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-4xl">
-              Hasta 400 € por tu iPhone actual.
-            </h2>
-            <p className="mt-3 max-w-md text-ink/85">
-              Trae tu dispositivo Apple a cualquier tienda Banana, un especialista lo tasa y aplicamos
-              el descuento sobre tu próxima compra. Sencillo, inmediato y con precio garantizado.
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-ink/70">
+              {t('home.tradeIn.eyebrow')}
             </p>
-            <p className="mt-2 text-xs text-ink/80">Tasación presencial · Cantidad demostrativa.</p>
+            <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-4xl">
+              {t('home.tradeIn.title')}
+            </h2>
+            <p className="mt-3 max-w-md text-ink/85">{t('home.tradeIn.body')}</p>
+            <p className="mt-2 text-xs text-ink/80">{t('home.tradeIn.note')}</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <ButtonLink to="/plan-renove" variant="primary">
                 <Icon name="refresh" size={18} /> Valorar mi dispositivo
@@ -346,27 +341,27 @@ export function Home() {
               text: 'Me explicaron todo antes de comprar, incluso el seguro. Volveré para los AirPods sin duda.',
               hue: '#dbf1e5',
             },
-          ].map((t) => (
-            <div key={t.name} className="flex h-full flex-col rounded-[20px] border border-line bg-surface p-6 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]">
+          ].map((resena) => (
+            <div key={resena.name} className="flex h-full flex-col rounded-[20px] border border-line bg-surface p-6 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]">
               <div className="flex items-center gap-3">
                 <span
                   className="grid h-12 w-12 shrink-0 place-items-center rounded-full font-display text-lg font-extrabold text-ink"
-                  style={{ backgroundColor: t.hue }}
+                  style={{ backgroundColor: resena.hue }}
                 >
-                  {t.name.charAt(0)}
+                  {resena.name.charAt(0)}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-ink">{t.name}</p>
-                  <p className="truncate text-xs text-muted">{t.city} · {t.product}</p>
+                  <p className="truncate text-sm font-bold text-ink">{resena.name}</p>
+                  <p className="truncate text-xs text-muted">{resena.city} · {resena.product}</p>
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-0.5 text-banana">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Icon key={i} name="star" size={16} className={i < t.stars ? 'fill-current' : 'text-muted/40'} />
+                  <Icon key={i} name="star" size={16} className={i < resena.stars ? 'fill-current' : 'text-muted/40'} />
                 ))}
               </div>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-ink/85">"{t.text}"</p>
-              <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">Reseña demostrativa</p>
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-ink/85">"{resena.text}"</p>
+              <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">{t('home.review.demo')}</p>
             </div>
           ))}
         </MobileScroller>
@@ -389,15 +384,15 @@ export function Home() {
       <Section alt>
         <div className="mx-auto max-w-3xl">
           <SectionHeader title="Preguntas frecuentes" />
-          <Accordion items={homeFaq} />
+          <Accordion items={homeFaq.map((f) => ({ q: t(f.q), a: t(f.a), note: t(f.note) }))} />
         </div>
       </Section>
 
       {/* 13 — Newsletter */}
       <Section>
         <Reveal className="banana-surface bg-banana rounded-[20px] px-6 py-12 text-center text-ink sm:px-12">
-          <h2 className="text-2xl font-bold sm:text-3xl">No te pierdas ninguna oferta</h2>
-          <p className="mt-2 text-ink/70">Suscríbete y recibe las novedades antes que nadie.</p>
+          <h2 className="text-2xl font-bold sm:text-3xl">{t('home.newsletter.title')}</h2>
+          <p className="mt-2 text-ink/70">{t('home.newsletter.body')}</p>
           <form
             onSubmit={(e) => e.preventDefault()}
             className="mx-auto mt-6 flex w-full max-w-md flex-col gap-4 sm:flex-row sm:gap-3"
@@ -406,7 +401,7 @@ export function Home() {
               type="email"
               required
               placeholder="tu@email.com"
-              aria-label="Tu correo electrónico"
+              aria-label={t('home.newsletter.emailLabel')}
               className="min-h-12 w-full min-w-0 flex-1 rounded-[12px] border-0 bg-white px-5 py-3 text-base text-[#1d1d1f] outline-none placeholder:text-[#6e6e73]"
             />
             <button

@@ -144,6 +144,34 @@ export const es = {
   'account.billingAddress': 'Dirección de facturación',
   'account.educationDiscount': 'Descuento educativo',
 
+  // ---- Portada ----
+  'home.demoConditions': 'Algunas condiciones son demostrativas: pendientes de validación con Banana Computer.',
+  'home.finder.eyebrow': '¿No sabes cuál elegir?',
+  'home.finder.title': 'Encuentra tu Apple',
+  'home.finder.body': 'Responde unas preguntas y te sugerimos opciones del catálogo. Orientación demostrativa.',
+  'home.tradeIn.eyebrow': 'Plan Renove',
+  'home.tradeIn.title': 'Hasta 400 € por tu iPhone actual.',
+  'home.tradeIn.body': 'Trae tu dispositivo Apple a cualquier tienda Banana, un especialista lo tasa y aplicamos el descuento sobre tu próxima compra. Sencillo, inmediato y con precio garantizado.',
+  'home.tradeIn.note': 'Tasación presencial · Cantidad demostrativa.',
+  'home.review.demo': 'Reseña demostrativa',
+  'home.newsletter.title': 'No te pierdas ninguna oferta',
+  'home.newsletter.body': 'Suscríbete y recibe las novedades antes que nadie.',
+  'home.newsletter.emailLabel': 'Tu correo electrónico',
+
+  // ---- Ventajas y preguntas frecuentes ----
+  'advantage.shipping': 'Envío a toda Canarias',
+  'advantage.pickup': 'Recogida en tienda',
+  'advantage.specialists': 'Especialistas Apple',
+  'advantage.insurance': 'Seguro a todo riesgo',
+  'note.pendingValidation': 'Condiciones pendientes de validación',
+  'note.provisional': 'Contenido provisional',
+  'faq.shipping.q': '¿Cuánto tarda el envío entre islas?',
+  'faq.shipping.a': 'Los pedidos a Canarias se entregan normalmente en 24/72h laborables. El plazo exacto depende de la isla de destino.',
+  'faq.financing.q': '¿Puedo financiar mi compra?',
+  'faq.financing.a': 'Sí. Puedes simular tu cuota en la propia ficha de producto. La contratación de la financiación se completa hoy de forma presencial en tienda.',
+  'faq.tradeIn.q': '¿Cómo funciona el Plan Renove?',
+  'faq.tradeIn.a': 'Llevas tu dispositivo actual a una tienda Banana, un especialista lo tasa y el descuento se aplica a tu nueva compra. La tasación es siempre presencial y orientativa online.',
+
   // ---- Navegación de la app ----
   'app.home': 'Inicio',
   'app.explore': 'Explorar',

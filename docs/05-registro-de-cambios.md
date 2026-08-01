@@ -28,9 +28,12 @@ castellano** (D-047).
   garantía, financiación y seguro.
 - **Los precios cambian de formato, no de divisa**: "1.229 €" en castellano,
   "€1,229" en inglés. El euro sigue siendo el euro.
-- Traducidos por ahora: barra superior, cabecera, pie, menú y vocabulario
-  común. El resto del contenido va por secciones en las siguientes entregas.
-- Suite en 255. Hubo que fijar `locale: 'es-ES'` en la configuración de
+- Traducidos por ahora: barra superior, cabecera, pie, menú, vocabulario
+  común y **la portada entera** (asistente, banner del Plan Renove,
+  ventajas, preguntas frecuentes, reseñas y newsletter). El resto del
+  contenido —servicios, Plan Renove, soporte, servicio técnico, tiendas y
+  las fichas de producto— va por secciones en las siguientes entregas.
+- Suite en 255, con nueve pruebas nuevas de idioma. Hubo que fijar `locale: 'es-ES'` en la configuración de
   Playwright: con la detección activa, la suite entera pasó a ejecutarse
   contra la versión inglesa.
 
