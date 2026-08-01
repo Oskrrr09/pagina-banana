@@ -43,9 +43,19 @@ castellano** (D-047).
   El **contenido de servicios, Plan Renove y centro de soporte**
   (`src/data/content.ts` entero).
 
-  **Lo que sigue en castellano**: la lista de características y la tabla de
-  especificaciones de cada producto, los titulares propios de las páginas de
-  soporte y servicio técnico, y las páginas de cuenta (asistente, banner del Plan Renove,
+  Las **afirmaciones comerciales** (`commercialClaims.ts`), las páginas de
+  **acceso y registro**, y los titulares de **soporte** y **servicio
+  técnico**.
+
+  **Método**: a partir de cierto punto, buscar cadenas en el código dejó de
+  encontrarlas —muchas están partidas en varias líneas o interpoladas—. Se
+  pasó a un barrido que carga las rutas en inglés y extrae el texto que
+  sigue en castellano. Mide lo que se ve, no lo que hay escrito.
+
+  **Lo que sigue en castellano**: las características y la tabla de
+  especificaciones de cada producto, las descripciones de accesorios, las
+  reseñas de la portada, la página de perfil, y textos sueltos de
+  favoritos, servicio técnico y Plan Renove (asistente, banner del Plan Renove,
   ventajas, preguntas frecuentes, reseñas y newsletter). Servicios, Plan
   Renove, soporte, servicio técnico, tiendas y el checkout siguen pendientes.
 - Suite en 255, con nueve pruebas nuevas de idioma. Hubo que fijar `locale: 'es-ES'` en la configuración de

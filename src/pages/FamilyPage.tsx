@@ -213,7 +213,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                       )}
                       <p className="text-3xl font-extrabold text-danger">{euro(offer.price)}</p>
                       <div className="mt-2">
-                        <ProvisionalBadge label="Precio demostrativo" />
+                        <ProvisionalBadge />
                       </div>
                     </div>
                     <ProductImage

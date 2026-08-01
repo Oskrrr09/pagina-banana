@@ -273,7 +273,7 @@ export function ComparePage() {
                         </p>
                         <p className="mt-1 font-bold text-ink">{euro(c.price)}</p>
                         <div className="mt-1">
-                          <ProvisionalBadge label="Precio demostrativo" />
+                          <ProvisionalBadge />
                         </div>
 
                         {highlights.length > 0 && (

@@ -187,7 +187,7 @@ function ColorCard({
         )}
       </div>
       <div className="mt-1">
-        <ProvisionalBadge label="Precio demostrativo" />
+        <ProvisionalBadge />
       </div>
       <div className="mt-3">
         <StockIndicator status={current.availability} note={current.availabilityNote} size="sm" />
@@ -292,7 +292,7 @@ function CompatibleAccessoriesSection({
               <div className="p-3">
                 <p className="text-sm font-semibold text-ink">{a.name}</p>
                 {a.price != null && (
-                  <p className="mt-1 text-xs text-muted">{euro(a.price)} · precio demostrativo</p>
+                  <p className="mt-1 text-xs text-muted">{t('common.priceDemo', { precio: euro(a.price) })}</p>
                 )}
               </div>
             </Link>

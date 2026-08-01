@@ -93,7 +93,7 @@ export function CartPage() {
                           </p>
                         )}
                         <div className="mt-1">
-                          <ProvisionalBadge label="Precio demostrativo" />
+                          <ProvisionalBadge />
                         </div>
                       </div>
                       <button
@@ -305,7 +305,7 @@ function CrossSellSuggestions({
                 <p className="text-sm font-semibold text-ink">{a.name}</p>
                 {a.price != null && (
                   <p className="mt-1 text-xs text-muted">
-                    {euro(a.price)} · precio demostrativo
+                    {t('common.priceDemo', { precio: euro(a.price) })}
                   </p>
                 )}
               </div>

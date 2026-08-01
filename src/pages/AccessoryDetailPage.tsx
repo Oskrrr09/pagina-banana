@@ -136,7 +136,7 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
             {price != null ? (
               <>
                 <p className="text-2xl font-bold text-ink">{euro(price)}</p>
-                <ProvisionalBadge label="Precio demostrativo" />
+                <ProvisionalBadge />
               </>
             ) : (
               <p className="text-lg font-semibold text-ink">Consultar precio</p>

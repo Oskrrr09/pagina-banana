@@ -565,7 +565,7 @@ export function CheckoutPage() {
               </div>
             </dl>
             <div className="mt-3">
-              <ProvisionalBadge label="Precio demostrativo" />
+              <ProvisionalBadge />
             </div>
           </div>
         </aside>

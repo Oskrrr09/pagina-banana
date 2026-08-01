@@ -1,14 +1,18 @@
+import { useT } from '../../lib/i18n'
 import type { ProvisionalTag } from '../../data/types'
 
 // Etiqueta de contenido provisional (§7): visible en el propio prototipo,
 // no solo en el documento. Ámbar sobre fondo claro, texto en grafito.
-export function ProvisionalBadge({ label, className = '' }: { label: ProvisionalTag | string; className?: string }) {
+export function ProvisionalBadge({ label, className = '' }: { label?: ProvisionalTag | string; className?: string }) {
+  const t = useT()
   return (
     <span
       className={`inline-flex items-center rounded-full border border-line bg-neutral px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted ${className}`}
-      title="Dato de ejemplo, pendiente de validación con Banana Computer"
+      title={t('common.demoTooltip')}
     >
-      {label}
+      {/* Sin etiqueta, la insignia dice "precio demostrativo": es su uso
+          mayoritario y así no hay que repetir el texto en cada llamada. */}
+      {label ?? t('common.demoPrice')}
     </span>
   )
 }

@@ -48,8 +48,8 @@ export function Home() {
                   <Icon name={c.icon ?? 'info'} size={20} />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-ink">{c.title}</p>
-                  <p className="truncate text-xs text-muted">{c.text}</p>
+                  <p className="truncate text-sm font-bold text-ink">{t(c.title)}</p>
+                  <p className="truncate text-xs text-muted">{t(c.text)}</p>
                 </div>
               </li>
             ))}
