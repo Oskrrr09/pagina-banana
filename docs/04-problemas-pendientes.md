@@ -579,25 +579,31 @@ del repositorio. No se corrigen en la preparación documental.
   `src/components/ui/Modal.tsx` y en el chat. No se han tocado y no han
   dado fallos, pero comparten la fragilidad.
 
-## UI-001 — El menú de dispositivos va centrado respecto al contenedor, no al hueco
+## UI-001 — La cabecera no usaba todo el ancho y el menú se solapaba
 
-- Estado: detectado el 2026-08-01, mitigado.
-- Evidencia: el `<nav>` principal de la cabecera se posiciona con
-  `absolute left-1/2 -translate-x-1/2`, es decir centrado respecto al
-  contenedor, para compartir eje vertical con la barra utilitaria de arriba.
-  El bloque de accesos de la derecha, en cambio, va en flujo con `ml-auto`.
-- Riesgo: los dos son independientes, así que **si el bloque derecho crece,
-  se echa encima del menú**. Al añadir el selector de idioma se midió un
-  solape real de 9px, no un simple apretón visual.
-- Mitigación aplicada: selector compacto (bandera y flecha, sin el código de
-  idioma), enlaces del menú algo menos holgados, y el selector pegado al
-  borde derecho asomando sobre el relleno del contenedor, lo que arrastra al
-  resto de accesos algo más a la derecha. El hueco queda en **51px a
-  1280px**, medido.
-- Queda la asimetría de fondo: del logo al menú sobran 271px y del menú a los
-  iconos hay 43px. Es consecuencia de centrar respecto al contenedor.
-  Arreglarlo de verdad exige centrar el menú respecto al hueco entre logo e
-  iconos, lo que **rompería la alineación con la barra utilitaria**, que es
-  la razón por la que está así. Es una decisión de diseño, no un bug.
-- Cualquier acceso nuevo en la derecha vuelve a comerse ese hueco: conviene
-  medirlo antes de añadir nada.
+- Estado: **cerrado el 2026-08-01**.
+- Síntoma tal como lo describió Oscar: al añadir el selector de idioma, el
+  bloque de accesos "se juntó con los del centro del menú", y el selector
+  "no está a la derecha del todo".
+- Dos causas, y la segunda es la de fondo:
+  1. El menú de dispositivos iba **absolutamente centrado**, así que no
+     participaba del reparto de espacio: todo lo que creciera por la derecha
+     se le echaba encima. Llegó a haber un **solape real de 9px**, medido.
+  2. La barra estaba limitada a `max-w-7xl` (1280px) y centrada. En una
+     pantalla ancha eso deja el selector al borde del **contenedor**, con una
+     franja amarilla vacía a su derecha, mientras la barra utilitaria de
+     arriba sí llegaba al borde de la ventana.
+- Resolución: la barra usa todo el ancho, como la de arriba, y el menú se
+  centra en el hueco **entre** el logo y los accesos. Queda equilibrado a
+  cualquier ancho: 125px a cada lado a 1280px, 235px a 1500px.
+- **Contrapartida asumida**: el eje del menú deja de coincidir con el de los
+  enlaces de la barra utilitaria, que era la intención original. El desvío es
+  de 118px. Se probó mantener el centrado respecto a la ventana con la barra
+  ya a todo lo ancho, pero **a 1280px —justo el ancho al que aparece este
+  menú, y el de un portátil corriente— el hueco caía a 7px**. Entre alinear
+  ejes y no colisionar, se eligió no colisionar.
+- Lección para la próxima: dos intentos previos fueron a base de mover
+  márgenes y solo movieron el hueco de 43 a 51px, que no se aprecia. El
+  problema era de estructura, y hasta que no se midieron las tres opciones no
+  se vio cuál era.
+
