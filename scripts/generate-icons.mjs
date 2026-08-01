@@ -51,11 +51,41 @@ function maskable({ bg, fg }) {
 </svg>`
 }
 
-// La tienda va en amarillo Banana; el panel interno en negro con el plátano
-// amarillo, para que un agente que tenga las dos instaladas las distinga en el
-// Dock sin leer el nombre.
-const TIENDA = { bg: YELLOW, fg: INK }
+// El panel interno va en negro con el plátano amarillo, para que un agente que
+// tenga las dos aplicaciones instaladas las distinga en el Dock sin leer el
+// nombre. La tienda NO usa este trazo: usa el icono oficial de Banana.
 const AGENTE = { bg: INK, fg: YELLOW }
+// Paleta de la pantalla de carga de la tienda.
+const SPLASH = { bg: YELLOW, fg: INK }
+
+// ---------------------------------------------------------------------------
+// Icono oficial de la tienda
+//
+// Es el plátano abierto en blanco sobre degradado naranja, el mismo que Banana
+// publica en su web. Se usa tal cual en vez de redibujarlo: es su marca.
+//
+// Solo existe en mapa de bits, y el mayor que publican mide 180x180. Eso da
+// exacto para el icono de la pantalla de inicio de un iPhone (60pt @3x = 180px)
+// y para todo Android; los tamaños mayores —el de 1024 que pide App Store— se
+// amplían y se ven algo blandos. Antes de publicar hay que pedirle a Banana el
+// original en vector o en alta resolución.
+const iconoOficial = await readFile(join(root, 'public', 'apple-touch-icon.png'))
+const ICONO_OFICIAL = `data:image/png;base64,${iconoOficial.toString('base64')}`
+
+/** El icono oficial ocupando todo el lienzo. */
+function oficial() {
+  return `<img src="${ICONO_OFICIAL}" alt="">`
+}
+
+/**
+ * Versión para el icono adaptativo de Android: el dibujo se encoge para caber
+ * en la zona segura (el círculo central del 80%), sobre fondo transparente.
+ */
+function oficialEnZonaSegura() {
+  return `<div style="position:absolute;inset:0;display:grid;place-items:center">
+    <img src="${ICONO_OFICIAL}" alt="" style="width:72%;height:72%">
+  </div>`
+}
 
 // Rótulo "banana" real de la marca, tomado del mismo SVG que usa la web para
 // no tener dos versiones del logotipo que puedan separarse.
@@ -63,9 +93,12 @@ const logoSvg = await readFile(join(root, 'public', 'img', 'logo-dark.svg'), 'ut
 const logoCuerpo = logoSvg.slice(logoSvg.indexOf('<g'), logoSvg.lastIndexOf('</svg>'))
 
 function rotulo(color) {
-  // El logotipo mide 67x16. Se anida con su propio viewBox y se coloca
-  // centrado bajo el plátano.
-  return `<svg x="6" y="19" width="20" height="4.78" viewBox="0 0 67 16">
+  // El logotipo mide 67x16. Se anida con su propio viewBox, centrado.
+  //
+  // La pantalla de carga lleva **solo el rótulo**, no el icono: el icono
+  // oficial trae su propio fondo naranja y sobre el amarillo de la pantalla
+  // se ve como una pegatina pegada encima.
+  return `<svg x="4" y="13.4" width="24" height="5.73" viewBox="0 0 67 16">
     ${logoCuerpo.replace(/fill="#[0-9A-Fa-f]{6}"/g, `fill="${color}"`)}
   </svg>`
 }
@@ -80,22 +113,19 @@ function rotulo(color) {
 function splash({ bg, fg }) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" style="--fg:${fg}">
   <rect width="32" height="32" fill="${bg}"/>
-  <g transform="translate(0 -3)">${banana(0.42)}</g>
   ${rotulo(fg)}
 </svg>`
 }
 
 const targets = [
   // --- Tienda (app nativa iOS/Android vía Capacitor) ---
-  { file: 'icon-192.png', size: 192, svg: standard(TIENDA) },
-  { file: 'icon-512.png', size: 512, svg: standard(TIENDA) },
-  { file: 'icon-maskable-512.png', size: 512, svg: maskable(TIENDA) },
-  // App Store exige 1024x1024 sin transparencia ni esquinas redondeadas:
-  // las redondea Apple. Por eso usa el trazado `maskable`, que va a sangre.
-  { file: 'icon-1024.png', size: 1024, svg: maskable(TIENDA) },
-  // iOS no entiende `maskable` y recorta con su propio squircle, así que en la
-  // web usa el estándar. 180 px es lo que pide desde el iPhone 6 Plus.
-  { file: 'apple-touch-icon-180.png', size: 180, svg: standard(TIENDA) },
+  // Todos salen del icono oficial, a sangre: ya viene con su fondo y sus
+  // esquinas, y son iOS y Android quienes recortan la forma que toque.
+  { file: 'icon-192.png', size: 192, svg: oficial() },
+  { file: 'icon-512.png', size: 512, svg: oficial() },
+  { file: 'icon-maskable-512.png', size: 512, svg: oficial() },
+  { file: 'icon-1024.png', size: 1024, svg: oficial() },
+  { file: 'apple-touch-icon-180.png', size: 180, svg: oficial() },
 
   // --- Panel de agente (PWA instalable) ---
   { file: 'agente-192.png', size: 192, svg: standard(AGENTE) },
@@ -108,11 +138,17 @@ const targets = [
 // tamaños concretos de iOS y Android. Van fuera de `public/` porque no son
 // parte de la web: solo entran en el binario nativo.
 const nativeTargets = [
-  { file: 'icon.png', size: 1024, svg: maskable(TIENDA) },
-  { file: 'icon-only.png', size: 1024, svg: maskable(TIENDA) },
-  { file: 'icon-foreground.png', size: 1024, svg: standard(TIENDA) },
-  { file: 'icon-background.png', size: 1024, svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="${YELLOW}"/></svg>` },
-  { file: 'splash.png', size: 2732, svg: splash(TIENDA) },
+  { file: 'icon.png', size: 1024, svg: oficial() },
+  { file: 'icon-only.png', size: 1024, svg: oficial() },
+  { file: 'icon-foreground.png', size: 1024, svg: oficialEnZonaSegura() },
+  {
+    file: 'icon-background.png',
+    size: 1024,
+    // Degradado de marca real de Banana (amarillo arriba, naranja abajo), el
+    // mismo que usa su web y el propio icono oficial.
+    svg: `<div style="position:absolute;inset:0;background:linear-gradient(to bottom,#FDC200,#FE8401)"></div>`,
+  },
+  { file: 'splash.png', size: 2732, svg: splash(SPLASH) },
   // Android e iOS en modo oscuro. Se invierte el fondo, no el plátano.
   { file: 'splash-dark.png', size: 2732, svg: splash({ bg: INK, fg: YELLOW }) },
 ]
@@ -130,7 +166,13 @@ try {
       deviceScaleFactor: 1,
     })
     await page.setContent(
-      `<style>html,body{margin:0;padding:0}svg{display:block;width:${size}px;height:${size}px}</style>${svg}`,
+      `<style>
+        html,body{margin:0;padding:0;width:${size}px;height:${size}px;position:relative}
+        svg{display:block;width:${size}px;height:${size}px}
+        /* El icono oficial es un PNG de 180px: hay que estirarlo al lienzo,
+           si no se dibuja a su tamaño natural en una esquina. */
+        img{display:block;width:100%;height:100%;object-fit:cover}
+      </style>${svg}`,
     )
     await writeFile(join(dir, file), await page.screenshot({ omitBackground: true }))
     await page.close()

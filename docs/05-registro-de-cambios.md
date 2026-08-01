@@ -8,6 +8,26 @@ actualizado: 2026-08-01
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-01 — Icono oficial, y correcciones sobre el dispositivo
+
+- **El icono de la app pasa a ser el oficial de Banana** (plátano abierto
+  en blanco sobre degradado naranja), tomado de su web en vez del trazo
+  simplificado que usaba el prototipo. Solo lo publican en mapa de bits y
+  el mayor mide 180x180: exacto para la pantalla de inicio de un iPhone,
+  justo para Android, y **blando en el de 1024 que pide App Store**. Hay
+  que pedirles el original antes de publicar (D-045).
+- **La barra superior deja de "buguearse" al desplazar.** Era una barra
+  `sticky` dentro de un documento con `overflow-x: clip`: en WebKit esa
+  combinación repinta mal y dejaba una línea blanca parpadeante encima.
+  Ahora va `fixed` y publica su altura real —medida, porque depende del
+  `safe-area` de cada móvil— para que el contenido empiece justo debajo.
+- **Menos duplicados en el menú de la app**: fuera "Tiendas y horarios" de
+  "Contacta con nosotros" (ya está en Servicios y ayuda) y fuera
+  "Favoritos" del pie, que ahora es una pestaña fija. El pie queda con
+  cuenta e idioma. En la web no cambia nada: allí ese menú sigue siendo la
+  vía para llegar a favoritos desde el móvil.
+- Suite en 246.
+
 ## 2026-08-01 — Encuadre en móvil, buscador arriba y barra inferior definitiva
 
 - **Arreglado el desplazamiento lateral** que Oscar veía "a ratos" en la web

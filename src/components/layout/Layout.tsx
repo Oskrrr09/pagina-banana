@@ -35,8 +35,13 @@ export function Layout() {
         // regresar.
         tabIndex={-1}
         className="flex-1 outline-none"
-        // En la app, el contenido termina por encima de la barra inferior.
-        style={isNativeApp ? { paddingBottom: ALTURA_TAB_BAR } : undefined}
+        // En la app la barra superior es fija y la inferior también, así que
+        // el contenido reserva sitio para las dos.
+        style={
+          isNativeApp
+            ? { paddingTop: 'var(--app-topbar-h, 0px)', paddingBottom: ALTURA_TAB_BAR }
+            : undefined
+        }
       >
         <Outlet />
       </main>

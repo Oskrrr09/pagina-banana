@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { familiesNav } from '../../data/nav'
 import { Icon } from '../ui/Icon'
@@ -20,12 +20,39 @@ import { HeaderSearch } from '../search/HeaderSearch'
 export function AppTopBar() {
   const [searchOpen, setSearchOpen] = useState(false)
   const searchButtonRef = useRef<HTMLButtonElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
   const { pathname } = useLocation()
+
+  // La barra va `fixed`, no `sticky`.
+  //
+  // Con `sticky` aparecía una línea blanca parpadeante sobre la barra al
+  // desplazar: el documento lleva `overflow-x: clip`, y en WebKit un elemento
+  // pegajoso dentro de un contenedor recortado se repinta mal. `fixed` no
+  // depende del contenedor y la barra queda de verdad como tope de la
+  // pantalla.
+  //
+  // Como deja de ocupar sitio en el flujo, se publica su altura real para que
+  // el contenido empiece justo debajo. Se mide en vez de fijarla porque
+  // depende del `safe-area` de cada dispositivo.
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const publicarAltura = () =>
+      document.documentElement.style.setProperty('--app-topbar-h', `${el.offsetHeight}px`)
+    publicarAltura()
+    const observador = new ResizeObserver(publicarAltura)
+    observador.observe(el)
+    return () => {
+      observador.disconnect()
+      document.documentElement.style.removeProperty('--app-topbar-h')
+    }
+  }, [])
 
   return (
     <>
       <header
-        className="sticky top-0 z-40 bg-banana"
+        ref={headerRef}
+        className="fixed inset-x-0 top-0 z-40 bg-banana"
         // El WebView llega al borde de la pantalla: sin esto la barra queda
         // debajo de la Dynamic Island y del reloj.
         style={{ paddingTop: 'env(safe-area-inset-top)' }}

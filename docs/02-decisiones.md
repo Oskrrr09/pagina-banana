@@ -615,6 +615,31 @@ No atribuye motivaciones que el repositorio no documenta.
 - Cubierto en `tests/e2e/mobile-layout.spec.ts`, que mide el tamaño real de
   cada campo visible y comprueba que ninguna ruta desborda a 320 y 390px.
 
+## D-045 — El icono de la app es el oficial de Banana, no un dibujo propio
+
+- Fecha: 2026-08-01.
+- Estado: vigente.
+- Decisión: el icono de la tienda es el **plátano abierto en blanco sobre
+  degradado naranja** que Banana publica en su web, tal cual. No se
+  redibuja ni se sustituye por el trazo simplificado que el prototipo usaba
+  como favicon.
+- Motivo: es su marca. Un icono "parecido" en la pantalla de inicio de un
+  móvil es justo donde más se nota que no es el suyo.
+- Limitación conocida y a resolver con Banana: **solo lo publican en mapa
+  de bits, y el mayor mide 180x180**. De vector solo hay el rótulo. 180 px
+  da exacto para el icono de la pantalla de inicio de un iPhone
+  (60pt @3x) y sobra para Android, pero el de **1024 px que exige App
+  Store se amplía y se ve blando**. Antes de publicar hay que pedirles el
+  original.
+- La pantalla de carga lleva **solo el rótulo**, que sí es vectorial: el
+  icono trae su propio fondo naranja y sobre el amarillo de la pantalla se
+  ve como una pegatina.
+- El panel de agentes conserva su icono propio (negro con plátano
+  amarillo). Es una herramienta interna y conviene distinguirla de la
+  tienda en el Dock de un vistazo.
+- Evidencia: `public/apple-touch-icon.png` (fuente),
+  `scripts/generate-icons.mjs`.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

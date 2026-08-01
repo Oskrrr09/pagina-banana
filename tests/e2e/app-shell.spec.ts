@@ -58,6 +58,49 @@ test.describe('interfaz de la app nativa', () => {
     expect(parseFloat(relleno)).toBeGreaterThan(0)
   })
 
+  test('la barra de búsqueda es el tope y el contenido empieza debajo', async ({ page }) => {
+    // Regresión del parpadeo blanco sobre la cabecera al desplazar: era una
+    // barra `sticky` dentro de un documento con `overflow-x: clip`. Ahora va
+    // `fixed` y publica su altura para que el contenido no quede debajo.
+    await comoApp(page)
+    await page.goto('./')
+
+    const cabecera = page.getByRole('banner')
+    await expect(cabecera).toHaveCSS('position', 'fixed')
+
+    const caja = (await cabecera.boundingBox())!
+    expect(Math.round(caja.y)).toBe(0)
+
+    const arriba = await page
+      .locator('#contenido')
+      .evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))
+    expect(arriba).toBeGreaterThanOrEqual(caja.height - 1)
+
+    // Y al desplazar sigue pegada arriba, sin dejar hueco.
+    await page.mouse.wheel(0, 600)
+    await page.waitForTimeout(300)
+    const despues = (await cabecera.boundingBox())!
+    expect(Math.round(despues.y)).toBe(0)
+  })
+
+  test('el menú de la app no repite lo que ya está en la barra inferior', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./')
+    await page.getByRole('button', { name: 'Explorar' }).click()
+    const menu = page.getByRole('dialog', { name: 'Menú principal' })
+
+    // "Tiendas y horarios" ya está en Servicios y ayuda; Favoritos es una
+    // pestaña fija abajo.
+    await expect(menu.getByRole('link', { name: 'Tiendas y horarios' })).toHaveCount(0)
+    await expect(menu.getByRole('link', { name: 'Favoritos' })).toHaveCount(0)
+
+    // Lo que sí sigue: el chat, el centro de ayuda, y el pie con cuenta e idioma.
+    await expect(menu.getByRole('button', { name: /Chatea con Bananito/ })).toBeVisible()
+    await expect(menu.getByRole('link', { name: 'Centro de ayuda' })).toBeVisible()
+    await expect(menu.getByRole('button', { name: /Cuenta/ })).toBeVisible()
+    await expect(menu.getByRole('button', { name: /Idioma/ })).toBeVisible()
+  })
+
   test('la pestaña activa refleja la ruta', async ({ page }) => {
     await comoApp(page)
     await page.goto('./')

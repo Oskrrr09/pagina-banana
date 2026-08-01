@@ -218,18 +218,6 @@ export function MobileMenu({
                       Centro de ayuda
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      to="/tiendas"
-                      onClick={onClose}
-                      className="flex items-center gap-3 rounded-[10px] px-2 py-2.5 text-[14px] font-medium text-ink hover:bg-neutral"
-                    >
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral">
-                        <Icon name="store" size={16} className="text-muted" />
-                      </span>
-                      Tiendas y horarios
-                    </Link>
-                  </li>
                 </ul>
               </div>
             )}
@@ -258,9 +246,18 @@ export function MobileMenu({
 
           <div className="border-t border-line px-5 py-4 text-sm text-muted">
             <div className="flex items-center gap-5">
-              <Link to="/favoritos" onClick={onClose} className="flex items-center gap-1.5 hover:text-ink">
-                <Icon name="heart" size={18} /> Favoritos
-              </Link>
+              {/* En la app, Favoritos es una pestaña fija de la barra
+                  inferior: repetirlo aquí solo ocupa sitio. En la web sí se
+                  queda, porque en móvil este menú es la vía para llegar. */}
+              {!isNativeApp && (
+                <Link
+                  to="/favoritos"
+                  onClick={onClose}
+                  className="flex items-center gap-1.5 hover:text-ink"
+                >
+                  <Icon name="heart" size={18} /> Favoritos
+                </Link>
+              )}
               <button className="flex items-center gap-1.5 hover:text-ink">
                 <Icon name="user" size={18} /> Cuenta
               </button>
