@@ -26,9 +26,18 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
   },
   ios: {
-    // El contenido no se mete bajo la barra de estado ni bajo el indicador de
-    // inicio; la web no está diseñada para dibujar detrás de ellos.
-    contentInset: 'always',
+    // El WebView llega al borde de la pantalla y es el CSS quien reserva el
+    // hueco de la barra de estado, con `env(safe-area-inset-top)`.
+    //
+    // Con `contentInset: 'always'` lo reservaban LOS DOS: el WebView bajaba
+    // el contenido y el CSS volvía a bajarlo, así que quedaba una franja
+    // blanca del fondo nativo y otra amarilla de más sobre el buscador. Y al
+    // dejar de desplazarse el documento (D-046) ese desplazamiento del
+    // WebView pasó a ser permanente.
+    //
+    // Además así el amarillo de la cabecera se pinta por detrás de la barra
+    // de estado, que es como debe verse.
+    contentInset: 'never',
   },
 }
 

@@ -667,6 +667,14 @@ No atribuye motivaciones que el repositorio no documenta.
 - La web **no cambia**: sigue con scroll de documento y su cabecera
   `sticky`. El interruptor es el atributo `data-app-shell`, que `Layout`
   pone solo dentro del binario.
+- **Efecto colateral que hubo que resolver**: con el documento quieto,
+  `contentInset: 'always'` de iOS pasó a desplazar el contenido de forma
+  permanente, y el hueco de la barra de estado quedaba reservado **dos
+  veces** —una por el WebView y otra por el `env(safe-area-inset-top)` del
+  CSS—. Se veía como una franja blanca del fondo nativo y otra amarilla de
+  más sobre el buscador. Ahora el WebView va a `contentInset: 'never'` y el
+  hueco lo reserva solo el CSS, que además pinta el amarillo por detrás de
+  la barra de estado.
 
 ## Cómo añadir una decisión
 

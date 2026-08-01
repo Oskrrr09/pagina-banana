@@ -22,7 +22,13 @@ autores, diffs y marcas de tiempo.
   **sí funciona**, lo que descartó el CSS y señaló al WebView (D-046).
 - La web no cambia: el interruptor es un atributo que solo se pone dentro
   del binario.
-- Suite en 245, y verificado arrastrando en el emulador de Android.
+- **Y el hueco de la barra de estado deja de reservarse dos veces.** Con el
+  documento quieto, el `contentInset` de iOS pasó a desplazar el contenido
+  de forma permanente, y el CSS volvía a desplazarlo: quedaba una franja
+  blanca del fondo nativo y otra amarilla de más sobre el buscador. Ahora
+  el WebView va a sangre y el hueco lo reserva solo el CSS.
+- Suite en 245, verificado arrastrando en el emulador de Android y con
+  capturas del simulador de iPhone.
 
 ## 2026-08-01 — Icono oficial, y correcciones sobre el dispositivo
 
