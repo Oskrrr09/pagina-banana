@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { Field } from '../components/ui/Field'
@@ -24,6 +25,7 @@ export function safeRedirect(raw: string | null): string {
 }
 
 export function LoginPage() {
+  const t = useT()
   const [params] = useSearchParams()
   const redirectTo = safeRedirect(params.get('redirect'))
   const { session, signIn, loading } = useCustomerAuth()
@@ -42,7 +44,7 @@ export function LoginPage() {
     if (signInError) {
       setError(
         signInError === 'Invalid login credentials'
-          ? 'Email o contraseña incorrectos.'
+          ? t('auth.badCredentials')
           : signInError,
       )
     }
@@ -55,10 +57,9 @@ export function LoginPage() {
   return (
     <Container className="py-12">
       <div className="mx-auto max-w-md">
-        <h1 className="text-2xl font-bold text-ink">Iniciar sesión</h1>
+        <h1 className="text-2xl font-bold text-ink">{t('auth.signInTitle')}</h1>
         <p className="mt-2 text-sm text-muted">
-          Accede a tus pedidos, reservas y direcciones. Cuenta de demostración: no
-          se realizan cobros ni envíos reales.
+          {t('auth.signInBody')}
         </p>
 
         {!supabaseEnabled ? (
@@ -84,7 +85,7 @@ export function LoginPage() {
                   />
                 )}
               </Field>
-              <Field label="Contraseña">
+              <Field label={t('account.password')}>
                 {(props) => (
                   <input
                     {...props}
@@ -105,17 +106,17 @@ export function LoginPage() {
               )}
 
               <Button type="submit" size="lg" disabled={submitting} className="w-full">
-                {submitting ? 'Entrando…' : 'Entrar'}
+                {submitting ? t('auth.signingIn') : t('account.signIn')}
               </Button>
             </form>
 
             <p className="mt-6 text-sm text-muted">
-              ¿Aún no tienes cuenta?{' '}
+              {t('auth.noAccount')}{' '}
               <Link
                 to={`/registro${params.get('redirect') ? `?redirect=${encodeURIComponent(params.get('redirect')!)}` : ''}`}
                 className="font-semibold text-ink underline"
               >
-                Crear una cuenta
+                {t('account.signUp')}
               </Link>
             </p>
           </>

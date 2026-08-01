@@ -135,10 +135,10 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
           <div className="text-center">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">Catálogo Banana</p>
             <h1 className="mt-2 text-4xl font-extrabold text-ink sm:text-5xl">
-              Comprar un {family.name}
+              {t('catalog.buyA', { familia: family.name })}
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-muted">
-              Elige un modelo y entra directamente en su configuración de color y capacidad.
+              {t('catalog.chooseModel')}
             </p>
           </div>
 
@@ -178,7 +178,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-danger">Oportunidades</p>
             <h2 className="mt-2 text-3xl font-extrabold text-ink sm:text-5xl">
-              Ofertas destacadas en {family.name}
+              {t('catalog.featuredIn', { familia: family.name })}
             </h2>
             <p className="mt-3 text-muted">
               Precios demostrativos pendientes de validación con Banana Computer.

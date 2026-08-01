@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
@@ -48,6 +49,7 @@ import {
 const MAX_SLOTS = 3
 
 export function ComparePage() {
+  const t = useT()
   const {
     compare,
     toggleCompare,
@@ -173,7 +175,7 @@ export function ComparePage() {
             ))}
           </div>
           <p className="mt-3 text-sm text-muted">
-            Elige hasta tres modelos de {family?.name}. Puedes cambiarlos cuando quieras.
+            {t('compare.chooseUpTo', { familia: family?.name ?? '' })}
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {Array.from({ length: MAX_SLOTS }).map((_, i) => (

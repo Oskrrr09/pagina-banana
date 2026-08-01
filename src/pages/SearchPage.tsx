@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ProductCard } from '../components/product/ProductCard'
@@ -162,6 +163,7 @@ function ResultsSections({ results }: { results: SearchResults }) {
 }
 
 function ExactMatchCard({ item }: { item: SearchItem }) {
+  const t = useT()
   // Familias y dispositivos usan tarjeta enriquecida cuando existe modelo real.
   if (item.kind === 'apple-device') {
     const model = allModels.find((m) => `device:${m.family}/${m.slug}` === item.id)
@@ -183,7 +185,7 @@ function ExactMatchCard({ item }: { item: SearchItem }) {
         <p className="mt-1 text-xl font-extrabold text-ink">{item.name}</p>
         {item.description && <p className="mt-1 text-sm text-muted">{item.description}</p>}
         <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-ink">
-          Ver todos los modelos <Icon name="chevron-right" size={14} />
+          {t('common.allModels')} <Icon name="chevron-right" size={14} />
         </span>
       </Link>
     )
@@ -203,6 +205,7 @@ function ExactMatchCard({ item }: { item: SearchItem }) {
 }
 
 function DeviceGrid({ items }: { items: SearchItem[] }) {
+  const t = useT()
   // Dispositivos Apple: si la entrada es familia, tarjeta destacada; si es
   // modelo real, ProductCard.
   const cards: JSX.Element[] = []
@@ -218,7 +221,7 @@ function DeviceGrid({ items }: { items: SearchItem[] }) {
           <p className="mt-1 text-xl font-extrabold text-ink">{item.name}</p>
           {item.description && <p className="mt-1 text-sm text-muted">{item.description}</p>}
           <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-ink">
-            Ver todos los modelos <Icon name="chevron-right" size={14} />
+            {t('common.allModels')} <Icon name="chevron-right" size={14} />
           </span>
         </Link>,
       )

@@ -38,14 +38,14 @@ export function SupportPage() {
       {/* 1 — Buscador de ayuda (H1 único de la página) */}
       <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
         <Container className="py-12 text-center md:py-16">
-          <h1 className="text-3xl font-extrabold text-ink sm:text-4xl">¿En qué podemos ayudarte?</h1>
+          <h1 className="text-3xl font-extrabold text-ink sm:text-4xl">{t('support.title')}</h1>
           <form onSubmit={(e) => e.preventDefault()} className="mx-auto mt-6 max-w-xl">
             <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-5 py-3.5 shadow-[var(--shadow-rest)]">
               <Icon name="search" className="text-muted" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Busca en la ayuda…"
+                placeholder={t('support.searchPlaceholder')}
                 aria-label="Buscar en la ayuda"
                 className="w-full bg-transparent text-base outline-none placeholder:text-muted"
               />
@@ -129,12 +129,12 @@ export function SupportPage() {
           {/* 4 — FAQ por tema */}
           <section id="faq" aria-labelledby="faq-heading" className="mt-12">
             <h2 id="faq-heading" className="mb-6 text-2xl font-bold text-ink">
-              Preguntas frecuentes
+              {t('home.section.faqTitle')}
             </h2>
             {filteredTopics.length === 0 ? (
               <div className="rounded-[12px] border border-dashed border-line py-12 text-center">
                 <p className="text-ink">No hemos encontrado artículos sobre “{q}”.</p>
-                <p className="mt-2 text-sm text-muted">Prueba a contactar por chat o formulario.</p>
+                <p className="mt-2 text-sm text-muted">{t('support.noResults')}</p>
               </div>
             ) : (
               <div className="grid gap-8 md:grid-cols-2">
@@ -160,7 +160,7 @@ export function SupportPage() {
             <h2 id="support-more" className="text-xl font-bold text-ink">
               ¿No encuentras lo que buscas?
             </h2>
-            <p className="mt-2 text-muted">Estamos aquí para ayudarte por el canal que prefieras.</p>
+            <p className="mt-2 text-muted">{t('support.channels')}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               <Link
                 to="/tiendas"

@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
+import { useT } from '../../lib/i18n'
 import type { FamilyNav } from '../../data/nav'
 import { Placeholder } from '../ui/Placeholder'
 import { ProductImage } from '../product/ProductImage'
@@ -23,6 +24,7 @@ const item = {
 }
 
 export function MegaMenu({ family, onNavigate }: { family: FamilyNav; onNavigate: () => void }) {
+  const t = useT()
   return (
     <motion.div
       variants={panel}
@@ -55,7 +57,7 @@ export function MegaMenu({ family, onNavigate }: { family: FamilyNav; onNavigate
         </div>
 
         <div className="min-w-0">
-          <p className="mb-4 text-xs font-bold uppercase tracking-wider text-muted">Comprar</p>
+          <p className="mb-4 text-xs font-bold uppercase tracking-wider text-muted">{t('nav.shop')}</p>
           <ul className="space-y-1">
             {family.mega.buy.map((link) => (
               <motion.li key={link.label} variants={item}>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ProvisionalBadge } from '../components/ui/Tag'
@@ -16,6 +17,7 @@ import { DevicePreparationGuide } from '../components/support/DevicePreparationG
 // No implementa reserva de cita, calendario, pago online, seguimiento de
 // reparación ni recogida a domicilio.
 export function ServiceTechnicalPage() {
+  const t = useT()
   const [guideOpen, setGuideOpen] = useState(false)
   return (
     <>
@@ -75,7 +77,7 @@ export function ServiceTechnicalPage() {
                  1) copia · 2) modo antirrobo · 3) Buscar
                  (el modo antirrobo debe estar desactivado antes que Buscar). */}
             <div className="mt-6 rounded-[12px] border border-line bg-surface p-5">
-              <h3 className="text-lg font-bold text-ink">Prepara tu dispositivo antes de entregarlo</h3>
+              <h3 className="text-lg font-bold text-ink">{t('repair.prepareTitle')}</h3>
               <p className="mt-1 text-sm text-muted">
                 Estas funciones de seguridad pueden impedir que el servicio técnico revise,
                 diagnostique o gestione correctamente tu dispositivo. Hazlo en este orden.
@@ -89,7 +91,7 @@ export function ServiceTechnicalPage() {
                     1
                   </span>
                   <span>
-                    <strong className="font-semibold">Realiza una copia de seguridad</strong>{' '}
+                    <strong className="font-semibold">{t('repair.backup')}</strong>{' '}
                     actualizada de tus datos.
                   </span>
                 </li>
@@ -116,7 +118,7 @@ export function ServiceTechnicalPage() {
                     3
                   </span>
                   <span>
-                    <strong className="font-semibold">Desactiva la función “Buscar”</strong>:
+                    <strong className="font-semibold">{t('repair.findMy')}</strong>:
                     Buscar mi iPhone, Buscar mi iPad, Buscar mi Mac o la opción equivalente según
                     el dispositivo.
                   </span>
@@ -198,7 +200,7 @@ export function ServiceTechnicalPage() {
 
             {/* Plazos orientativos */}
             <div className="mt-6 rounded-[12px] border border-line bg-surface p-5">
-              <h3 className="text-lg font-bold text-ink">Plazos orientativos</h3>
+              <h3 className="text-lg font-bold text-ink">{t('repair.estimates')}</h3>
               <p className="mt-2 text-sm text-ink">
                 Cuando el dispositivo se envía desde una tienda al servicio técnico, el traslado
                 suele tardar un mínimo de <strong className="font-semibold">3 días</strong>. A

@@ -672,6 +672,7 @@ function VariantAccessorySuggestions({
   family: string
   modelSlug: string
 }) {
+  const t = useT()
   const items = getAccessoriesForModel(`${family}/${modelSlug}`).slice(0, 4)
   if (items.length === 0) return null
   return (
@@ -684,7 +685,7 @@ function VariantAccessorySuggestions({
           to="/accesorios"
           className="text-sm font-semibold text-ink underline-offset-2 hover:underline"
         >
-          Ver todos los accesorios ›
+          {t('common.allAccessories')}
         </Link>
       </div>
       <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

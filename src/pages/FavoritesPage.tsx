@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
@@ -315,11 +316,12 @@ function FollowControls({
   favoriteStoreSlug: string | null
   onFollow: (storeSlug: string, offerAsFavorite: boolean) => void
 }) {
+  const t = useT()
   return (
     <details className="text-xs text-ink">
       <summary className="cursor-pointer font-semibold text-ink">Seguir disponibilidad</summary>
       <p className="mt-2 text-muted">
-        Elige una tienda para recibir avisos internos (simulación demostrativa).
+        {t('favorites.chooseStoreNote')}
       </p>
       <ul className="mt-2 space-y-1">
         {stores.map((store) => {

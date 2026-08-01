@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { Field } from '../components/ui/Field'
@@ -199,6 +200,7 @@ function SaveFeedback({ state }: { state: 'idle' | 'saving' | 'saved' | 'error' 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 function PersonalDataSection() {
+  const t = useT()
   const { cliente, updateProfile } = useCustomerAuth()
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
@@ -222,7 +224,7 @@ function PersonalDataSection() {
   return (
     <Section title="Datos personales">
       <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
-        <Field label="Nombre y apellidos">
+        <Field label={t('checkout.fullName')}>
           {(props) => (
             <input
               {...props}

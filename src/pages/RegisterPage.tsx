@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { Field } from '../components/ui/Field'
@@ -16,6 +17,7 @@ import { safeRedirect } from './LoginPage'
 const MIN_PASSWORD = 8
 
 export function RegisterPage() {
+  const t = useT()
   const [params] = useSearchParams()
   const redirectTo = safeRedirect(params.get('redirect'))
   const { session, signUp, loading } = useCustomerAuth()
@@ -31,9 +33,9 @@ export function RegisterPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     const nextErrors: Record<string, string> = {}
-    if (!nombre.trim()) nextErrors.nombre = 'Introduce tu nombre.'
+    if (!nombre.trim()) nextErrors.nombre = t('auth.nameRequired')
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      nextErrors.email = 'Introduce un email válido.'
+      nextErrors.email = t('auth.emailInvalid')
     }
     if (password.length < MIN_PASSWORD) {
       nextErrors.password = `Usa al menos ${MIN_PASSWORD} caracteres.`
@@ -62,7 +64,7 @@ export function RegisterPage() {
   return (
     <Container className="py-12">
       <div className="mx-auto max-w-md">
-        <h1 className="text-2xl font-bold text-ink">Crear cuenta</h1>
+        <h1 className="text-2xl font-bold text-ink">{t('account.signUp')}</h1>
         <p className="mt-2 text-sm text-muted">
           Guarda tus direcciones, sigue tus pedidos y gestiona reservas. Cuenta de
           demostración: no se realizan cobros ni envíos reales.
@@ -80,9 +82,9 @@ export function RegisterPage() {
             role="status"
             className="mt-6 rounded-[12px] border border-line bg-neutral p-4 text-sm text-ink"
           >
-            <p className="font-semibold">Revisa tu correo</p>
+            <p className="font-semibold">{t('auth.checkEmail')}</p>
             <p className="mt-1 text-muted">
-              Hemos enviado un enlace de confirmación a{' '}
+              {t('auth.confirmSent')}{' '}
               <strong className="text-ink">{email}</strong>. Ábrelo para activar la
               cuenta y luego vuelve a{' '}
               <Link to="/login" className="font-semibold text-ink underline">
@@ -94,7 +96,7 @@ export function RegisterPage() {
         ) : (
           <>
             <form onSubmit={onSubmit} className="mt-8 grid gap-4" noValidate>
-              <Field label="Nombre y apellidos" error={errors.nombre}>
+              <Field label={t('checkout.fullName')} error={errors.nombre}>
                 {(props) => (
                   <input
                     {...props}
@@ -118,9 +120,9 @@ export function RegisterPage() {
                 )}
               </Field>
               <Field
-                label="Contraseña"
+                label={t('account.password')}
                 error={errors.password}
-                hint={`Mínimo ${MIN_PASSWORD} caracteres.`}
+                hint={t('auth.passwordHint', { n: MIN_PASSWORD })}
               >
                 {(props) => (
                   <input
@@ -141,12 +143,12 @@ export function RegisterPage() {
               )}
 
               <Button type="submit" size="lg" disabled={submitting} className="w-full">
-                {submitting ? 'Creando cuenta…' : 'Crear cuenta'}
+                {submitting ? t('auth.creating') : t('account.signUp')}
               </Button>
             </form>
 
             <p className="mt-6 text-sm text-muted">
-              ¿Ya tienes cuenta?{' '}
+              {t('auth.hasAccount')}{' '}
               <Link
                 to={`/login${params.get('redirect') ? `?redirect=${encodeURIComponent(params.get('redirect')!)}` : ''}`}
                 className="font-semibold text-ink underline"

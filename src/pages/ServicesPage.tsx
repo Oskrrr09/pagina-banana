@@ -14,7 +14,7 @@ export function ServicesPage() {
     <>
       <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
         <Container className="py-12 md:py-16">
-          <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">Servicios</h1>
+          <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">{t('services.title')}</h1>
           <p className="mt-3 max-w-2xl text-lg text-muted">
             Comprar en Banana es más que un producto: financiación, envíos a toda Canarias, Plan Renove, seguro y
             descuento educativo.
@@ -51,7 +51,7 @@ export function ServicesPage() {
 
       <Section alt>
         <div className="mx-auto max-w-3xl">
-          <SectionHeader title="Preguntas frecuentes de servicios" />
+          <SectionHeader title={t('faq.servicesTitle')} />
           <Accordion items={serviceFaq.map((f) => ({ q: t(f.q), a: t(f.a), note: t(f.note) }))} />
         </div>
       </Section>

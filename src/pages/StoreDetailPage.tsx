@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { currentStoreDay, getStore, isOpenNow, STORE_HOURS_NOTICE, UNIVERSAL_SERVICES } from '../data/stores'
@@ -9,6 +10,7 @@ import { NotFound } from './NotFound'
 
 // Ficha de una tienda (§4.14).
 export function StoreDetailPage() {
+  const t = useT()
   const { slug } = useParams()
   const store = getStore(slug ?? '')
   const [product, setProduct] = useState('')
@@ -143,7 +145,7 @@ export function StoreDetailPage() {
         <div>
           <h2 className="mb-3 font-bold text-ink">Consultar stock en esta tienda</h2>
           <label htmlFor="stock-product" className="mb-1.5 block text-sm text-muted">
-            Elige un producto
+            {t('stores.chooseProduct')}
           </label>
           <select
             id="stock-product"

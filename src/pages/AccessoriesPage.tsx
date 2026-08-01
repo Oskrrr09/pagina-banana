@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ButtonLink } from '../components/ui/Button'
@@ -35,6 +36,7 @@ const COMPAT_OPTIONS: { slug: CompatibilityFilter; label: string }[] = [
 ]
 
 export function AccessoriesPage() {
+  const t = useT()
   const [category, setCategory] = useState<AccessoryCategory | 'todas'>('todas')
   const [compat, setCompat] = useState<CompatibilityFilter>('todas')
 
@@ -113,7 +115,7 @@ export function AccessoriesPage() {
               }}
               className="mt-4 inline-flex items-center gap-1.5 rounded-[10px] border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink hover:border-ink/30"
             >
-              Ver todos los accesorios
+              {t('common.allAccessories')}
             </button>
           </div>
         ) : (

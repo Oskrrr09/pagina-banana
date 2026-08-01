@@ -174,7 +174,7 @@ export function PlanRenovePage() {
 
       <Section>
         <div className="mx-auto max-w-3xl">
-          <SectionHeader title="Preguntas frecuentes" />
+          <SectionHeader title={t('home.section.faqTitle')} />
           <Accordion items={planRenoveFaq.map((f) => ({ q: t(f.q), a: t(f.a), note: t(f.note) }))} />
         </div>
       </Section>
