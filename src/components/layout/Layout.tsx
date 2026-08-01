@@ -4,6 +4,7 @@ import { Header } from './Header'
 import { Footer } from './Footer'
 import { FavoriteStoreDialogs } from './FavoriteStoreDialogs'
 import { ALTURA_TAB_BAR, AppTabBar } from './AppTabBar'
+import { AppTopBar } from './AppTopBar'
 import { isNativeApp } from '../../lib/nativeApp'
 
 // Layout general. Al cambiar de ruta, sube al inicio (salvo anclas #).
@@ -23,7 +24,9 @@ export function Layout() {
       >
         Saltar al contenido
       </a>
-      <Header />
+      {/* Dentro de la app, arriba no hay ni logo ni menú: la navegación vive
+          abajo, así que ese sitio se aprovecha para buscar. */}
+      {isNativeApp ? <AppTopBar /> : <Header />}
       <main
         id="contenido"
         // Enfocable por código, fuera del recorrido de Tab: es el destino del

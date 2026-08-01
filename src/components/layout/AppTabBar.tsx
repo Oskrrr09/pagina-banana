@@ -1,7 +1,9 @@
+import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
 import { useStore } from '../../lib/store'
 import { useCustomerAuth } from '../../lib/customerAuth'
+import { MobileMenu } from './MobileMenu'
 
 /**
  * Barra de navegación inferior de la aplicación nativa.
@@ -11,33 +13,20 @@ import { useCustomerAuth } from '../../lib/customerAuth'
  * secciones principales siempre a la vista; una cabecera con mega-menú, que
  * es lo correcto en la web, dentro de una app se nota prestada.
  *
- * Cinco destinos, que es el máximo razonable a lo ancho de un móvil: las
- * secciones a las que se vuelve una y otra vez. El resto del catálogo sigue
- * llegándose por el menú de la cabecera y por la búsqueda.
+ * Cinco destinos, que es el máximo razonable a lo ancho de un móvil.
+ * "Explorar" no es una ruta: es el menú de categorías, que en la web abre el
+ * botón de hamburguesa de la cabecera. Dentro de la app esa cabecera no
+ * existe (ver `AppTopBar`), así que el menú entra por aquí.
  */
-
-interface Tab {
-  to: string
-  icon: string
-  label: string
-  /** Cuenta que se pinta sobre el icono. */
-  count?: number
-}
 
 export function AppTabBar() {
   const { cartCount, favorites } = useStore()
   const { session } = useCustomerAuth()
   const { pathname } = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
-  const tabs: Tab[] = [
-    { to: '/', icon: 'home', label: 'Inicio' },
-    { to: '/buscar', icon: 'search', label: 'Buscar' },
-    { to: '/favoritos', icon: 'heart', label: 'Favoritos', count: favorites.length },
-    { to: '/carrito', icon: 'cart', label: 'Carrito', count: cartCount },
-    // Sin sesión lleva al login; el destino cambia pero la pestaña es la
-    // misma, así que se marca activa en ambas rutas.
-    { to: session ? '/cuenta' : '/login', icon: 'user', label: 'Cuenta' },
-  ]
+  const cuentaTo = session ? '/cuenta' : '/login'
 
   function esActiva(to: string): boolean {
     if (to === '/') return pathname === '/'
@@ -48,55 +37,133 @@ export function AppTabBar() {
   }
 
   return (
-    <nav
-      aria-label="Navegación principal"
-      data-app-tab-bar
-      // `env(safe-area-inset-bottom)` deja sitio al indicador de inicio del
-      // iPhone y a la barra de gestos de Android. En un navegador normal vale
-      // cero, así que no estorba.
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]"
-    >
-      <ul className="mx-auto flex max-w-lg items-stretch">
-        {tabs.map((tab) => {
-          const activa = esActiva(tab.to)
-          return (
-            <li key={tab.label} className="flex-1">
-              <Link
-                to={tab.to}
-                aria-current={activa ? 'page' : undefined}
-                aria-label={
-                  tab.count && tab.count > 0 ? `${tab.label} (${tab.count})` : tab.label
-                }
-                className="flex flex-col items-center gap-0.5 px-1 pb-1.5 pt-2"
-              >
-                <span
-                  className={`relative grid h-7 w-12 place-items-center rounded-full transition-colors ${
-                    activa ? 'bg-brand text-ink' : 'text-muted'
-                  }`}
-                >
-                  <Icon name={tab.icon} size={20} aria-hidden="true" />
-                  {tab.count !== undefined && tab.count > 0 && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-[10px] font-bold text-white"
-                    >
-                      {tab.count}
-                    </span>
-                  )}
-                </span>
-                <span
-                  className={`text-[11px] leading-tight ${
-                    activa ? 'font-bold text-ink' : 'font-medium text-muted'
-                  }`}
-                >
-                  {tab.label}
-                </span>
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
+    <>
+      <nav
+        aria-label="Navegación principal"
+        data-app-tab-bar
+        // `env(safe-area-inset-bottom)` deja sitio al indicador de inicio del
+        // iPhone y a la barra de gestos de Android. En un navegador normal
+        // vale cero, así que no estorba.
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]"
+      >
+        <ul className="mx-auto flex max-w-lg items-stretch">
+          <Tab to="/" icon="home" label="Inicio" activa={esActiva('/')} />
+          <Tab
+            to="/favoritos"
+            icon="heart"
+            label="Favoritos"
+            count={favorites.length}
+            activa={esActiva('/favoritos')}
+          />
+          <Tab
+            icon="menu"
+            label="Explorar"
+            activa={menuOpen}
+            botonRef={menuButtonRef}
+            onClick={() => setMenuOpen(true)}
+            aria-expanded={menuOpen}
+            aria-haspopup="dialog"
+          />
+          <Tab
+            to="/carrito"
+            icon="cart"
+            label="Carrito"
+            count={cartCount}
+            activa={esActiva('/carrito')}
+          />
+          <Tab to={cuentaTo} icon="user" label="Cuenta" activa={esActiva(cuentaTo)} />
+        </ul>
+      </nav>
+
+      <MobileMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        returnFocusRef={menuButtonRef}
+      />
+    </>
+  )
+}
+
+/**
+ * Una pestaña. Es un enlace cuando lleva a una ruta y un botón cuando abre
+ * algo —"Explorar" abre el menú—, porque un enlace que no navega miente al
+ * lector de pantalla y al menú contextual del navegador.
+ */
+function Tab({
+  to,
+  icon,
+  label,
+  count,
+  activa,
+  onClick,
+  botonRef,
+  ...aria
+}: {
+  to?: string
+  icon: string
+  label: string
+  count?: number
+  activa: boolean
+  onClick?: () => void
+  botonRef?: React.RefObject<HTMLButtonElement>
+  'aria-expanded'?: boolean
+  'aria-haspopup'?: 'dialog'
+}) {
+  const etiqueta = count && count > 0 ? `${label} (${count})` : label
+
+  const contenido = (
+    <>
+      <span
+        className={`relative grid h-7 w-12 place-items-center rounded-full transition-colors ${
+          activa ? 'bg-brand text-ink' : 'text-muted'
+        }`}
+      >
+        <Icon name={icon} size={20} aria-hidden="true" />
+        {count !== undefined && count > 0 && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-[10px] font-bold text-white"
+          >
+            {count}
+          </span>
+        )}
+      </span>
+      <span
+        className={`text-[11px] leading-tight ${
+          activa ? 'font-bold text-ink' : 'font-medium text-muted'
+        }`}
+      >
+        {label}
+      </span>
+    </>
+  )
+
+  const clases = 'flex w-full flex-col items-center gap-0.5 px-1 pb-1.5 pt-2'
+
+  return (
+    <li className="flex-1">
+      {to ? (
+        <Link
+          to={to}
+          aria-current={activa ? 'page' : undefined}
+          aria-label={etiqueta}
+          className={clases}
+        >
+          {contenido}
+        </Link>
+      ) : (
+        <button
+          ref={botonRef}
+          type="button"
+          onClick={onClick}
+          aria-label={etiqueta}
+          className={clases}
+          {...aria}
+        >
+          {contenido}
+        </button>
+      )}
+    </li>
   )
 }
 

@@ -69,6 +69,9 @@
 html {
   scroll-behavior: smooth;
   overflow-x: clip;
+  /* Corta el rebote horizontal del WebView. Sin esto, en la app se puede
+     arrastrar la pantalla de lado y deja ver una franja vacía. */
+  overscroll-behavior-x: none;
 }
 body {
   font-family: var(--font-sans);
@@ -77,6 +80,21 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+/* iOS amplía la página al enfocar un campo cuyo texto mida menos de 16px, y
+   una vez ampliada la página se puede arrastrar de lado: es la causa de que
+   "se descuadre lateralmente" al tocar el buscador o el chat. El zoom no se
+   desactiva con `user-scalable=no` —eso impediría ampliar a quien lo
+   necesite— sino poniendo un suelo de 16px al texto de los campos.
+   `max(16px, 1em)` respeta los que ya son mayores. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
 }
 
 /* El amarillo de marca es siempre una superficie clara, también cuando el

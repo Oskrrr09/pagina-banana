@@ -115,10 +115,11 @@ Android (2026-08-01).**
 - `capacitor.config.ts`, `npm run build:app` (mismo código, `--base=/`),
   proyectos `ios/` y `android/` generados, e iconos y pantallas de carga
   en todos los tamaños.
-- **Interfaz propia de app** dentro del binario: barra de navegación
-  inferior con cinco destinos y sin pie de página, y el chat dentro de
-  "Contacta con nosotros" en el menú, sin burbuja flotante. La web no
-  cambia. Ver [[02-decisiones#D-042 — La app nativa usa la navegación de una app, no la de la web]]
+- **Interfaz propia de app** dentro del binario: arriba, un buscador con
+  filtros rápidos por familia en vez de cabecera; abajo, barra de
+  navegación con Inicio, Favoritos, Explorar, Carrito y Cuenta; sin pie de
+  página; y el chat dentro de "Contacta con nosotros", sin burbuja
+  flotante. La web no cambia. Ver [[02-decisiones#D-042 — La app nativa usa la navegación de una app, no la de la web]]
   y [[02-decisiones#D-043 — En la app, el chat vive en "Contacta con nosotros"]].
 - **Android**: `app-debug.apk` (12 MB, `targetSdk` 36) instalado en un
   emulador Pixel arm64. Arranca, navega a rutas profundas y el chat se abre

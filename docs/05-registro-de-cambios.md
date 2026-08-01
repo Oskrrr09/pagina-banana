@@ -8,6 +8,29 @@ actualizado: 2026-08-01
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-01 — Encuadre en móvil, buscador arriba y barra inferior definitiva
+
+- **Arreglado el desplazamiento lateral** que Oscar veía "a ratos" en la web
+  móvil y en la app. No era un desbordamiento: iOS **amplía la página** al
+  enfocar un campo con texto de menos de 16px, y ampliada se puede arrastrar
+  de lado. El buscador estaba a 15px y el del chat a 14px. Ahora hay un suelo
+  de 16px para todos los campos en pantallas táctiles, más
+  `overscroll-behavior-x: none` para el rebote del WebView. No se usa
+  `user-scalable=no`: eso le quitaría el zoom a quien lo necesita.
+- **La cabecera desaparece dentro de la app** y la sustituye un buscador a
+  todo lo ancho con filtros rápidos por familia debajo (`AppTopBar`). El
+  buscador abre el mismo motor a pantalla completa que ya usaba la web.
+- **Barra inferior definitiva**: Inicio · Favoritos · Explorar · Carrito ·
+  Cuenta. "Explorar" hereda el menú de categorías que antes abría la
+  hamburguesa de la cabecera.
+- **Pantalla de carga con el logotipo real** de Banana: el plátano encima y
+  el rótulo debajo, tomado del mismo SVG que usa la web. El icono se queda
+  solo con el plátano, porque a 48px el rótulo no se lee.
+- **Pruebas nuevas** en `tests/e2e/mobile-layout.spec.ts`: ninguna ruta
+  desborda a 320 ni a 390px, ni en web ni en app, ni empujando los
+  carruseles hasta el final; y ningún campo visible baja de 16px. Suite en
+  244.
+
 ## 2026-08-01 — La app tiene interfaz de app, y compila en iOS y Android
 
 - **Interfaz propia dentro del binario**: barra de navegación inferior con

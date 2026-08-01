@@ -567,7 +567,17 @@ No atribuye motivaciones que el repositorio no documenta.
 - Detalles que solo aparecieron al ejecutarlo en un dispositivo, no en el
   navegador: la cabecera necesita `env(safe-area-inset-top)` o queda bajo la
   Dynamic Island, y el aviso de tienda favorita tapaba la barra inferior.
-- Evidencia: `src/components/layout/AppTabBar.tsx`, `tests/e2e/app-shell.spec.ts`.
+- Forma final (2026-08-01, tras revisarla con Oscar en el emulador):
+  - **Arriba no hay cabecera**: la sustituye un buscador con filtros rápidos
+    por familia (`AppTopBar`). Ni logo ni menú: la navegación vive abajo.
+  - **Abajo**: Inicio · Favoritos · Explorar · Carrito · Cuenta.
+    "Explorar" no es una ruta, es el menú de categorías, que en la web abre
+    la hamburguesa de la cabecera.
+  - Quinto hueco para **Favoritos** y no para promociones: las promociones
+    en tiempo real no existen en el proyecto y una pestaña vacía —o con
+    datos inventados— iría contra la regla de contenido demostrativo.
+- Evidencia: `src/components/layout/AppTabBar.tsx`,
+  `src/components/layout/AppTopBar.tsx`, `tests/e2e/app-shell.spec.ts`.
 
 ## D-043 — En la app, el chat vive en "Contacta con nosotros"
 
@@ -586,6 +596,24 @@ No atribuye motivaciones que el repositorio no documenta.
   devolver el foco al cerrar. Va al contenido principal, y **después** de que
   se levante el `inert` que el chat aplica al resto del documento: hacerlo
   antes era una operación vacía y el foco acababa en `body`.
+
+## D-044 — Suelo de 16px en los campos, para que iOS no amplíe la página
+
+- Fecha: 2026-08-01.
+- Estado: vigente.
+- Decisión: en pantallas táctiles, todo `input`, `select` y `textarea` tiene
+  un tamaño de texto mínimo de 16px (`font-size: max(16px, 1em)`).
+- Motivo: Safari en iOS **amplía la página** al enfocar un campo cuyo texto
+  mida menos de 16px, y una vez ampliada se puede arrastrar de lado. Se
+  manifestaba como "la página se desplaza y descuadra lateralmente" al tocar
+  el buscador (15px) o el chat (14px). La clase `.field` de los formularios
+  ya lo cumplía; el problema estaba en los campos escritos a mano.
+- Descartado: `user-scalable=no` en el viewport. Quita el zoom a todo el
+  mundo, incluida la gente que lo necesita para leer.
+- Se refuerza además con `overscroll-behavior-x: none`, que corta el rebote
+  horizontal del WebView.
+- Cubierto en `tests/e2e/mobile-layout.spec.ts`, que mide el tamaño real de
+  cada campo visible y comprueba que ninguna ruta desborda a 320 y 390px.
 
 ## Cómo añadir una decisión
 

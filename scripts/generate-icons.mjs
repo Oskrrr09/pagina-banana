@@ -8,7 +8,7 @@
 // Solo hay que reejecutarlo si cambia el logo; los PNG se versionan en git.
 
 import { chromium } from 'playwright'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -57,14 +57,31 @@ function maskable({ bg, fg }) {
 const TIENDA = { bg: YELLOW, fg: INK }
 const AGENTE = { bg: INK, fg: YELLOW }
 
+// Rótulo "banana" real de la marca, tomado del mismo SVG que usa la web para
+// no tener dos versiones del logotipo que puedan separarse.
+const logoSvg = await readFile(join(root, 'public', 'img', 'logo-dark.svg'), 'utf8')
+const logoCuerpo = logoSvg.slice(logoSvg.indexOf('<g'), logoSvg.lastIndexOf('</svg>'))
+
+function rotulo(color) {
+  // El logotipo mide 67x16. Se anida con su propio viewBox y se coloca
+  // centrado bajo el plátano.
+  return `<svg x="6" y="19" width="20" height="4.78" viewBox="0 0 67 16">
+    ${logoCuerpo.replace(/fill="#[0-9A-Fa-f]{6}"/g, `fill="${color}"`)}
+  </svg>`
+}
+
 // Pantalla de carga de la app nativa. Capacitor la recorta al tamaño de cada
 // dispositivo desde el centro, así que tiene que ser cuadrada y con el dibujo
 // pequeño y centrado: cualquier cosa cerca del borde se pierde en pantallas
 // alargadas.
+//
+// Aquí sí cabe el logotipo completo. En el icono no: a 48px el rótulo no se
+// lee, y por eso el icono se queda solo con el plátano.
 function splash({ bg, fg }) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" style="--fg:${fg}">
   <rect width="32" height="32" fill="${bg}"/>
-  ${banana(0.5)}
+  <g transform="translate(0 -3)">${banana(0.42)}</g>
+  ${rotulo(fg)}
 </svg>`
 }
 
@@ -94,7 +111,7 @@ const nativeTargets = [
   { file: 'icon.png', size: 1024, svg: maskable(TIENDA) },
   { file: 'icon-only.png', size: 1024, svg: maskable(TIENDA) },
   { file: 'icon-foreground.png', size: 1024, svg: standard(TIENDA) },
-  { file: 'icon-background.png', size: 1024, svg: splash({ bg: YELLOW, fg: YELLOW }) },
+  { file: 'icon-background.png', size: 1024, svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="${YELLOW}"/></svg>` },
   { file: 'splash.png', size: 2732, svg: splash(TIENDA) },
   // Android e iOS en modo oscuro. Se invierte el fondo, no el plátano.
   { file: 'splash-dark.png', size: 2732, svg: splash({ bg: INK, fg: YELLOW }) },

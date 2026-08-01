@@ -25,9 +25,16 @@ test.describe('interfaz de la app nativa', () => {
 
     const barra = page.getByRole('navigation', { name: 'Navegación principal' })
     await expect(barra).toBeVisible()
-    for (const etiqueta of ['Inicio', 'Buscar', 'Favoritos', 'Carrito', 'Cuenta']) {
-      await expect(barra.getByRole('link', { name: new RegExp(`^${etiqueta}`) })).toBeVisible()
-    }
+
+    // El orden importa: es el que se acordó con Oscar.
+    const etiquetas = await barra.locator('li').allInnerTexts()
+    expect(etiquetas.map((t) => t.trim())).toEqual([
+      'Inicio',
+      'Favoritos',
+      'Explorar',
+      'Carrito',
+      'Cuenta',
+    ])
 
     // El pie de página es un mapa del sitio; dentro de una app sobra.
     await expect(page.getByRole('contentinfo')).toHaveCount(0)
@@ -121,7 +128,7 @@ test.describe('interfaz de la app nativa', () => {
     // inferior: dentro de la app no existe.
     await expect(page.getByRole('button', { name: 'Abrir chat de Bananito' })).toHaveCount(0)
 
-    await page.getByRole('button', { name: 'Abrir menú' }).click()
+    await page.getByRole('button', { name: 'Explorar' }).click()
     const menu = page.getByRole('dialog', { name: 'Menú principal' })
     await expect(menu.getByText('Contacta con nosotros')).toBeVisible()
 
@@ -137,7 +144,7 @@ test.describe('interfaz de la app nativa', () => {
     // `body` obligaría a quien navega por teclado a empezar desde arriba.
     await comoApp(page)
     await page.goto('./')
-    await page.getByRole('button', { name: 'Abrir menú' }).click()
+    await page.getByRole('button', { name: 'Explorar' }).click()
     await page
       .getByRole('dialog', { name: 'Menú principal' })
       .getByRole('button', { name: /Chatea con Bananito/ })
@@ -162,7 +169,7 @@ test.describe('interfaz de la app nativa', () => {
     })
     await page.goto('./')
 
-    await page.getByRole('button', { name: 'Abrir menú' }).click()
+    await page.getByRole('button', { name: 'Explorar' }).click()
     await page
       .getByRole('dialog', { name: 'Menú principal' })
       .getByRole('button', { name: /Chatea con Bananito/ })
@@ -175,6 +182,49 @@ test.describe('interfaz de la app nativa', () => {
     await page.waitForTimeout(2500)
     await expect(page.locator('[data-favorite-store-prompt]')).toHaveCount(0)
     await expect(chat).toBeVisible()
+  })
+
+  test('arriba hay un buscador con filtros de categoría, no una cabecera de web', async ({
+    page,
+  }) => {
+    await comoApp(page)
+    await page.goto('./')
+
+    const cabecera = page.getByRole('banner')
+    await expect(
+      cabecera.getByRole('button', { name: 'Buscar en Banana Computer' }),
+    ).toBeVisible()
+
+    // Filtros rápidos por familia, con las categorías reales del catálogo.
+    const categorias = cabecera.getByRole('navigation', { name: 'Categorías' })
+    await expect(categorias.getByRole('link', { name: 'iPhone' })).toBeVisible()
+    await expect(categorias.getByRole('link', { name: 'Accesorios' })).toBeVisible()
+
+    // El menú y el mega-menú de la web ya no están arriba: el menú lo abre
+    // "Explorar", abajo.
+    await expect(cabecera.getByRole('button', { name: 'Abrir menú' })).toHaveCount(0)
+  })
+
+  test('el buscador de arriba abre el mismo buscador a pantalla completa', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./')
+    await page.getByRole('button', { name: 'Buscar en Banana Computer' }).click()
+
+    const buscador = page.getByRole('dialog', { name: 'Buscar' })
+    await expect(buscador).toBeVisible()
+    await page.keyboard.type('airpods')
+    // Mismo motor que /buscar: debe autocompletar.
+    await expect(buscador.getByRole('option').first()).toBeVisible({ timeout: 5000 })
+  })
+
+  test('un filtro de categoría navega a su familia', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./')
+    await page
+      .getByRole('navigation', { name: 'Categorías' })
+      .getByRole('link', { name: 'iPhone' })
+      .click()
+    await expect(page).toHaveURL(/\/iphone$/)
   })
 
   test('la barra inferior no tiene fallos de accesibilidad', async ({ page }) => {
