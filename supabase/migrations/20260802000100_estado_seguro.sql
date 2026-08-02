@@ -831,14 +831,17 @@ begin
   if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
     raise exception 'Solo un agente dado de alta' using errcode = '42501';
   end if;
-  -- Solo si sigue libre (o ya es suya): apropiarse de la de otro no.
+  -- Abierta, y libre o ya suya. Faltaba lo de abierta: se podía reclamar una
+  -- conversación cerrada, que no significa nada y ensucia la trazabilidad.
+  -- Repetirlo sobre la propia no rompe nada: es idempotente.
   update public.conversaciones
      set agente_id = v_uid
    where id = p_conversacion_id
+     and estado = 'abierta'
      and (agente_id is null or agente_id = v_uid);
   get diagnostics v_afectadas = row_count;
   if v_afectadas = 0 then
-    raise exception 'Esa conversación no existe o la lleva otro agente'
+    raise exception 'No existe, está cerrada, o la lleva otro agente'
       using errcode = '42501';
   end if;
 end;
@@ -859,13 +862,20 @@ begin
   if v_uid is null then
     raise exception 'Hace falta sesión' using errcode = '42501';
   end if;
+  -- Solo sobre abiertas: una conversación cerrada conserva el agente que la
+  -- atendió, que es lo que permite saber después quién llevó cada caso.
+  -- Y solo si hay algo que liberar: decir que sí sobre una sin asignar sería
+  -- informar de un cambio que no ha ocurrido.
   update public.conversaciones
      set agente_id = null
    where id = p_conversacion_id
+     and estado = 'abierta'
+     and agente_id is not null
      and (agente_id = v_uid or public.es_supervisor());
   get diagnostics v_afectadas = row_count;
   if v_afectadas = 0 then
-    raise exception 'No es tuya' using errcode = '42501';
+    raise exception 'No existe, está cerrada, no tiene agente, o no es tuya'
+      using errcode = '42501';
   end if;
 end;
 $$;
@@ -888,19 +898,24 @@ begin
   if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
     raise exception 'Solo un agente dado de alta' using errcode = '42501';
   end if;
-  -- El que la lleva, o un supervisor. Y solo toca estado, fecha de cierre y
-  -- si se pide valoración: las estrellas las escribe el visitante, no el
-  -- agente que le atendió.
+  -- El que la lleva, o un supervisor. Y nada más.
+  --
+  -- Antes también entraba `agente_id is null`, así que cualquier agente podía
+  -- cerrar una conversación libre — que es la de otro compañero que aún no la
+  -- ha cogido. Para cerrarla hay que asignársela primero.
+  --
+  -- Solo toca estado, fecha de cierre y si se pide valoración: las estrellas
+  -- las escribe el visitante, no el agente que le atendió.
   update public.conversaciones
      set estado = 'cerrada',
          cerrada_at = now(),
          valoracion_solicitada = coalesce(p_solicitar_valoracion, true)
    where id = p_conversacion_id
      and estado = 'abierta'
-     and (agente_id = v_uid or agente_id is null or public.es_supervisor());
+     and (agente_id = v_uid or public.es_supervisor());
   get diagnostics v_afectadas = row_count;
   if v_afectadas = 0 then
-    raise exception 'No se puede cerrar: no existe, ya está cerrada, o la lleva otro'
+    raise exception 'No se puede cerrar: no existe, ya está cerrada, o no es tuya'
       using errcode = '42501';
   end if;
 end;
@@ -921,16 +936,25 @@ begin
   if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
     raise exception 'Solo un agente dado de alta' using errcode = '42501';
   end if;
-  -- No se toca la valoración: si el visitante ya puntuó, esa puntuación es
-  -- suya y se queda.
+  -- Solo el agente que la atendió, o un supervisor. Antes bastaba con ser
+  -- agente: cualquiera podía reabrir la conversación de cualquier compañero.
+  --
+  -- Una conversación cerrada sin agente solo la reabre un supervisor, y
+  -- reabrir NO asigna: el `agente_id` se queda como estaba, para que la
+  -- reapertura no se lleve por delante la trazabilidad de quién atendió.
+  --
+  -- Tampoco se toca la valoración: si el visitante ya puntuó, esa puntuación
+  -- es suya y se queda.
   update public.conversaciones
      set estado = 'abierta',
          cerrada_at = null
    where id = p_conversacion_id
-     and estado = 'cerrada';
+     and estado = 'cerrada'
+     and (agente_id = v_uid or public.es_supervisor());
   get diagnostics v_afectadas = row_count;
   if v_afectadas = 0 then
-    raise exception 'No se puede reabrir' using errcode = '42501';
+    raise exception 'No se puede reabrir: no existe, no está cerrada, o no es tuya'
+      using errcode = '42501';
   end if;
 end;
 $$;
@@ -1082,21 +1106,33 @@ begin
     raise exception 'Solo un agente dado de alta' using errcode = '42501';
   end if;
 
-  select estado into v_actual from public.reservas where id = p_reserva_id;
-  if v_actual is null then
-    raise exception 'Esa reserva no existe' using errcode = '42501';
-  end if;
+  -- Comprobación y escritura en UNA sentencia.
+  --
+  -- Antes se leía el estado, se validaba la transición y luego se escribía.
+  -- Entre la lectura y la escritura cabe otra operación: dos agentes leían
+  -- 'disponible', uno pedía 'completada' y el otro 'cancelada', y ambas
+  -- llamadas decían que sí. El resultado efectivo era completada → cancelada,
+  -- que es justo lo que la máquina de estados prohíbe.
+  --
+  -- Metiendo la condición en el `where`, la segunda no encuentra fila que
+  -- casar y no escribe nada.
+  update public.reservas
+     set estado = p_estado
+   where id = p_reserva_id
+     and (
+       (estado = 'en-espera'  and p_estado in ('disponible', 'cancelada')) or
+       (estado = 'disponible' and p_estado in ('completada', 'cancelada'))
+     )
+  returning estado into v_actual;
 
-  -- Máquina de estados explícita. Sin esto se podía devolver una reserva
-  -- completada a la cola, o resucitar una cancelada.
-  if not (
-    (v_actual = 'en-espera'  and p_estado in ('disponible', 'cancelada')) or
-    (v_actual = 'disponible' and p_estado in ('completada', 'cancelada'))
-  ) then
+  if v_actual is null then
+    -- No se actualizó nada. Se mira por qué, para poder decir algo útil.
+    select estado into v_actual from public.reservas where id = p_reserva_id;
+    if v_actual is null then
+      raise exception 'Esa reserva no existe' using errcode = '42501';
+    end if;
     raise exception 'Transición no permitida: % → %', v_actual, p_estado;
   end if;
-
-  update public.reservas set estado = p_estado where id = p_reserva_id;
 end;
 $$;
 revoke all on function public.cambiar_estado_reserva(uuid, text) from public;

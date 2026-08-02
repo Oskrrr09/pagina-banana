@@ -311,3 +311,79 @@ describe('funciones security definer', () => {
     }
   })
 })
+
+describe('privilegios finales', () => {
+  /** Roles con EXECUTE sobre una función. */
+  async function quienEjecuta(nombre: string): Promise<string[]> {
+    const { rows } = await db.query<{ rol: string }>(
+      `select r.rolname as rol
+         from pg_proc p
+         join pg_namespace n on n.oid = p.pronamespace
+         cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+         join pg_roles r on r.oid = a.grantee
+        where n.nspname = 'public' and p.proname = $1
+          and a.privilege_type = 'EXECUTE'
+          and r.rolname in ('anon', 'authenticated', 'public')
+        order by 1`,
+      [nombre],
+    )
+    return rows.map((r) => r.rol)
+  }
+
+  it('los RPC de agente solo los ejecuta authenticated', async () => {
+    for (const nombre of [
+      'asignarme_conversacion',
+      'liberar_mi_conversacion',
+      'cerrar_conversacion',
+      'reabrir_conversacion',
+      'cambiar_estado_reserva',
+      'responder_como_agente',
+      'cambiar_mi_estado',
+    ]) {
+      expect(await quienEjecuta(nombre), `${nombre}`).toEqual(['authenticated'])
+    }
+  })
+
+  it('los RPC del visitante los ejecutan anon y authenticated', async () => {
+    for (const nombre of ['abrir_conversacion', 'enviar_mensaje_visitante', 'enviar_valoracion']) {
+      expect(await quienEjecuta(nombre), `${nombre}`).toEqual(['anon', 'authenticated'])
+    }
+  })
+
+  it('las auxiliares no son ejecutables desde la API', async () => {
+    // `es_supervisor` decide quién puede cerrar y reabrir: poder llamarla
+    // desde fuera no rompe nada por sí solo, pero es superficie que no hace
+    // falta exponer.
+    for (const nombre of [
+      'es_supervisor',
+      'visitantes_protege_columnas',
+      'touch_conversation_on_message',
+    ]) {
+      expect(await quienEjecuta(nombre), `${nombre}`).toEqual([])
+    }
+  })
+
+  // Actúan sobre datos de OTRO por diseño, así que el destinatario tiene que
+  // venir por parámetro. Lo que las protege no es ocultar el id, sino que la
+  // autorización sea `es_agente()`.
+  const ACTUAN_SOBRE_TERCEROS = new Set(['revisar_descuento_educativo'])
+
+  it('ningún RPC de datos propios recibe el identificador del propietario', async () => {
+    const { rows } = await db.query<{ nombre: string; args: string }>(
+      `select p.proname as nombre, pg_get_function_arguments(p.oid) as args
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.prosecdef`,
+    )
+    const sospechosas = rows
+      .filter((r) => !ACTUAN_SOBRE_TERCEROS.has(r.nombre))
+      .filter((r) => /p_(agente_id|cliente_id|visitor_id|autor|created_at|fecha|uid)\b/i.test(r.args))
+      .map((r) => `${r.nombre}(${r.args})`)
+
+    expect(
+      sospechosas,
+      'esos valores los deriva el servidor de la sesión; aceptarlos por ' +
+        'parámetro es pedirle al cliente la respuesta que hay que comprobar:\n  ' +
+        sospechosas.join('\n  '),
+    ).toEqual([])
+  })
+})

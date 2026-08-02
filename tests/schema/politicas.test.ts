@@ -616,7 +616,14 @@ describe('conversaciones: nadie escribe la fila a mano', () => {
     expect(despues.rows[0].estrellas, 'el agente no puntúa por el visitante').toBeNull()
   })
 
-  it('el primero que responde se queda la conversación, y el segundo no', async () => {
+  // Ojo con el nombre: esto NO prueba una carrera.
+  //
+  // PGlite tiene una sola conexión y serializa, así que las dos llamadas van
+  // una detrás de otra. Lo que se comprueba es la semántica de la sentencia
+  // atómica —que la segunda, con el estado ya cambiado, no encuentra fila que
+  // casar— y no la contención simultánea de dos conexiones. Eso queda
+  // pendiente de PostgreSQL o Supabase real.
+  it('el segundo agente no puede responder si la conversación ya es de otro', async () => {
     const conv = await nueva(BEA)
 
     const primero = await como(
@@ -658,6 +665,7 @@ describe('conversaciones: nadie escribe la fila a mano', () => {
   it('cerrar conserva los mensajes y no deja responder después', async () => {
     const conv = await nueva(BEA)
     await como(BEA, 'anon', `select public.enviar_mensaje_visitante($1, 'hola')`, [conv])
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
 
     const { error } = await como(
       AGENTE,
@@ -684,6 +692,7 @@ describe('conversaciones: nadie escribe la fila a mano', () => {
 
   it('reabrir no toca la valoración que ya dio el visitante', async () => {
     const conv = await nueva(BEA)
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
     await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, true)`, [conv])
     await como(BEA, 'anon', `select public.enviar_valoracion($1, 5::smallint, 'genial')`, [conv])
 
@@ -921,5 +930,365 @@ describe('agentes entre sí', () => {
       [AGENTE],
     )
     expect(rows[0].rol).toBe('agente')
+  })
+})
+
+describe('autorización de las operaciones sobre conversaciones', () => {
+  let siguiente = 0
+
+  /**
+   * Conversación recién creada, con un visitante distinto cada vez.
+   *
+   * Hace falta de verdad: `abrir_conversacion()` reutiliza la conversación
+   * abierta del visitante, así que reusar el mismo devolvía siempre la misma
+   * fila y las pruebas se pisaban entre ellas.
+   */
+  async function nuevaAbierta(): Promise<string> {
+    siguiente += 1
+    const uid = `aaaaaaaa-0000-4000-8000-${String(siguiente).padStart(12, '0')}`
+    await db.query('insert into auth.users (id, email) values ($1, $2)', [
+      uid,
+      `v${siguiente}@ejemplo.test`,
+    ])
+    const { rows } = await como<{ abrir_conversacion: string }>(
+      uid,
+      'anon',
+      `select public.abrir_conversacion('Visitante') as abrir_conversacion`,
+    )
+    return rows[0].abrir_conversacion
+  }
+
+  it('no se puede asignar una conversación cerrada', async () => {
+    const conv = await nuevaAbierta()
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
+    await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
+    await como(AGENTE, 'authenticated', `select public.liberar_mi_conversacion($1)`, [conv])
+
+    const { error } = await como(
+      AGENTE_B,
+      'authenticated',
+      `select public.asignarme_conversacion($1)`,
+      [conv],
+    )
+    expect(error, 'reclamar una cerrada no significa nada').toMatch(/cerrada|no es tuya|no existe/i)
+  })
+
+  it('asignarse la propia otra vez es idempotente', async () => {
+    const conv = await nuevaAbierta()
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.asignarme_conversacion($1)`,
+      [conv],
+    )
+    expect(error).toBeNull()
+  })
+
+  it('un agente normal no puede cerrar una conversación libre', async () => {
+    const conv = await nuevaAbierta()
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.cerrar_conversacion($1, false)`,
+      [conv],
+    )
+    // Una conversación libre es la de otro compañero que aún no la ha cogido.
+    expect(error, 'hay que asignársela primero').toMatch(/no es tuya/)
+  })
+
+  it('el supervisor sí puede cerrar una libre y una ajena', async () => {
+    const libre = await nuevaAbierta()
+    const libreOk = await como(
+      SUPERVISOR,
+      'authenticated',
+      `select public.cerrar_conversacion($1, false)`,
+      [libre],
+    )
+    expect(libreOk.error).toBeNull()
+
+    const ajena = await nuevaAbierta()
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [ajena])
+    const ajenaOk = await como(
+      SUPERVISOR,
+      'authenticated',
+      `select public.cerrar_conversacion($1, false)`,
+      [ajena],
+    )
+    expect(ajenaOk.error).toBeNull()
+  })
+
+  it('el agente B no puede cerrar ni reabrir la conversación de A', async () => {
+    const conv = await nuevaAbierta()
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
+
+    const cerrar = await como(
+      AGENTE_B,
+      'authenticated',
+      `select public.cerrar_conversacion($1, false)`,
+      [conv],
+    )
+    expect(cerrar.error).toMatch(/no es tuya/)
+
+    await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
+    const reabrir = await como(
+      AGENTE_B,
+      'authenticated',
+      `select public.reabrir_conversacion($1)`,
+      [conv],
+    )
+    expect(reabrir.error).toMatch(/no es tuya/)
+  })
+
+  it('reabrir no cambia el agente asignado ni deja cerrada_at', async () => {
+    const conv = await nuevaAbierta()
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
+    await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
+    await como(AGENTE, 'authenticated', `select public.reabrir_conversacion($1)`, [conv])
+
+    const { rows } = await db.query<{ estado: string; agente_id: string; cerrada_at: string | null }>(
+      `select estado, agente_id, cerrada_at from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(rows[0].estado).toBe('abierta')
+    expect(rows[0].agente_id, 'reabrir no reasigna').toBe(AGENTE)
+    expect(rows[0].cerrada_at).toBeNull()
+  })
+
+  it('liberar exige que esté abierta y asignada a quien libera', async () => {
+    const sinAgente = await nuevaAbierta()
+    const nada = await como(
+      AGENTE,
+      'authenticated',
+      `select public.liberar_mi_conversacion($1)`,
+      [sinAgente],
+    )
+    expect(nada.error, 'no hay nada que liberar').not.toBeNull()
+
+    const conv = await nuevaAbierta()
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
+    const ajena = await como(
+      AGENTE_B,
+      'authenticated',
+      `select public.liberar_mi_conversacion($1)`,
+      [conv],
+    )
+    expect(ajena.error, 'no es de B').not.toBeNull()
+
+    const propia = await como(
+      AGENTE,
+      'authenticated',
+      `select public.liberar_mi_conversacion($1)`,
+      [conv],
+    )
+    expect(propia.error).toBeNull()
+  })
+
+  it('un cliente y un anónimo no pueden usar los RPC de agente', async () => {
+    const conv = await nuevaAbierta()
+    for (const [uid, rol] of [
+      [CLIENTE, 'authenticated'],
+      [ANA, 'anon'],
+    ] as const) {
+      const { error } = await como(uid, rol, `select public.asignarme_conversacion($1)`, [conv])
+      expect(error, `${rol} no debe poder asignarse conversaciones`).not.toBeNull()
+    }
+  })
+})
+
+describe('máquina de estados de las reservas', () => {
+  async function reservaEn(estado: string): Promise<string> {
+    const { rows } = await como<{ crear_mis_reservas: string }>(
+      CLIENTE,
+      'authenticated',
+      `select public.crear_mis_reservas($1::jsonb) as crear_mis_reservas`,
+      [
+        JSON.stringify([
+          {
+            family: 'iphone',
+            model_slug: '17',
+            model_name: 'iPhone 17',
+            variant_label: '128 GB',
+            price: 959,
+          },
+        ]),
+      ],
+    )
+    const id = rows[0].crear_mis_reservas
+    if (estado !== 'en-espera') {
+      await como(AGENTE, 'authenticated', `select public.cambiar_estado_reserva($1, 'disponible')`, [id])
+    }
+    if (estado === 'completada' || estado === 'cancelada') {
+      await como(AGENTE, 'authenticated', `select public.cambiar_estado_reserva($1, $2)`, [id, estado])
+    }
+    return id
+  }
+
+  const permitidas: [string, string][] = [
+    ['en-espera', 'disponible'],
+    ['en-espera', 'cancelada'],
+    ['disponible', 'completada'],
+    ['disponible', 'cancelada'],
+  ]
+  for (const [desde, hasta] of permitidas) {
+    it(`permite ${desde} → ${hasta}`, async () => {
+      const id = await reservaEn(desde)
+      const { error } = await como(
+        AGENTE,
+        'authenticated',
+        `select public.cambiar_estado_reserva($1, $2)`,
+        [id, hasta],
+      )
+      expect(error).toBeNull()
+    })
+  }
+
+  const rechazadas: [string, string][] = [
+    ['disponible', 'en-espera'],
+    ['completada', 'cancelada'],
+    ['cancelada', 'disponible'],
+    ['completada', 'en-espera'],
+  ]
+  for (const [desde, hasta] of rechazadas) {
+    it(`rechaza ${desde} → ${hasta}`, async () => {
+      const id = await reservaEn(desde)
+      const { error } = await como(
+        AGENTE,
+        'authenticated',
+        `select public.cambiar_estado_reserva($1, $2)`,
+        [id, hasta],
+      )
+      expect(error).toMatch(/Transición no permitida/)
+      const { rows } = await db.query<{ estado: string }>(
+        `select estado from public.reservas where id = $1`,
+        [id],
+      )
+      expect(rows[0].estado, 'el estado no se mueve').toBe(desde)
+    })
+  }
+
+  it('una operación con el estado ya cambiado no puede avanzar', async () => {
+    // Esto NO es una prueba de contención: PGlite serializa. Comprueba la
+    // semántica de la sentencia atómica, que es lo que evita que dos
+    // decisiones tomadas sobre la misma lectura se apliquen las dos.
+    const id = await reservaEn('disponible')
+
+    const primera = await como(
+      AGENTE,
+      'authenticated',
+      `select public.cambiar_estado_reserva($1, 'completada')`,
+      [id],
+    )
+    expect(primera.error).toBeNull()
+
+    // La segunda venía decidida cuando la reserva aún estaba 'disponible'.
+    const segunda = await como(
+      AGENTE_B,
+      'authenticated',
+      `select public.cambiar_estado_reserva($1, 'cancelada')`,
+      [id],
+    )
+    expect(segunda.error, 'completada → cancelada no está permitida').toMatch(
+      /Transición no permitida/,
+    )
+
+    const { rows } = await db.query<{ estado: string }>(
+      `select estado from public.reservas where id = $1`,
+      [id],
+    )
+    expect(rows[0].estado).toBe('completada')
+  })
+})
+
+describe('la fecha de los mensajes la pone el servidor', () => {
+  /** Margen por la conversión entre el reloj de Node y el de Postgres. */
+  const TOLERANCIA_MS = 2000
+
+  it('el mensaje del visitante cae dentro de la ventana de ejecución', async () => {
+    const { rows: conv } = await como<{ abrir_conversacion: string }>(
+      BEA,
+      'anon',
+      `select public.abrir_conversacion('Bea') as abrir_conversacion`,
+    )
+    const id = conv[0].abrir_conversacion
+
+    const antes = Date.now()
+    await como(BEA, 'anon', `select public.enviar_mensaje_visitante($1, 'dentro de ventana')`, [id])
+    const despues = Date.now()
+
+    const { rows } = await db.query<{ created_at: string; ultimo: string }>(
+      `select m.created_at, c.ultimo_mensaje_at as ultimo
+         from public.mensajes m
+         join public.conversaciones c on c.id = m.conversacion_id
+        where m.texto = 'dentro de ventana'`,
+    )
+    const t = new Date(rows[0].created_at).getTime()
+    // Antes esto solo comprobaba que el año fuera anterior a 2030, lo que
+    // dejaba pasar cualquier fecha antigua.
+    expect(t).toBeGreaterThanOrEqual(antes - TOLERANCIA_MS)
+    expect(t).toBeLessThanOrEqual(despues + TOLERANCIA_MS)
+    expect(
+      new Date(rows[0].ultimo).getTime(),
+      'ultimo_mensaje_at debe coincidir con el mensaje',
+    ).toBe(t)
+  })
+
+  it('la respuesta del agente también, y avanza la fecha', async () => {
+    const { rows: conv } = await como<{ abrir_conversacion: string }>(
+      BEA,
+      'anon',
+      `select public.abrir_conversacion('Bea') as abrir_conversacion`,
+    )
+    const id = conv[0].abrir_conversacion
+    await como(BEA, 'anon', `select public.enviar_mensaje_visitante($1, 'primero')`, [id])
+
+    const { rows: previa } = await db.query<{ ultimo: string }>(
+      `select ultimo_mensaje_at as ultimo from public.conversaciones where id = $1`,
+      [id],
+    )
+
+    await new Promise((r) => setTimeout(r, 5))
+    const antes = Date.now()
+    await como(AGENTE, 'authenticated', `select public.responder_como_agente($1, 'respondo')`, [id])
+    const despues = Date.now()
+
+    const { rows } = await db.query<{ created_at: string; ultimo: string; agente_id: string }>(
+      `select m.created_at, c.ultimo_mensaje_at as ultimo, m.agente_id
+         from public.mensajes m
+         join public.conversaciones c on c.id = m.conversacion_id
+        where m.texto = 'respondo'`,
+    )
+    const t = new Date(rows[0].created_at).getTime()
+    expect(t).toBeGreaterThanOrEqual(antes - TOLERANCIA_MS)
+    expect(t).toBeLessThanOrEqual(despues + TOLERANCIA_MS)
+    expect(new Date(rows[0].ultimo).getTime()).toBe(t)
+    expect(
+      new Date(rows[0].ultimo).getTime(),
+      'la fecha avanza respecto al mensaje anterior',
+    ).toBeGreaterThan(new Date(previa[0].ultimo).getTime())
+    expect(rows[0].agente_id).toBe(AGENTE)
+  })
+
+  it('el disparador no toca ninguna otra columna de la conversación', async () => {
+    const { rows: conv } = await como<{ abrir_conversacion: string }>(
+      BEA,
+      'anon',
+      `select public.abrir_conversacion('Bea') as abrir_conversacion`,
+    )
+    const id = conv[0].abrir_conversacion
+    const antes = await db.query<Record<string, unknown>>(
+      `select visitor_id, created_at, estado, agente_id, valoracion_estrellas
+         from public.conversaciones where id = $1`,
+      [id],
+    )
+
+    await como(BEA, 'anon', `select public.enviar_mensaje_visitante($1, 'hola')`, [id])
+
+    const despues = await db.query<Record<string, unknown>>(
+      `select visitor_id, created_at, estado, agente_id, valoracion_estrellas
+         from public.conversaciones where id = $1`,
+      [id],
+    )
+    expect(despues.rows[0]).toEqual(antes.rows[0])
   })
 })
