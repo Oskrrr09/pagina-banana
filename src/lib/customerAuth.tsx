@@ -184,17 +184,32 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = useCallback(
     async (patch: CustomerProfileUpdate) => {
       if (!supabase || !userId) return { error: 'No hay sesión iniciada.' }
-      const { data, error } = await supabase
-        .from('clientes')
-        .update(patch)
-        .eq('id', userId)
-        .select('*')
-        .single()
+
+      // Por RPC y no con un `update` directo. El cliente ya no tiene UPDATE
+      // sobre `clientes`: RLS filtra filas pero no columnas, así que poder
+      // editar la fila propia incluía poder ponerse el descuento educativo en
+      // 'aprobado'. La función solo escribe las cuatro columnas de contacto.
+      //
+      // `undefined` significa "no lo toques" y `null` significa "bórralo".
+      // La distinción importa: mandar `undefined` por la red lo convierte en
+      // ausente, y la función lo interpreta con `coalesce` como "sin cambio";
+      // `null` explícito no se puede distinguir así, por eso lo que se quiera
+      // limpiar viaja como cadena vacía y la función la normaliza.
+      const { error } = await supabase.rpc('actualizar_mi_ficha', {
+        p_nombre: patch.nombre === undefined ? null : (patch.nombre ?? ''),
+        p_telefono: patch.telefono === undefined ? null : (patch.telefono ?? ''),
+        p_direccion_envio: patch.direccion_envio === undefined ? null : patch.direccion_envio,
+        p_direccion_facturacion:
+          patch.direccion_facturacion === undefined ? null : patch.direccion_facturacion,
+      })
       if (error) return { error: error.message }
-      setCliente(data as DbCustomer)
+
+      // La función no devuelve la fila, así que se recarga para que la UI
+      // refleje lo que quedó guardado de verdad y no lo que creíamos enviar.
+      await loadProfile()
       return { error: null }
     },
-    [userId],
+    [userId, loadProfile],
   )
 
   const value = useMemo<CustomerAuthState>(

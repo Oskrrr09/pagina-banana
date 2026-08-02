@@ -708,4 +708,5 @@ export const en: Diccionario = {
   'common.viewStore': 'See store',
   'common.viewStoreArrow': 'See store ›',
   'common.viewIphone': 'See iPhone',
+  'chat.welcome': 'Hi! I’m Bananito 🍌, the Banana Computer assistant. I can help you with products, accessories, comparing models, stores or prices. What do you need?',
 }

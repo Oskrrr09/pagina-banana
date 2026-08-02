@@ -708,4 +708,5 @@ export const de: Diccionario = {
   'common.viewStore': 'Store ansehen',
   'common.viewStoreArrow': 'Store ansehen ›',
   'common.viewIphone': 'iPhone ansehen',
+  'chat.welcome': 'Hallo! Ich bin Bananito 🍌, der Assistent von Banana Computer. Ich helfe dir bei Produkten, Zubehör, Modellvergleichen, Stores oder Preisen. Was brauchst du?',
 }

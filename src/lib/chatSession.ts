@@ -29,8 +29,14 @@ const CONVERSATION_STORAGE_KEY = 'bananito:conversation_id'
 // pedírselos en cada visita desde el mismo navegador.
 const GUEST_STORAGE_KEY = 'bananito:guest'
 
-const WELCOME_TEXT =
-  '¡Hola! Soy Bananito 🍌 el asistente de Banana Computer. Puedo ayudarte con productos, accesorios, comparar modelos, tiendas o precios. ¿En qué te ayudo?'
+// La bienvenida ya no vive aquí ni se guarda en la base.
+//
+// Antes la insertaba este módulo con `autor: 'bot'`, lo que obligaba a que las
+// políticas dejaran a un anónimo escribir como bot. Y además la fijaba en
+// castellano para siempre en una base que sirve a cinco idiomas.
+//
+// Ahora la pinta `ChatBubble` con la clave `chat.welcome` en el idioma activo,
+// y no se persiste: nadie tiene que revisar un saludo automático.
 
 type Status = 'loading' | 'ready' | 'demo' | 'error'
 
@@ -188,18 +194,18 @@ async function abrirConversacion(
     p_email: email,
     p_telefono: telefono,
     p_user_agent: navigator.userAgent,
-    p_bienvenida: WELCOME_TEXT,
   })
   if (error) throw error
 
   // Si además tiene cuenta, se enlaza la ficha con el cliente para que el
-  // agente le vea identificado. Va aparte porque la función de apertura no
-  // conoce el modelo de clientes.
+  // agente le vea identificado.
+  //
+  // Sin parámetros a propósito: la versión anterior mandaba el `cliente_id`
+  // desde aquí, y eso permitía escribir el UUID de otra persona y hacer que su
+  // conversación apareciera a nombre de ella. La función lo deduce de la
+  // sesión y solo vincula si esa misma sesión tiene ficha de cliente.
   if (identity?.clienteId) {
-    const { error: errorEnlace } = await supabase
-      .from('visitantes')
-      .update({ cliente_id: identity.clienteId })
-      .eq('auth_id', (await supabase.auth.getUser()).data.user?.id ?? '')
+    const { error: errorEnlace } = await supabase.rpc('vincular_mi_visitante_a_cliente')
     if (errorEnlace) {
       console.error('[chatSession] no se pudo enlazar la ficha con la cuenta', errorEnlace)
     }

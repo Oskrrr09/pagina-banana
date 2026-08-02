@@ -99,10 +99,13 @@ export async function cancelReservation(
   reservationId: string,
 ): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase no está configurado.' }
-  const { error } = await supabase
-    .from('reservas')
-    .update({ estado: 'cancelada' })
-    .eq('id', reservationId)
+  // Por RPC: el UPDATE directo dejaba cambiar cualquier columna de la reserva
+  // —precio, producto, o `pagado_at`, que es lo que fija el puesto en la lista
+  // de espera—. La función solo toca el estado, y solo si la reserva es tuya y
+  // sigue en espera.
+  const { error } = await supabase.rpc('cancelar_mi_reserva', {
+    p_reserva_id: reservationId,
+  })
   return { error: error ? error.message : null }
 }
 

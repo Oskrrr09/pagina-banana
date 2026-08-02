@@ -742,4 +742,5 @@ export const es = {
   'common.viewStore': 'Ver tienda',
   'common.viewStoreArrow': 'Ver tienda ›',
   'common.viewIphone': 'Ver iPhone',
+  'chat.welcome': '¡Hola! Soy Bananito 🍌 el asistente de Banana Computer. Puedo ayudarte con productos, accesorios, comparar modelos, tiendas o precios. ¿En qué te ayudo?',
 } as const

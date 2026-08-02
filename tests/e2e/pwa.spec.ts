@@ -95,7 +95,13 @@ test.describe('manifest', () => {
   })
 })
 
+// El service worker solo se registra en producción (`src/lib/pwa.ts` mira
+// `import.meta.env.PROD`), así que la comprobación depende de contra qué se
+// esté sirviendo la suite.
+const CONTRA_BUILD = Boolean(process.env.E2E_CONTRA_BUILD)
+
 test('en desarrollo no se registra ningún service worker', async ({ page }) => {
+  test.skip(CONTRA_BUILD, 'Se está sirviendo el build: ahí el SW sí debe registrarse.')
   // Regresión deliberada. Un service worker cacheando entre recargas pelearía
   // con el HMR de Vite y, sobre todo, con esta misma suite: es el mismo tipo
   // de fuga que hizo que las pruebas escribieran en el Supabase real (QA-002).
@@ -105,4 +111,26 @@ test('en desarrollo no se registra ningún service worker', async ({ page }) => 
     return (await navigator.serviceWorker.getRegistrations()).length
   })
   expect(registros).toBe(0)
+})
+
+test('sobre el build sí se registra el service worker y precachea', async ({ page }) => {
+  test.skip(!CONTRA_BUILD, 'Necesita el artefacto compilado (E2E_CONTRA_BUILD=1).')
+  // Esto es parte de PWA-001: hasta ahora el service worker no lo cubría
+  // ninguna prueba porque la suite corría contra el servidor de desarrollo,
+  // donde no se registra. Al pasar el CI a probar el build, se puede.
+  await page.goto('./')
+  const activo = await page.evaluate(async () => {
+    if (!('serviceWorker' in navigator)) return false
+    const reg = await navigator.serviceWorker.ready
+    return Boolean(reg.active)
+  })
+  expect(activo, 'el service worker debe tomar el control sobre el build').toBe(true)
+
+  const cacheados = await page.evaluate(async () => {
+    const nombres = await caches.keys()
+    if (nombres.length === 0) return 0
+    const cache = await caches.open(nombres[0])
+    return (await cache.keys()).length
+  })
+  expect(cacheados, 'debe haber precache').toBeGreaterThan(0)
 })

@@ -53,7 +53,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run dev -- --mode test --host 127.0.0.1 --port ${PORT}`,
+    // En CI se sirve el `dist` ya compilado —el mismo artefacto que se
+    // publica— en vez del servidor de desarrollo. Así las pruebas ven el base
+    // path real y los assets procesados, que es donde se esconden los fallos
+    // que solo aparecen en producción.
+    command: process.env.E2E_CONTRA_BUILD
+      ? `npx vite preview --host 127.0.0.1 --port ${PORT} --strictPort`
+      : `npm run dev -- --mode test --host 127.0.0.1 --port ${PORT}`,
     // Las pruebas corren SIEMPRE en modo demo, sin backend.
     //
     // Sin esto, un `npx playwright test` en local creaba visitantes y

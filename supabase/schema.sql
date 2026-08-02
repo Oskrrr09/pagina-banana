@@ -61,6 +61,13 @@ create table if not exists public.visitantes (
   user_agent text
 );
 
+-- Identidad verificable del visitante. Es el único vínculo del que cuelgan las
+-- políticas: el UUID que el navegador guarda en localStorage lo controla el
+-- propio visitante, así que sirve para recordar el hilo pero no autoriza nada.
+alter table public.visitantes
+  add column if not exists auth_id uuid unique references auth.users(id) on delete set null;
+create index if not exists visitantes_auth_id_idx on public.visitantes (auth_id);
+
 create table if not exists public.conversaciones (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
@@ -330,39 +337,7 @@ $$;
 -- tiene en su localStorage, así que hay que conocer los DOS uuid para
 -- poder valorar. No es autenticación de verdad — el visitante no tiene
 -- cuenta — pero evita que valga con adivinar un solo identificador.
-create or replace function public.enviar_valoracion(
-  p_conversacion_id uuid,
-  p_visitor_id uuid,
-  p_estrellas smallint,
-  p_observacion text default null
-)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_afectadas integer;
-begin
-  if p_estrellas is null or p_estrellas < 1 or p_estrellas > 5 then
-    raise exception 'La valoración debe estar entre 1 y 5';
-  end if;
 
-  update public.conversaciones
-     set valoracion_estrellas = p_estrellas,
-         valoracion_observacion = nullif(btrim(coalesce(p_observacion, '')), ''),
-         valoracion_at = now()
-   where id = p_conversacion_id
-     and visitor_id = p_visitor_id
-     and valoracion_solicitada
-     and valoracion_estrellas is null;
-
-  get diagnostics v_afectadas = row_count;
-  if v_afectadas = 0 then
-    raise exception 'No hay ninguna valoración pendiente para esta conversación';
-  end if;
-end;
-$$;
 
 -- Revisión del descuento educativo por parte de un agente.
 -- Se hace con función (y no con una política de UPDATE sobre `clientes`)
@@ -431,21 +406,64 @@ drop policy if exists "visitante escribe mensajes"      on public.mensajes;
 drop policy if exists "agente escribe mensajes"         on public.mensajes;
 
 -- ---- Chat del visitante -------------------------------------------------
--- El widget sigue sin login, así que `anon` conserva lo que necesita.
--- Riesgo conocido y aceptado (CHAT-001 / D-025): cualquiera con la URL
--- del panel puede leer conversaciones. La lectura se cierra cuando el
--- visitante tenga también cuenta, fuera del alcance de esta fase.
-create policy "chat lectura visitantes"
-  on public.visitantes for select to anon, authenticated using (true);
-create policy "chat alta visitantes"
-  on public.visitantes for insert to anon, authenticated with check (true);
-create policy "chat actualiza visitantes"
-  on public.visitantes for update to anon, authenticated using (true) with check (true);
+-- El widget no pide login, pero el visitante SÍ tiene identidad: una sesión
+-- anónima de Supabase. `auth.uid()` va firmado en el JWT y es lo único en lo
+-- que se apoyan estas políticas.
+--
+-- Aquí hubo `using (true)` para `anon` hasta el 2026-08-02. Como la clave
+-- anónima viaja en el bundle, eso equivalía a publicar el nombre, el email y
+-- el teléfono de todo el que hubiera escrito por el chat, junto con sus
+-- conversaciones. No se debe volver a poner: hay una prueba que lo vigila
+-- (`tests/e2e/schema-seguro.spec.ts`).
+drop policy if exists "visitante lee su ficha"          on public.visitantes;
+drop policy if exists "visitante crea su ficha"         on public.visitantes;
+drop policy if exists "visitante edita su ficha"        on public.visitantes;
+drop policy if exists "agente lee visitantes"           on public.visitantes;
+drop policy if exists "visitante lee sus conversaciones" on public.conversaciones;
+drop policy if exists "visitante abre conversacion"     on public.conversaciones;
+drop policy if exists "agente lee conversaciones"       on public.conversaciones;
+drop policy if exists "visitante lee sus mensajes"      on public.mensajes;
+drop policy if exists "visitante manda mensaje"         on public.mensajes;
+drop policy if exists "agente lee mensajes"             on public.mensajes;
 
-create policy "chat lectura conversaciones"
-  on public.conversaciones for select to anon, authenticated using (true);
-create policy "chat alta conversaciones"
-  on public.conversaciones for insert to anon, authenticated with check (true);
+create policy "visitante lee su ficha"
+  on public.visitantes for select to anon, authenticated
+  using (auth_id is not null and auth_id = auth.uid());
+
+create policy "visitante crea su ficha"
+  on public.visitantes for insert to anon, authenticated
+  with check (auth_id is not null and auth_id = auth.uid());
+
+create policy "visitante edita su ficha"
+  on public.visitantes for update to anon, authenticated
+  using (auth_id is not null and auth_id = auth.uid())
+  with check (auth_id is not null and auth_id = auth.uid());
+
+create policy "agente lee visitantes"
+  on public.visitantes for select to authenticated
+  using (public.es_agente());
+
+create policy "visitante lee sus conversaciones"
+  on public.conversaciones for select to anon, authenticated
+  using (
+    exists (
+      select 1 from public.visitantes v
+      where v.id = visitor_id and v.auth_id is not null and v.auth_id = auth.uid()
+    )
+  );
+
+create policy "visitante abre conversacion"
+  on public.conversaciones for insert to anon, authenticated
+  with check (
+    exists (
+      select 1 from public.visitantes v
+      where v.id = visitor_id and v.auth_id is not null and v.auth_id = auth.uid()
+    )
+  );
+
+create policy "agente lee conversaciones"
+  on public.conversaciones for select to authenticated
+  using (public.es_agente());
 
 -- Asignarse una conversación o cerrarla es cosa de agentes.
 create policy "agente actualiza conversaciones"
@@ -453,21 +471,23 @@ create policy "agente actualiza conversaciones"
   using (public.es_agente())
   with check (public.es_agente());
 
--- Borrado definitivo desde el archivo. Los mensajes caen solos por el
--- `on delete cascade` de la clave foránea. No hay papelera: lo que se
--- borra aquí no se recupera, por eso el panel pide confirmación.
 create policy "agente borra conversaciones"
   on public.conversaciones for delete to authenticated
   using (public.es_agente());
 
-create policy "chat lectura mensajes"
-  on public.mensajes for select to anon, authenticated using (true);
+create policy "visitante lee sus mensajes"
+  on public.mensajes for select to anon, authenticated
+  using (public.conversacion_es_mia(conversacion_id));
 
--- Un visitante anónimo solo puede hablar como visitante (o como el bot,
--- que es quien manda el mensaje de bienvenida desde el propio widget).
-create policy "visitante escribe mensajes"
+-- Solo puede hablar como visitante. Escribir como 'bot' o 'agent' desde el
+-- navegador permitiría suplantarlos en cualquier conversación.
+create policy "visitante manda mensaje"
   on public.mensajes for insert to anon, authenticated
-  with check (autor in ('visitor', 'bot'));
+  with check (autor = 'visitor' and public.conversacion_es_mia(conversacion_id));
+
+create policy "agente lee mensajes"
+  on public.mensajes for select to authenticated
+  using (public.es_agente());
 
 -- Responder como agente exige estar autenticado y dado de alta.
 create policy "agente escribe mensajes"
@@ -500,17 +520,30 @@ create policy "cliente lee su ficha"
   on public.clientes for select to authenticated
   using (id = auth.uid() or public.es_agente());
 
+-- El alta no puede venir ya aprobada: RLS no distingue columnas, así que sin
+-- estos `is null` bastaba con insertar la ficha propia con el descuento en
+-- 'aprobado'.
 create policy "cliente crea su ficha"
   on public.clientes for insert to authenticated
-  with check (id = auth.uid());
+  with check (
+    id = auth.uid()
+    and descuento_educativo_estado is null
+    and descuento_educativo_archivo is null
+    and descuento_educativo_nota is null
+    and descuento_educativo_subido_at is null
+    and descuento_educativo_revisado_at is null
+    and descuento_educativo_revisado_por is null
+  );
 
--- Ojo: NO se da UPDATE al agente. RLS filtra filas, no columnas, así que
--- dárselo le permitiría editar direcciones o teléfono. El agente revisa
--- descuentos a través de public.revisar_descuento_educativo().
-create policy "cliente actualiza su ficha"
-  on public.clientes for update to authenticated
-  using (id = auth.uid())
-  with check (id = auth.uid());
+-- NO hay UPDATE directo para nadie sobre `clientes`.
+--
+-- Ni para el agente: RLS filtra filas, no columnas, y dárselo le permitiría
+-- editar direcciones o teléfono. Ni para el propio cliente, por el mismo
+-- motivo al revés: podía ponerse `descuento_educativo_estado` en 'aprobado'.
+--
+-- El cliente edita por public.actualizar_mi_ficha() y registra justificantes
+-- por public.registrar_mi_justificante(); el agente resuelve por
+-- public.revisar_descuento_educativo(). Cada una escribe solo sus columnas.
 
 -- ---- Pedidos ------------------------------------------------------------
 drop policy if exists "cliente lee sus pedidos"  on public.pedidos;
@@ -538,10 +571,9 @@ create policy "cliente crea sus reservas"
   on public.reservas for insert to authenticated
   with check (cliente_id = auth.uid());
 
-create policy "cliente cancela sus reservas"
-  on public.reservas for update to authenticated
-  using (cliente_id = auth.uid())
-  with check (cliente_id = auth.uid());
+-- El cliente no actualiza reservas directamente: eso le dejaba cambiar el
+-- precio, el producto o `pagado_at`, que es lo que fija el puesto en la cola.
+-- Cancela por public.cancelar_mi_reserva(), que solo toca el estado.
 
 create policy "agente gestiona reservas"
   on public.reservas for update to authenticated
@@ -607,3 +639,305 @@ begin
   end if;
 end
 $$;
+
+-- ============================================================
+-- Funciones de acceso controlado
+-- ============================================================
+--
+-- Todo lo que un cliente o un visitante necesita escribir y que RLS no puede
+-- expresar —porque RLS filtra filas y aquí hace falta filtrar COLUMNAS— pasa
+-- por una de estas funciones.
+--
+-- Reglas comunes, y ninguna es opcional:
+--   · `security definer` + `set search_path = public`. Sin fijar el
+--     search_path, quien controle el suyo puede anteponer una tabla propia y
+--     hacer que la función escriba donde no debe.
+--   · El propietario sale SIEMPRE de `auth.uid()`. Ninguna acepta un id de
+--     dueño por parámetro: sería ofrecerle al servidor la respuesta a la
+--     pregunta que tiene que comprobar.
+--   · `revoke ... from public` y `grant` solo al rol que la necesita.
+
+-- ¿Es esta conversación del visitante autenticado? La usan las políticas de
+-- `mensajes`; no se concede a ningún rol de la API.
+create or replace function public.conversacion_es_mia(conversacion uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.conversaciones c
+    join public.visitantes v on v.id = c.visitor_id
+    where c.id = conversacion
+      and v.auth_id is not null
+      and v.auth_id = auth.uid()
+  );
+$$;
+revoke all on function public.conversacion_es_mia(uuid) from public, anon, authenticated;
+
+-- Abre (o recupera) la conversación del visitante. No acepta texto: la
+-- bienvenida la pinta el widget en el idioma activo y no se persiste, así que
+-- ningún mensaje firmado como bot puede originarse en el navegador.
+create or replace function public.abrir_conversacion(
+  p_nombre text default null,
+  p_email text default null,
+  p_telefono text default null,
+  p_user_agent text default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_visitante uuid;
+  v_conversacion uuid;
+begin
+  if v_uid is null then
+    raise exception 'Hace falta una sesión (aunque sea anónima) para abrir conversación'
+      using errcode = '42501';
+  end if;
+
+  select id into v_visitante from public.visitantes where auth_id = v_uid;
+  if v_visitante is null then
+    insert into public.visitantes (auth_id, nombre, email, telefono, user_agent)
+    values (v_uid, p_nombre, p_email, p_telefono, p_user_agent)
+    returning id into v_visitante;
+  else
+    update public.visitantes
+       set nombre     = coalesce(nullif(p_nombre, ''), nombre),
+           email      = coalesce(nullif(p_email, ''), email),
+           telefono   = coalesce(nullif(p_telefono, ''), telefono),
+           user_agent = coalesce(nullif(p_user_agent, ''), user_agent)
+     where id = v_visitante;
+  end if;
+
+  select id into v_conversacion
+    from public.conversaciones
+   where visitor_id = v_visitante and estado = 'abierta'
+   order by created_at desc
+   limit 1;
+
+  if v_conversacion is null then
+    insert into public.conversaciones (visitor_id, estado, ultimo_mensaje_at)
+    values (v_visitante, 'abierta', now())
+    returning id into v_conversacion;
+  end if;
+
+  return v_conversacion;
+end;
+$$;
+revoke all on function public.abrir_conversacion(text, text, text, text) from public;
+grant execute on function public.abrir_conversacion(text, text, text, text) to anon, authenticated;
+
+-- `cliente_id` y `auth_id` no son editables. RLS no sabe de columnas, así que
+-- la protección va en un disparador; la vinculación legítima levanta una
+-- bandera de transacción que es lo único que la deja pasar.
+create or replace function public.visitantes_protege_columnas()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.auth_id is distinct from old.auth_id then
+    raise exception 'auth_id no se puede cambiar' using errcode = '42501';
+  end if;
+  if new.cliente_id is distinct from old.cliente_id
+     and coalesce(current_setting('app.vinculando_cliente', true), '') <> 'on' then
+    raise exception 'cliente_id solo se asigna por vincular_mi_visitante_a_cliente()'
+      using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.visitantes_protege_columnas() from public, anon, authenticated;
+
+drop trigger if exists visitantes_protege_columnas on public.visitantes;
+create trigger visitantes_protege_columnas
+  before update on public.visitantes
+  for each row execute function public.visitantes_protege_columnas();
+
+-- Vincula la ficha del visitante con SU cuenta. Sin parámetros: el UID sale de
+-- la sesión, así que no hay nada que falsificar.
+create or replace function public.vincular_mi_visitante_a_cliente()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null then
+    raise exception 'Hace falta sesión' using errcode = '42501';
+  end if;
+  if not exists (select 1 from public.clientes where id = v_uid) then
+    raise exception 'Esta sesión no tiene ficha de cliente' using errcode = '42501';
+  end if;
+  perform set_config('app.vinculando_cliente', 'on', true);
+  update public.visitantes set cliente_id = v_uid where auth_id = v_uid;
+  perform set_config('app.vinculando_cliente', 'off', true);
+end;
+$$;
+revoke all on function public.vincular_mi_visitante_a_cliente() from public;
+grant execute on function public.vincular_mi_visitante_a_cliente() to authenticated;
+
+-- Valoración de la conversación. La propiedad se deduce de la sesión: recibir
+-- el `visitor_id` del cliente permitía puntuar la conversación de otro.
+create or replace function public.enviar_valoracion(
+  p_conversacion_id uuid,
+  p_estrellas smallint,
+  p_observacion text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_afectadas integer;
+begin
+  if auth.uid() is null then
+    raise exception 'Hace falta sesión para valorar' using errcode = '42501';
+  end if;
+  if p_estrellas is null or p_estrellas < 1 or p_estrellas > 5 then
+    raise exception 'La valoración debe estar entre 1 y 5';
+  end if;
+
+  update public.conversaciones c
+     set valoracion_estrellas = p_estrellas,
+         valoracion_observacion = nullif(btrim(coalesce(p_observacion, '')), ''),
+         valoracion_at = now()
+   where c.id = p_conversacion_id
+     and exists (
+       select 1 from public.visitantes v
+       where v.id = c.visitor_id
+         and v.auth_id is not null
+         and v.auth_id = auth.uid()
+     )
+     and c.valoracion_solicitada
+     and c.valoracion_estrellas is null;
+
+  get diagnostics v_afectadas = row_count;
+  if v_afectadas = 0 then
+    raise exception 'No hay ninguna valoración pendiente para esta conversación';
+  end if;
+end;
+$$;
+revoke all on function public.enviar_valoracion(uuid, smallint, text) from public;
+grant execute on function public.enviar_valoracion(uuid, smallint, text) to anon, authenticated;
+
+-- Edición de la ficha del cliente. Deja fuera a propósito el estado del
+-- descuento educativo y los campos de revisión.
+--
+-- Convenio de los parámetros de texto: `null` = no tocar, `''` = limpiar. Sin
+-- esa distinción no se puede borrar un teléfono, porque `undefined` y `null`
+-- llegan igual por la red.
+create or replace function public.actualizar_mi_ficha(
+  p_nombre text default null,
+  p_telefono text default null,
+  p_direccion_envio jsonb default null,
+  p_direccion_facturacion jsonb default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null then
+    raise exception 'Hace falta sesión' using errcode = '42501';
+  end if;
+  update public.clientes
+     set nombre = case
+                    when p_nombre is null then nombre   -- no se toca
+                    when p_nombre = ''    then null     -- se limpia
+                    else p_nombre
+                  end,
+         telefono = case
+                      when p_telefono is null then telefono
+                      when p_telefono = ''    then null
+                      else p_telefono
+                    end,
+         -- Las direcciones no distinguen "limpiar": la interfaz solo permite
+         -- sustituirlas por otra, nunca dejarlas vacías.
+         direccion_envio       = coalesce(p_direccion_envio, direccion_envio),
+         direccion_facturacion = coalesce(p_direccion_facturacion, direccion_facturacion)
+   where id = v_uid;
+  if not found then
+    raise exception 'No hay ficha de cliente para esta sesión' using errcode = '42501';
+  end if;
+end;
+$$;
+revoke all on function public.actualizar_mi_ficha(text, text, jsonb, jsonb) from public;
+grant execute on function public.actualizar_mi_ficha(text, text, jsonb, jsonb) to authenticated;
+
+-- Registro del justificante educativo. Solo deja la solicitud en 'pendiente';
+-- aprobar o rechazar es del agente.
+create or replace function public.registrar_mi_justificante(p_ruta text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null then
+    raise exception 'Hace falta sesión' using errcode = '42501';
+  end if;
+  -- La ruta debe estar en la carpeta del propio usuario; si no, se podría
+  -- registrar como propio el documento de otra persona.
+  if p_ruta is null or p_ruta not like (v_uid::text || '/%') then
+    raise exception 'La ruta no pertenece a esta cuenta' using errcode = '42501';
+  end if;
+
+  update public.clientes
+     set descuento_educativo_archivo = p_ruta,
+         descuento_educativo_estado = 'pendiente',
+         descuento_educativo_subido_at = now(),
+         descuento_educativo_nota = null,
+         descuento_educativo_revisado_at = null,
+         descuento_educativo_revisado_por = null
+   where id = v_uid;
+  if not found then
+    raise exception 'No hay ficha de cliente para esta sesión' using errcode = '42501';
+  end if;
+end;
+$$;
+revoke all on function public.registrar_mi_justificante(text) from public;
+grant execute on function public.registrar_mi_justificante(text) to authenticated;
+
+-- Cancelación de una reserva propia en espera. Lo único que el cliente puede
+-- cambiar de una reserva: ni precio, ni producto, ni `pagado_at`.
+create or replace function public.cancelar_mi_reserva(p_reserva_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_afectadas integer;
+begin
+  if v_uid is null then
+    raise exception 'Hace falta sesión' using errcode = '42501';
+  end if;
+  update public.reservas
+     set estado = 'cancelada'
+   where id = p_reserva_id and cliente_id = v_uid and estado = 'en-espera';
+  get diagnostics v_afectadas = row_count;
+  if v_afectadas = 0 then
+    raise exception 'No hay ninguna reserva tuya en espera con ese identificador'
+      using errcode = '42501';
+  end if;
+end;
+$$;
+revoke all on function public.cancelar_mi_reserva(uuid) from public;
+grant execute on function public.cancelar_mi_reserva(uuid) to authenticated;

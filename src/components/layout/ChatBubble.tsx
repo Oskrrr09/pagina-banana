@@ -7,6 +7,7 @@ import type { DbMessage } from '../../lib/supabase'
 import { isNativeApp } from '../../lib/nativeApp'
 import { useChatOpenRequest } from '../../lib/chatLauncher'
 import { ALTURA_TAB_BAR } from './AppTabBar'
+import { useT } from '../../lib/i18n'
 
 // Chat "Bananito" — burbuja del visitante.
 // - Botón flotante circular con Bananito en azul del nav utilitario.
@@ -34,9 +35,6 @@ const FOCUSABLE_SELECTOR = [
 // Modo demo: mismas canned replies que antes de Supabase, para
 // que un fork sin credenciales siga viendo el chat funcional.
 // ============================================================
-const DEMO_WELCOME =
-  '¡Hola! Soy Bananito 🍌 el asistente de Banana Computer. Puedo ayudarte con productos, accesorios, comparar modelos, tiendas o precios. ¿En qué te ayudo?'
-
 const CANNED_REPLIES: { keyword: RegExp; reply: string }[] = [
   {
     keyword: /iphone|móvil|movil|telefono|teléfono/i,
@@ -100,6 +98,7 @@ function toUIMessage(m: DbMessage): UIMessage {
 }
 
 export function ChatBubble() {
+  const t = useT()
   const [open, setOpen] = useState(false)
 
   // En la app nativa el chat se abre desde "Contacta con nosotros", no desde
@@ -133,15 +132,21 @@ export function ChatBubble() {
 
   // Sesión de Supabase — se inicializa solo cuando el chat se abre.
   const session = useVisitorChatSession(open, identity)
-  const supabaseMessages: UIMessage[] = session.messages.map(toUIMessage)
+  // La bienvenida se pinta aquí y no se guarda en la base: así sale en el
+  // idioma activo en vez de quedar congelada en el idioma de quien abrió la
+  // conversación, y ningún texto del navegador acaba almacenado como si lo
+  // hubiera dicho el bot.
+  const bienvenida: UIMessage = { id: 'welcome', side: 'left', text: t('chat.welcome') }
+  const supabaseMessages: UIMessage[] = [
+    bienvenida,
+    ...session.messages.map(toUIMessage),
+  ]
 
   // Estado del modo demo (fallback cuando no hay credenciales).
-  const [demoMessages, setDemoMessages] = useState<UIMessage[]>([
-    { id: 'welcome', side: 'left', text: DEMO_WELCOME },
-  ])
+  const [demoMessages, setDemoMessages] = useState<UIMessage[]>([])
   const [botTyping, setBotTyping] = useState(false)
 
-  const messages = session.demo ? demoMessages : supabaseMessages
+  const messages = session.demo ? [bienvenida, ...demoMessages] : supabaseMessages
 
   const buttonRef = useRef<HTMLButtonElement>(null)
   const restoreFocusRef = useRef(false)
