@@ -140,6 +140,41 @@ describe('actualización desde la PR #33', () => {
     expect(mensajes.map((m) => m.texto)).toContain('mensaje anterior a la actualización')
   })
 
+  it('los datos heredados que ya no podrían crearse se conservan', async () => {
+    // El estado anterior permitía escribir cualquier UUID en `agente_id`.
+    // La migración no debe borrarlos ni reasignarlos en silencio: son datos de
+    // alguien, y decidir qué hacer con ellos es una decisión de negocio, no un
+    // efecto secundario de una migración.
+    const { rows } = await db.query<{ n: number }>(
+      `select count(*)::int as n from public.conversaciones`,
+    )
+    expect(rows[0].n, 'la conversación heredada sigue ahí').toBeGreaterThan(0)
+
+    const { rows: mensajes } = await db.query<{ n: number }>(
+      `select count(*)::int as n from public.mensajes`,
+    )
+    expect(mensajes[0].n, 'y sus mensajes').toBeGreaterThan(0)
+  })
+
+  it('los privilegios heredados de PUBLIC quedan revocados', async () => {
+    // El estado anterior creaba funciones sin `revoke`, así que PUBLIC —y con
+    // él `anon`— podía ejecutarlas. Actualizar tiene que cerrarlas.
+    const { rows } = await db.query<{ nombre: string }>(
+      `select p.proname as nombre
+         from pg_proc p
+         join pg_namespace n on n.oid = p.pronamespace
+         cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+        where n.nspname = 'public'
+          and a.privilege_type = 'EXECUTE'
+          and a.grantee = 0
+          and p.proname in (
+            'es_agente', 'posicion_en_cola', 'revisar_descuento_educativo',
+            'abrir_conversacion', 'enviar_valoracion'
+          )`,
+    )
+    expect(rows.map((r) => r.nombre), 'siguen abiertas a PUBLIC').toEqual([])
+  })
+
   it('una segunda aplicación sigue siendo idempotente', async () => {
     await expect(aplicarMigracionesNuevas(db)).resolves.toBeUndefined()
     const { rows } = await db.query<{ n: number }>(

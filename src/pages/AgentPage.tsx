@@ -469,6 +469,11 @@ function ConversationColumn({
   const [input, setInput] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [closing, setClosing] = useState(false)
+  // Las operaciones sobre la conversación ahora pueden ser rechazadas por el
+  // servidor —cerrar una que no es tuya, reclamar una cerrada—, así que el
+  // error tiene que verse. Antes se descartaba y el botón no hacía nada sin
+  // decir por qué.
+  const [avisoOperacion, setAvisoOperacion] = useState<string | null>(null)
   const [closeDialog, setCloseDialog] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -512,7 +517,8 @@ function ConversationColumn({
   const toggleAssign = async () => {
     if (!conversationId || !agente) return
     setAssigning(true)
-    await assignConversation(conversationId, mine ? null : agente.id)
+    const { error } = await assignConversation(conversationId, mine ? null : agente.id)
+    setAvisoOperacion(error)
     setAssigning(false)
   }
 
@@ -525,14 +531,16 @@ function ConversationColumn({
       return
     }
     setClosing(true)
-    await setConversationState(conversationId, 'abierta')
+    const { error } = await setConversationState(conversationId, 'abierta')
+    setAvisoOperacion(error)
     setClosing(false)
   }
 
   const confirmarCierre = async (pedirValoracion: boolean) => {
     if (!conversationId) return
     setClosing(true)
-    await setConversationState(conversationId, 'cerrada', { pedirValoracion })
+    const { error } = await setConversationState(conversationId, 'cerrada', { pedirValoracion })
+    setAvisoOperacion(error)
     setClosing(false)
     setCloseDialog(false)
   }
@@ -595,11 +603,18 @@ function ConversationColumn({
           <button
             type="button"
             onClick={() => void toggleEstado()}
-            disabled={closing}
+            // Cerrar y reabrir exigen ser el agente asignado: sin esto el
+            // botón invita a una operación que el servidor va a rechazar.
+            disabled={closing || takenByOther}
             className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {cerrada ? 'Reabrir' : 'Cerrar'}
           </button>
+          {avisoOperacion && (
+            <p role="alert" className="w-full text-xs font-medium text-[#b3261e]">
+              {avisoOperacion}
+            </p>
+          )}
           {/* Borrar solo desde el archivo: obliga a cerrar antes, así no se
               elimina por error una conversación viva. */}
           {cerrada && (

@@ -859,8 +859,14 @@ declare
   v_uid uuid := auth.uid();
   v_afectadas integer;
 begin
-  if v_uid is null then
-    raise exception 'Hace falta sesión' using errcode = '42501';
+  -- Exige fila en `agentes`, no solo sesión.
+  --
+  -- `conversaciones.agente_id` referencia `auth.users`, no `public.agentes`, y
+  -- versiones anteriores dejaban escribir ahí cualquier UUID. Puede quedar un
+  -- dato heredado con el UUID de un cliente: comprobando solo `agente_id =
+  -- auth.uid()`, ese cliente podría retirar la asignación de una conversación.
+  if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
+    raise exception 'Solo un agente dado de alta' using errcode = '42501';
   end if;
   -- Solo sobre abiertas: una conversación cerrada conserva el agente que la
   -- atendió, que es lo que permite saber después quién llevó cada caso.
@@ -1539,3 +1545,35 @@ end;
 $$;
 revoke all on function public.registrar_mi_justificante(text) from public;
 grant execute on function public.registrar_mi_justificante(text) to authenticated;
+
+-- ---- Privilegios finales de las funciones --------------------------------
+--
+-- PostgreSQL concede EXECUTE a PUBLIC por omisión al crear una función. Es
+-- decir: lo que no se revoca explícitamente queda abierto, incluido `anon`.
+--
+-- Tres se habían quedado así. Ninguna era un agujero por sí sola —las tres
+-- comprueban por dentro quién llama— pero es superficie que no hace falta
+-- exponer, y depender de la comprobación interna es depender de que nadie la
+-- toque nunca.
+--
+-- La clasificación de cada función está en `tests/schema/funciones.ts`, y hay
+-- una prueba que falla si aparece una función nueva sin clasificar.
+
+-- Auxiliar: la usan las políticas, que se evalúan con los permisos de quien
+-- consulta. Por eso `authenticated` sí la necesita; `anon` no, porque ninguna
+-- política de rol anónimo la invoca.
+revoke all on function public.es_agente() from public, anon;
+grant execute on function public.es_agente() to authenticated;
+
+-- Consulta del cliente sobre su propia reserva. Ya comprueba la propiedad por
+-- dentro, pero no tiene sentido que la pueda llamar un anónimo.
+revoke all on function public.posicion_en_cola(uuid) from public, anon;
+grant execute on function public.posicion_en_cola(uuid) to authenticated;
+
+-- Revisión del descuento educativo. Recibe el cliente por parámetro porque el
+-- agente actúa sobre otro, y eso está bien; lo que no está bien es que la
+-- pueda invocar cualquiera.
+revoke all on function public.revisar_descuento_educativo(uuid, text, text)
+  from public, anon;
+grant execute on function public.revisar_descuento_educativo(uuid, text, text)
+  to authenticated;

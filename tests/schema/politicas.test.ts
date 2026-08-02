@@ -958,11 +958,44 @@ describe('autorización de las operaciones sobre conversaciones', () => {
     return rows[0].abrir_conversacion
   }
 
-  it('no se puede asignar una conversación cerrada', async () => {
+  it('una conversación cerrada Y LIBRE no puede reclamarse', async () => {
+    // Aísla la condición `estado = 'abierta'` de verdad.
+    //
+    // La versión anterior de esta prueba dejaba la conversación asignada a A,
+    // así que B fallaba por pertenecer a otro. Habría pasado igual aunque
+    // desapareciera la comprobación de estado, que es justo lo que dice medir.
+    // Aquí la cierra un supervisor sin asignársela, de modo que lo único que
+    // puede impedir la reclamación es el estado.
+    const conv = await nuevaAbierta()
+    await como(SUPERVISOR, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
+
+    const previo = await db.query<{ estado: string; agente_id: string | null }>(
+      `select estado, agente_id from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(previo.rows[0].estado, 'punto de partida').toBe('cerrada')
+    expect(previo.rows[0].agente_id, 'y sin agente, que es lo que aísla el caso').toBeNull()
+
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.asignarme_conversacion($1)`,
+      [conv],
+    )
+    expect(error).toMatch(/cerrada/)
+
+    const despues = await db.query<{ estado: string; agente_id: string | null }>(
+      `select estado, agente_id from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(despues.rows[0].agente_id, 'sigue sin agente').toBeNull()
+    expect(despues.rows[0].estado, 'sigue cerrada').toBe('cerrada')
+  })
+
+  it('una conversación cerrada y asignada tampoco puede reclamarse', async () => {
     const conv = await nuevaAbierta()
     await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
     await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
-    await como(AGENTE, 'authenticated', `select public.liberar_mi_conversacion($1)`, [conv])
 
     const { error } = await como(
       AGENTE_B,
@@ -970,7 +1003,97 @@ describe('autorización de las operaciones sobre conversaciones', () => {
       `select public.asignarme_conversacion($1)`,
       [conv],
     )
-    expect(error, 'reclamar una cerrada no significa nada').toMatch(/cerrada|no es tuya|no existe/i)
+    expect(error).not.toBeNull()
+    const { rows } = await db.query<{ agente_id: string }>(
+      `select agente_id from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(rows[0].agente_id, 'sigue siendo de A').toBe(AGENTE)
+  })
+
+  it('una conversación abierta y libre sí puede reclamarse', async () => {
+    const conv = await nuevaAbierta()
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.asignarme_conversacion($1)`,
+      [conv],
+    )
+    expect(error).toBeNull()
+    const { rows } = await db.query<{ agente_id: string }>(
+      `select agente_id from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(rows[0].agente_id).toBe(AGENTE)
+  })
+
+  it('liberar una conversación cerrada falla y conserva la trazabilidad', async () => {
+    const conv = await nuevaAbierta()
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
+    await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, true)`, [conv])
+
+    const antes = await db.query<Record<string, unknown>>(
+      `select estado, agente_id, cerrada_at, valoracion_solicitada, valoracion_estrellas
+         from public.conversaciones where id = $1`,
+      [conv],
+    )
+
+    for (const quien of [AGENTE, SUPERVISOR]) {
+      const { error } = await como(
+        quien,
+        'authenticated',
+        `select public.liberar_mi_conversacion($1)`,
+        [conv],
+      )
+      expect(error, 'una cerrada conserva quién la atendió').toMatch(/cerrada|no es tuya/)
+    }
+
+    const despues = await db.query<Record<string, unknown>>(
+      `select estado, agente_id, cerrada_at, valoracion_solicitada, valoracion_estrellas
+         from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(despues.rows[0], 'no cambia ninguna columna').toEqual(antes.rows[0])
+  })
+
+  it('un cliente heredado como agente_id no puede liberar la conversación', async () => {
+    // Dato heredado real: `conversaciones.agente_id` referencia `auth.users`,
+    // no `public.agentes`, y versiones anteriores dejaban escribir ahí
+    // cualquier UUID. Si `liberar_mi_conversacion()` solo comprobara
+    // `agente_id = auth.uid()`, ese cliente podría retirar la asignación.
+    const conv = await nuevaAbierta()
+    await db.query(`update public.conversaciones set agente_id = $1 where id = $2`, [
+      CLIENTE,
+      conv,
+    ])
+
+    const { error } = await como(
+      CLIENTE,
+      'authenticated',
+      `select public.liberar_mi_conversacion($1)`,
+      [conv],
+    )
+    expect(error, 'tener el UUID ahí no convierte a nadie en agente').toMatch(
+      /agente dado de alta/,
+    )
+
+    const { rows } = await db.query<{ agente_id: string }>(
+      `select agente_id from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(rows[0].agente_id, 'la asignación heredada sigue intacta').toBe(CLIENTE)
+  })
+
+  it('un anónimo no puede liberar ninguna conversación', async () => {
+    const conv = await nuevaAbierta()
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
+    const { error } = await como(
+      ANA,
+      'anon',
+      `select public.liberar_mi_conversacion($1)`,
+      [conv],
+    )
+    expect(error).not.toBeNull()
   })
 
   it('asignarse la propia otra vez es idempotente', async () => {

@@ -3,6 +3,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { DE_EXTENSIONES, FUNCIONES, PARAMETROS_PROHIBIDOS } from './funciones'
 
 // ============================================================================
 // Instala el esquema en un PostgreSQL de verdad y comprueba el resultado.
@@ -313,77 +314,138 @@ describe('funciones security definer', () => {
 })
 
 describe('privilegios finales', () => {
-  /** Roles con EXECUTE sobre una función. */
+  /**
+   * Roles con EXECUTE sobre una función.
+   *
+   * El `left join` importa: `aclexplode` devuelve PUBLIC con `grantee = 0`, que
+   * no casa con ninguna fila de `pg_roles`. Con un join normal —que es lo que
+   * había aquí— PUBLIC desaparecía del resultado y la prueba daba por cerradas
+   * funciones que cualquiera podía llamar. Tres lo estaban.
+   */
   async function quienEjecuta(nombre: string): Promise<string[]> {
     const { rows } = await db.query<{ rol: string }>(
-      `select r.rolname as rol
+      `select distinct coalesce(r.rolname, 'PUBLIC') as rol
          from pg_proc p
          join pg_namespace n on n.oid = p.pronamespace
          cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
-         join pg_roles r on r.oid = a.grantee
+         left join pg_roles r on r.oid = a.grantee
         where n.nspname = 'public' and p.proname = $1
           and a.privilege_type = 'EXECUTE'
-          and r.rolname in ('anon', 'authenticated', 'public')
+          and coalesce(r.rolname, 'PUBLIC') <> 'postgres'
         order by 1`,
       [nombre],
     )
     return rows.map((r) => r.rol)
   }
 
-  it('los RPC de agente solo los ejecuta authenticated', async () => {
-    for (const nombre of [
-      'asignarme_conversacion',
-      'liberar_mi_conversacion',
-      'cerrar_conversacion',
-      'reabrir_conversacion',
-      'cambiar_estado_reserva',
-      'responder_como_agente',
-      'cambiar_mi_estado',
-    ]) {
-      expect(await quienEjecuta(nombre), `${nombre}`).toEqual(['authenticated'])
-    }
-  })
-
-  it('los RPC del visitante los ejecutan anon y authenticated', async () => {
-    for (const nombre of ['abrir_conversacion', 'enviar_mensaje_visitante', 'enviar_valoracion']) {
-      expect(await quienEjecuta(nombre), `${nombre}`).toEqual(['anon', 'authenticated'])
-    }
-  })
-
-  it('las auxiliares no son ejecutables desde la API', async () => {
-    // `es_supervisor` decide quién puede cerrar y reabrir: poder llamarla
-    // desde fuera no rompe nada por sí solo, pero es superficie que no hace
-    // falta exponer.
-    for (const nombre of [
-      'es_supervisor',
-      'visitantes_protege_columnas',
-      'touch_conversation_on_message',
-    ]) {
-      expect(await quienEjecuta(nombre), `${nombre}`).toEqual([])
-    }
-  })
-
-  // Actúan sobre datos de OTRO por diseño, así que el destinatario tiene que
-  // venir por parámetro. Lo que las protege no es ocultar el id, sino que la
-  // autorización sea `es_agente()`.
-  const ACTUAN_SOBRE_TERCEROS = new Set(['revisar_descuento_educativo'])
-
-  it('ningún RPC de datos propios recibe el identificador del propietario', async () => {
-    const { rows } = await db.query<{ nombre: string; args: string }>(
-      `select p.proname as nombre, pg_get_function_arguments(p.oid) as args
+  /** Funciones del proyecto instaladas, sin las de extensiones. */
+  async function funcionesDelProyecto(): Promise<{ nombre: string; definer: boolean; config: string[] | null; args: string }[]> {
+    const { rows } = await db.query<{
+      nombre: string
+      definer: boolean
+      config: string[] | null
+      args: string
+    }>(
+      `select p.proname as nombre, p.prosecdef as definer, p.proconfig as config,
+              pg_get_function_arguments(p.oid) as args
          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public' and p.prosecdef`,
+        where n.nspname = 'public'
+        order by p.proname`,
     )
-    const sospechosas = rows
-      .filter((r) => !ACTUAN_SOBRE_TERCEROS.has(r.nombre))
-      .filter((r) => /p_(agente_id|cliente_id|visitor_id|autor|created_at|fecha|uid)\b/i.test(r.args))
-      .map((r) => `${r.nombre}(${r.args})`)
+    return rows.filter((r) => !DE_EXTENSIONES.has(r.nombre))
+  }
+
+  it('toda función del proyecto está clasificada', async () => {
+    // Sin esto, una función nueva se cuela sin que nadie decida quién puede
+    // llamarla: la prueba seguiría en verde porque solo mira una lista escrita
+    // a mano que no la incluye.
+    const sinClasificar = (await funcionesDelProyecto())
+      .map((r) => r.nombre)
+      .filter((n) => !FUNCIONES[n])
 
     expect(
-      sospechosas,
-      'esos valores los deriva el servidor de la sesión; aceptarlos por ' +
-        'parámetro es pedirle al cliente la respuesta que hay que comprobar:\n  ' +
-        sospechosas.join('\n  '),
+      [...new Set(sinClasificar)],
+      'Añádelas a tests/schema/funciones.ts decidiendo su categoría y sus ' +
+        'permisos:\n  ' + sinClasificar.join('\n  '),
     ).toEqual([])
+  })
+
+  it('cada función tiene exactamente los permisos que declara su clasificación', async () => {
+    const desviaciones: string[] = []
+    for (const [nombre, clasificacion] of Object.entries(FUNCIONES)) {
+      const real = await quienEjecuta(nombre)
+      const esperado = [...clasificacion.ejecuta].sort()
+      if (JSON.stringify(real) !== JSON.stringify(esperado)) {
+        desviaciones.push(`${nombre}: esperado [${esperado}] · real [${real}]`)
+      }
+    }
+    expect(desviaciones, desviaciones.join('\n  ')).toEqual([])
+  })
+
+  it('ninguna función del proyecto es ejecutable por PUBLIC', async () => {
+    // PostgreSQL concede EXECUTE a PUBLIC al crear una función: lo que no se
+    // revoca queda abierto, incluido `anon`.
+    const abiertas: string[] = []
+    for (const nombre of Object.keys(FUNCIONES)) {
+      if ((await quienEjecuta(nombre)).includes('PUBLIC')) abiertas.push(nombre)
+    }
+    expect(abiertas, `Falta un REVOKE:\n  ` + abiertas.join('\n  ')).toEqual([])
+  })
+
+  it('los disparadores y las auxiliares internas no se llaman desde la API', async () => {
+    for (const [nombre, c] of Object.entries(FUNCIONES)) {
+      if (c.categoria !== 'trigger') continue
+      expect(await quienEjecuta(nombre), `${nombre} es un disparador`).toEqual([])
+    }
+  })
+
+  it('los RPC de cliente y de agente no están al alcance de anon', async () => {
+    for (const [nombre, c] of Object.entries(FUNCIONES)) {
+      if (c.categoria !== 'rpc-cliente' && c.categoria !== 'rpc-agente') continue
+      expect(await quienEjecuta(nombre), `${nombre}`).not.toContain('anon')
+    }
+  })
+
+  it('toda función security definer fija search_path', async () => {
+    const sinRuta = (await funcionesDelProyecto())
+      .filter((r) => r.definer)
+      .filter((r) => !(r.config ?? []).some((c) => c.startsWith('search_path=')))
+      .map((r) => r.nombre)
+    expect(sinRuta, sinRuta.join('\n  ')).toEqual([])
+  })
+
+  it('ninguna función recibe por parámetro algo que deba salir de la sesión', async () => {
+    // La excepción es por función Y por parámetro, no por función entera: si
+    // `revisar_descuento_educativo` recibiera mañana un `p_revisado_por`, esto
+    // tiene que saltar igualmente.
+    const sospechosas: string[] = []
+    for (const r of await funcionesDelProyecto()) {
+      const permitidos = FUNCIONES[r.nombre]?.parametrosPermitidos ?? {}
+      for (const prohibido of PARAMETROS_PROHIBIDOS) {
+        if (!new RegExp(`\\b${prohibido}\\b`).test(r.args)) continue
+        if (prohibido in permitidos) continue
+        sospechosas.push(`${r.nombre}: ${prohibido}`)
+      }
+    }
+    expect(
+      sospechosas,
+      'esos valores los deriva el servidor de la sesión:\n  ' + sospechosas.join('\n  '),
+    ).toEqual([])
+  })
+
+  it('revisar_descuento_educativo conserva su firma exacta', async () => {
+    const { rows } = await db.query<{ args: string }>(
+      `select pg_get_function_identity_arguments(p.oid) as args
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'revisar_descuento_educativo'`,
+    )
+    expect(rows, 'una sola firma').toHaveLength(1)
+    // Se comparan solo los tipos: los nombres de parámetro no distinguen
+    // sobrecargas y aquí lo que importa es que no haya aparecido una cuarta.
+    const tipos = rows[0].args
+      .split(',')
+      .map((p) => p.trim().split(/\s+/).slice(1).join(' '))
+      .join(', ')
+    expect(tipos).toBe('uuid, text, text')
   })
 })
