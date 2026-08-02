@@ -127,7 +127,7 @@ jobs:
   # sin poder integrarse nunca— pero `deploy` sí depende de él, así que si los
   # secretos existen y las políticas fallan, no se publica.
   rls:
-    name: Políticas RLS
+    name: Políticas RLS (requiere proyecto dedicado)
     needs: calidad
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -145,7 +145,26 @@ jobs:
             echo "hay=si" >> "$GITHUB_OUTPUT"
           else
             echo "hay=no" >> "$GITHUB_OUTPUT"
-            echo "::warning::Sin RLS_TEST_URL. Las políticas RLS NO se han verificado." 
+            echo "::warning::Sin RLS_TEST_URL. Las políticas RLS NO se han verificado."
+          fi
+      # Un tick verde en un trabajo que no ha ejecutado nada es peor que no
+      # tenerlo: da por comprobado lo que no se ha comprobado. El resumen del
+      # trabajo lo dice con todas las letras.
+      - name: Dejar constancia del estado real
+        run: |
+          if [ "${{ steps.cfg.outputs.hay }}" = "si" ]; then
+            echo "### Políticas RLS verificadas contra el proyecto de pruebas" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### ⚠️ Políticas RLS NO verificadas"
+              echo ""
+              echo "Este trabajo aparece en verde porque **no ha ejecutado ninguna prueba**."
+              echo "Faltan los secretos \`RLS_TEST_URL\`, \`RLS_TEST_ANON_KEY\` y"
+              echo "\`RLS_TEST_SERVICE_KEY\` de un proyecto de Supabase **dedicado**."
+              echo ""
+              echo "El bloque de seguridad no puede darse por comprobado hasta entonces."
+              echo "Instrucciones: \`tests/rls/README.md\`."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Instalar navegador
         if: steps.cfg.outputs.hay == 'si'
