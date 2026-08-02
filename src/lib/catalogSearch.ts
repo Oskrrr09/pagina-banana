@@ -27,7 +27,7 @@ export function normalizeSearchText(text: string): string {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '') // quita tildes
     .replace(/[–—]/g, '-') // guiones largos → guión ASCII
-    .replace(/[^a-z0-9\s\-]/g, ' ') // limpia puntuación (mantiene letras, dígitos, espacio, guion)
+    .replace(/[^a-z0-9\s-]/g, ' ') // limpia puntuación (mantiene letras, dígitos, espacio, guion)
     .replace(/\s+/g, ' ')
     .trim()
 }

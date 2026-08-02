@@ -1,0 +1,129 @@
+name: CI
+
+# Un solo workflow encadenado, en lugar de dos independientes.
+#
+# Antes había `e2e.yml` y `deploy.yml` corriendo en paralelo sobre el mismo
+# push. `deploy.yml` no dependía de nada, así que **la web se publicaba aunque
+# las pruebas estuvieran en rojo**: el despliegue terminaba en 51 segundos y
+# las pruebas tardaban casi siete minutos, de modo que lo normal era publicar
+# antes de saber si funcionaba.
+#
+# Además cada uno compilaba por su cuenta. Ahora se compila una vez y el
+# artefacto viaja entre trabajos.
+#
+#   calidad → build → e2e → deploy
+#
+# `deploy` sólo existe en push a main; en un pull request la cadena termina
+# en `e2e`.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Lo barato primero: en menos de un minuto corta un fallo de tipos, de lint
+  # o de una función pura, sin gastar el build ni los navegadores.
+  calidad:
+    name: Tipos, lint y pruebas unitarias
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: TypeScript
+        run: npm run typecheck
+      - name: ESLint
+        run: npm run lint
+      - name: Pruebas unitarias
+        run: npm run test:unit
+
+  build:
+    name: Compilar
+    needs: calidad
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Credenciales de Supabase (chat de Bananito y panel /agente).
+      # Si no están definidas, la web se despliega en modo demostración.
+      - name: Compilar
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      # Dos artefactos del mismo build: uno con el formato que espera Pages y
+      # otro corriente, porque las pruebas necesitan leer `dist/` y el de
+      # Pages viene empaquetado en un tar.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+
+  e2e:
+    name: Pruebas E2E
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Sin recompilar: se reutiliza el artefacto del trabajo anterior. Lo
+      # necesitan las comprobaciones que inspeccionan el bundle publicado.
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Instalar navegadores de Playwright
+        run: npx playwright install --with-deps chromium
+      # Las pruebas corren SIEMPRE en modo demostración, con las variables de
+      # Supabase vacías. Nunca tocan el proyecto real.
+      - name: Ejecutar pruebas
+        run: npx playwright test --project=chromium --project=mobile
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  deploy:
+    name: Publicar en GitHub Pages
+    # La dependencia que faltaba: sin E2E en verde no se publica.
+    needs: e2e
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -7,15 +7,19 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/generate-sw.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "check": "npm run typecheck && npm run lint && npm run test:unit && npm run build && npm run test:e2e",
     "icons": "node scripts/generate-icons.mjs",
     "build:app": "tsc -b && vite build --base=/ --outDir=dist-app",
     "app:sync": "npm run build:app && cap sync",
     "app:ios": "npm run app:sync && cap open ios",
     "app:android": "npm run app:sync && cap open android",
-    "preview": "vite preview",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed",
     "audit:banana:login": "tsx scripts/banana-audit/create-session.ts",
     "audit:banana": "tsx scripts/banana-audit/run-audit.ts"
   },
@@ -32,16 +36,22 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@capacitor/cli": "^8.4.2",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^26.1.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^10.8.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.8.0",
     "playwright": "^1.62.0",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.23.1",
     "typescript": "^5.6.3",
-    "vite": "^6.0.5"
+    "typescript-eslint": "^8.65.0",
+    "vite": "^6.0.5",
+    "vitest": "^4.1.10"
   }
 }

@@ -22,6 +22,11 @@ export function StoreDetailPage() {
   const { slug } = useParams()
   const store = getStore(slug ?? '')
   const [product, setProduct] = useState('')
+  // Ojo: este `useState` estaba más abajo, después del `return` de tienda no
+  // encontrada. Al navegar de una tienda que existe a una que no, React veía
+  // un hook menos y se quejaba. Es la misma clase de fallo que HOOKS-001: los
+  // hooks van todos antes de cualquier retorno condicional.
+  const [zoom, setZoom] = useState(17)
 
   if (!store) return <NotFound />
 
@@ -31,7 +36,6 @@ export function StoreDetailPage() {
   const services = [...UNIVERSAL_SERVICES, ...store.services]
   // Búsqueda por nombre real ("Banana Safari", "Banana Mesa y López"…) para
   // que Google Maps resuelva la ubicación exacta del local.
-  const [zoom, setZoom] = useState(17)
   const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(store.mapQuery)}&z=${zoom}&output=embed`
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.mapQuery)}`
 

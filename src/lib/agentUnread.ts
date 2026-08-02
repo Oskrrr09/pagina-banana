@@ -81,7 +81,14 @@ export function useNewMessageAlert(
 ): void {
   const conocidos = useRef<Map<string, string> | null>(null)
   const callback = useRef(onNuevo)
-  callback.current = onNuevo
+  // La asignación estaba suelta en el cuerpo del componente. Escribir en una
+  // ref durante el render es de las cosas que hoy funcionan y mañana no: con
+  // render concurrente React puede renderizar y descartar, dejando la ref
+  // apuntando a un callback de un render que nunca llegó a pintarse. Va en un
+  // efecto, y declarado antes del que lo consume para que se asigne primero.
+  useEffect(() => {
+    callback.current = onNuevo
+  }, [onNuevo])
 
   useEffect(() => {
     const actual = new Map<string, string>()
