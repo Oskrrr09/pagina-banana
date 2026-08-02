@@ -43,6 +43,14 @@ export default defineConfig({
       use: { ...devices['Pixel 5'] },
       grep: /@mobile|@all/,
     },
+    {
+      // Políticas RLS contra un proyecto de Supabase dedicado. No entra en la
+      // ejecución por defecto: necesita base de datos real y credenciales
+      // propias. Ver tests/rls/README.md.
+      name: 'rls',
+      testDir: './tests/rls',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
   webServer: {
     command: `npm run dev -- --mode test --host 127.0.0.1 --port ${PORT}`,
