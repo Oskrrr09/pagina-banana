@@ -19,8 +19,12 @@ name: CI
 on:
   push:
     branches: [main]
+  # Cualquier rama destino, no solo `main`.
+  #
+  # Con `branches: [main]` una PR encadenada —una que va contra otra rama de
+  # trabajo porque depende de ella— no dispara nada: se queda sin comprobar
+  # justo cuando más falta hace, que es antes de acumularse sobre la anterior.
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 # Permisos mínimos en global. Solo `deploy` recibe los de Pages: dárselos a
