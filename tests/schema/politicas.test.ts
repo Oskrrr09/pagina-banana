@@ -65,6 +65,8 @@ const ANA = '11111111-1111-4111-8111-111111111111'
 const BEA = '22222222-2222-4222-8222-222222222222'
 const CLIENTE = '33333333-3333-4333-8333-333333333333'
 const AGENTE = '44444444-4444-4444-8444-444444444444'
+const AGENTE_B = '66666666-6666-4666-8666-666666666666'
+const SUPERVISOR = '77777777-7777-4777-8777-777777777777'
 
 /**
  * Ejecuta SQL como un usuario concreto.
@@ -101,7 +103,7 @@ beforeAll(async () => {
     await db.exec(readFileSync(join(DIR, f), 'utf8'))
   }
   // Usuarios del escenario. En Supabase los crea GoTrue; aquí se insertan.
-  for (const id of [ANA, BEA, CLIENTE, AGENTE]) {
+  for (const id of [ANA, BEA, CLIENTE, AGENTE, AGENTE_B, SUPERVISOR]) {
     await db.query('insert into auth.users (id, email) values ($1, $2)', [
       id,
       `${id}@ejemplo.test`,
@@ -112,8 +114,11 @@ beforeAll(async () => {
     [CLIENTE, 'cliente@ejemplo.test'],
   )
   await db.query(
-    `insert into public.agentes (id, email, nombre) values ($1, $2, $3)`,
-    [AGENTE, 'agente@ejemplo.test', 'Agente de prueba'],
+    `insert into public.agentes (id, email, nombre, rol) values
+       ($1, 'a@ejemplo.test', 'Agente A', 'agente'),
+       ($2, 'b@ejemplo.test', 'Agente B', 'agente'),
+       ($3, 's@ejemplo.test', 'Supervisora', 'supervisor')`,
+    [AGENTE, AGENTE_B, SUPERVISOR],
   )
 }, 120_000)
 
@@ -208,7 +213,7 @@ describe('chat del visitante', () => {
     const { error } = await como(
       ANA,
       'anon',
-      `insert into public.mensajes (conversacion_id, autor, texto) values ($1, 'visitor', '¿Tenéis el 17 Pro?')`,
+      `select public.enviar_mensaje_visitante($1, '¿Tenéis el 17 Pro?')`,
       [rows[0].id],
     )
     expect(error, 'escribir en la propia conversación debe funcionar').toBeNull()
@@ -313,7 +318,7 @@ describe('agente', () => {
     const { error } = await como(
       ANA,
       'anon',
-      `insert into public.mensajes (conversacion_id, autor, texto) values ($1, 'visitor', 'sigo aquí')`,
+      `select public.enviar_mensaje_visitante($1, 'sigo aquí')`,
       [rows[0].id],
     )
     expect(error).toBeNull()
@@ -553,5 +558,368 @@ describe('reservas', () => {
       [rows[0].id],
     )
     expect(repetida.error, 'ya no está en espera').not.toBeNull()
+  })
+})
+
+describe('conversaciones: nadie escribe la fila a mano', () => {
+  /** Conversación limpia para cada prueba, creada por el camino legítimo. */
+  async function nueva(uid: string): Promise<string> {
+    const { rows } = await como<{ abrir_conversacion: string }>(
+      uid,
+      'anon',
+      `select public.abrir_conversacion('Visitante') as abrir_conversacion`,
+    )
+    return rows[0].abrir_conversacion
+  }
+
+  it('un visitante no puede insertar una conversación directamente', async () => {
+    const { rows } = await db.query<{ id: string }>(
+      `select id from public.visitantes where auth_id = $1`,
+      [ANA],
+    )
+    // Ni siquiera con su propio visitor_id: la fila entera la elegía el
+    // navegador —estado, agente, fechas, valoración—.
+    const { error } = await como(
+      ANA,
+      'anon',
+      `insert into public.conversaciones (visitor_id, estado, agente_id, ultimo_mensaje_at)
+       values ($1, 'cerrada', $2, '2030-01-01')`,
+      [rows[0].id, AGENTE],
+    )
+    expect(error, 'no hay política de INSERT').not.toBeNull()
+  })
+
+  it('un agente no puede reescribir la fila ni borrarla', async () => {
+    const conv = await nueva(BEA)
+    const antes = await db.query<{ visitor_id: string; created_at: string }>(
+      `select visitor_id, created_at from public.conversaciones where id = $1`,
+      [conv],
+    )
+
+    await como(
+      AGENTE,
+      'authenticated',
+      `update public.conversaciones
+          set visitor_id = gen_random_uuid(), valoracion_estrellas = 5
+        where id = $1`,
+      [conv],
+    )
+    await como(AGENTE, 'authenticated', `delete from public.conversaciones where id = $1`, [conv])
+
+    const despues = await db.query<{ visitor_id: string; estrellas: number | null }>(
+      `select visitor_id, valoracion_estrellas as estrellas
+         from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(despues.rows, 'la conversación no se borra').toHaveLength(1)
+    expect(despues.rows[0].visitor_id, 'el dueño es inmutable').toBe(antes.rows[0].visitor_id)
+    expect(despues.rows[0].estrellas, 'el agente no puntúa por el visitante').toBeNull()
+  })
+
+  it('el primero que responde se queda la conversación, y el segundo no', async () => {
+    const conv = await nueva(BEA)
+
+    const primero = await como(
+      AGENTE,
+      'authenticated',
+      `select public.responder_como_agente($1, 'La atiendo yo')`,
+      [conv],
+    )
+    expect(primero.error).toBeNull()
+
+    const segundo = await como(
+      AGENTE_B,
+      'authenticated',
+      `select public.responder_como_agente($1, 'No, yo')`,
+      [conv],
+    )
+    expect(segundo.error, 'la lleva otro agente').toMatch(/otro agente/)
+
+    const { rows } = await db.query<{ agente_id: string }>(
+      `select agente_id from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(rows[0].agente_id).toBe(AGENTE)
+  })
+
+  it('el agente B no puede apropiarse de la conversación de A', async () => {
+    const conv = await nueva(BEA)
+    await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
+
+    const { error } = await como(
+      AGENTE_B,
+      'authenticated',
+      `select public.asignarme_conversacion($1)`,
+      [conv],
+    )
+    expect(error).toMatch(/la lleva otro agente/i)
+  })
+
+  it('cerrar conserva los mensajes y no deja responder después', async () => {
+    const conv = await nueva(BEA)
+    await como(BEA, 'anon', `select public.enviar_mensaje_visitante($1, 'hola')`, [conv])
+
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.cerrar_conversacion($1, true)`,
+      [conv],
+    )
+    expect(error).toBeNull()
+
+    const { rows } = await db.query<{ n: number }>(
+      `select count(*)::int as n from public.mensajes where conversacion_id = $1`,
+      [conv],
+    )
+    expect(rows[0].n, 'cerrar no borra el historial').toBeGreaterThan(0)
+
+    const despues = await como(
+      BEA,
+      'anon',
+      `select public.enviar_mensaje_visitante($1, 'y esto?')`,
+      [conv],
+    )
+    expect(despues.error).toMatch(/cerrada/)
+  })
+
+  it('reabrir no toca la valoración que ya dio el visitante', async () => {
+    const conv = await nueva(BEA)
+    await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, true)`, [conv])
+    await como(BEA, 'anon', `select public.enviar_valoracion($1, 5::smallint, 'genial')`, [conv])
+
+    await como(AGENTE, 'authenticated', `select public.reabrir_conversacion($1)`, [conv])
+
+    const { rows } = await db.query<{ estado: string; estrellas: number }>(
+      `select estado, valoracion_estrellas as estrellas
+         from public.conversaciones where id = $1`,
+      [conv],
+    )
+    expect(rows[0].estado).toBe('abierta')
+    expect(rows[0].estrellas, 'la puntuación es del visitante').toBe(5)
+  })
+})
+
+describe('mensajes: la fecha y el autor los pone el servidor', () => {
+  it('el visitante no puede fijar fecha, autor ni agente', async () => {
+    const { rows } = await db.query<{ id: string }>(
+      `select c.id from public.conversaciones c
+         join public.visitantes v on v.id = c.visitor_id where v.auth_id = $1 limit 1`,
+      [ANA],
+    )
+    // Una fecha futura dejaba la conversación clavada arriba de la bandeja.
+    const { error } = await como(
+      ANA,
+      'anon',
+      `insert into public.mensajes (conversacion_id, autor, texto, created_at, agente_id)
+       values ($1, 'visitor', 'trampa', '2030-01-01', $2)`,
+      [rows[0].id, AGENTE],
+    )
+    expect(error, 'ya no hay INSERT directo').not.toBeNull()
+  })
+
+  it('el RPC deja el mensaje con autor visitor, sin agente y con fecha de ahora', async () => {
+    const { rows } = await db.query<{ id: string }>(
+      `select c.id from public.conversaciones c
+         join public.visitantes v on v.id = c.visitor_id where v.auth_id = $1 limit 1`,
+      [ANA],
+    )
+    const { error } = await como(
+      ANA,
+      'anon',
+      `select public.enviar_mensaje_visitante($1, '  con espacios  ')`,
+      [rows[0].id],
+    )
+    expect(error).toBeNull()
+
+    const { rows: m } = await db.query<{
+      autor: string
+      agente_id: string | null
+      texto: string
+      created_at: string
+    }>(
+      `select autor, agente_id, texto, created_at from public.mensajes
+        where texto = 'con espacios'`,
+    )
+    expect(m[0].autor).toBe('visitor')
+    expect(m[0].agente_id).toBeNull()
+    expect(m[0].texto, 'se recorta el texto').toBe('con espacios')
+    expect(new Date(m[0].created_at).getFullYear()).toBeLessThan(2030)
+  })
+
+  it('rechaza texto vacío y texto excesivo', async () => {
+    const { rows } = await db.query<{ id: string }>(
+      `select c.id from public.conversaciones c
+         join public.visitantes v on v.id = c.visitor_id where v.auth_id = $1 limit 1`,
+      [ANA],
+    )
+    const vacio = await como(ANA, 'anon', `select public.enviar_mensaje_visitante($1, '   ')`, [
+      rows[0].id,
+    ])
+    expect(vacio.error).toMatch(/vacío/)
+
+    const largo = await como(
+      ANA,
+      'anon',
+      `select public.enviar_mensaje_visitante($1, repeat('x', 5000))`,
+      [rows[0].id],
+    )
+    expect(largo.error).toMatch(/demasiado largo/)
+  })
+})
+
+describe('reservas frente al agente', () => {
+  async function reserva(): Promise<string> {
+    const { rows } = await como<{ crear_mis_reservas: string }>(
+      CLIENTE,
+      'authenticated',
+      `select public.crear_mis_reservas($1::jsonb) as crear_mis_reservas`,
+      [
+        JSON.stringify([
+          {
+            family: 'iphone',
+            model_slug: '17-pro',
+            model_name: 'iPhone 17 Pro',
+            variant_label: '256 GB',
+            price: 1329,
+          },
+        ]),
+      ],
+    )
+    return rows[0].crear_mis_reservas
+  }
+
+  it('el agente solo puede cambiar el estado, y por transiciones válidas', async () => {
+    const id = await reserva()
+    const antes = await db.query<{ price: string; pagado_at: string; cliente_id: string }>(
+      `select price, pagado_at, cliente_id from public.reservas where id = $1`,
+      [id],
+    )
+
+    await como(
+      AGENTE,
+      'authenticated',
+      `update public.reservas set price = 1, cliente_id = $2, pagado_at = '2020-01-01' where id = $1`,
+      [id, AGENTE],
+    )
+    const despues = await db.query<{ price: string; pagado_at: string; cliente_id: string }>(
+      `select price, pagado_at, cliente_id from public.reservas where id = $1`,
+      [id],
+    )
+    expect(despues.rows[0].price, 'el precio es inmutable').toBe(antes.rows[0].price)
+    expect(despues.rows[0].cliente_id, 'el dueño es inmutable').toBe(antes.rows[0].cliente_id)
+    expect(despues.rows[0].pagado_at, 'la posición en la cola es inmutable').toEqual(
+      antes.rows[0].pagado_at,
+    )
+
+    const ok = await como(
+      AGENTE,
+      'authenticated',
+      `select public.cambiar_estado_reserva($1, 'disponible')`,
+      [id],
+    )
+    expect(ok.error, 'en-espera → disponible es válida').toBeNull()
+
+    const mal = await como(
+      AGENTE,
+      'authenticated',
+      `select public.cambiar_estado_reserva($1, 'en-espera')`,
+      [id],
+    )
+    expect(mal.error, 'disponible → en-espera no lo es').toMatch(/Transición no permitida/)
+  })
+
+  it('un cliente no puede usar el RPC del agente', async () => {
+    const id = await reserva()
+    const { error } = await como(
+      CLIENTE,
+      'authenticated',
+      `select public.cambiar_estado_reserva($1, 'cancelada')`,
+      [id],
+    )
+    expect(error).toMatch(/agente dado de alta/)
+  })
+
+  it('el supervisor no obtiene UPDATE directo por serlo', async () => {
+    const id = await reserva()
+    await como(
+      SUPERVISOR,
+      'authenticated',
+      `update public.reservas set price = 1 where id = $1`,
+      [id],
+    )
+    const { rows } = await db.query<{ price: string }>(
+      `select price from public.reservas where id = $1`,
+      [id],
+    )
+    expect(Number(rows[0].price)).toBe(1329)
+  })
+
+  it('una cuenta de agente sin ficha de cliente no puede reservar', async () => {
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.crear_mis_reservas($1::jsonb)`,
+      [
+        JSON.stringify([
+          { family: 'iphone', model_slug: '17', model_name: 'iPhone 17', variant_label: '128 GB', price: 10 },
+        ]),
+      ],
+    )
+    expect(error).toMatch(/ficha de cliente/)
+  })
+
+  it('rechaza textos vacíos, listas vacías y precios con más de dos decimales', async () => {
+    const vacio = await como(
+      CLIENTE,
+      'authenticated',
+      `select public.crear_mis_reservas($1::jsonb)`,
+      [JSON.stringify([{ family: '  ', model_slug: 'x', model_name: 'y', variant_label: 'z', price: 1 }])],
+    )
+    expect(vacio.error).toMatch(/Falta family/)
+
+    const lista = await como(
+      CLIENTE,
+      'authenticated',
+      `select public.crear_mis_reservas('[]'::jsonb)`,
+    )
+    expect(lista.error).toMatch(/ninguna línea/)
+
+    const decimales = await como(
+      CLIENTE,
+      'authenticated',
+      `select public.crear_mis_reservas($1::jsonb)`,
+      [
+        JSON.stringify([
+          { family: 'iphone', model_slug: '17', model_name: 'iPhone 17', variant_label: '128 GB', price: 10.123 },
+        ]),
+      ],
+    )
+    expect(decimales.error).toMatch(/dos decimales/)
+  })
+})
+
+describe('agentes entre sí', () => {
+  it('B no puede cambiar el estado operativo de A', async () => {
+    await como(AGENTE_B, 'authenticated', `select public.cambiar_mi_estado('ausente')`)
+    const { rows } = await db.query<{ estado: string }>(
+      `select estado from public.agentes where id = $1`,
+      [AGENTE],
+    )
+    // `cambiar_mi_estado` no acepta a quién: siempre es la sesión.
+    expect(rows[0].estado, 'A no cambia porque lo pida B').not.toBe('ausente')
+  })
+
+  it('ser supervisor no da UPDATE directo sobre agentes', async () => {
+    await como(
+      SUPERVISOR,
+      'authenticated',
+      `update public.agentes set rol = 'supervisor' where id = $1`,
+      [AGENTE],
+    )
+    const { rows } = await db.query<{ rol: string }>(
+      `select rol from public.agentes where id = $1`,
+      [AGENTE],
+    )
+    expect(rows[0].rol).toBe('agente')
   })
 })

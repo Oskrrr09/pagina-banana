@@ -241,16 +241,34 @@ describe('políticas', () => {
     ).toEqual([])
   })
 
-  it('el visitante solo puede escribir mensajes como visitor', async () => {
-    const { rows } = await db.query<{ comprobando: string }>(
-      `select pg_get_expr(pol.polwithcheck, pol.polrelid) as comprobando
+  it('no queda ninguna política de INSERT sobre mensajes ni conversaciones', async () => {
+    // Ya no se escribe por política: todo pasa por RPC, que es lo único que
+    // puede fijar autor, firmante y fecha sin fiarse del navegador.
+    const { rows } = await db.query<{ tabla: string; politica: string }>(
+      `select c.relname as tabla, pol.polname as politica
          from pg_policy pol
          join pg_class c on c.oid = pol.polrelid
-        where c.relname = 'mensajes' and pol.polname = 'visitante manda mensaje'`,
+        where c.relname in ('mensajes', 'conversaciones')
+          and pol.polcmd = 'a'`,
     )
-    expect(rows).toHaveLength(1)
-    expect(rows[0].comprobando).toContain("'visitor'")
-    expect(rows[0].comprobando, 'no debe admitir bot ni agent').not.toContain("'bot'")
+    expect(
+      rows.map((r) => `${r.tabla}.${r.politica}`),
+      'un INSERT directo deja al cliente elegir columnas del servidor',
+    ).toEqual([])
+  })
+
+  it('no queda UPDATE ni DELETE directo sobre conversaciones ni reservas', async () => {
+    const { rows } = await db.query<{ tabla: string; politica: string; cmd: string }>(
+      `select c.relname as tabla, pol.polname as politica, pol.polcmd::text as cmd
+         from pg_policy pol
+         join pg_class c on c.oid = pol.polrelid
+        where c.relname in ('conversaciones', 'reservas', 'agentes')
+          and pol.polcmd in ('w', 'd')`,
+    )
+    expect(
+      rows.map((r) => `${r.tabla}.${r.politica} (${r.cmd})`),
+      'borrar una conversación se lleva sus mensajes por cascada',
+    ).toEqual([])
   })
 })
 

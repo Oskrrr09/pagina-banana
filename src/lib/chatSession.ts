@@ -405,13 +405,25 @@ export function useVisitorChatSession(
   const sendMessage = useCallback(
     async (texto: string) => {
       if (!supabase || !conversationId) return
+
+      // Por RPC. El insert directo dejaba que el navegador pusiera el
+      // `created_at`, y el disparador de actividad ordena la bandeja por él:
+      // con una fecha futura la conversación se quedaba clavada arriba.
+      const { data: nuevoId, error: errorEnvio } = await supabase.rpc(
+        'enviar_mensaje_visitante',
+        { p_conversacion_id: conversationId, p_texto: texto },
+      )
+      if (errorEnvio) {
+        console.error('[chatSession] send error', errorEnvio)
+        return
+      }
       const { data, error } = await supabase
         .from('mensajes')
-        .insert({ conversacion_id: conversationId, autor: 'visitor', texto })
         .select('*')
+        .eq('id', nuevoId as string)
         .single()
       if (error) {
-        console.error('[chatSession] send error', error)
+        console.error('[chatSession] no se pudo releer el mensaje', error)
         return
       }
       appendMessage(data as DbMessage)
@@ -756,21 +768,18 @@ export async function setConversationState(
 ): Promise<{ error: string | null }> {
   if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
 
-  const patch: Record<string, unknown> = { estado }
-  if (estado === 'cerrada') {
-    patch.cerrada_at = new Date().toISOString()
-    patch.valoracion_solicitada = opciones.pedirValoracion === true
-  } else {
-    // Al reabrir se retira la petición pendiente: si el agente vuelve a
-    // cerrar, decidirá otra vez. Una valoración ya enviada no se toca.
-    patch.cerrada_at = null
-    patch.valoracion_solicitada = false
-  }
-
-  const { error } = await supabaseAgent
-    .from('conversaciones')
-    .update(patch)
-    .eq('id', conversationId)
+  // Por RPC. El `update` alcanzaba la fila entera: se podía cambiar el
+  // `visitor_id` —y con él de quién es la conversación— o escribir las
+  // estrellas que había puesto el visitante.
+  const { error } =
+    estado === 'cerrada'
+      ? await supabaseAgent.rpc('cerrar_conversacion', {
+          p_conversacion_id: conversationId,
+          p_solicitar_valoracion: opciones.pedirValoracion === true,
+        })
+      : await supabaseAgent.rpc('reabrir_conversacion', {
+          p_conversacion_id: conversationId,
+        })
   if (error) {
     console.error('[setConversationState] error', error)
     return { error: error.message }
@@ -779,23 +788,20 @@ export async function setConversationState(
 }
 
 /**
- * Borrado definitivo de una conversación y sus mensajes (cascada en la
- * clave foránea). No hay papelera: quien llame a esto debe haber
- * confirmado antes con el agente.
+ * Ya no borra: cierra.
+ *
+ * El borrado físico se retiró de la aplicación. `mensajes` cuelga de
+ * `conversaciones` con `on delete cascade`, así que un clic de cualquier
+ * agente se llevaba el historial entero y sin papelera. Cerrar la saca de la
+ * bandeja y conserva todo, que es lo que el archivo necesitaba de verdad.
+ *
+ * Si alguna vez hace falta borrar de verdad, es tarea de administración con
+ * `service_role`, fuera de aquí.
  */
 export async function deleteConversation(
   conversationId: string,
 ): Promise<{ error: string | null }> {
-  if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
-  const { error } = await supabaseAgent
-    .from('conversaciones')
-    .delete()
-    .eq('id', conversationId)
-  if (error) {
-    console.error('[deleteConversation] error', error)
-    return { error: error.message }
-  }
-  return { error: null }
+  return setConversationState(conversationId, 'cerrada', { pedirValoracion: false })
 }
 
 /**
@@ -807,10 +813,17 @@ export async function assignConversation(
   agentId: string | null,
 ): Promise<{ error: string | null }> {
   if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
-  const { error } = await supabaseAgent
-    .from('conversaciones')
-    .update({ agente_id: agentId })
-    .eq('id', conversationId)
+
+  // El identificador ya no viaja: asignarse es siempre a uno mismo. Antes se
+  // mandaba el `agente_id` desde aquí, así que se podía atribuir una
+  // conversación a un compañero cualquiera.
+  const { error } = agentId
+    ? await supabaseAgent.rpc('asignarme_conversacion', {
+        p_conversacion_id: conversationId,
+      })
+    : await supabaseAgent.rpc('liberar_mi_conversacion', {
+        p_conversacion_id: conversationId,
+      })
   if (error) {
     console.error('[assignConversation] error', error)
     return { error: error.message }

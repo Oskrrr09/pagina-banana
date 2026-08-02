@@ -690,14 +690,26 @@ declare
   v_linea jsonb;
   v_unidades int;
   v_precio numeric;
+  v_family text;
+  v_slug text;
+  v_nombre text;
+  v_variant text;
   v_total int := 0;
   v_id uuid;
 begin
   if v_uid is null then
     raise exception 'Hace falta sesión' using errcode = '42501';
   end if;
-  if jsonb_typeof(p_lineas) <> 'array' then
+  -- Una cuenta de agente no tiene ficha de cliente: sin esto podría crear
+  -- reservas a su nombre que después nadie sabe a quién pertenecen.
+  if not exists (select 1 from public.clientes where id = v_uid) then
+    raise exception 'Esta sesión no tiene ficha de cliente' using errcode = '42501';
+  end if;
+  if p_lineas is null or jsonb_typeof(p_lineas) <> 'array' then
     raise exception 'Se esperaba una lista de líneas';
+  end if;
+  if jsonb_array_length(p_lineas) = 0 then
+    raise exception 'No hay ninguna línea que reservar';
   end if;
   if jsonb_array_length(p_lineas) > 20 then
     raise exception 'Demasiadas líneas en una sola llamada';
@@ -707,11 +719,19 @@ begin
     -- `model_name` y `variant_label` son NOT NULL en la tabla: sin
     -- comprobarlo aquí, el fallo llegaría como un error de restricción de
     -- Postgres en vez de como un mensaje que se entienda.
-    if v_linea->>'family' is null
-       or v_linea->>'model_slug' is null
-       or v_linea->>'model_name' is null
-       or v_linea->>'variant_label' is null then
+    -- `btrim` y comprobación de vacío: `''` pasaría el NOT NULL de la tabla y
+    -- dejaría una reserva sin producto legible.
+    v_family  := btrim(coalesce(v_linea->>'family', ''));
+    v_slug    := btrim(coalesce(v_linea->>'model_slug', ''));
+    v_nombre  := btrim(coalesce(v_linea->>'model_name', ''));
+    v_variant := btrim(coalesce(v_linea->>'variant_label', ''));
+
+    if v_family = '' or v_slug = '' or v_nombre = '' or v_variant = '' then
       raise exception 'Falta family, model_slug, model_name o variant_label en una línea';
+    end if;
+    if length(v_family) > 40 or length(v_slug) > 80
+       or length(v_nombre) > 120 or length(v_variant) > 120 then
+      raise exception 'Alguno de los textos de la línea es demasiado largo';
     end if;
 
     v_unidades := coalesce((v_linea->>'unidades')::int, 1);
@@ -726,8 +746,13 @@ begin
     exception when others then
       raise exception 'Precio no numérico';
     end;
-    if v_precio is null or v_precio < 0 then
+    -- La columna es numeric(10,2): un valor mayor reventaría con un error de
+    -- Postgres en vez de con un mensaje que se entienda.
+    if v_precio is null or v_precio < 0 or v_precio > 99999999.99 then
       raise exception 'Precio inválido';
+    end if;
+    if v_precio <> round(v_precio, 2) then
+      raise exception 'El precio no puede tener más de dos decimales';
     end if;
 
     v_total := v_total + v_unidades;
@@ -741,10 +766,10 @@ begin
         cliente_id, family, model_slug, model_name, variant_label, price, estado, pagado_at
       ) values (
         v_uid,                                  -- de la sesión, no del cliente
-        v_linea->>'family',
-        v_linea->>'model_slug',
-        v_linea->>'model_name',
-        v_linea->>'variant_label',
+        v_family,
+        v_slug,
+        v_nombre,
+        v_variant,
         v_precio,
         'en-espera',                            -- nunca lo elige el cliente
         now()                                   -- ni la fecha: fija la cola
@@ -788,6 +813,195 @@ $$;
 revoke all on function public.cambiar_mi_estado(text, text) from public;
 grant execute on function public.cambiar_mi_estado(text, text) to authenticated;
 
+-- ---- Operaciones del agente sobre una conversación ----------------------
+--
+-- Cada una toca solo lo suyo. Ninguna acepta el identificador del agente por
+-- parámetro: sale de la sesión.
+
+create or replace function public.asignarme_conversacion(p_conversacion_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_afectadas integer;
+begin
+  if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
+    raise exception 'Solo un agente dado de alta' using errcode = '42501';
+  end if;
+  -- Solo si sigue libre (o ya es suya): apropiarse de la de otro no.
+  update public.conversaciones
+     set agente_id = v_uid
+   where id = p_conversacion_id
+     and (agente_id is null or agente_id = v_uid);
+  get diagnostics v_afectadas = row_count;
+  if v_afectadas = 0 then
+    raise exception 'Esa conversación no existe o la lleva otro agente'
+      using errcode = '42501';
+  end if;
+end;
+$$;
+revoke all on function public.asignarme_conversacion(uuid) from public;
+grant execute on function public.asignarme_conversacion(uuid) to authenticated;
+
+create or replace function public.liberar_mi_conversacion(p_conversacion_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_afectadas integer;
+begin
+  if v_uid is null then
+    raise exception 'Hace falta sesión' using errcode = '42501';
+  end if;
+  update public.conversaciones
+     set agente_id = null
+   where id = p_conversacion_id
+     and (agente_id = v_uid or public.es_supervisor());
+  get diagnostics v_afectadas = row_count;
+  if v_afectadas = 0 then
+    raise exception 'No es tuya' using errcode = '42501';
+  end if;
+end;
+$$;
+revoke all on function public.liberar_mi_conversacion(uuid) from public;
+grant execute on function public.liberar_mi_conversacion(uuid) to authenticated;
+
+create or replace function public.cerrar_conversacion(
+  p_conversacion_id uuid,
+  p_solicitar_valoracion boolean default true
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_afectadas integer;
+begin
+  if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
+    raise exception 'Solo un agente dado de alta' using errcode = '42501';
+  end if;
+  -- El que la lleva, o un supervisor. Y solo toca estado, fecha de cierre y
+  -- si se pide valoración: las estrellas las escribe el visitante, no el
+  -- agente que le atendió.
+  update public.conversaciones
+     set estado = 'cerrada',
+         cerrada_at = now(),
+         valoracion_solicitada = coalesce(p_solicitar_valoracion, true)
+   where id = p_conversacion_id
+     and estado = 'abierta'
+     and (agente_id = v_uid or agente_id is null or public.es_supervisor());
+  get diagnostics v_afectadas = row_count;
+  if v_afectadas = 0 then
+    raise exception 'No se puede cerrar: no existe, ya está cerrada, o la lleva otro'
+      using errcode = '42501';
+  end if;
+end;
+$$;
+revoke all on function public.cerrar_conversacion(uuid, boolean) from public;
+grant execute on function public.cerrar_conversacion(uuid, boolean) to authenticated;
+
+create or replace function public.reabrir_conversacion(p_conversacion_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_afectadas integer;
+begin
+  if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
+    raise exception 'Solo un agente dado de alta' using errcode = '42501';
+  end if;
+  -- No se toca la valoración: si el visitante ya puntuó, esa puntuación es
+  -- suya y se queda.
+  update public.conversaciones
+     set estado = 'abierta',
+         cerrada_at = null
+   where id = p_conversacion_id
+     and estado = 'cerrada';
+  get diagnostics v_afectadas = row_count;
+  if v_afectadas = 0 then
+    raise exception 'No se puede reabrir' using errcode = '42501';
+  end if;
+end;
+$$;
+revoke all on function public.reabrir_conversacion(uuid) from public;
+grant execute on function public.reabrir_conversacion(uuid) to authenticated;
+
+-- Mensaje del visitante. Todo lo que no es el texto lo pone el servidor.
+create or replace function public.enviar_mensaje_visitante(
+  p_conversacion_id uuid,
+  p_texto text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_estado text;
+  v_id uuid;
+begin
+  if v_uid is null then
+    raise exception 'Hace falta una sesión, aunque sea anónima' using errcode = '42501';
+  end if;
+
+  select c.estado into v_estado
+    from public.conversaciones c
+    join public.visitantes v on v.id = c.visitor_id
+   where c.id = p_conversacion_id
+     and v.auth_id is not null
+     and v.auth_id = v_uid;
+
+  if v_estado is null then
+    raise exception 'Esa conversación no es tuya' using errcode = '42501';
+  end if;
+  if v_estado <> 'abierta' then
+    raise exception 'La conversación está cerrada' using errcode = '42501';
+  end if;
+
+  if p_texto is null or btrim(p_texto) = '' then
+    raise exception 'El mensaje no puede estar vacío';
+  end if;
+  if length(p_texto) > 4000 then
+    raise exception 'El mensaje es demasiado largo';
+  end if;
+
+  -- `created_at` no se toma del parámetro ni del cliente: lo pone la columna
+  -- por omisión, que es `now()`. De eso depende el orden de la bandeja.
+  insert into public.mensajes (conversacion_id, autor, texto, agente_id)
+  values (p_conversacion_id, 'visitor', btrim(p_texto), null)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+revoke all on function public.enviar_mensaje_visitante(uuid, text) from public;
+grant execute on function public.enviar_mensaje_visitante(uuid, text) to anon, authenticated;
+
+-- ¿Es supervisor la sesión actual? Solo la usan otras funciones.
+create or replace function public.es_supervisor()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.agentes where id = auth.uid() and rol = 'supervisor'
+  );
+$$;
+revoke all on function public.es_supervisor() from public, anon, authenticated;
+
 -- Respuesta del agente. Fija `autor` y `agente_id` desde la sesión: el
 -- frontend no los envía, así que no puede equivocarse ni mentir.
 create or replace function public.responder_como_agente(
@@ -802,18 +1016,42 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_id uuid;
+  v_asignado uuid;
+  v_estado text;
 begin
   if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
     raise exception 'Solo un agente dado de alta puede responder' using errcode = '42501';
-  end if;
-  if not exists (select 1 from public.conversaciones where id = p_conversacion_id) then
-    raise exception 'Esa conversación no existe' using errcode = '42501';
   end if;
   if p_texto is null or btrim(p_texto) = '' then
     raise exception 'El mensaje no puede estar vacío';
   end if;
   if length(p_texto) > 4000 then
     raise exception 'El mensaje es demasiado largo';
+  end if;
+
+  -- Comprobación y reclamación en la misma sentencia, para que dos agentes
+  -- que pulsen a la vez no se queden ambos con la conversación: el `where`
+  -- solo casa mientras siga sin asignar, y quien llegue segundo no actualiza
+  -- nada. `returning` dice si nos la hemos quedado.
+  update public.conversaciones
+     set agente_id = coalesce(agente_id, v_uid)
+   where id = p_conversacion_id
+     and estado = 'abierta'
+     and (agente_id is null or agente_id = v_uid)
+  returning agente_id into v_asignado;
+
+  if v_asignado is null then
+    -- O no existe, o está cerrada, o la lleva otro. Se distingue para que el
+    -- panel pueda decir algo útil.
+    select estado, agente_id into v_estado, v_asignado
+      from public.conversaciones where id = p_conversacion_id;
+    if v_estado is null then
+      raise exception 'Esa conversación no existe' using errcode = '42501';
+    elsif v_estado <> 'abierta' then
+      raise exception 'La conversación está cerrada' using errcode = '42501';
+    else
+      raise exception 'La lleva otro agente' using errcode = '42501';
+    end if;
   end if;
 
   insert into public.mensajes (conversacion_id, autor, texto, agente_id)
@@ -824,6 +1062,45 @@ end;
 $$;
 revoke all on function public.responder_como_agente(uuid, text) from public;
 grant execute on function public.responder_como_agente(uuid, text) to authenticated;
+
+-- Cambio de estado de una reserva, por el agente. Solo el estado, y solo por
+-- transiciones que tengan sentido.
+create or replace function public.cambiar_estado_reserva(
+  p_reserva_id uuid,
+  p_estado text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_actual text;
+begin
+  if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
+    raise exception 'Solo un agente dado de alta' using errcode = '42501';
+  end if;
+
+  select estado into v_actual from public.reservas where id = p_reserva_id;
+  if v_actual is null then
+    raise exception 'Esa reserva no existe' using errcode = '42501';
+  end if;
+
+  -- Máquina de estados explícita. Sin esto se podía devolver una reserva
+  -- completada a la cola, o resucitar una cancelada.
+  if not (
+    (v_actual = 'en-espera'  and p_estado in ('disponible', 'cancelada')) or
+    (v_actual = 'disponible' and p_estado in ('completada', 'cancelada'))
+  ) then
+    raise exception 'Transición no permitida: % → %', v_actual, p_estado;
+  end if;
+
+  update public.reservas set estado = p_estado where id = p_reserva_id;
+end;
+$$;
+revoke all on function public.cambiar_estado_reserva(uuid, text) from public;
+grant execute on function public.cambiar_estado_reserva(uuid, text) to authenticated;
 
 -- Cancelación de una reserva propia en espera. Lo único que el cliente puede
 -- cambiar de una reserva: ni precio, ni producto, ni `pagado_at`.
@@ -938,28 +1215,31 @@ create policy "visitante lee sus conversaciones"
     )
   );
 
-create policy "visitante abre conversacion"
-  on public.conversaciones for insert to anon, authenticated
-  with check (
-    exists (
-      select 1 from public.visitantes v
-      where v.id = visitor_id and v.auth_id is not null and v.auth_id = auth.uid()
-    )
-  );
+-- NO hay INSERT directo de conversaciones.
+--
+-- La política comprobaba que el `visitor_id` fuera suyo, pero el resto de la
+-- fila la elegía el navegador: se podía nacer `cerrada`, asignada a un agente,
+-- con `ultimo_mensaje_at` en el futuro o con una valoración ya puesta. Se crea
+-- por public.abrir_conversacion(), que fija todo eso.
 
 create policy "agente lee conversaciones"
   on public.conversaciones for select to authenticated
   using (public.es_agente());
 
--- Asignarse una conversación o cerrarla es cosa de agentes.
-create policy "agente actualiza conversaciones"
-  on public.conversaciones for update to authenticated
-  using (public.es_agente())
-  with check (public.es_agente());
+-- NO hay UPDATE directo de conversaciones.
+--
+-- La política dejaba a cualquier agente reescribir la fila entera: cambiar el
+-- `visitor_id` —y con él, de quién es la conversación—, la fecha de creación,
+-- o las estrellas y el comentario que había puesto el visitante. Cada
+-- operación tiene ahora su función y toca solo sus columnas.
 
-create policy "agente borra conversaciones"
-  on public.conversaciones for delete to authenticated
-  using (public.es_agente());
+-- NO hay DELETE. Ninguno.
+--
+-- Cualquier agente podía borrar cualquier conversación, y `mensajes` cuelga
+-- con `on delete cascade`: un clic se llevaba el historial entero, sin
+-- papelera. Cerrar una conversación la saca de la bandeja y conserva todo.
+-- El borrado físico, si alguna vez hace falta, es tarea de administración con
+-- `service_role`, fuera de la aplicación.
 
 -- La condición va escrita aquí y no en una función auxiliar.
 --
@@ -983,21 +1263,13 @@ create policy "visitante lee sus mensajes"
 
 -- Solo puede hablar como visitante. Escribir como 'bot' o 'agent' desde el
 -- navegador permitiría suplantarlos en cualquier conversación.
-create policy "visitante manda mensaje"
-  on public.mensajes for insert to anon, authenticated
-  with check (
-    autor = 'visitor'
-    and (
-    exists (
-      select 1
-      from public.conversaciones c
-      join public.visitantes v on v.id = c.visitor_id
-      where c.id = conversacion_id
-        and v.auth_id is not null
-        and v.auth_id = auth.uid()
-    )
-  )
-  );
+-- NO hay INSERT directo de mensajes, ni para el visitante ni para el agente.
+--
+-- La política fijaba `autor = 'visitor'`, pero el `created_at` seguía viniendo
+-- del navegador — y el disparador de actividad usa ese `created_at`. Con una
+-- fecha futura la conversación se quedaba clavada arriba de la bandeja del
+-- agente; con una antigua, escondida. Se escribe por
+-- public.enviar_mensaje_visitante() y public.responder_como_agente().
 
 create policy "agente lee mensajes"
   on public.mensajes for select to authenticated
@@ -1093,10 +1365,11 @@ create policy "cliente lee sus reservas"
 -- lista de espera** por delante de quien llevaba semanas. Ambas cosas pasan
 -- por función: public.crear_mis_reservas() y public.cancelar_mi_reserva().
 
-create policy "agente gestiona reservas"
-  on public.reservas for update to authenticated
-  using (public.es_agente())
-  with check (public.es_agente());
+-- NO hay UPDATE directo de reservas para el agente.
+--
+-- Dejaba reescribir la fila entera: el dueño, el producto, el precio y
+-- `pagado_at`, que es lo que fija el puesto en la lista de espera. Se cambia
+-- el estado por public.cambiar_estado_reserva(), y nada más.
 
 -- --------------------------------------------------------------
 -- Storage: justificantes del descuento educativo
