@@ -79,3 +79,37 @@ test('el bundle construido no contiene una clave de servicio', () => {
     `Estos artefactos publicados mencionan service_role:\n  ` + ofensores.join('\n  '),
   ).toEqual([])
 })
+
+test('el bundle que sirven las pruebas no apunta a ningún Supabase', () => {
+  // El fallo que esto vigila es sutil: Vite **incrusta** las variables VITE_
+  // en el JavaScript durante el build. No son configuración de ejecución.
+  //
+  // Servir el bundle de producción en las pruebas y vaciar las variables del
+  // proceso que lo sirve no cambia nada: las credenciales ya están dentro del
+  // .js, y las pruebas acabarían escribiendo visitantes y conversaciones de
+  // mentira en el Supabase de la demostración, mezclados con los reales. Ya
+  // pasó una vez (QA-002).
+  const dist = join(process.cwd(), 'dist')
+  test.skip(!existsSync(dist), 'No hay build. Ejecuta `npm run build` antes.')
+
+  const conUrl: string[] = []
+  for (const ruta of ficheros(dist)) {
+    if (!/\.js$/.test(ruta)) continue
+    const contenido = readFileSync(ruta, 'utf8')
+    // Cualquier proyecto de Supabase, no solo el nuestro: no hace falta
+    // conocer la URL concreta para saber que no debería haber ninguna.
+    const encontrada = contenido.match(/https:\/\/[a-z0-9]{16,}\.supabase\.co/)
+    if (encontrada) {
+      // Se recorta a propósito: no tiene sentido volcar el identificador
+      // completo del proyecto en un registro público.
+      conUrl.push(`${ruta.replace(process.cwd() + '/', '')} → ${encontrada[0].slice(0, 16)}…`)
+    }
+  }
+
+  expect(
+    conUrl,
+    'El bundle servido en las pruebas lleva una URL de Supabase incrustada. ' +
+      'Compila el artefacto de pruebas con VITE_SUPABASE_URL y ' +
+      'VITE_SUPABASE_ANON_KEY vacías:\n  ' + conUrl.join('\n  '),
+  ).toEqual([])
+})

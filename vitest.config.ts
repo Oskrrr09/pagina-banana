@@ -10,7 +10,10 @@ export default defineConfig({
   test: {
     // `tests/e2e` y `tests/rls` son de Playwright; incluirlas aquí haría que
     // Vitest intentara ejecutarlas y fallara con errores confusos.
-    include: ['tests/unit/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/schema/**/*.test.ts'],
     environment: 'node',
+    // PGlite arranca un Postgres en WASM: la primera vez tarda.
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
   },
 })

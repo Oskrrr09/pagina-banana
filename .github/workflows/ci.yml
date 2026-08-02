@@ -51,7 +51,11 @@ jobs:
         run: npm run typecheck
       - name: ESLint
         run: npm run lint
-      - name: Pruebas unitarias
+      # Incluye el arnés de esquema: instala las migraciones en un PostgreSQL
+      # real (PGlite, sin Docker) y comprueba políticas, firmas y permisos.
+      # Corre aquí, en la fase barata, porque tarda menos de un segundo y corta
+      # un esquema roto antes de gastar build ni navegadores.
+      - name: Pruebas unitarias y de esquema
         run: npm run test:unit
 
   build:
@@ -68,20 +72,32 @@ jobs:
       - run: npm ci
       # Credenciales de Supabase (chat de Bananito y panel /agente).
       # Si no están definidas, la web se despliega en modo demostración.
-      - name: Compilar
+      # DOS artefactos distintos, y la diferencia importa.
+      #
+      # Vite incrusta las variables VITE_ en el JavaScript durante el build:
+      # no son configuración de tiempo de ejecución. Servir el bundle de
+      # producción en las pruebas y vaciar las variables del proceso que lo
+      # sirve no cambia nada — las credenciales ya están dentro del .js, y las
+      # pruebas escribirían en el Supabase de la demostración.
+      - name: Compilar para publicar
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      # Dos artefactos del mismo build: uno con el formato que espera Pages y
-      # otro corriente, porque las pruebas necesitan leer `dist/` y el de
-      # Pages viene empaquetado en un tar.
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+
+      # El de pruebas se compila aparte, con las variables explícitamente
+      # vacías, para que el chat quede en modo demostración de verdad.
+      - name: Compilar para pruebas
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_ANON_KEY: ''
       - uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-test
           path: dist
           retention-days: 1
 
@@ -101,7 +117,7 @@ jobs:
       # necesitan las comprobaciones que inspeccionan el bundle publicado.
       - uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: dist-test
           path: dist
       - name: Instalar navegadores de Playwright
         run: npx playwright install --with-deps chromium
@@ -138,14 +154,29 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Comprobar si hay proyecto de pruebas
+      - name: Comprobar la configuración del proyecto de pruebas
         id: cfg
+        env:
+          URL: ${{ secrets.RLS_TEST_URL }}
+          ANON: ${{ secrets.RLS_TEST_ANON_KEY }}
+          SERVICE: ${{ secrets.RLS_TEST_SERVICE_KEY }}
         run: |
-          if [ -n "${{ secrets.RLS_TEST_URL }}" ]; then
+          faltan=""
+          [ -z "$URL" ]     && faltan="$faltan RLS_TEST_URL"
+          [ -z "$ANON" ]    && faltan="$faltan RLS_TEST_ANON_KEY"
+          [ -z "$SERVICE" ] && faltan="$faltan RLS_TEST_SERVICE_KEY"
+
+          if [ -z "$faltan" ]; then
             echo "hay=si" >> "$GITHUB_OUTPUT"
-          else
+          elif [ "$faltan" = " RLS_TEST_URL RLS_TEST_ANON_KEY RLS_TEST_SERVICE_KEY" ]; then
+            # Ninguna: es el estado de un repositorio recién clonado.
             echo "hay=no" >> "$GITHUB_OUTPUT"
-            echo "::warning::Sin RLS_TEST_URL. Las políticas RLS NO se han verificado."
+            echo "::warning::Sin secretos de RLS. Las políticas NO se han verificado contra Supabase."
+          else
+            # Configuración a medias: es peor que ninguna, porque parece
+            # configurado y no lo está. Se corta aquí.
+            echo "::error::Configuración de RLS incompleta. Faltan:$faltan"
+            exit 1
           fi
       # Un tick verde en un trabajo que no ha ejecutado nada es peor que no
       # tenerlo: da por comprobado lo que no se ha comprobado. El resumen del
@@ -175,7 +206,31 @@ jobs:
           RLS_TEST_URL: ${{ secrets.RLS_TEST_URL }}
           RLS_TEST_ANON_KEY: ${{ secrets.RLS_TEST_ANON_KEY }}
           RLS_TEST_SERVICE_KEY: ${{ secrets.RLS_TEST_SERVICE_KEY }}
-        run: npx playwright test --project=rls
+        run: npx playwright test --project=rls --reporter=json --output=/dev/null > rls.json || true
+      # Una prueba omitida aquí sería una comprobación de seguridad que nadie
+      # ha hecho, presentada en verde. Se cuenta el resultado y se corta.
+      - name: Exigir que no haya ninguna omitida
+        if: steps.cfg.outputs.hay == 'si'
+        run: |
+          node -e "
+            const r = require('./rls.json');
+            const specs = JSON.stringify(r).match(/\"status\":\"skipped\"/g) || [];
+            const total = (r.suites || []).length;
+            if (specs.length > 0) {
+              console.error('Hay ' + specs.length + ' pruebas RLS omitidas.');
+              process.exit(1);
+            }
+            if (r.stats && r.stats.expected === 0) {
+              console.error('No se ha ejecutado ninguna prueba RLS.');
+              process.exit(1);
+            }
+            if (r.stats && r.stats.unexpected > 0) {
+              console.error('Hay ' + r.stats.unexpected + ' pruebas RLS en rojo.');
+              process.exit(1);
+            }
+            console.log('Pruebas RLS ejecutadas: ' + (r.stats ? r.stats.expected : total));
+          "
+
 
   deploy:
     name: Publicar en GitHub Pages

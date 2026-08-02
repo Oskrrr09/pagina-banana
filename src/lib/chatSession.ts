@@ -240,6 +240,42 @@ export function useVisitorChatSession(
     setMessages((prev) => [...prev, m])
   }, [])
 
+  // Cambio de sesión con el chat abierto.
+  //
+  // El escenario: alguien escribe por el chat como anónimo y luego inicia
+  // sesión con su cuenta. El `auth.uid()` cambia, así que la conversación
+  // anterior ya no le pertenece a la sesión nueva: las políticas rechazarían
+  // cualquier lectura o escritura sobre ella, y el widget se quedaría
+  // intentándolo en bucle contra una conversación que ya no es suya.
+  //
+  // Se resuelve empezando de cero: se sueltan las suscripciones, se limpia lo
+  // cargado y se abre una conversación de la sesión nueva. El historial
+  // anónimo NO se arrastra — copiarlo exigiría demostrar que las dos sesiones
+  // son de la misma persona, y lo único que las relacionaría es que comparten
+  // navegador, que no demuestra nada.
+  const uidRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!supabaseEnabled || !supabase) return
+    const { data } = supabase.auth.onAuthStateChange((_evento, sesion) => {
+      const nuevo = sesion?.user.id ?? null
+      if (uidRef.current === null) {
+        uidRef.current = nuevo
+        return
+      }
+      if (uidRef.current === nuevo) return
+
+      uidRef.current = nuevo
+      setConversationId(null)
+      setConversation(null)
+      setMessages([])
+      seenIdsRef.current = new Set()
+      // Vuelve a 'loading': el efecto de inicialización se dispara solo al ver
+      // que ya no hay conversación, y abrirá la de la sesión nueva.
+      setStatus('loading')
+    })
+    return () => data.subscription.unsubscribe()
+  }, [])
+
   // Inicialización: se ejecuta cuando el chat se activa por primera vez.
   useEffect(() => {
     if (!supabaseEnabled || !supabase) return
@@ -298,22 +334,23 @@ export function useVisitorChatSession(
   useEffect(() => {
     if (!supabase || !clienteId) return
     void (async () => {
-      const { data } = await supabase!.auth.getUser()
-      const uid = data.user?.id
-      if (!uid) return
-      // Por `auth_id`, no por el UUID guardado en el navegador: la política
-      // solo deja tocar la fila cuyo `auth_id` coincide con la sesión.
-      const { error } = await supabase!
-        .from('visitantes')
-        .update({
-          cliente_id: clienteId,
-          nombre: identity?.nombre ?? null,
-          email: identity?.email ?? null,
-          telefono: identity?.telefono ?? null,
-        })
-        .eq('auth_id', uid)
+      // Ni un `update` directo ni el `cliente_id` por parámetro: los datos de
+      // contacto van por la función de apertura —que es idempotente y
+      // reutiliza la conversación abierta— y el enlace con la cuenta por la
+      // suya, que deduce el cliente de la sesión.
+      const { error: errorDatos } = await supabase!.rpc('abrir_conversacion', {
+        p_nombre: identity?.nombre ?? null,
+        p_email: identity?.email ?? null,
+        p_telefono: identity?.telefono ?? null,
+        p_user_agent: navigator.userAgent,
+      })
+      if (errorDatos) {
+        console.error('[chatSession] no se pudieron actualizar los datos', errorDatos)
+        return
+      }
+      const { error } = await supabase!.rpc('vincular_mi_visitante_a_cliente')
       if (error) {
-        console.error('[chatSession] no se pudo identificar al visitante', error)
+        console.error('[chatSession] no se pudo enlazar la ficha con la cuenta', error)
       }
     })()
   }, [clienteId, identity?.nombre, identity?.email, identity?.telefono])

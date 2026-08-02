@@ -39,12 +39,33 @@ La clave de servicio se usa **solo** para montar el escenario y limpiar al
 terminar. No entra en el bundle, no se lee desde `import.meta.env` y no lleva
 prefijo `VITE_`, que es lo que la expondría.
 
+## Qué ya está comprobado sin ellas
+
+`npm run test:schema` instala las migraciones en un **PostgreSQL real**
+(PGlite, Postgres 18 en WebAssembly, sin Docker) y comprueba el
+comportamiento de las políticas: aislamiento entre visitantes, suplantación
+del bot y del agente, alta de clientes, reservas y justificantes. **38
+pruebas, todas ejecutadas.**
+
+Lo que ese arnés **no** cubre, y por lo que estas siguen haciendo falta:
+
+- **GoTrue**: el alta real de usuarios y las sesiones anónimas. Allí
+  `auth.uid()` se simula.
+- **Storage de Supabase**: `storage.objects` es una imitación, así que las
+  políticas de Storage se comprueban en su forma, no en su integración con el
+  servicio real.
+- **PostgREST**: cómo traduce las peticiones y aplica los roles.
+
 ## Estado actual
 
 **No se han ejecutado.** El entorno de desarrollo no tiene Docker ni la CLI de
-Supabase, así que no se puede levantar Postgres en local, y los secretos que
-hay configurados en GitHub Actions (`SUPABASE_URL`, `SUPABASE_ANON_KEY`)
-apuntan al proyecto de la demostración, que no debe usarse para esto.
+Supabase, y los secretos que hay configurados en GitHub Actions
+(`SUPABASE_URL`, `SUPABASE_ANON_KEY`) apuntan al proyecto de la demostración,
+que no debe usarse para esto.
+
+Con el arnés de PGlite lo que falta por verificar se ha reducido mucho —las
+políticas ya están probadas contra Postgres— pero **no a cero**: la
+integración con GoTrue y Storage sigue sin comprobarse.
 
 Sin ese proyecto dedicado, `test.skip` las marca como omitidas con el motivo
 escrito. No se declaran verdes.
