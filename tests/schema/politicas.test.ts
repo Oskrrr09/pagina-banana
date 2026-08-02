@@ -255,20 +255,109 @@ describe('agente', () => {
     expect(mensajes.rows.length).toBeGreaterThan(0)
   })
 
-  it('un agente válido puede responder y queda como agent', async () => {
+  it('un agente válido responde por RPC y el mensaje queda firmado con su UUID', async () => {
     const { rows } = await db.query<{ id: string }>(`select id from public.conversaciones limit 1`)
     const { error } = await como(
       AGENTE,
       'authenticated',
-      `insert into public.mensajes (conversacion_id, autor, texto) values ($1, 'agent', 'Buenos días')`,
+      `select public.responder_como_agente($1, 'Buenos días')`,
       [rows[0].id],
     )
     expect(error, 'el agente debe poder responder').toBeNull()
 
-    const { rows: guardados } = await db.query<{ autor: string }>(
-      `select autor from public.mensajes where texto = 'Buenos días'`,
+    const { rows: guardados } = await db.query<{ autor: string; agente_id: string }>(
+      `select autor, agente_id from public.mensajes where texto = 'Buenos días'`,
     )
     expect(guardados[0].autor).toBe('agent')
+    // Lo que importa: la firma sale de la sesión, no del cliente.
+    expect(guardados[0].agente_id, 'no puede quedar nulo ni ser de otro').toBe(AGENTE)
+  })
+
+  it('el agente no puede insertar mensajes a mano ni atribuirlos a otro', async () => {
+    const { rows } = await db.query<{ id: string }>(`select id from public.conversaciones limit 1`)
+    const directo = await como(
+      AGENTE,
+      'authenticated',
+      `insert into public.mensajes (conversacion_id, autor, texto, agente_id)
+       values ($1, 'agent', 'firmando por otro', $2)`,
+      [rows[0].id, CLIENTE],
+    )
+    expect(directo.error, 'ya no hay INSERT directo para el agente').not.toBeNull()
+  })
+
+  it('un cliente autenticado no puede usar el RPC de agente', async () => {
+    const { rows } = await db.query<{ id: string }>(`select id from public.conversaciones limit 1`)
+    const { error } = await como(
+      CLIENTE,
+      'authenticated',
+      `select public.responder_como_agente($1, 'me hago pasar por agente')`,
+      [rows[0].id],
+    )
+    expect(error).toMatch(/agente dado de alta/)
+  })
+
+  it('el mensaje de un visitante mueve ultimo_mensaje_at', async () => {
+    // Sin `security definer` en el disparador esto fallaba en silencio: el
+    // mensaje entraba y la fecha no se movía, así que la conversación se
+    // quedaba hundida en la bandeja del agente.
+    const { rows } = await db.query<{ id: string; antes: string }>(
+      `select c.id, c.ultimo_mensaje_at as antes
+         from public.conversaciones c
+         join public.visitantes v on v.id = c.visitor_id
+        where v.auth_id = $1`,
+      [ANA],
+    )
+    const antes = rows[0].antes
+
+    await new Promise((r) => setTimeout(r, 5))
+    const { error } = await como(
+      ANA,
+      'anon',
+      `insert into public.mensajes (conversacion_id, autor, texto) values ($1, 'visitor', 'sigo aquí')`,
+      [rows[0].id],
+    )
+    expect(error).toBeNull()
+
+    const { rows: despues } = await db.query<{ ultimo_mensaje_at: string }>(
+      `select ultimo_mensaje_at from public.conversaciones where id = $1`,
+      [rows[0].id],
+    )
+    expect(
+      new Date(despues[0].ultimo_mensaje_at).getTime(),
+      'la fecha debe avanzar',
+    ).toBeGreaterThan(new Date(antes).getTime())
+  })
+
+  it('el agente no puede ascenderse a supervisor', async () => {
+    // Sin política de UPDATE, PostgreSQL no da error: simplemente no alcanza
+    // ninguna fila. Se comprueba el efecto, que es lo que importa.
+    await como(
+      AGENTE,
+      'authenticated',
+      `update public.agentes set rol = 'supervisor' where id = $1`,
+      [AGENTE],
+    )
+
+    const { rows } = await db.query<{ rol: string | null }>(
+      `select rol from public.agentes where id = $1`,
+      [AGENTE],
+    )
+    expect(rows[0].rol).not.toBe('supervisor')
+  })
+
+  it('el agente sí puede cambiar su estado por RPC', async () => {
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.cambiar_mi_estado('ocupado')`,
+    )
+    expect(error).toBeNull()
+
+    const { rows } = await db.query<{ estado: string }>(
+      `select estado from public.agentes where id = $1`,
+      [AGENTE],
+    )
+    expect(rows[0].estado).toBe('ocupado')
   })
 
   it('un agente no puede editar el teléfono del cliente', async () => {

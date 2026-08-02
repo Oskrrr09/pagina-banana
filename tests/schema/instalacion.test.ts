@@ -18,9 +18,12 @@ import { join } from 'node:path'
 //
 // QUÉ ES ESTO Y QUÉ NO ES
 //
-// PGlite es PostgreSQL 18 compilado a WebAssembly. Es Postgres real: mismo
-// planificador, mismo RLS, mismo `pg_proc`. Corre sin Docker, que es lo que
-// permite ejecutarlo aquí y en cualquier CI.
+// PGlite es PostgreSQL real compilado a WebAssembly: mismo planificador, mismo
+// RLS, mismo `pg_proc`. Corre sin Docker, que es lo que permite ejecutarlo aquí
+// y en cualquier CI.
+//
+// La versión concreta no se afirma de memoria: la primera prueba la consulta y
+// la imprime, para que quede en el registro de la ejecución.
 //
 // Lo que NO es: no es Supabase. GoTrue, Storage y el sistema de roles se
 // simulan abajo con la misma forma que tienen allí (`auth.uid()` leyendo de
@@ -136,6 +139,14 @@ afterAll(async () => {
 })
 
 describe('instalación desde cero', () => {
+  it('deja constancia de la versión de PostgreSQL usada', async () => {
+    const { rows } = await db.query<{ version: string }>('select version()')
+    // Se imprime a propósito: cualquier afirmación sobre "Postgres N" en la
+    // documentación tiene que poder contrastarse con la ejecución real.
+    console.log(`   PostgreSQL bajo prueba → ${rows[0].version}`)
+    expect(rows[0].version).toMatch(/PostgreSQL/)
+  })
+
   it('las migraciones se aplican sobre una base vacía', async () => {
     const ficheros = await aplicarMigraciones(db)
     expect(ficheros.length, 'debe haber al menos una migración').toBeGreaterThan(0)

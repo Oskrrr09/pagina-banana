@@ -173,7 +173,13 @@ jobs:
           if [ -z "$faltan" ]; then
             echo "hay=si" >> "$GITHUB_OUTPUT"
           elif [ "$faltan" = " RLS_TEST_URL RLS_TEST_ANON_KEY RLS_TEST_SERVICE_KEY" ]; then
-            # Ninguna: es el estado de un repositorio recién clonado.
+            # Ninguna configurada. En una pull request se tolera —el trabajo
+            # queda sin ejecutar y lo dice—, pero publicar en main sin haber
+            # comprobado las políticas contra Supabase no.
+            if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              echo "::error::No se puede desplegar main sin los secretos de RLS. Ver tests/rls/README.md."
+              exit 1
+            fi
             echo "hay=no" >> "$GITHUB_OUTPUT"
             echo "::warning::Sin secretos de RLS. Las políticas NO se han verificado contra Supabase."
           else
@@ -210,31 +216,17 @@ jobs:
           RLS_TEST_URL: ${{ secrets.RLS_TEST_URL }}
           RLS_TEST_ANON_KEY: ${{ secrets.RLS_TEST_ANON_KEY }}
           RLS_TEST_SERVICE_KEY: ${{ secrets.RLS_TEST_SERVICE_KEY }}
-        run: npx playwright test --project=rls --reporter=json --output=/dev/null > rls.json || true
-      # Una prueba omitida aquí sería una comprobación de seguridad que nadie
-      # ha hecho, presentada en verde. Se cuenta el resultado y se corta.
-      - name: Exigir que no haya ninguna omitida
-        if: steps.cfg.outputs.hay == 'si'
         run: |
-          node -e "
-            const r = require('./rls.json');
-            const specs = JSON.stringify(r).match(/\"status\":\"skipped\"/g) || [];
-            const total = (r.suites || []).length;
-            if (specs.length > 0) {
-              console.error('Hay ' + specs.length + ' pruebas RLS omitidas.');
-              process.exit(1);
-            }
-            if (r.stats && r.stats.expected === 0) {
-              console.error('No se ha ejecutado ninguna prueba RLS.');
-              process.exit(1);
-            }
-            if (r.stats && r.stats.unexpected > 0) {
-              console.error('Hay ' + r.stats.unexpected + ' pruebas RLS en rojo.');
-              process.exit(1);
-            }
-            console.log('Pruebas RLS ejecutadas: ' + (r.stats ? r.stats.expected : total));
-          "
-
+          # Se captura el código en vez de taparlo con `|| true`: hace falta
+          # generar el informe antes de fallar, pero el código sigue contando.
+          set +e
+          npx playwright test --project=rls --reporter=json > rls.json
+          echo "codigo=$?" >> "$GITHUB_OUTPUT"
+          set -e
+        id: pruebas
+      - name: Exigir que se hayan ejecutado y aprobado todas
+        if: steps.cfg.outputs.hay == 'si'
+        run: node scripts/verificar-rls.mjs rls.json "${{ steps.pruebas.outputs.codigo }}"
 
   deploy:
     name: Publicar en GitHub Pages

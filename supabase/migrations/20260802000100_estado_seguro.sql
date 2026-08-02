@@ -32,7 +32,20 @@
 -- aceptaba el texto de la bienvenida, es decir, dejaba almacenar mensajes
 -- firmados por el bot desde el navegador.
 drop function if exists public.abrir_conversacion(text, text, text, text, text);
--- Se retira: la condición vive ahora dentro de las políticas de `mensajes`.
+-- `conversacion_es_mia()` se retira: su condición vive ahora dentro de las
+-- políticas de `mensajes`.
+--
+-- Pero soltarla a secas falla sobre una base ya desplegada. PostgreSQL usa
+-- RESTRICT por defecto, y en el estado anterior hay dos políticas que la
+-- invocan: «cannot drop function ... because other objects depend on it».
+--
+-- Se sueltan primero esas dos políticas, por su nombre. No con CASCADE: eso
+-- se llevaría por delante lo que dependiera de la función sin decir qué, que
+-- sobre una base de verdad es una forma estupenda de borrar algo sin
+-- enterarse.
+drop policy if exists "visitante lee sus mensajes" on public.mensajes;
+drop policy if exists "visitante manda mensaje"    on public.mensajes;
+drop policy if exists "chat lectura mensajes"      on public.mensajes;
 drop function if exists public.conversacion_es_mia(uuid);
 drop function if exists public.actualizar_mi_ficha(text, text, jsonb, jsonb, text);
 drop function if exists public.enviar_valoracion(uuid, uuid, smallint, text);
@@ -233,17 +246,30 @@ create index if not exists reservas_cola_idx
 -- Trigger: mantener `ultimo_mensaje_at` al día en la conversación
 -- para que el panel del agente pueda ordenar por actividad reciente.
 -- --------------------------------------------------------------
+-- Mantiene `ultimo_mensaje_at`, que es por lo que se ordena la bandeja del
+-- agente.
+--
+-- Iba sin `security definer`, así que se ejecutaba con los permisos de quien
+-- inserta el mensaje. Un visitante no tiene UPDATE sobre `conversaciones`, de
+-- modo que su mensaje entraba y la fecha **no se movía**: la conversación se
+-- quedaba hundida en la bandeja y el agente no veía que alguien había escrito.
+-- No daba error, que es lo peor que puede hacer un fallo así.
 create or replace function public.touch_conversation_on_message()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 begin
+  -- Solo la conversación del mensaje que entra. No recibe parámetros del
+  -- cliente: lo único que usa es `new`, que lo compone PostgreSQL.
   update public.conversaciones
     set ultimo_mensaje_at = new.created_at
     where id = new.conversacion_id;
   return new;
 end;
 $$;
+revoke all on function public.touch_conversation_on_message() from public, anon, authenticated;
 
 drop trigger if exists trg_touch_conversation on public.mensajes;
 create trigger trg_touch_conversation
@@ -644,41 +670,6 @@ $$;
 revoke all on function public.actualizar_mi_ficha(text, text, jsonb, jsonb) from public;
 grant execute on function public.actualizar_mi_ficha(text, text, jsonb, jsonb) to authenticated;
 
--- Registro del justificante educativo. Solo deja la solicitud en 'pendiente';
--- aprobar o rechazar es del agente.
-create or replace function public.registrar_mi_justificante(p_ruta text)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_uid uuid := auth.uid();
-begin
-  if v_uid is null then
-    raise exception 'Hace falta sesión' using errcode = '42501';
-  end if;
-  -- La ruta debe estar en la carpeta del propio usuario; si no, se podría
-  -- registrar como propio el documento de otra persona.
-  if p_ruta is null or p_ruta not like (v_uid::text || '/%') then
-    raise exception 'La ruta no pertenece a esta cuenta' using errcode = '42501';
-  end if;
-
-  update public.clientes
-     set descuento_educativo_archivo = p_ruta,
-         descuento_educativo_estado = 'pendiente',
-         descuento_educativo_subido_at = now(),
-         descuento_educativo_nota = null,
-         descuento_educativo_revisado_at = null,
-         descuento_educativo_revisado_por = null
-   where id = v_uid;
-  if not found then
-    raise exception 'No hay ficha de cliente para esta sesión' using errcode = '42501';
-  end if;
-end;
-$$;
-revoke all on function public.registrar_mi_justificante(text) from public;
-grant execute on function public.registrar_mi_justificante(text) to authenticated;
 
 -- Creación de reservas. El cliente ya no inserta filas: podía enviar
 -- `pagado_at` retrasado y colarse en la lista de espera, o marcarlas como
@@ -766,6 +757,73 @@ end;
 $$;
 revoke all on function public.crear_mis_reservas(jsonb) from public;
 grant execute on function public.crear_mis_reservas(jsonb) to authenticated;
+
+-- Lo único que un agente cambia de su ficha: si está disponible, ocupado o
+-- ausente, y su nombre visible. Ni el rol, ni el email, ni la tienda.
+create or replace function public.cambiar_mi_estado(
+  p_estado text default null,
+  p_nombre text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
+    raise exception 'Solo un agente dado de alta' using errcode = '42501';
+  end if;
+  if p_estado is not null and p_estado not in ('disponible', 'ocupado', 'ausente') then
+    raise exception 'Estado no válido';
+  end if;
+
+  update public.agentes
+     set estado = coalesce(p_estado, estado),
+         nombre = coalesce(nullif(p_nombre, ''), nombre)
+   where id = v_uid;
+end;
+$$;
+revoke all on function public.cambiar_mi_estado(text, text) from public;
+grant execute on function public.cambiar_mi_estado(text, text) to authenticated;
+
+-- Respuesta del agente. Fija `autor` y `agente_id` desde la sesión: el
+-- frontend no los envía, así que no puede equivocarse ni mentir.
+create or replace function public.responder_como_agente(
+  p_conversacion_id uuid,
+  p_texto text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_id uuid;
+begin
+  if v_uid is null or not exists (select 1 from public.agentes where id = v_uid) then
+    raise exception 'Solo un agente dado de alta puede responder' using errcode = '42501';
+  end if;
+  if not exists (select 1 from public.conversaciones where id = p_conversacion_id) then
+    raise exception 'Esa conversación no existe' using errcode = '42501';
+  end if;
+  if p_texto is null or btrim(p_texto) = '' then
+    raise exception 'El mensaje no puede estar vacío';
+  end if;
+  if length(p_texto) > 4000 then
+    raise exception 'El mensaje es demasiado largo';
+  end if;
+
+  insert into public.mensajes (conversacion_id, autor, texto, agente_id)
+  values (p_conversacion_id, 'agent', btrim(p_texto), v_uid)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+revoke all on function public.responder_como_agente(uuid, text) from public;
+grant execute on function public.responder_como_agente(uuid, text) to authenticated;
 
 -- Cancelación de una reserva propia en espera. Lo único que el cliente puede
 -- cambiar de una reserva: ni precio, ni producto, ni `pagado_at`.
@@ -945,10 +1003,12 @@ create policy "agente lee mensajes"
   on public.mensajes for select to authenticated
   using (public.es_agente());
 
--- Responder como agente exige estar autenticado y dado de alta.
-create policy "agente escribe mensajes"
-  on public.mensajes for insert to authenticated
-  with check (autor = 'agent' and public.es_agente());
+-- El agente NO inserta mensajes directamente.
+--
+-- La política comprobaba `autor = 'agent' and es_agente()`, pero no quién
+-- firmaba: un agente legítimo podía dejar `agente_id` nulo o poner el de otro
+-- compañero. Se responde por public.responder_como_agente(), que fija el autor
+-- y el firmante desde la sesión.
 
 -- ---- Agentes ------------------------------------------------------------
 -- Solo los propios agentes se ven entre sí (para estado y asignaciones).
@@ -960,10 +1020,11 @@ create policy "agente lee agentes"
   on public.agentes for select to authenticated
   using (public.es_agente());
 
-create policy "agente actualiza su ficha"
-  on public.agentes for update to authenticated
-  using (id = auth.uid())
-  with check (id = auth.uid());
+-- El agente NO actualiza su fila directamente.
+--
+-- RLS filtra filas, no columnas: «puede editar la suya» incluía `rol`, así que
+-- un agente normal podía **ascenderse a supervisor**. También podía cambiar su
+-- `email` o su `tienda`. Cambia su estado por public.cambiar_mi_estado().
 
 -- ---- Clientes -----------------------------------------------------------
 drop policy if exists "cliente lee su ficha"      on public.clientes;

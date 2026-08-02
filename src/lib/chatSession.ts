@@ -715,19 +715,25 @@ export function useAgentConversation(conversationId: string | null): {
   const sendMessage = useCallback(
     async (texto: string) => {
       if (!supabaseAgent || !conversationId) return
-      const { data: auth } = await supabaseAgent.auth.getUser()
+
+      // Por RPC. El insert directo mandaba `agente_id` desde aquí, y quien
+      // manda su propia firma puede mandar la de otro —o dejarla vacía—. El
+      // servidor lo saca de la sesión.
+      const { data: nuevoId, error: errorEnvio } = await supabaseAgent.rpc(
+        'responder_como_agente',
+        { p_conversacion_id: conversationId, p_texto: texto },
+      )
+      if (errorEnvio) {
+        console.error('[agentConversation] send error', errorEnvio)
+        return
+      }
       const { data, error } = await supabaseAgent
         .from('mensajes')
-        .insert({
-          conversacion_id: conversationId,
-          autor: 'agent',
-          texto,
-          agente_id: auth.user?.id ?? null,
-        })
         .select('*')
+        .eq('id', nuevoId as string)
         .single()
       if (error) {
-        console.error('[agentConversation] send error', error)
+        console.error('[agentConversation] no se pudo releer el mensaje', error)
         return
       }
       appendMessage(data as DbMessage)
