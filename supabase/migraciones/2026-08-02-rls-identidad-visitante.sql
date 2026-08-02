@@ -293,3 +293,56 @@ comment on function public.actualizar_mi_ficha is
 revoke all on function public.actualizar_mi_ficha(text, text, jsonb, jsonb, text) from public;
 grant execute on function public.actualizar_mi_ficha(text, text, jsonb, jsonb, text)
   to authenticated;
+
+-- ---- 6. La valoración también cuelga de la sesión -------------------------
+
+-- `enviar_valoracion()` es `security definer`, así que salta RLS, y recibía
+-- `p_visitor_id` del cliente. Quien conociera los dos UUID podía puntuar la
+-- conversación de otro. Se elimina el parámetro y la propiedad se deduce de
+-- la sesión, que es lo único que el cliente no puede falsificar.
+drop function if exists public.enviar_valoracion(uuid, uuid, smallint, text);
+
+create or replace function public.enviar_valoracion(
+  p_conversacion_id uuid,
+  p_estrellas smallint,
+  p_observacion text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_afectadas integer;
+begin
+  if auth.uid() is null then
+    raise exception 'Hace falta sesión para valorar' using errcode = '42501';
+  end if;
+  if p_estrellas is null or p_estrellas < 1 or p_estrellas > 5 then
+    raise exception 'La valoración debe estar entre 1 y 5';
+  end if;
+
+  update public.conversaciones c
+     set valoracion_estrellas = p_estrellas,
+         valoracion_observacion = nullif(btrim(coalesce(p_observacion, '')), ''),
+         valoracion_at = now()
+   where c.id = p_conversacion_id
+     and exists (
+       select 1 from public.visitantes v
+       where v.id = c.visitor_id
+         and v.auth_id is not null
+         and v.auth_id = auth.uid()
+     )
+     and c.valoracion_solicitada
+     and c.valoracion_estrellas is null;
+
+  get diagnostics v_afectadas = row_count;
+  if v_afectadas = 0 then
+    raise exception 'No hay ninguna valoración pendiente para esta conversación';
+  end if;
+end;
+$$;
+
+revoke all on function public.enviar_valoracion(uuid, smallint, text) from public;
+grant execute on function public.enviar_valoracion(uuid, smallint, text)
+  to anon, authenticated;

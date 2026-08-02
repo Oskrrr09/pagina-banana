@@ -24,7 +24,6 @@ import {
 //                    de canned replies del componente)
 // ============================================================================
 
-const VISITOR_STORAGE_KEY = 'bananito:visitor_id'
 const CONVERSATION_STORAGE_KEY = 'bananito:conversation_id'
 // Nombre y email de quien escribe sin cuenta. Se guardan para no volver a
 // pedírselos en cada visita desde el mismo navegador.
@@ -121,92 +120,93 @@ function readGuest(): GuestIdentity | null {
   }
 }
 
-// Asegura que existe un visitante en Supabase para este navegador. Devuelve
-// el UUID. La primera vez inserta la fila; después reutiliza el guardado.
-//
-// Si el visitante tiene cuenta, se le pega la identidad a la fila. Se hace
-// también sobre filas ya existentes: alguien puede haber usado el chat como
-// anónimo y registrarse después, y a partir de ese momento el agente debe
-// verle identificado.
-async function ensureVisitor(
+/**
+ * Asegura que hay sesión de Supabase antes de tocar el chat.
+ *
+ * Es la pieza que sostiene toda la seguridad del chat. Antes el visitante se
+ * identificaba con un UUID guardado en `localStorage`, que es un dato que él
+ * mismo puede editar desde la consola del navegador: servía para recordar la
+ * conversación, pero no autorizaba nada. Las políticas de Supabase tenían que
+ * abrirse a `anon` en canal, y eso dejaba los datos de todos al alcance de
+ * cualquiera.
+ *
+ * Ahora se pide una sesión anónima real. El `auth.uid()` va firmado en el JWT
+ * y es lo único de lo que cuelgan las políticas.
+ *
+ * Si ya hay sesión no se toca: puede ser la de un cliente con cuenta, y en ese
+ * caso su chat queda ligado a su cuenta, que es lo deseable.
+ *
+ * Devuelve false cuando el proyecto no tiene activados los inicios de sesión
+ * anónimos (Authentication → Providers → Anonymous sign-ins). En ese caso el
+ * chat cae a modo demostración en vez de romperse.
+ */
+async function asegurarSesion(): Promise<boolean> {
+  if (!supabase) return false
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (session) return true
+
+  const { error } = await supabase.auth.signInAnonymously()
+  if (error) {
+    console.warn(
+      '[chatSession] no se pudo crear sesión anónima; el chat queda en modo ' +
+        'demostración. Comprueba que los inicios de sesión anónimos están ' +
+        'activados en Supabase.',
+      error,
+    )
+    return false
+  }
+  return true
+}
+
+/**
+ * Abre (o recupera) la conversación del visitante autenticado.
+ *
+ * Toda la apertura ocurre dentro de `abrir_conversacion()` en el servidor:
+ * crea la ficha si hace falta, la conversación, y el mensaje de bienvenida.
+ *
+ * La bienvenida importa más de lo que parece: la firma el bot, y antes la
+ * insertaba este mismo código con `autor: 'bot'`. Eso obligaba a que las
+ * políticas dejaran a un anónimo escribir como bot — y quien puede escribir
+ * como bot puede suplantarlo en la conversación de cualquiera. Ahora el
+ * visitante solo puede escribir con `autor: 'visitor'`.
+ */
+async function abrirConversacion(
   identity: VisitorIdentity | null,
   guest: GuestIdentity | null,
 ): Promise<string> {
   if (!supabase) throw new Error('Supabase no configurado')
 
   // La cuenta manda sobre los datos escritos a mano como invitado.
-  const identityFields = identity
-    ? {
-        cliente_id: identity.clienteId,
-        nombre: identity.nombre,
-        email: identity.email,
-        telefono: identity.telefono,
-      }
-    : guest
-      ? { nombre: guest.nombre, email: guest.email }
-      : {}
+  const nombre = identity?.nombre ?? guest?.nombre ?? null
+  const email = identity?.email ?? guest?.email ?? null
+  const telefono = identity?.telefono ?? null
 
-  const stored = readStored(VISITOR_STORAGE_KEY)
-  if (stored) {
-    if (identity || guest) {
-      const { error } = await supabase
-        .from('visitantes')
-        .update(identityFields)
-        .eq('id', stored)
-      if (error) console.error('[chatSession] no se pudo identificar al visitante', error)
-    }
-    return stored
-  }
-
-  const { data, error } = await supabase
-    .from('visitantes')
-    .insert({ user_agent: navigator.userAgent, ...identityFields })
-    .select('id')
-    .single()
+  const { data, error } = await supabase.rpc('abrir_conversacion', {
+    p_nombre: nombre,
+    p_email: email,
+    p_telefono: telefono,
+    p_user_agent: navigator.userAgent,
+    p_bienvenida: WELCOME_TEXT,
+  })
   if (error) throw error
-  writeStored(VISITOR_STORAGE_KEY, data.id)
-  return data.id
-}
 
-// Asegura que existe una conversación abierta para el visitante. Reutiliza la
-// guardada si sigue abierta; si no, busca la más reciente abierta o crea una.
-async function ensureConversation(visitorId: string): Promise<string> {
-  if (!supabase) throw new Error('Supabase no configurado')
-  const stored = readStored(CONVERSATION_STORAGE_KEY)
-  if (stored) {
-    const { data } = await supabase
-      .from('conversaciones')
-      .select('id, estado, visitor_id')
-      .eq('id', stored)
-      .maybeSingle()
-    if (data && data.estado === 'abierta' && data.visitor_id === visitorId) {
-      return data.id
+  // Si además tiene cuenta, se enlaza la ficha con el cliente para que el
+  // agente le vea identificado. Va aparte porque la función de apertura no
+  // conoce el modelo de clientes.
+  if (identity?.clienteId) {
+    const { error: errorEnlace } = await supabase
+      .from('visitantes')
+      .update({ cliente_id: identity.clienteId })
+      .eq('auth_id', (await supabase.auth.getUser()).data.user?.id ?? '')
+    if (errorEnlace) {
+      console.error('[chatSession] no se pudo enlazar la ficha con la cuenta', errorEnlace)
     }
   }
-  const { data: existing } = await supabase
-    .from('conversaciones')
-    .select('id')
-    .eq('visitor_id', visitorId)
-    .eq('estado', 'abierta')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (existing) {
-    writeStored(CONVERSATION_STORAGE_KEY, existing.id)
-    return existing.id
-  }
-  const { data: created, error } = await supabase
-    .from('conversaciones')
-    .insert({ visitor_id: visitorId })
-    .select('id')
-    .single()
-  if (error) throw error
-  writeStored(CONVERSATION_STORAGE_KEY, created.id)
-  // Mensaje de bienvenida como primer mensaje del bot en la conversación.
-  await supabase
-    .from('mensajes')
-    .insert({ conversacion_id: created.id, autor: 'bot', texto: WELCOME_TEXT })
-  return created.id
+
+  writeStored(CONVERSATION_STORAGE_KEY, data as string)
+  return data as string
 }
 
 export function useVisitorChatSession(
@@ -243,8 +243,16 @@ export function useVisitorChatSession(
     let cancelled = false
     ;(async () => {
       try {
-        const visitorId = await ensureVisitor(identity, guest)
-        const convId = await ensureConversation(visitorId)
+        // Sin sesión no hay identidad verificable y las políticas nuevas
+        // rechazarían todo. Se cae a demostración, que es un estado que el
+        // widget ya sabe pintar.
+        const haySesion = await asegurarSesion()
+        if (cancelled) return
+        if (!haySesion) {
+          setStatus('demo')
+          return
+        }
+        const convId = await abrirConversacion(identity, guest)
         if (cancelled) return
         const { data, error } = await supabase!
           .from('mensajes')
@@ -283,22 +291,25 @@ export function useVisitorChatSession(
   const clienteId = identity?.clienteId ?? null
   useEffect(() => {
     if (!supabase || !clienteId) return
-    const visitorId = readStored(VISITOR_STORAGE_KEY)
-    if (!visitorId) return
-    void supabase
-      .from('visitantes')
-      .update({
-        cliente_id: clienteId,
-        nombre: identity?.nombre ?? null,
-        email: identity?.email ?? null,
-        telefono: identity?.telefono ?? null,
-      })
-      .eq('id', visitorId)
-      .then(({ error }) => {
-        if (error) {
-          console.error('[chatSession] no se pudo identificar al visitante', error)
-        }
-      })
+    void (async () => {
+      const { data } = await supabase!.auth.getUser()
+      const uid = data.user?.id
+      if (!uid) return
+      // Por `auth_id`, no por el UUID guardado en el navegador: la política
+      // solo deja tocar la fila cuyo `auth_id` coincide con la sesión.
+      const { error } = await supabase!
+        .from('visitantes')
+        .update({
+          cliente_id: clienteId,
+          nombre: identity?.nombre ?? null,
+          email: identity?.email ?? null,
+          telefono: identity?.telefono ?? null,
+        })
+        .eq('auth_id', uid)
+      if (error) {
+        console.error('[chatSession] no se pudo identificar al visitante', error)
+      }
+    })()
   }, [clienteId, identity?.nombre, identity?.email, identity?.telefono])
 
   // Suscripción realtime a los mensajes de esta conversación.
@@ -380,12 +391,12 @@ export function useVisitorChatSession(
   const enviarValoracion = useCallback(
     async (estrellas: number, observacion: string) => {
       if (!supabase || !conversationId) return { error: 'No hay conversación.' }
-      const visitorId = readStored(VISITOR_STORAGE_KEY)
-      if (!visitorId) return { error: 'No se pudo identificar la conversación.' }
 
+      // Ya no se manda el id del visitante: la función deduce de quién es la
+      // conversación a partir de la sesión. Mandarlo era ofrecerle al servidor
+      // la respuesta a la pregunta que tenía que comprobar.
       const { error } = await supabase.rpc('enviar_valoracion', {
         p_conversacion_id: conversationId,
-        p_visitor_id: visitorId,
         p_estrellas: estrellas,
         p_observacion: observacion,
       })
