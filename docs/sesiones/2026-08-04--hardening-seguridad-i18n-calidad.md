@@ -95,6 +95,10 @@ documentación solicitados en la auditoría exhaustiva.
 - El catálogo consolidado contiene 18 accesorios; README queda alineado.
 - `npm run app:sync` correcto e iOS Debug para simulador compilado con Xcode
   26.6. Android no se recompila porque el sistema no dispone de Java Runtime.
+- La PR #35 activó por primera vez PostgreSQL 17 real y descubrió una
+  diferencia con PGlite: `drop policy if exists` falla si la tabla no existe.
+  La migración base protege esos borrados con `to_regclass`, sin alterar el
+  camino de actualización de una base existente.
 
 ## Comprobaciones acumuladas
 

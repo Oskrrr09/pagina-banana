@@ -43,9 +43,19 @@ drop function if exists public.abrir_conversacion(text, text, text, text, text);
 -- se llevaría por delante lo que dependiera de la función sin decir qué, que
 -- sobre una base de verdad es una forma estupenda de borrar algo sin
 -- enterarse.
-drop policy if exists "visitante lee sus mensajes" on public.mensajes;
-drop policy if exists "visitante manda mensaje"    on public.mensajes;
-drop policy if exists "chat lectura mensajes"      on public.mensajes;
+-- En PostgreSQL real, `drop policy if exists ... on tabla` sigue fallando si
+-- la tabla todavía no existe (PGlite era más permisivo y ocultó este caso).
+-- La guarda permite que esta migración base arranque tanto sobre el estado
+-- antiguo como sobre una base local completamente vacía.
+do $$
+begin
+  if to_regclass('public.mensajes') is not null then
+    drop policy if exists "visitante lee sus mensajes" on public.mensajes;
+    drop policy if exists "visitante manda mensaje"    on public.mensajes;
+    drop policy if exists "chat lectura mensajes"      on public.mensajes;
+  end if;
+end
+$$;
 drop function if exists public.conversacion_es_mia(uuid);
 drop function if exists public.actualizar_mi_ficha(text, text, jsonb, jsonb, text);
 drop function if exists public.enviar_valoracion(uuid, uuid, smallint, text);

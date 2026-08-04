@@ -26,6 +26,10 @@ autores, diffs y marcas de tiempo.
   Java Runtime; no se sustituye por una afirmación sin comprobar.
 - README alinea scripts, Router 7 y el catálogo consolidado actual de 18
   accesorios demostrativos.
+- La primera ejecución de CI sobre PostgreSQL 17 detectó que el borrado de
+  políticas heredadas asumía que `mensajes` ya existía. La migración base
+  comprueba ahora la relación antes de retirar esas políticas, por lo que
+  conserva la actualización de una base existente y admite una base vacía.
 
 ## 2026-08-04 — Matriz multi-navegador y PWA offline real
 
