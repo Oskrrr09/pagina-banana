@@ -807,6 +807,28 @@ test('Storage aísla carpetas, permite upsert propio y deja leer al agente', asy
   const ruta = `${uno.uid}/justificante.pdf`
   const bucket = uno.db.storage.from('descuentos-educativos')
 
+  expect(
+    (
+      await bucket.upload(
+        `${uno.uid}/justificante.txt`,
+        new Blob(['texto no permitido'], { type: 'text/plain' }),
+        { contentType: 'text/plain' },
+      )
+    ).error,
+    'Storage debe rechazar un MIME no permitido aunque se use la API directamente',
+  ).not.toBeNull()
+
+  expect(
+    (
+      await bucket.upload(
+        `${uno.uid}/otra/justificante.pdf`,
+        new Blob(['ruta anidada'], { type: 'application/pdf' }),
+        { contentType: 'application/pdf' },
+      )
+    ).error,
+    'la política no admite objetos fuera del nombre canónico de la carpeta propia',
+  ).not.toBeNull()
+
   const archivo = new Blob(['primera versión'], { type: 'application/pdf' })
   expect((await bucket.upload(ruta, archivo, { contentType: 'application/pdf' })).error).toBeNull()
   objetos.push(ruta)

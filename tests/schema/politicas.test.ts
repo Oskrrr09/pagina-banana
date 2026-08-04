@@ -27,7 +27,13 @@ const ANDAMIO = `
   create or replace function auth.uid() returns uuid language sql stable as $$
     select nullif(current_setting('request.jwt.claims', true)::json ->> 'sub', '')::uuid;
   $$;
-  create table if not exists storage.buckets (id text primary key, name text, public boolean);
+  create table if not exists storage.buckets (
+    id text primary key,
+    name text,
+    public boolean,
+    file_size_limit bigint,
+    allowed_mime_types text[]
+  );
   create table if not exists storage.objects (
     id uuid primary key default gen_random_uuid(),
     bucket_id text references storage.buckets(id), name text, owner uuid
@@ -183,6 +189,12 @@ describe('chat del visitante', () => {
       `select count(*)::int as n from public.mensajes where autor = 'bot'`,
     )
     expect(mensajes[0].n, 'la bienvenida ya no se persiste').toBe(0)
+
+    const { rows: visitantes } = await db.query<{ user_agent: string | null }>(
+      `select user_agent from public.visitantes where auth_id = $1`,
+      [ANA],
+    )
+    expect(visitantes[0].user_agent, 'el RPC ya no conserva user_agent').toBeNull()
   })
 
   it('un visitante no ve la ficha de otro', async () => {
@@ -595,7 +607,7 @@ describe('cliente', () => {
       CLIENTE,
       'authenticated',
       `select public.registrar_mi_justificante($1)`,
-      [`${CLIENTE}/inventado.pdf`],
+      [`${CLIENTE}/justificante.pdf`],
     )
     expect(error, 'la ruta debe existir en storage.objects').toMatch(/archivo subido/)
   })
@@ -608,6 +620,21 @@ describe('cliente', () => {
       [`${AGENTE}/justificante.pdf`],
     )
     expect(error).toMatch(/no pertenece/)
+  })
+
+  it('no puede registrar rutas anidadas ni extensiones fuera de la lista', async () => {
+    for (const ruta of [
+      `${CLIENTE}/otra/justificante.pdf`,
+      `${CLIENTE}/justificante.exe`,
+    ]) {
+      const { error } = await como(
+        CLIENTE,
+        'authenticated',
+        `select public.registrar_mi_justificante($1)`,
+        [ruta],
+      )
+      expect(error).toMatch(/formato permitido/)
+    }
   })
 
   it('registra su justificante cuando el archivo existe', async () => {

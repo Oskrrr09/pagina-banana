@@ -10,6 +10,7 @@ import { defineConfig, devices } from '@playwright/test'
 const PORT = Number(process.env.PW_PORT ?? 5173)
 const BASE_PATH = process.env.PW_BASE_PATH ?? '/pagina-banana/'
 const HOST = `http://127.0.0.1:${PORT}`
+const SKIP_WEBSERVER = process.env.PW_SKIP_WEBSERVER === '1'
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -52,7 +53,7 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
+  webServer: SKIP_WEBSERVER ? undefined : {
     // En CI se sirve el `dist` ya compilado —el mismo artefacto que se
     // publica— en vez del servidor de desarrollo. Así las pruebas ven el base
     // path real y los assets procesados, que es donde se esconden los fallos

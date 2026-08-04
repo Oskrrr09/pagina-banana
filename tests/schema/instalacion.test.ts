@@ -52,6 +52,23 @@ describe('instalación desde cero', () => {
     expect(rows[0].n, 'deben existir las tablas finales').toBeGreaterThan(5)
   })
 
+  it('el bucket educativo es privado y limita tamaño y tipos MIME', async () => {
+    const { rows } = await db.query<{
+      public: boolean
+      file_size_limit: number
+      allowed_mime_types: string[]
+    }>(
+      `select public, file_size_limit, allowed_mime_types
+         from storage.buckets where id = 'descuentos-educativos'`,
+    )
+    expect(rows).toHaveLength(1)
+    expect(rows[0].public).toBe(false)
+    expect(Number(rows[0].file_size_limit)).toBe(5 * 1024 * 1024)
+    expect(rows[0].allowed_mime_types.sort()).toEqual(
+      ['application/pdf', 'image/jpeg', 'image/png'].sort(),
+    )
+  })
+
   it('supera la auditoría exacta del catálogo final', async () => {
     const auditoria = await auditarCatalogo(db)
     expect(auditoria.problemas, auditoria.problemas.join('\n')).toEqual([])

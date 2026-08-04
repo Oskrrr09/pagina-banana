@@ -113,7 +113,7 @@ export async function signedProofUrl(path: string): Promise<string | null> {
   if (!supabaseAgent) return null
   const { data, error } = await supabaseAgent.storage
     .from(EDUCATIONAL_DISCOUNT_BUCKET)
-    .createSignedUrl(path, 60 * 5)
+    .createSignedUrl(path, 60)
   if (error) {
     console.error('[educationalDiscount] no se pudo firmar la URL', error)
     return null

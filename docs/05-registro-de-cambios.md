@@ -8,6 +8,19 @@ actualizado: 2026-08-04
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-04 — Minimización del chat y límites de Storage
+
+- Nueva migración incremental que deja de recopilar `user_agent`, limpia ese
+  único dato histórico y mantiene la firma RPC por compatibilidad.
+- El bucket educativo queda privado, limitado a 5 MB y a PDF/JPEG/PNG; la
+  escritura se restringe al nombre canónico de la carpeta propia.
+- Las URLs firmadas para agentes caducan en 60 segundos.
+- `test:rls` ya no intenta levantar Vite: 27 casos se descubren correctamente
+  y se omiten con motivo explícito cuando faltan credenciales.
+- Verificación del bloque: 124/124 Vitest, incluidas 102 pruebas de esquema;
+  TypeScript, ESLint sin errores y build demostrativo correctos. La integración
+  GoTrue/PostgREST/Storage no se declara aprobada.
+
 ## 2026-08-04 — Estado educativo nulo e informe RLS estrictamente JSON
 
 - `revisar_descuento_educativo()` comprueba `p_estado is null` antes del

@@ -639,3 +639,28 @@ forman el backlog verificable.
   etiquetas `wcag2a`, `wcag2aa` y `wcag21a`.
 - Resolución: quitar el `<main>` de la página y dejar solo el del layout.
   Conviene revisar si alguna otra página hace lo mismo.
+
+## SEG-CHAT-002 — El chat recopilaba un user-agent sin finalidad
+
+- Estado: **cerrado en código el 2026-08-04; pendiente de despliegue**.
+- Evidencia histórica: `chatSession.ts` enviaba `navigator.userAgent` y
+  `abrir_conversacion()` lo persistía en cada ficha de visitante, aunque ni la
+  tienda ni el panel lo mostraban o utilizaban.
+- Resolución: el navegador envía `NULL`; la firma RPC queda compatible pero
+  ignora el parámetro, y la segunda migración limpia los valores históricos.
+- Regresión: `tests/schema/politicas.test.ts` llama deliberadamente con
+  `jsdom` y exige que `user_agent` permanezca nulo.
+
+## SEG-STORAGE-001 — Los límites del justificante solo vivían en React
+
+- Estado: **cerrado en código el 2026-08-04; integración real pendiente**.
+- Evidencia histórica: el frontend limitaba MIME y tamaño, pero quien llamase
+  directamente a Storage con la anon key no dependía de esa validación.
+- Resolución: el bucket impone 5 MB y la lista PDF/JPEG/PNG; las políticas de
+  escritura exigen el nombre canónico dentro de la carpeta propia. Las URLs
+  firmadas pasan de cinco minutos a un minuto.
+- Regresión local: instalación y políticas pasan en PostgreSQL/PGlite.
+  Regresión de integración: el caso Storage de `tests/rls/politicas.spec.ts`
+  intenta además subir `text/plain` y una ruta anidada.
+- Pendiente: ejecutar el caso contra Supabase local o dedicado. Sigue dentro
+  del bloqueo general SEC-RLS-001.

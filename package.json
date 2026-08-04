@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test:schema": "vitest run tests/schema",
-    "test:rls": "playwright test --project=rls",
+    "test:rls": "PW_SKIP_WEBSERVER=1 playwright test --project=rls",
     "test:e2e": "playwright test",
     "test:e2e:agent": "playwright test --config=playwright.agent.config.ts",
     "test:e2e:ui": "playwright test --ui",

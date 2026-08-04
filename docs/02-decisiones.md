@@ -806,6 +806,26 @@ No atribuye motivaciones que el repositorio no documenta.
   `supabase/migrations/20260802000100_estado_seguro.sql` y
   `tests/schema/politicas.test.ts`.
 
+## D-053 — El chat no recopila user-agent y Storage impone sus propios límites
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: `abrir_conversacion()` conserva el parámetro `p_user_agent` para
+  no romper clientes anteriores, pero lo ignora, escribe `NULL` y la migración
+  limpia los valores históricos. El dato no participa en ninguna función del
+  prototipo y no justifica ampliar la huella de identificación del visitante.
+- Storage: el bucket privado `descuentos-educativos` limita en servidor los
+  objetos a 5 MB y a PDF, JPEG o PNG. Las escrituras solo admiten el nombre
+  canónico `<auth.uid()>/justificante.<ext>`; la URL firmada del agente dura
+  60 segundos.
+- Evidencia: migración
+  `20260804000200_minimiza_chat_y_limita_storage.sql`, pruebas de instalación y
+  políticas en `tests/schema/`, y el caso Storage de `tests/rls/`.
+- Consecuencia de datos: al aplicar la migración se eliminan únicamente los
+  valores históricos de `visitantes.user_agent`; no se borra ninguna ficha,
+  conversación ni mensaje. La columna se conserva para compatibilidad y una
+  reversión operativa simple.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

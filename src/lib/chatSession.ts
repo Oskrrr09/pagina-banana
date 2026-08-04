@@ -193,7 +193,9 @@ async function abrirConversacion(
     p_nombre: nombre,
     p_email: email,
     p_telefono: telefono,
-    p_user_agent: navigator.userAgent,
+    // La firma conserva este parámetro por compatibilidad, pero la migración
+    // de privacidad lo ignora y limpia cualquier valor histórico.
+    p_user_agent: null,
   })
   if (error) throw error
 
@@ -342,7 +344,7 @@ export function useVisitorChatSession(
         p_nombre: identity?.nombre ?? null,
         p_email: identity?.email ?? null,
         p_telefono: identity?.telefono ?? null,
-        p_user_agent: navigator.userAgent,
+        p_user_agent: null,
       })
       if (errorDatos) {
         console.error('[chatSession] no se pudieron actualizar los datos', errorDatos)
