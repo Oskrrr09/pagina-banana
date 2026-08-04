@@ -39,10 +39,7 @@ export function describeStatus(estado: EducationalDiscountStatus | null): string
  * Sube el justificante del cliente autenticado y deja la solicitud
  * pendiente de revisión. Sustituye a cualquier archivo anterior.
  */
-export async function uploadEducationalProof(
-  userId: string,
-  file: File,
-): Promise<{ error: string | null }> {
+export async function uploadEducationalProof(userId: string, file: File): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase no está configurado.' }
 
   if (!ACCEPTED_MIME.includes(file.type)) {
@@ -74,9 +71,7 @@ export async function uploadEducationalProof(
     // El archivo ya está subido pero la solicitud no consta. Sin esta
     // limpieza queda un justificante huérfano en el bucket: nadie lo va a
     // revisar y el cliente no puede borrarlo.
-    const { error: limpiezaError } = await supabase.storage
-      .from(EDUCATIONAL_DISCOUNT_BUCKET)
-      .remove([path])
+    const { error: limpiezaError } = await supabase.storage.from(EDUCATIONAL_DISCOUNT_BUCKET).remove([path])
     if (limpiezaError) {
       console.error(
         '[educationalDiscount] el registro falló y además no se pudo borrar el ' +
@@ -111,9 +106,7 @@ export async function listPendingRequests(): Promise<{
  */
 export async function signedProofUrl(path: string): Promise<string | null> {
   if (!supabaseAgent) return null
-  const { data, error } = await supabaseAgent.storage
-    .from(EDUCATIONAL_DISCOUNT_BUCKET)
-    .createSignedUrl(path, 60)
+  const { data, error } = await supabaseAgent.storage.from(EDUCATIONAL_DISCOUNT_BUCKET).createSignedUrl(path, 60)
   if (error) {
     console.error('[educationalDiscount] no se pudo firmar la URL', error)
     return null

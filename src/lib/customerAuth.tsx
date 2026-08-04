@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, type DbAddress, type DbCustomer } from './supabase'
 
@@ -92,11 +84,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       setCliente(null)
       return
     }
-    const { data, error } = await supabase
-      .from('clientes')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
+    const { data, error } = await supabase.from('clientes').select('*').eq('id', userId).maybeSingle()
 
     if (error) {
       console.error('[customerAuth] no se pudo cargar la ficha', error)
@@ -165,9 +153,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
     // Con sesión ya activa creamos la ficha aquí para no depender de un
     // trigger en la base de datos.
-    const { error: insertError } = await supabase
-      .from('clientes')
-      .insert({ id: data.user!.id, email, nombre })
+    const { error: insertError } = await supabase.from('clientes').insert({ id: data.user!.id, email, nombre })
     if (insertError && insertError.code !== '23505') {
       // 23505 = clave duplicada: la ficha ya existía, no es un problema.
       console.error('[customerAuth] no se pudo crear la ficha', insertError)
@@ -199,8 +185,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         p_nombre: patch.nombre === undefined ? null : (patch.nombre ?? ''),
         p_telefono: patch.telefono === undefined ? null : (patch.telefono ?? ''),
         p_direccion_envio: patch.direccion_envio === undefined ? null : patch.direccion_envio,
-        p_direccion_facturacion:
-          patch.direccion_facturacion === undefined ? null : patch.direccion_facturacion,
+        p_direccion_facturacion: patch.direccion_facturacion === undefined ? null : patch.direccion_facturacion,
       })
       if (error) return { error: error.message }
 
@@ -226,9 +211,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     [session, cliente, loading, signIn, signUp, signOut, updateProfile, loadProfile],
   )
 
-  return (
-    <CustomerAuthContext.Provider value={value}>{children}</CustomerAuthContext.Provider>
-  )
+  return <CustomerAuthContext.Provider value={value}>{children}</CustomerAuthContext.Provider>
 }
 
 export function useCustomerAuth(): CustomerAuthState {

@@ -6,7 +6,6 @@ import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { useStore } from '../lib/store'
 import { useCatalogo, useIdioma, useMotivo, useT } from '../lib/i18n'
-import type { BudgetOption } from '../data/productDecisionData'
 import {
   FINDER_QUESTIONS,
   BUDGET_FLEX_QUESTION,
@@ -22,6 +21,7 @@ import {
   type FinderComputation,
   type FamilyCandidate,
   type BudgetFlex,
+  type BudgetOption,
 } from '../data/productDecisionData'
 import { families, getFamilyModels, familyInfo, variantPath } from '../data/products'
 import { euro } from '../lib/format'
@@ -43,15 +43,7 @@ import { euro } from '../lib/format'
 // -----------------------------------------------------------------------
 
 type Stage =
-  | 'intro'
-  | 'family'
-  | 'general'
-  | 'family-confirm'
-  | 'specific'
-  | 'budget'
-  | 'budgetFlex'
-  | 'summary'
-  | 'results'
+  'intro' | 'family' | 'general' | 'family-confirm' | 'specific' | 'budget' | 'budgetFlex' | 'summary' | 'results'
 
 const FINDER_FAMILIES: readonly { slug: FamilySlug | 'unknown'; label: string }[] = [
   { slug: 'iphone', label: 'iPhone' },
@@ -82,10 +74,7 @@ export function AppleFinderPage() {
   const currentQ = activeQuestions[step] ?? null
 
   const budgetOptions = useMemo(
-    () =>
-      answers.family
-        ? getBudgetOptionsForFamily(answers.family, getFamilyModels(answers.family), intl)
-        : [],
+    () => (answers.family ? getBudgetOptionsForFamily(answers.family, getFamilyModels(answers.family), intl) : []),
     [answers.family, intl],
   )
 
@@ -232,29 +221,20 @@ export function AppleFinderPage() {
   return (
     <Container className="py-10">
       <header className="max-w-2xl">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-          {t('finder.kicker')}
-        </p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">{t('finder.kicker')}</p>
         <h1 className="mt-1 text-3xl font-extrabold text-ink sm:text-4xl">{t('finder.title')}</h1>
-        <p className="mt-2 text-muted">
-          {t('finder.intro')}
-        </p>
+        <p className="mt-2 text-muted">{t('finder.intro')}</p>
         <div className="mt-3">
           <ProvisionalBadge label={t('finder.demoBadge')} />
         </div>
       </header>
 
       {stage === 'intro' && (
-        <section
-          aria-labelledby="intro-heading"
-          className="mt-8 rounded-[16px] border border-line bg-neutral p-6"
-        >
+        <section aria-labelledby="intro-heading" className="mt-8 rounded-[16px] border border-line bg-neutral p-6">
           <h2 id="intro-heading" className="text-xl font-bold text-ink">
             {t('finder.introTitle')}
           </h2>
-          <p className="mt-2 text-sm text-muted">
-            {t('finder.introBody')}
-          </p>
+          <p className="mt-2 text-sm text-muted">{t('finder.introBody')}</p>
           <button
             type="button"
             onClick={() => setStage('family')}
@@ -265,9 +245,7 @@ export function AppleFinderPage() {
         </section>
       )}
 
-      {stage === 'family' && (
-        <FamilyStep onBack={() => setStage('intro')} onPick={pickFamilyDirect} />
-      )}
+      {stage === 'family' && <FamilyStep onBack={() => setStage('intro')} onPick={pickFamilyDirect} />}
 
       {(stage === 'general' || stage === 'specific') && currentQ && (
         <QuestionStep
@@ -381,13 +359,7 @@ export function AppleFinderPage() {
 
 // -----------------------------------------------------------------------
 
-function FamilyStep({
-  onBack,
-  onPick,
-}: {
-  onBack: () => void
-  onPick: (slug: FamilySlug | 'unknown') => void
-}) {
+function FamilyStep({ onBack, onPick }: { onBack: () => void; onPick: (slug: FamilySlug | 'unknown') => void }) {
   const t = useT()
   return (
     <section aria-labelledby="family-heading" className="mt-8">
@@ -412,32 +384,20 @@ function FamilyStep({
               >
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-050 text-ink">
                   <Icon
-                    name={
-                      option.slug === 'unknown'
-                        ? 'chat'
-                        : option.slug === 'apple-watch'
-                          ? 'shield'
-                          : 'store'
-                    }
+                    name={option.slug === 'unknown' ? 'chat' : option.slug === 'apple-watch' ? 'shield' : 'store'}
                     aria-hidden="true"
                   />
                 </span>
                 <span>
                   <span className="block font-semibold text-ink">{option.label}</span>
-                  {info && (
-                    <span className="mt-0.5 block text-xs text-muted">{info.tagline}.</span>
-                  )}
+                  {info && <span className="mt-0.5 block text-xs text-muted">{info.tagline}.</span>}
                 </span>
               </button>
             </li>
           )
         })}
       </ul>
-      <button
-        type="button"
-        onClick={onBack}
-        className="mt-6 text-sm font-semibold text-ink hover:underline"
-      >
+      <button type="button" onClick={onBack} className="mt-6 text-sm font-semibold text-ink hover:underline">
         ← Atrás
       </button>
     </section>
@@ -563,26 +523,14 @@ function FamilyConfirmStep({
   }, [noCandidates])
 
   if (!primary) {
-    const isPhotoAccessory =
-      general.use === 'foto' && general.productRole === 'accessory'
+    const isPhotoAccessory = general.use === 'foto' && general.productRole === 'accessory'
     return (
-      <section
-        aria-labelledby="family-confirm"
-        className="mt-8"
-        aria-live="polite"
-      >
-        <h2
-          id="family-confirm"
-          ref={emptyHeadingRef}
-          tabIndex={-1}
-          className="text-xl font-bold text-ink outline-none"
-        >
+      <section aria-labelledby="family-confirm" className="mt-8" aria-live="polite">
+        <h2 id="family-confirm" ref={emptyHeadingRef} tabIndex={-1} className="text-xl font-bold text-ink outline-none">
           {t('finder.noCategory')}
         </h2>
         <p className="mt-2 text-sm text-ink">
-          {isPhotoAccessory
-            ? t('finder.noPhotoCategory')
-            : t('finder.noSuggestion')}
+          {isPhotoAccessory ? t('finder.noPhotoCategory') : t('finder.noSuggestion')}
         </p>
         <p className="mt-2 text-sm text-muted">
           {isPhotoAccessory
@@ -604,11 +552,7 @@ function FamilyConfirmStep({
           >
             {t('finder.allCategories')}
           </button>
-          <button
-            type="button"
-            onClick={onBack}
-            className="text-sm font-semibold text-ink hover:underline"
-          >
+          <button type="button" onClick={onBack} className="text-sm font-semibold text-ink hover:underline">
             {t('finder.back')}
           </button>
         </div>
@@ -626,13 +570,7 @@ function FamilyConfirmStep({
       <p className="mt-1 text-sm text-muted">
         Confirma con {secondary ? 'cuál' : 'ella'} seguimos o elige otra manualmente.
       </p>
-      <div
-        className={
-          secondary
-            ? 'mt-5 grid gap-4 md:grid-cols-2'
-            : 'mt-5 grid gap-4 md:max-w-md'
-        }
-      >
+      <div className={secondary ? 'mt-5 grid gap-4 md:grid-cols-2' : 'mt-5 grid gap-4 md:max-w-md'}>
         <CandidateCard
           candidate={primary}
           label={t('finder.mainPick')}
@@ -655,11 +593,7 @@ function FamilyConfirmStep({
         >
           {t('finder.allCategories')}
         </button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-sm font-semibold text-ink hover:underline"
-        >
+        <button type="button" onClick={onBack} className="text-sm font-semibold text-ink hover:underline">
           {t('finder.back')}
         </button>
       </div>
@@ -727,16 +661,12 @@ function BudgetStep({
   const cat = useCatalogo()
   return (
     <section aria-labelledby="q-budget" className="mt-8">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-        {t('finder.budget')}
-      </p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">{t('finder.budget')}</p>
       <div className="mt-2 rounded-[16px] border border-line bg-surface p-6">
         <h2 id="q-budget" className="text-lg font-bold text-ink">
           ¿Qué presupuesto orientativo tienes para {familyName}?
         </h2>
-        <p className="mt-1 text-xs text-muted">
-          {t('finder.bandsNote')}
-        </p>
+        <p className="mt-1 text-xs text-muted">{t('finder.bandsNote')}</p>
         <ul role="radiogroup" aria-labelledby="q-budget" className="mt-4 grid gap-2">
           {options.map((opt) => {
             const selected = value === opt.value
@@ -840,11 +770,8 @@ function SummaryStep({
     })
     .filter((row) => row.label !== null) as { key: string; prompt: string; label: string }[]
   const banda = budgetOptions.find((b) => b.value === answers.general.budget)
-  const budgetLabel =
-    answers.general.budget && banda ? cat(banda.label, banda.labelValores) : undefined
-  const opcionFlex = BUDGET_FLEX_QUESTION.options.find(
-    (o) => o.value === answers.general.budgetFlex,
-  )
+  const budgetLabel = answers.general.budget && banda ? cat(banda.label, banda.labelValores) : undefined
+  const opcionFlex = BUDGET_FLEX_QUESTION.options.find((o) => o.value === answers.general.budgetFlex)
   const flexLabel = answers.general.budgetFlex && opcionFlex ? cat(opcionFlex.label) : undefined
 
   return (
@@ -852,37 +779,17 @@ function SummaryStep({
       <h2 id="summary-heading" className="text-xl font-bold text-ink">
         {t('finder.summaryTitle')}
       </h2>
-      <p className="mt-1 text-sm text-muted">
-        {t('finder.summaryIntro')}
-      </p>
+      <p className="mt-1 text-sm text-muted">{t('finder.summaryIntro')}</p>
       <ul className="mt-5 divide-y divide-line rounded-[16px] border border-line bg-surface">
         <SummaryRow label={t('finder.product')} value={info?.name ?? '—'} onEdit={onEditFamily} />
         {generalRows.map((r) => (
-          <SummaryRow
-            key={r.key}
-            label={r.prompt}
-            value={r.label}
-            onEdit={() => onEditGeneral(r.key)}
-          />
+          <SummaryRow key={r.key} label={r.prompt} value={r.label} onEdit={() => onEditGeneral(r.key)} />
         ))}
         {specificRows.map((r) => (
-          <SummaryRow
-            key={r.qid}
-            label={r.prompt}
-            value={r.label}
-            onEdit={() => onEditSpecific(r.qid)}
-          />
+          <SummaryRow key={r.qid} label={r.prompt} value={r.label} onEdit={() => onEditSpecific(r.qid)} />
         ))}
-        <SummaryRow
-          label={t('finder.budget')}
-          value={budgetLabel ?? '—'}
-          onEdit={onEditBudget}
-        />
-        <SummaryRow
-          label={t('finder.flexibility')}
-          value={flexLabel ?? '—'}
-          onEdit={onEditBudgetFlex}
-        />
+        <SummaryRow label={t('finder.budget')} value={budgetLabel ?? '—'} onEdit={onEditBudget} />
+        <SummaryRow label={t('finder.flexibility')} value={flexLabel ?? '—'} onEdit={onEditBudgetFlex} />
       </ul>
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button
@@ -900,11 +807,7 @@ function SummaryStep({
         >
           {t('finder.goBack')}
         </button>
-        <button
-          type="button"
-          onClick={onReset}
-          className="text-sm font-semibold text-ink hover:underline"
-        >
+        <button type="button" onClick={onReset} className="text-sm font-semibold text-ink hover:underline">
           {t('finder.restart')}
         </button>
       </div>
@@ -912,15 +815,7 @@ function SummaryStep({
   )
 }
 
-function SummaryRow({
-  label,
-  value,
-  onEdit,
-}: {
-  label: string
-  value: string
-  onEdit: () => void
-}) {
+function SummaryRow({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
   const t = useT()
   return (
     <li className="flex items-center gap-3 p-4">
@@ -976,8 +871,8 @@ function ResultsStep({
           {t('finder.noMatch')}
         </h2>
         <p className="mt-2 text-sm text-ink">
-          Con las restricciones que has indicado no queda ningún {info?.name}. Puedes revisar tus
-          respuestas, ampliar el presupuesto o cambiar de formato.
+          Con las restricciones que has indicado no queda ningún {info?.name}. Puedes revisar tus respuestas, ampliar el
+          presupuesto o cambiar de formato.
         </p>
         {computation.excluded.length > 0 && (
           <div className="mt-4 rounded-[12px] border border-line bg-neutral p-4 text-sm text-ink">
@@ -1006,11 +901,7 @@ function ResultsStep({
           >
             {t('finder.raiseBudget')}
           </button>
-          <button
-            type="button"
-            onClick={onReset}
-            className="text-sm font-semibold text-ink hover:underline"
-          >
+          <button type="button" onClick={onReset} className="text-sm font-semibold text-ink hover:underline">
             {t('finder.restart')}
           </button>
         </div>
@@ -1022,19 +913,14 @@ function ResultsStep({
     <section aria-labelledby="results-heading" className="mt-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-            {t('finder.resultsStep')}
-          </p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">{t('finder.resultsStep')}</p>
           <h2 id="results-heading" className="text-2xl font-bold text-ink">
             {t('finder.suggestedIn', { familia: info?.name ?? '' })}
           </h2>
         </div>
         <ProvisionalBadge label={t('finder.demoGuidance')} />
       </div>
-      <ul
-        aria-label={t('finder.results')}
-        className="mt-5 grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3"
-      >
+      <ul aria-label={t('finder.results')} className="mt-5 grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
         {computation.results.map((result) => (
           <li
             key={`${result.role}-${result.model.slug}`}
@@ -1047,15 +933,9 @@ function ResultsStep({
                   ? t('finder.bestValue')
                   : t('finder.otherOption')}
             </span>
-            <ProductImage
-              src={result.model.colors[0].image}
-              alt={cat(result.model.name)}
-              ratio="4 / 3"
-            />
+            <ProductImage src={result.model.colors[0].image} alt={cat(result.model.name)} ratio="4 / 3" />
             <h3 className="mt-2 text-lg font-bold text-ink">{cat(result.model.name)}</h3>
-            <p className="mt-1 text-sm text-ink">
-              {t('hero.from', { importe: euro(result.model.fromPrice, intl) })}
-            </p>
+            <p className="mt-1 text-sm text-ink">{t('hero.from', { importe: euro(result.model.fromPrice, intl) })}</p>
             {result.positives.length > 0 && (
               <div className="mt-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
@@ -1148,11 +1028,7 @@ function ResultsStep({
         >
           {t('finder.changeAnswers')}
         </button>
-        <button
-          type="button"
-          onClick={onReset}
-          className="text-sm font-semibold text-ink hover:underline"
-        >
+        <button type="button" onClick={onReset} className="text-sm font-semibold text-ink hover:underline">
           {t('finder.restart')}
         </button>
       </div>

@@ -8,6 +8,22 @@ actualizado: 2026-08-04
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-04 — Contrato reproducible de calidad
+
+- Prettier 3.9.6 establece formato para código, pruebas y configuración; deja
+  fuera de forma explícita generados, documentación, catálogos y diccionarios
+  grandes para evitar un diff ajeno al hardening.
+- ESLint 10 suma reglas compatibles de imports y promesas. Los plugins React y
+  JSX a11y no se fuerzan porque sus versiones actuales solo declaran soporte
+  hasta ESLint 9; axe conserva la cobertura accesible ejecutable.
+- Añadidos `format`, `format:check`, `lint:fix`, `test`, `test:watch`, `check`
+  rápido y `check:full`; CI ejecuta Prettier antes de tipos y lint.
+- Cinco pruebas puras nuevas cubren moneda, cuotas y detección de idioma. La
+  pasada `npm run check` aprueba formato, 0 errores ESLint, tipos, 129/129
+  Vitest y build sin credenciales. La regresión completa aprueba 273 E2E
+  generales, omite el único caso exclusivo de desarrollo al correr contra el
+  build y aprueba 6/6 del panel aislado.
+
 ## 2026-08-04 — Landmarks únicos y aislamiento modal común
 
 - `/soporte` elimina el `<main>` anidado; 19 rutas públicas quedan protegidas

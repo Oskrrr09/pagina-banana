@@ -25,7 +25,8 @@ La fuente SQL se consolidó en `supabase/migrations/`, con la migración de
 estado seguro y el cierre incremental de privacidad/Storage. Una auditoría común por
 firma PostgreSQL exacta se ejecuta tras instalación limpia, actualización desde
 PR #33 y segunda aplicación idempotente. La suite local pasa con 102 pruebas de
-esquema y 22 unitarias en Vitest, además de 264 E2E generales y 6 E2E aisladas
+esquema y 27 unitarias en Vitest, además de 273 E2E generales aprobadas, una
+omisión esperada del caso exclusivo de desarrollo y 6 E2E aisladas
 del panel de agentes. `revisar_descuento_educativo()` rechaza también estados
 `NULL` sin tocar la revisión. La CLI, configuración y workflow de Supabase
 local ya están versionados y no usan secretos remotos. Las **27 pruebas contra
@@ -395,8 +396,8 @@ Las versiones instaladas desde `package-lock.json` durante la auditoría fueron:
 | TypeScript | 5.9.3 |
 | Tailwind CSS / plugin de Vite | 4.3.3 |
 
-El workflow unificado usa Node 24 y encadena tipos, lint, Vitest/esquema,
-build, E2E, RLS y Pages. Solo publica `dist/` en pushes a `main`, y debe
+El workflow unificado usa Node 24 y encadena Prettier, tipos, lint,
+Vitest/esquema, build, E2E, RLS y Pages. Solo publica `dist/` en pushes a `main`, y debe
 bloquear el despliegue si falta la validación RLS dedicada.
 
 ### Historial de despliegues verificados

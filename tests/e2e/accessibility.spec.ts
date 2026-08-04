@@ -72,7 +72,10 @@ async function analyze(page: Page, url: string) {
     .map(
       (v) =>
         `${v.id} (${v.impact ?? 'unknown'}): ${v.nodes.length} nodo(s) — ${v.help}\n` +
-        v.nodes.slice(0, 3).map((n) => `  · ${n.target.join(' ')}`).join('\n'),
+        v.nodes
+          .slice(0, 3)
+          .map((n) => `  · ${n.target.join(' ')}`)
+          .join('\n'),
     )
     .join('\n')
   expect(results.violations, `Violaciones axe en ${url}:\n${detail}`).toEqual([])
@@ -150,20 +153,13 @@ test.describe('Accesibilidad automatizada con axe-core (sin reglas globales desa
   test('guía "Preparar mi dispositivo" abierta desde /soporte', async ({ page }) => {
     await reduceMotion(page)
     await page.goto('./soporte')
-    await page
-      .waitForLoadState('networkidle', { timeout: 10_000 })
-      .catch(() => undefined)
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => undefined)
     // Se abre desde el callout SAT (botón secundario) — el mismo diálogo se
     // reutiliza también desde el quick-link y desde la ficha SAT.
     await page.getByRole('button', { name: 'Preparar mi dispositivo' }).first().click()
     await expect(page.getByRole('dialog', { name: 'Preparar mi dispositivo' })).toBeVisible()
-    const results = await new AxeBuilder({ page })
-      .withTags(AXE_TAGS)
-      .include('[role="dialog"]')
-      .analyze()
-    const detail = results.violations
-      .map((v) => `${v.id}: ${v.help}`)
-      .join('\n')
+    const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).include('[role="dialog"]').analyze()
+    const detail = results.violations.map((v) => `${v.id}: ${v.help}`).join('\n')
     expect(results.violations, `Violaciones axe en la guía:\n${detail}`).toEqual([])
   })
 
@@ -177,7 +173,10 @@ test.describe('Accesibilidad automatizada con axe-core (sin reglas globales desa
     await expect(dialog.getByRole('button', { name: 'Cerrar' })).toBeFocused()
     await expect
       .poll(() =>
-        page.locator('header').first().evaluate((element) => Boolean(element.closest('[inert]'))),
+        page
+          .locator('header')
+          .first()
+          .evaluate((element) => Boolean(element.closest('[inert]'))),
       )
       .toBe(true)
 
@@ -199,9 +198,7 @@ test.describe('Accesibilidad automatizada con axe-core (sin reglas globales desa
     const dialog = page.getByRole('dialog', { name: 'Menú principal' })
     await expect(dialog).toBeVisible()
     await expect(dialog.getByRole('button', { name: 'Cerrar menú' })).toBeFocused()
-    await expect
-      .poll(() => page.locator('main').evaluate((element) => Boolean(element.closest('[inert]'))))
-      .toBe(true)
+    await expect.poll(() => page.locator('main').evaluate((element) => Boolean(element.closest('[inert]')))).toBe(true)
     const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()
     expect(results.violations, results.violations.map((v) => v.id).join(',')).toEqual([])
   })
@@ -216,18 +213,14 @@ test.describe('Accesibilidad automatizada con axe-core (sin reglas globales desa
   })
 })
 
-test('cada ruta pública tiene una sola región principal y supera la regla de landmark', async ({
-  page,
-}) => {
+test('cada ruta pública tiene una sola región principal y supera la regla de landmark', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
   })
   for (const route of PUBLIC_ROUTES) {
     await page.goto('.' + route)
     await expect(page.locator('main'), `${route} debe tener exactamente un main`).toHaveCount(1)
-    const results = await new AxeBuilder({ page })
-      .withRules(['landmark-no-duplicate-main'])
-      .analyze()
+    const results = await new AxeBuilder({ page }).withRules(['landmark-no-duplicate-main']).analyze()
     expect(
       results.violations,
       `Landmarks duplicados en ${route}: ${results.violations.map((v) => v.id).join(',')}`,

@@ -59,11 +59,7 @@ const emptyForm: CheckoutForm = {
  * Aplana una dirección del perfil en la única línea de texto que pide el
  * checkout. Omite las partes vacías para no dejar comas sueltas.
  */
-export function formatAddressLine(address: {
-  calle?: string
-  cp?: string
-  ciudad?: string
-}): string {
+export function formatAddressLine(address: { calle?: string; cp?: string; ciudad?: string }): string {
   return [address.calle, address.cp, address.ciudad]
     .map((part) => part?.trim())
     .filter(Boolean)
@@ -111,10 +107,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   }, [delivery, form])
 
   const setDelivery = useCallback((mode: DemoDeliveryMode) => setDeliveryState(mode), [])
-  const setForm = useCallback(
-    (partial: Partial<CheckoutForm>) => setFormState((prev) => ({ ...prev, ...partial })),
-    [],
-  )
+  const setForm = useCallback((partial: Partial<CheckoutForm>) => setFormState((prev) => ({ ...prev, ...partial })), [])
 
   const validateStep1 = useCallback((): Record<string, string> => {
     const errors: Record<string, string> = {}

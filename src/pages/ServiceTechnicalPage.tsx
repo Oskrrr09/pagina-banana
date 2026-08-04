@@ -30,12 +30,8 @@ export function ServiceTechnicalPage() {
     <>
       <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
         <Container className="py-12 md:py-16">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-            {t('repair.kicker')}
-          </p>
-          <h1 className="mt-2 text-4xl font-extrabold text-ink sm:text-5xl">
-            {t('repair.title')}
-          </h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">{t('repair.kicker')}</p>
+          <h1 className="mt-2 text-4xl font-extrabold text-ink sm:text-5xl">{t('repair.title')}</h1>
           <p className="mt-3 max-w-2xl text-lg text-muted">{t('repair.intro')}</p>
         </Container>
       </section>
@@ -58,10 +54,7 @@ export function ServiceTechnicalPage() {
             </div>
 
             {/* Banner "Sin cita previa" */}
-            <div
-              role="note"
-              className="mt-5 rounded-[12px] border border-brand bg-brand-050 p-5"
-            >
+            <div role="note" className="mt-5 rounded-[12px] border border-brand bg-brand-050 p-5">
               <p className="flex items-center gap-2 text-sm font-bold text-ink">
                 <Icon name="check" size={18} aria-hidden="true" />
                 {t('repair.noAppointmentBadge')}
@@ -146,15 +139,11 @@ export function ServiceTechnicalPage() {
                 <ul className="mt-3 space-y-2 text-sm text-ink">
                   <li className="flex items-start gap-2">
                     <Icon name="check" size={16} className="mt-0.5 text-available" aria-hidden="true" />
-                    <span>
-                      {conNegritas(t('repair.outWarrantyAccept', { importe: euro(COSTE_ENVIO_SAT, intl) }))}
-                    </span>
+                    <span>{conNegritas(t('repair.outWarrantyAccept', { importe: euro(COSTE_ENVIO_SAT, intl) }))}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Icon name="info" size={16} className="mt-0.5 text-muted" aria-hidden="true" />
-                    <span>
-                      {conNegritas(t('repair.outWarrantyDecline', { importe: euro(COSTE_ENVIO_SAT, intl) }))}
-                    </span>
+                    <span>{conNegritas(t('repair.outWarrantyDecline', { importe: euro(COSTE_ENVIO_SAT, intl) }))}</span>
                   </li>
                 </ul>
               </div>
@@ -166,10 +155,7 @@ export function ServiceTechnicalPage() {
               <p className="mt-2 text-sm text-ink">
                 {conNegritas(t('repair.timesBody', { dias: t('repair.days', { n: DIAS_TRASLADO }) }))}
               </p>
-              <div
-                role="note"
-                className="mt-4 rounded-[10px] border border-line bg-neutral p-4 text-sm text-ink"
-              >
+              <div role="note" className="mt-4 rounded-[10px] border border-line bg-neutral p-4 text-sm text-ink">
                 <p className="flex items-center gap-2 font-semibold">
                   <Icon name="info" size={16} aria-hidden="true" />
                   {t('repair.importantNote')}

@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import {
-  leerInformeRls,
-  parsearInformeRls,
-  validarInformeRls,
-} from '../../scripts/lib/verificar-rls.mjs'
+import { leerInformeRls, parsearInformeRls, validarInformeRls } from '../../scripts/lib/verificar-rls.mjs'
 
 function informe(estados: string[]) {
   return {
@@ -32,10 +28,7 @@ function validar(estados: string[], codigoPlaywright = 0) {
 describe('verificador estricto del informe RLS', () => {
   it('CI usa Supabase local sin secretos de un proyecto alojado', () => {
     const workflow = readFileSync('.github/workflows/ci.yml', 'utf8')
-    const integration = readFileSync(
-      '.github/workflows/supabase-integration.yml',
-      'utf8',
-    )
+    const integration = readFileSync('.github/workflows/supabase-integration.yml', 'utf8')
     expect(workflow).toContain('uses: ./.github/workflows/supabase-integration.yml')
     expect(integration).toContain('run: npm run supabase:start')
     expect(integration).toContain('run: npm run supabase:reset')
@@ -82,15 +75,11 @@ describe('verificador estricto del informe RLS', () => {
   })
 
   it('rechaza una prueba omitida', () => {
-    expect(validar([...Array(26).fill('expected'), 'skipped']).problemas.join('\n')).toMatch(
-      /omitida/,
-    )
+    expect(validar([...Array(26).fill('expected'), 'skipped']).problemas.join('\n')).toMatch(/omitida/)
   })
 
   it('rechaza una prueba inestable', () => {
-    expect(validar([...Array(26).fill('expected'), 'flaky']).problemas.join('\n')).toMatch(
-      /inestable/,
-    )
+    expect(validar([...Array(26).fill('expected'), 'flaky']).problemas.join('\n')).toMatch(/inestable/)
   })
 
   it('rechaza un informe vacío', () => {

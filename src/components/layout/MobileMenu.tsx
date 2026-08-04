@@ -168,7 +168,6 @@ export function MobileMenu({
                     </li>
                   )
                 })}
-
               </ul>
             </nav>
 
@@ -180,9 +179,7 @@ export function MobileMenu({
                 navegación inferior), así que el chat entra por aquí. */}
             {isNativeApp && (
               <div className="mt-6 rounded-[16px] border border-line p-4">
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
-                  Contacta con nosotros
-                </p>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Contacta con nosotros</p>
                 <ul className="grid gap-1">
                   <li>
                     <button
@@ -207,9 +204,7 @@ export function MobileMenu({
                       </span>
                       <span>
                         Chatea con Bananito
-                        <span className="block text-xs font-normal text-muted">
-                          Te responde una persona del equipo
-                        </span>
+                        <span className="block text-xs font-normal text-muted">Te responde una persona del equipo</span>
                       </span>
                     </button>
                   </li>
@@ -231,9 +226,7 @@ export function MobileMenu({
 
             {/* Servicios y ayuda — mismos enlaces que la barra superior de escritorio */}
             <div className="mt-6 rounded-[16px] bg-neutral p-4">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
-                Servicios y ayuda
-              </p>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Servicios y ayuda</p>
               <ul className="grid grid-cols-2 gap-1">
                 {utilityLinks.map((l) => (
                   <li key={l.label}>
@@ -257,11 +250,7 @@ export function MobileMenu({
                   inferior: repetirlo aquí solo ocupa sitio. En la web sí se
                   queda, porque en móvil este menú es la vía para llegar. */}
               {!isNativeApp && (
-                <Link
-                  to="/favoritos"
-                  onClick={onClose}
-                  className="flex items-center gap-1.5 hover:text-ink"
-                >
+                <Link to="/favoritos" onClick={onClose} className="flex items-center gap-1.5 hover:text-ink">
                   <Icon name="heart" size={18} /> Favoritos
                 </Link>
               )}
@@ -283,9 +272,7 @@ function FavoriteStoreMobileBlock({ onClose }: { onClose: () => void }) {
   const [expanded, setExpanded] = useState(false)
   return (
     <div className="mt-6 rounded-[16px] bg-neutral p-4">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
-        Tu tienda
-      </p>
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Tu tienda</p>
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}

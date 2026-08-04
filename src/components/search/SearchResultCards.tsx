@@ -52,11 +52,7 @@ export function CompactSearchCard({ item }: { item: SearchItem }) {
       </Link>
     )
   }
-  return (
-    <div className="rounded-[12px] border border-dashed border-line bg-surface p-3">
-      {inner}
-    </div>
-  )
+  return <div className="rounded-[12px] border border-dashed border-line bg-surface p-3">{inner}</div>
 }
 
 function describeRelation(item: SearchItem, cat: (t: string, v?: Record<string, string>) => string): string {
@@ -68,19 +64,11 @@ function describeRelation(item: SearchItem, cat: (t: string, v?: Record<string, 
 }
 
 // Encabezado de sección con conteo opcional.
-export function SearchSectionHeading({
-  title,
-  count,
-}: {
-  title: string
-  count?: number
-}) {
+export function SearchSectionHeading({ title, count }: { title: string; count?: number }) {
   return (
     <h2 className="mb-3 flex items-baseline gap-2 text-lg font-bold text-ink">
       {title}
-      {count != null && count > 0 && (
-        <span className="text-sm font-medium text-muted">({count})</span>
-      )}
+      {count != null && count > 0 && <span className="text-sm font-medium text-muted">({count})</span>}
     </h2>
   )
 }

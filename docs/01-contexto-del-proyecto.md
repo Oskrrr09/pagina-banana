@@ -100,14 +100,16 @@ La comprobación completa es:
 ```bash
 npm ci
 npm run check
+npm run check:full
 ```
 
-Incluye tipos, ESLint, Vitest, instalación y actualización del esquema sobre
-PostgreSQL/PGlite, build sin credenciales y Playwright contra el artefacto.
+`check` incluye Prettier, ESLint, tipos, Vitest, instalación y actualización
+del esquema sobre PostgreSQL/PGlite y build sin credenciales. `check:full`
+añade Playwright contra el artefacto en Chromium, móvil y el panel aislado.
 
-Las pruebas de `tests/rls/` son aparte: necesitan un proyecto Supabase dedicado
-y comprueban GoTrue, PostgREST y Storage reales. Sin sus tres secretos se
-omiten y no cuentan como verificación aprobada.
+Las pruebas de `tests/rls/` son aparte: `npm run test:integration` necesita
+Docker y levanta un Supabase local efímero para comprobar GoTrue, PostgREST y
+Storage reales. Un preflight bloqueado no cuenta como verificación aprobada.
 
 GitHub Actions encadena calidad → build → E2E → RLS → Pages. Solo un
 push a `main` publica, y el despliegue debe fallar si no existen las

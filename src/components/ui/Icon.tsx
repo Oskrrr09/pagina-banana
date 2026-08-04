@@ -17,7 +17,8 @@ const paths: Record<string, string> = {
   minus: 'M5 12h14',
   check: 'M5 12l5 5L20 6',
   'arrow-right': 'M5 12h14M13 6l6 6-6 6',
-  truck: 'M3 6h11v9H3zM14 9h4l3 3v3h-7M6.5 18a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 18a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
+  truck:
+    'M3 6h11v9H3zM14 9h4l3 3v3h-7M6.5 18a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 18a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
   store: 'M4 9l1-5h14l1 5M4 9v10h16V9M4 9h16M9 19v-5h6v5',
   shield: 'M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z',
   star: 'M12 4l2.4 5 5.6.6-4 4 1 5.4L12 16l-5 3 1-5.4-4-4 5.6-.6z',
@@ -55,9 +56,12 @@ export function Icon({ name, size = 20, className, ...rest }: IconProps) {
       className={className}
       {...rest}
     >
-      {d.split('M').filter(Boolean).map((seg, i) => (
-        <path key={i} d={'M' + seg} />
-      ))}
+      {d
+        .split('M')
+        .filter(Boolean)
+        .map((seg, i) => (
+          <path key={i} d={'M' + seg} />
+        ))}
     </svg>
   )
 }

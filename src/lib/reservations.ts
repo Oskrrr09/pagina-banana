@@ -90,10 +90,7 @@ export async function listMyReservations(
   const items = await Promise.all(
     reservations.map(async (reservation) => ({
       reservation,
-      position:
-        reservation.estado === 'en-espera'
-          ? await queuePosition(reservation.id)
-          : null,
+      position: reservation.estado === 'en-espera' ? await queuePosition(reservation.id) : null,
     })),
   )
   return { items, error: null }
@@ -111,9 +108,7 @@ async function queuePosition(reservationId: string): Promise<number | null> {
   return typeof data === 'number' ? data : null
 }
 
-export async function cancelReservation(
-  reservationId: string,
-): Promise<{ error: string | null }> {
+export async function cancelReservation(reservationId: string): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase no está configurado.' }
   // Por RPC: el UPDATE directo dejaba cambiar cualquier columna de la reserva
   // —precio, producto, o `pagado_at`, que es lo que fija el puesto en la lista

@@ -8,9 +8,7 @@ const docker = spawnSync('docker', ['info', '--format', '{{.ServerVersion}}'], {
 })
 
 if (docker.status !== 0) {
-  console.error(
-    'Docker no está disponible. Instálalo o arráncalo antes de ejecutar la integración Supabase local.',
-  )
+  console.error('Docker no está disponible. Instálalo o arráncalo antes de ejecutar la integración Supabase local.')
   process.exit(1)
 }
 
@@ -36,34 +34,23 @@ try {
 const first = (...keys) => keys.map((key) => values[key]).find(Boolean)
 const url = first('API_URL', 'api_url', 'apiUrl')
 const anon = first('ANON_KEY', 'anon_key', 'anonKey', 'PUBLISHABLE_KEY')
-const service = first(
-  'SERVICE_ROLE_KEY',
-  'service_role_key',
-  'serviceRoleKey',
-  'SECRET_KEY',
-)
+const service = first('SERVICE_ROLE_KEY', 'service_role_key', 'serviceRoleKey', 'SECRET_KEY')
 
 if (!url || !anon || !service) {
-  console.error(
-    'Faltan API_URL, ANON_KEY/PUBLISHABLE_KEY o SERVICE_ROLE_KEY/SECRET_KEY en supabase status.',
-  )
+  console.error('Faltan API_URL, ANON_KEY/PUBLISHABLE_KEY o SERVICE_ROLE_KEY/SECRET_KEY en supabase status.')
   process.exit(1)
 }
 
 console.log(`Ejecutando 27 pruebas RLS contra Supabase local (${url}).`)
-const tests = spawnSync(
-  npx,
-  ['playwright', 'test', '--project=rls'],
-  {
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      PW_SKIP_WEBSERVER: '1',
-      RLS_TEST_URL: url,
-      RLS_TEST_ANON_KEY: anon,
-      RLS_TEST_SERVICE_KEY: service,
-    },
+const tests = spawnSync(npx, ['playwright', 'test', '--project=rls'], {
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    PW_SKIP_WEBSERVER: '1',
+    RLS_TEST_URL: url,
+    RLS_TEST_ANON_KEY: anon,
+    RLS_TEST_SERVICE_KEY: service,
   },
-)
+})
 
 process.exit(tests.status ?? 1)

@@ -28,13 +28,7 @@ test.describe('interfaz de la app nativa', () => {
 
     // El orden importa: es el que se acordó con Oscar.
     const etiquetas = await barra.locator('li').allInnerTexts()
-    expect(etiquetas.map((t) => t.trim())).toEqual([
-      'Inicio',
-      'Favoritos',
-      'Explorar',
-      'Carrito',
-      'Cuenta',
-    ])
+    expect(etiquetas.map((t) => t.trim())).toEqual(['Inicio', 'Favoritos', 'Explorar', 'Carrito', 'Cuenta'])
 
     // El pie de página es un mapa del sitio; dentro de una app sobra.
     await expect(page.getByRole('contentinfo')).toHaveCount(0)
@@ -65,14 +59,10 @@ test.describe('interfaz de la app nativa', () => {
     expect(Math.round(abajo.y + abajo.height)).toBe(alto)
 
     // El documento no se desplaza; el contenedor de contenido sí.
-    const documentoFijo = await page.evaluate(
-      () => document.documentElement.scrollHeight <= window.innerHeight + 1,
-    )
+    const documentoFijo = await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1)
     expect(documentoFijo, 'el documento no debería poder desplazarse').toBe(true)
 
-    const hayQueDesplazar = await page
-      .locator('#contenido')
-      .evaluate((el) => el.scrollHeight > el.clientHeight + 1)
+    const hayQueDesplazar = await page.locator('#contenido').evaluate((el) => el.scrollHeight > el.clientHeight + 1)
     expect(hayQueDesplazar, 'el contenido debería tener scroll propio').toBe(true)
 
     // Y tras desplazar el contenido, las barras siguen exactamente donde
@@ -108,21 +98,12 @@ test.describe('interfaz de la app nativa', () => {
     await comoApp(page)
     await page.goto('./')
     const barra = page.getByRole('navigation', { name: 'Navegación principal' })
-    await expect(barra.getByRole('link', { name: /^Inicio/ })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
+    await expect(barra.getByRole('link', { name: /^Inicio/ })).toHaveAttribute('aria-current', 'page')
 
     await barra.getByRole('link', { name: /^Favoritos/ }).click()
     await expect(page).toHaveURL(/\/favoritos$/)
-    await expect(barra.getByRole('link', { name: /^Favoritos/ })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
-    await expect(barra.getByRole('link', { name: /^Inicio/ })).not.toHaveAttribute(
-      'aria-current',
-      'page',
-    )
+    await expect(barra.getByRole('link', { name: /^Favoritos/ })).toHaveAttribute('aria-current', 'page')
+    await expect(barra.getByRole('link', { name: /^Inicio/ })).not.toHaveAttribute('aria-current', 'page')
   })
 
   test('el carrito lleva su contador y no se repite en la cabecera', async ({ page }) => {
@@ -160,7 +141,8 @@ test.describe('interfaz de la app nativa', () => {
   test('sin sesión, la pestaña Cuenta lleva al acceso', async ({ page }) => {
     await comoApp(page)
     await page.goto('./')
-    await page.getByRole('navigation', { name: 'Navegación principal' })
+    await page
+      .getByRole('navigation', { name: 'Navegación principal' })
       .getByRole('link', { name: /^Cuenta/ })
       .click()
     await expect(page).toHaveURL(/\/login$/)
@@ -230,16 +212,12 @@ test.describe('interfaz de la app nativa', () => {
     await expect(chat).toBeVisible()
   })
 
-  test('arriba hay un buscador con filtros de categoría, no una cabecera de web', async ({
-    page,
-  }) => {
+  test('arriba hay un buscador con filtros de categoría, no una cabecera de web', async ({ page }) => {
     await comoApp(page)
     await page.goto('./')
 
     const cabecera = page.getByRole('banner')
-    await expect(
-      cabecera.getByRole('button', { name: 'Buscar en Banana Computer' }),
-    ).toBeVisible()
+    await expect(cabecera.getByRole('button', { name: 'Buscar en Banana Computer' })).toBeVisible()
 
     // Filtros rápidos por familia, con las categorías reales del catálogo.
     // Van dentro del contenido, no de la cabecera: ver la prueba siguiente.
@@ -274,8 +252,7 @@ test.describe('interfaz de la app nativa', () => {
     // recortados justo bajo la barra de búsqueda.
     const contenedor = (await page.locator('#contenido').boundingBox())!
     const filtrosDespues = await categorias.boundingBox()
-    const escondidos =
-      filtrosDespues === null || filtrosDespues.y + filtrosDespues.height <= contenedor.y + 1
+    const escondidos = filtrosDespues === null || filtrosDespues.y + filtrosDespues.height <= contenedor.y + 1
     expect(escondidos, 'los filtros deberían haberse escondido bajo el buscador').toBe(true)
   })
 
@@ -294,10 +271,7 @@ test.describe('interfaz de la app nativa', () => {
   test('un filtro de categoría navega a su familia', async ({ page }) => {
     await comoApp(page)
     await page.goto('./')
-    await page
-      .getByRole('navigation', { name: 'Categorías' })
-      .getByRole('link', { name: 'iPhone' })
-      .click()
+    await page.getByRole('navigation', { name: 'Categorías' }).getByRole('link', { name: 'iPhone' }).click()
     await expect(page).toHaveURL(/\/iphone$/)
   })
 
@@ -314,9 +288,7 @@ test.describe('interfaz de la app nativa', () => {
 })
 
 test.describe('la web no cambia', () => {
-  test('en el navegador sigue habiendo pie de página y ninguna barra inferior', async ({
-    page,
-  }) => {
+  test('en el navegador sigue habiendo pie de página y ninguna barra inferior', async ({ page }) => {
     await page.goto('./')
     await expect(page.locator('[data-app-tab-bar]')).toHaveCount(0)
     await expect(page.getByRole('contentinfo')).toBeVisible()

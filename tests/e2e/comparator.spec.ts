@@ -25,12 +25,8 @@ async function seedCompareIphonePro(page: Page) {
 
 test('encabezado nuevo + estado vacío con tres slots y CTA al asistente', async ({ page }) => {
   await page.goto('./comparar')
-  await expect(
-    page.getByRole('heading', { name: 'Compara tus opciones', level: 1 }),
-  ).toBeVisible()
-  await expect(
-    page.getByText('Consulta solo las diferencias que realmente pueden ayudarte a elegir.'),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Compara tus opciones', level: 1 })).toBeVisible()
+  await expect(page.getByText('Consulta solo las diferencias que realmente pueden ayudarte a elegir.')).toBeVisible()
   // Selector de familia visible.
   await expect(page.getByText('Tipo de producto:')).toBeVisible()
   // Exactamente tres slots vacíos con "Elegir modelo".
@@ -44,7 +40,10 @@ test('encabezado nuevo + estado vacío con tres slots y CTA al asistente', async
 
 test('desde el estado vacío se elige el primer modelo con el diálogo (sin scroll)', async ({ page }) => {
   await page.goto('./comparar')
-  await page.getByRole('button', { name: /para el espacio 1$/ }).first().click()
+  await page
+    .getByRole('button', { name: /para el espacio 1$/ })
+    .first()
+    .click()
   const dialog = page.getByRole('dialog', { name: /^Elegir modelo de/ })
   await expect(dialog).toBeVisible()
   // El diálogo lista modelos y permite elegir.
@@ -70,16 +69,10 @@ test('bloque inferior antiguo y "Diferencias entre las opciones" YA NO existen',
 test('"Solo diferencias" está activo por defecto y "Mostrar todas" pinta más filas', async ({ page }) => {
   await seedCompareIphonePro(page)
   await page.goto('./comparar')
-  await expect(page.getByRole('button', { name: 'Solo diferencias' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByRole('button', { name: 'Solo diferencias' })).toHaveAttribute('aria-pressed', 'true')
   const initialRows = await page.locator('table tbody tr').count()
   await page.getByRole('button', { name: 'Mostrar todas' }).click()
-  await expect(page.getByRole('button', { name: 'Mostrar todas' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByRole('button', { name: 'Mostrar todas' })).toHaveAttribute('aria-pressed', 'true')
   const allRows = await page.locator('table tbody tr').count()
   expect(allRows).toBeGreaterThanOrEqual(initialRows)
 })
@@ -88,9 +81,7 @@ test('cambiar modelo mantiene la misma columna y no duplica', async ({ page }) =
   await seedCompareIphonePro(page)
   await page.goto('./comparar')
   // Cabecera de la primera columna ocupada.
-  const firstChange = page
-    .getByRole('button', { name: /Cambiar modelo en la columna iPhone 17 Pro/ })
-    .first()
+  const firstChange = page.getByRole('button', { name: /Cambiar modelo en la columna iPhone 17 Pro/ }).first()
   await firstChange.click()
   const dialog = page.getByRole('dialog', { name: /^Cambiar modelo de/ })
   await expect(dialog).toBeVisible()
@@ -122,9 +113,7 @@ test('máximo tres slots: al llenar los tres no aparece más un slot vacío', as
   const dialog = page.getByRole('dialog', { name: /^Elegir modelo de/ })
   await dialog.getByRole('button', { name: /^Elegir iPhone 17$/ }).click()
   // Ya no queda ningún slot "Elegir modelo".
-  await expect(
-    page.getByRole('button', { name: /^Elegir modelo de .+ para el espacio/ }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^Elegir modelo de .+ para el espacio/ })).toHaveCount(0)
 })
 
 test('quitar un modelo libera el slot y persiste tras recargar', async ({ page }) => {
@@ -174,13 +163,9 @@ test('a 375 px la página del comparador no genera scroll horizontal @mobile', a
 test('desde una columna se puede añadir a favoritos y al carrito', async ({ page }) => {
   await seedCompareIphonePro(page)
   await page.goto('./comparar')
-  const firstFav = page
-    .getByRole('button', { name: /Añadir iPhone 17 Pro a favoritos/ })
-    .first()
+  const firstFav = page.getByRole('button', { name: /Añadir iPhone 17 Pro a favoritos/ }).first()
   await firstFav.click()
-  await expect(
-    page.getByRole('button', { name: /Quitar iPhone 17 Pro de favoritos/ }).first(),
-  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /Quitar iPhone 17 Pro de favoritos/ }).first()).toBeVisible()
   await page.getByRole('button', { name: 'Comprar' }).first().click()
   await expect(page.getByRole('link', { name: /Carrito|cesta/i }).first()).toBeVisible()
 })
@@ -198,17 +183,24 @@ test('axe: comparador con dos productos no introduce violaciones nuevas', async 
 test('axe: diálogo Elegir modelo abierto es accesible', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('./comparar')
-  await page.getByRole('button', { name: /para el espacio 1$/ }).first().click()
+  await page
+    .getByRole('button', { name: /para el espacio 1$/ })
+    .first()
+    .click()
   const dialog = page.getByRole('dialog', { name: /^Elegir modelo de/ })
   await expect(dialog).toBeVisible()
   // Espera a que la animación termine y el fondo se opaque para evitar
   // que axe evalúe el contraste sobre un panel semi-transparente.
-  await page.waitForFunction(() => {
-    const el = document.querySelector('[role="dialog"]') as HTMLElement | null
-    if (!el) return false
-    const s = getComputedStyle(el)
-    return s.opacity === '1'
-  }, undefined, { timeout: 3000 })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('[role="dialog"]') as HTMLElement | null
+      if (!el) return false
+      const s = getComputedStyle(el)
+      return s.opacity === '1'
+    },
+    undefined,
+    { timeout: 3000 },
+  )
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a'])
     // El backdrop translúcido no afecta al panel: axe interpreta mal el

@@ -44,7 +44,9 @@ async function estadoPR33(): Promise<PGlite> {
 }
 
 async function aplicarMigracionesNuevas(base: PGlite): Promise<void> {
-  for (const f of readdirSync(DIR_MIGRACIONES).filter((f) => f.endsWith('.sql')).sort()) {
+  for (const f of readdirSync(DIR_MIGRACIONES)
+    .filter((f) => f.endsWith('.sql'))
+    .sort()) {
     await base.exec(readFileSync(join(DIR_MIGRACIONES, f), 'utf8'))
   }
 }
@@ -60,14 +62,10 @@ beforeAll(async () => {
     CLIENTE,
     'c@ejemplo.test',
   ])
-  await db.query('insert into public.clientes (id, email) values ($1, $2)', [
-    CLIENTE,
-    'c@ejemplo.test',
+  await db.query('insert into public.clientes (id, email) values ($1, $2)', [CLIENTE, 'c@ejemplo.test'])
+  await db.query(`insert into public.visitantes (auth_id, nombre, email) values ($1, 'Ana', 'ana@ejemplo.test')`, [
+    VISITANTE,
   ])
-  await db.query(
-    `insert into public.visitantes (auth_id, nombre, email) values ($1, 'Ana', 'ana@ejemplo.test')`,
-    [VISITANTE],
-  )
   const { rows } = await db.query<{ id: string }>(
     `insert into public.conversaciones (visitor_id)
      select id from public.visitantes where auth_id = $1 returning id`,
@@ -135,9 +133,7 @@ describe('actualización desde la PR #33', () => {
     expect(visitantes[0].nombre).toBe('Ana')
     expect(visitantes[0].auth_id, 'no se reasigna a otro usuario').toBe(VISITANTE)
 
-    const { rows: mensajes } = await db.query<{ texto: string }>(
-      `select texto from public.mensajes`,
-    )
+    const { rows: mensajes } = await db.query<{ texto: string }>(`select texto from public.mensajes`)
     expect(mensajes.map((m) => m.texto)).toContain('mensaje anterior a la actualización')
   })
 
@@ -146,14 +142,10 @@ describe('actualización desde la PR #33', () => {
     // La migración no debe borrarlos ni reasignarlos en silencio: son datos de
     // alguien, y decidir qué hacer con ellos es una decisión de negocio, no un
     // efecto secundario de una migración.
-    const { rows } = await db.query<{ n: number }>(
-      `select count(*)::int as n from public.conversaciones`,
-    )
+    const { rows } = await db.query<{ n: number }>(`select count(*)::int as n from public.conversaciones`)
     expect(rows[0].n, 'la conversación heredada sigue ahí').toBeGreaterThan(0)
 
-    const { rows: mensajes } = await db.query<{ n: number }>(
-      `select count(*)::int as n from public.mensajes`,
-    )
+    const { rows: mensajes } = await db.query<{ n: number }>(`select count(*)::int as n from public.mensajes`)
     expect(mensajes[0].n, 'y sus mensajes').toBeGreaterThan(0)
   })
 
@@ -182,10 +174,8 @@ describe('actualización desde la PR #33', () => {
     const despues = await auditarCatalogo(db)
     expect(despues.problemas, despues.problemas.join('\n')).toEqual([])
     expect(serializarCatalogo(despues.catalogo)).toBe(catalogoAntes)
-    expect(new Set(despues.catalogo.map((funcion) => funcion.firma)).size).toBe(
-      despues.catalogo.length,
-    )
-    const { rows: datosDespues } = await db.query<typeof datosAntes[number]>(
+    expect(new Set(despues.catalogo.map((funcion) => funcion.firma)).size).toBe(despues.catalogo.length)
+    const { rows: datosDespues } = await db.query<(typeof datosAntes)[number]>(
       `select (select count(*)::int from public.visitantes) as visitantes,
               (select count(*)::int from public.conversaciones) as conversaciones,
               (select count(*)::int from public.mensajes) as mensajes,
@@ -203,8 +193,9 @@ describe('actualización desde la PR #33', () => {
     const { rows } = await db.query<{ texto: string }>(`select texto from public.mensajes`)
     await db.exec('commit')
 
-    expect(rows.map((r) => r.texto), 'el visitante sigue viendo lo suyo').toContain(
-      'mensaje anterior a la actualización',
-    )
+    expect(
+      rows.map((r) => r.texto),
+      'el visitante sigue viendo lo suyo',
+    ).toContain('mensaje anterior a la actualización')
   })
 })

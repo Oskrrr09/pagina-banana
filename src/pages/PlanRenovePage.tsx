@@ -44,21 +44,15 @@ export function PlanRenovePage() {
           <div className="mt-6 space-y-3">
             <div className="flex items-start gap-3 rounded-[12px] border border-backorder/40 bg-backorder-050 p-4">
               <Icon name="store" className="mt-0.5 shrink-0 text-backorder" aria-hidden="true" />
-              <p className="text-sm text-ink">
-                {conNegritas(t('renove.noticeStore'))}
-              </p>
+              <p className="text-sm text-ink">{conNegritas(t('renove.noticeStore'))}</p>
             </div>
             <div className="flex items-start gap-3 rounded-[12px] border border-backorder/40 bg-backorder-050 p-4">
               <Icon name="info" className="mt-0.5 shrink-0 text-backorder" aria-hidden="true" />
-              <p className="text-sm text-ink">
-                {conNegritas(t('renove.noticeValue'))}
-              </p>
+              <p className="text-sm text-ink">{conNegritas(t('renove.noticeValue'))}</p>
             </div>
             <div className="flex items-start gap-3 rounded-[12px] border border-backorder/40 bg-backorder-050 p-4">
               <Icon name="clock" className="mt-0.5 shrink-0 text-backorder" aria-hidden="true" />
-              <p className="text-sm text-ink">
-                {conNegritas(t('renove.noticeTransfer'))}
-              </p>
+              <p className="text-sm text-ink">{conNegritas(t('renove.noticeTransfer'))}</p>
             </div>
           </div>
         </Container>
@@ -68,14 +62,8 @@ export function PlanRenovePage() {
           del partner de tasación. Puedes empezar por una valoración
           estimada online, pero el Renove se completa siempre en tienda. */}
       <Section>
-        <SectionHeader
-          title={t('renove.howTitle')}
-          desc={t('renove.howDesc')}
-        />
-        <ol
-          aria-label={t('renove.stepsAria')}
-          className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
-        >
+        <SectionHeader title={t('renove.howTitle')} desc={t('renove.howDesc')} />
+        <ol aria-label={t('renove.stepsAria')} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {RENOVE_STEPS.map((step, i) => (
             <li
               key={step.title}

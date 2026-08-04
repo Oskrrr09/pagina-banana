@@ -56,9 +56,7 @@ export function Modal({
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    const restoreOutside = isolateModalBranch(
-      panelRef.current?.closest('[data-modal-root]') ?? null,
-    )
+    const restoreOutside = isolateModalBranch(panelRef.current?.closest('[data-modal-root]') ?? null)
 
     const focusFrame = requestAnimationFrame(() => closeRef.current?.focus())
     return () => {
@@ -73,10 +71,7 @@ export function Modal({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          data-modal-root
-          className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
-        >
+        <motion.div data-modal-root className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
           <div
             className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
             onClick={dismissable ? onClose : undefined}

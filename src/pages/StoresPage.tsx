@@ -167,7 +167,8 @@ export function StoresPage() {
                 </p>
               )}
               <p className="mt-1 text-xs text-muted">
-                <span className="font-semibold text-ink">{t('stores.today')}</span> {todayHours?.time ?? t('stores.checkHours')}
+                <span className="font-semibold text-ink">{t('stores.today')}</span>{' '}
+                {todayHours?.time ?? t('stores.checkHours')}
               </p>
               <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
                 <Icon name="map-pin" size={15} /> {store.address}

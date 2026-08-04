@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import {
-  supabaseEnabled,
-  type AgentStatus,
-  type DbAgent,
-  type DbConversation,
-  type DbCustomer,
-} from '../lib/supabase'
+import { supabaseEnabled, type AgentStatus, type DbAgent, type DbConversation, type DbCustomer } from '../lib/supabase'
 import {
   assignConversation,
   setConversationState,
@@ -18,12 +12,7 @@ import {
   type InboxItem,
 } from '../lib/chatSession'
 import { useAgentAuth } from '../lib/agentAuth'
-import {
-  describeStatus,
-  listPendingRequests,
-  reviewRequest,
-  signedProofUrl,
-} from '../lib/educationalDiscount'
+import { describeStatus, listPendingRequests, reviewRequest, signedProofUrl } from '../lib/educationalDiscount'
 import { useAppBadge, useNotifications } from '../lib/pwa'
 import { useNewMessageAlert, useUnreadConversations } from '../lib/agentUnread'
 import { AgentAppBar } from '../components/agent/AgentAppBar'
@@ -137,10 +126,7 @@ export function AgentPage() {
   return (
     <div className="flex h-screen flex-col bg-neutral">
       <TopBar tab={tab} onTabChange={setTab} sinLeer={badge} />
-      <AgentAppBar
-        notificaciones={permission}
-        onPedirNotificaciones={() => void pedirNotificaciones()}
-      />
+      <AgentAppBar notificaciones={permission} onPedirNotificaciones={() => void pedirNotificaciones()} />
       {tab === 'conversaciones' ? (
         <div className="flex min-h-0 flex-1">
           <InboxColumn
@@ -156,10 +142,7 @@ export function AgentPage() {
               setSelectedId(null)
             }}
           />
-          <ConversationColumn
-            conversationId={selectedId}
-            conversation={selected?.conversation ?? null}
-          />
+          <ConversationColumn conversationId={selectedId} conversation={selected?.conversation ?? null} />
           <VisitorColumn conversationId={selectedId} />
         </div>
       ) : (
@@ -177,15 +160,7 @@ const ESTADOS: { value: AgentStatus; label: string; dot: string }[] = [
   { value: 'ausente', label: 'Ausente', dot: 'bg-ink/40' },
 ]
 
-function TopBar({
-  tab,
-  onTabChange,
-  sinLeer,
-}: {
-  tab: Tab
-  onTabChange: (t: Tab) => void
-  sinLeer: number
-}) {
+function TopBar({ tab, onTabChange, sinLeer }: { tab: Tab; onTabChange: (t: Tab) => void; sinLeer: number }) {
   const { agente, signOut, setEstado } = useAgentAuth()
   const actual = ESTADOS.find((e) => e.value === agente?.estado) ?? ESTADOS[0]
 
@@ -195,11 +170,7 @@ function TopBar({
       style={{ background: BANANA_YELLOW }}
     >
       <Link to="/" className="flex items-center gap-3 text-ink" aria-label="Ir a la web">
-        <img
-          src={`${import.meta.env.BASE_URL}img/logo-dark.svg`}
-          alt="Banana Computer"
-          className="h-6 w-auto"
-        />
+        <img src={`${import.meta.env.BASE_URL}img/logo-dark.svg`} alt="Banana Computer" className="h-6 w-auto" />
         <span className="text-sm font-semibold">Panel de agentes</span>
       </Link>
 
@@ -252,15 +223,7 @@ function TopBar({
   )
 }
 
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
@@ -283,9 +246,8 @@ function NotAnAgentScreen() {
       <div className="max-w-lg space-y-3 rounded-2xl border border-line bg-surface p-6 shadow-sm">
         <h1 className="text-lg font-semibold text-ink">Sin permiso de agente</h1>
         <p className="text-sm text-ink/70">
-          La cuenta <strong>{session?.user.email}</strong> ha iniciado sesión, pero no
-          está dada de alta como agente. El alta se hace a mano desde el panel de
-          Supabase; los pasos están en{' '}
+          La cuenta <strong>{session?.user.email}</strong> ha iniciado sesión, pero no está dada de alta como agente. El
+          alta se hace a mano desde el panel de Supabase; los pasos están en{' '}
           <code className="rounded bg-neutral px-1 text-xs">supabase/schema.sql</code>.
         </p>
         <button
@@ -324,32 +286,18 @@ function InboxColumn({
         <span className="text-xs text-ink/60">{items.length}</span>
       </div>
 
-      <div
-        role="tablist"
-        aria-label="Bandeja de conversaciones"
-        className="flex gap-1 border-b border-line px-3 py-2"
-      >
-        <BandejaTab
-          active={bandeja === 'abierta'}
-          onClick={() => onBandejaChange('abierta')}
-        >
+      <div role="tablist" aria-label="Bandeja de conversaciones" className="flex gap-1 border-b border-line px-3 py-2">
+        <BandejaTab active={bandeja === 'abierta'} onClick={() => onBandejaChange('abierta')}>
           Abiertas
         </BandejaTab>
-        <BandejaTab
-          active={bandeja === 'cerrada'}
-          onClick={() => onBandejaChange('cerrada')}
-        >
+        <BandejaTab active={bandeja === 'cerrada'} onClick={() => onBandejaChange('cerrada')}>
           Archivadas
         </BandejaTab>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {status === 'loading' && (
-          <p className="p-4 text-sm text-ink/60">Cargando…</p>
-        )}
-        {status === 'error' && (
-          <p className="p-4 text-sm text-danger">Error al cargar conversaciones.</p>
-        )}
+        {status === 'loading' && <p className="p-4 text-sm text-ink/60">Cargando…</p>}
+        {status === 'error' && <p className="p-4 text-sm text-danger">Error al cargar conversaciones.</p>}
         {status === 'ready' && items.length === 0 && (
           <p className="p-4 text-sm text-ink/60">
             {bandeja === 'abierta'
@@ -375,20 +323,11 @@ function InboxColumn({
                     className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full"
                     style={{ background: BANANA_BLUE }}
                   >
-                    <img
-                      src={BANANITO_IMG}
-                      alt=""
-                      className="h-7 w-7 object-contain"
-                    />
+                    <img src={BANANITO_IMG} alt="" className="h-7 w-7 object-contain" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p
-                        className={
-                          'truncate text-sm text-ink ' +
-                          (sinLeer ? 'font-bold' : 'font-medium')
-                        }
-                      >
+                      <p className={'truncate text-sm text-ink ' + (sinLeer ? 'font-bold' : 'font-medium')}>
                         {visitorDisplayName(visitor, conversation.visitor_id)}
                       </p>
                       {sinLeer && (
@@ -404,12 +343,7 @@ function InboxColumn({
                         {formatRelative(conversation.ultimo_mensaje_at)}
                       </span>
                     </div>
-                    <p
-                      className={
-                        'mt-0.5 truncate text-xs ' +
-                        (sinLeer ? 'font-semibold text-ink' : 'text-ink/60')
-                      }
-                    >
+                    <p className={'mt-0.5 truncate text-xs ' + (sinLeer ? 'font-semibold text-ink' : 'text-ink/60')}>
                       {lastMessage
                         ? `${lastMessage.autor === 'visitor' ? '' : lastMessage.autor === 'agent' ? 'Tú: ' : 'Bot: '}${lastMessage.texto}`
                         : 'Sin mensajes todavía'}
@@ -473,17 +407,13 @@ function ConversationColumn({
 
   // Nombre si lo tenemos (de la cuenta o del formulario de invitado); si
   // no, un identificador corto para poder distinguir conversaciones.
-  const visitorLabel = conversationId
-    ? visitorDisplayName(visitor, conversation?.visitor_id ?? conversationId)
-    : ''
+  const visitorLabel = conversationId ? visitorDisplayName(visitor, conversation?.visitor_id ?? conversationId) : ''
 
   if (!conversationId) {
     return (
       <main className="grid flex-1 place-items-center bg-neutral p-8 text-center">
         <div>
-          <p className="text-sm text-ink/70">
-            Selecciona una conversación de la lista para empezar a responder.
-          </p>
+          <p className="text-sm text-ink/70">Selecciona una conversación de la lista para empezar a responder.</p>
         </div>
       </main>
     )
@@ -523,21 +453,11 @@ function ConversationColumn({
             </p>
           )}
           <p className="text-xs text-ink/60">
-            Canal: web ·{' '}
-            {mine
-              ? 'Asignada a ti'
-              : takenByOther
-                ? 'Asignada a otro agente'
-                : 'Sin asignar'}
+            Canal: web · {mine ? 'Asignada a ti' : takenByOther ? 'Asignada a otro agente' : 'Sin asignar'}
             {cerrada && ' · Archivada'}
           </p>
         </div>
-        <ConversationActions
-          conversationId={conversationId}
-          estado={estado}
-          assignedTo={assignedTo}
-          agent={agente}
-        />
+        <ConversationActions conversationId={conversationId} estado={estado} assignedTo={assignedTo} agent={agente} />
       </header>
 
       {/* Valoración recibida */}
@@ -549,38 +469,22 @@ function ConversationColumn({
               {'★'.repeat(conversation.valoracion_estrellas)}
               {'☆'.repeat(5 - conversation.valoracion_estrellas)}
             </span>{' '}
-            <span className="font-normal text-ink/70">
-              ({conversation.valoracion_estrellas} de 5)
-            </span>
+            <span className="font-normal text-ink/70">({conversation.valoracion_estrellas} de 5)</span>
           </p>
           {conversation.valoracion_observacion && (
-            <p className="mt-1 text-sm text-ink/80">
-              “{conversation.valoracion_observacion}”
-            </p>
+            <p className="mt-1 text-sm text-ink/80">“{conversation.valoracion_observacion}”</p>
           )}
         </div>
       )}
-      {cerrada &&
-        conversation?.valoracion_solicitada &&
-        conversation.valoracion_estrellas == null && (
-          <div className="border-b border-line bg-surface px-6 py-2 text-xs text-ink/60">
-            Valoración pedida al cliente · pendiente de respuesta
-          </div>
-        )}
+      {cerrada && conversation?.valoracion_solicitada && conversation.valoracion_estrellas == null && (
+        <div className="border-b border-line bg-surface px-6 py-2 text-xs text-ink/60">
+          Valoración pedida al cliente · pendiente de respuesta
+        </div>
+      )}
 
-      <div
-        ref={scrollRef}
-        className="flex-1 space-y-3 overflow-y-auto px-6 py-6"
-        style={CHAT_BACKGROUND}
-      >
-        {status === 'loading' && (
-          <p className="text-center text-xs text-ink/60">Cargando historial…</p>
-        )}
-        {status === 'error' && (
-          <p className="text-center text-xs text-danger">
-            No se pudo cargar la conversación.
-          </p>
-        )}
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-6 py-6" style={CHAT_BACKGROUND}>
+        {status === 'loading' && <p className="text-center text-xs text-ink/60">Cargando historial…</p>}
+        {status === 'error' && <p className="text-center text-xs text-danger">No se pudo cargar la conversación.</p>}
         {messages.map((m) => {
           // Aquí manda el punto de vista del AGENTE, al revés que en la
           // burbuja de la web: todo lo que sale de Banana (agente y también
@@ -599,39 +503,26 @@ function ConversationColumn({
               : visitorDisplayName(visitor)
 
           return (
-            <div
-              key={m.id}
-              className={deBanana ? 'flex justify-end' : 'flex items-end gap-2'}
-            >
+            <div key={m.id} className={deBanana ? 'flex justify-end' : 'flex items-end gap-2'}>
               {!deBanana && (
                 <span
                   className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#c9c9cf]"
                   aria-hidden
                 >
-                  <span className="text-[10px] font-bold text-white">
-                    {visitorDisplayName(visitor).charAt(0)}
-                  </span>
+                  <span className="text-[10px] font-bold text-white">{visitorDisplayName(visitor).charAt(0)}</span>
                 </span>
               )}
               <div className={'max-w-[70%] ' + (deBanana ? 'text-right' : '')}>
-                <p className="mb-0.5 px-1 text-[11px] font-medium text-ink/60">
-                  {autorNombre}
-                </p>
+                <p className="mb-0.5 px-1 text-[11px] font-medium text-ink/60">{autorNombre}</p>
                 <div
                   className={
                     'inline-block whitespace-pre-wrap break-words rounded-[16px] px-3.5 py-2 text-left text-sm shadow-sm ' +
-                    (deBanana
-                      ? 'rounded-br-[4px]'
-                      : 'rounded-bl-[4px] bg-surface text-ink') +
+                    (deBanana ? 'rounded-br-[4px]' : 'rounded-bl-[4px] bg-surface text-ink') +
                     // Sobre el azul pastel del bot el texto blanco no se
                     // leería, así que ahí va en tinta.
                     (deBanana ? (isBot ? ' text-ink' : ' text-white') : '')
                   }
-                  style={
-                    deBanana
-                      ? { background: isBot ? BANANA_BLUE_PASTEL : BANANA_BLUE }
-                      : undefined
-                  }
+                  style={deBanana ? { background: isBot ? BANANA_BLUE_PASTEL : BANANA_BLUE } : undefined}
                 >
                   {m.texto}
                 </div>
@@ -643,15 +534,11 @@ function ConversationColumn({
 
       {cerrada ? (
         <div className="border-t border-line bg-surface px-6 py-4 text-sm text-ink/60">
-          Conversación archivada. Reábrela para poder responder; si el visitante
-          vuelve a escribir se le abrirá una conversación nueva.
+          Conversación archivada. Reábrela para poder responder; si el visitante vuelve a escribir se le abrirá una
+          conversación nueva.
         </div>
       ) : (
-        <AgentMessageComposer
-          canReply={puedeResponder}
-          takenByOther={takenByOther}
-          sendMessage={sendMessage}
-        />
+        <AgentMessageComposer canReply={puedeResponder} takenByOther={takenByOther} sendMessage={sendMessage} />
       )}
     </main>
   )
@@ -714,9 +601,7 @@ export function AgentMessageComposer({
         {sending ? 'Enviando…' : 'Enviar'}
       </button>
       {!canReply && takenByOther && (
-        <p className="text-xs text-ink/60">
-          Libera la asignación y asígnatela antes de responder.
-        </p>
+        <p className="text-xs text-ink/60">Libera la asignación y asígnatela antes de responder.</p>
       )}
       {notice && (
         <p role="alert" className="text-xs font-medium text-[#b3261e]">
@@ -798,10 +683,7 @@ export function ConversationActions({
     setAviso(null)
     setAssigning(true)
     try {
-      const { error } = await operations.assign(
-        conversationId,
-        assignmentOperation === 'assign' ? agent.id : null,
-      )
+      const { error } = await operations.assign(conversationId, assignmentOperation === 'assign' ? agent.id : null)
       if (error) {
         setAviso(error)
         return
@@ -889,14 +771,10 @@ export function ConversationActions({
         </p>
       )}
       {closeDialog && (
-        <ConfirmDialog
-          title="Cerrar conversación"
-          onCancel={() => setCloseDialog(false)}
-          busy={closing}
-        >
+        <ConfirmDialog title="Cerrar conversación" onCancel={() => setCloseDialog(false)} busy={closing}>
           <p className="text-sm text-ink/80">
-            ¿Quieres pedirle al cliente que valore la atención? Verá un
-            formulario de estrellas la próxima vez que abra el chat.
+            ¿Quieres pedirle al cliente que valore la atención? Verá un formulario de estrellas la próxima vez que abra
+            el chat.
           </p>
           {aviso && (
             <p role="alert" className="mt-3 text-sm font-medium text-[#b3261e]">
@@ -988,15 +866,9 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
         <h2 className="text-sm font-semibold text-ink">Ficha del visitante</h2>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-4 text-sm">
-        {!conversationId && (
-          <p className="text-ink/60">Selecciona una conversación.</p>
-        )}
-        {conversationId && status === 'loading' && (
-          <p className="text-ink/60">Cargando…</p>
-        )}
-        {conversationId && status === 'error' && (
-          <p className="text-danger">No se pudo cargar la ficha.</p>
-        )}
+        {!conversationId && <p className="text-ink/60">Selecciona una conversación.</p>}
+        {conversationId && status === 'loading' && <p className="text-ink/60">Cargando…</p>}
+        {conversationId && status === 'error' && <p className="text-danger">No se pudo cargar la ficha.</p>}
         {conversationId && status === 'ready' && (
           <>
             <dl className="space-y-3">
@@ -1014,17 +886,11 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
               </div>
               <div>
                 <dt className="text-xs text-ink/60">Identificador</dt>
-                <dd className="font-mono text-xs text-ink">
-                  {visitor ? shortId(visitor.id) : '—'}
-                </dd>
+                <dd className="font-mono text-xs text-ink">{visitor ? shortId(visitor.id) : '—'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-ink/60">Nombre</dt>
-                <dd className="text-ink">
-                  {visitor?.nombre?.trim()
-                    ? visitorDisplayName(visitor)
-                    : 'No facilitado'}
-                </dd>
+                <dd className="text-ink">{visitor?.nombre?.trim() ? visitorDisplayName(visitor) : 'No facilitado'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-ink/60">Teléfono</dt>
@@ -1067,8 +933,7 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
                   {otherConversations.map((c) => (
                     <li key={c.id} className="text-xs text-ink/70">
                       <span className="font-mono">{shortId(c.id)}</span> ·{' '}
-                      {formatRelative(c.ultimo_mensaje_at ?? c.created_at)} ·{' '}
-                      {c.estado}
+                      {formatRelative(c.ultimo_mensaje_at ?? c.created_at)} · {c.estado}
                     </li>
                   ))}
                 </ul>
@@ -1077,8 +942,7 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
 
             {!visitor?.cliente_id && (
               <p className="mt-6 text-xs text-ink/50">
-                Este visitante escribió sin iniciar sesión, así que solo sabemos
-                lo que él mismo haya contado.
+                Este visitante escribió sin iniciar sesión, así que solo sabemos lo que él mismo haya contado.
               </p>
             )}
           </>
@@ -1110,10 +974,7 @@ function EducationalDiscountsPanel() {
     void load()
   }, [load])
 
-  const decide = async (
-    cliente: DbCustomer,
-    estado: 'aprobado' | 'rechazado',
-  ) => {
+  const decide = async (cliente: DbCustomer, estado: 'aprobado' | 'rechazado') => {
     setBusyId(cliente.id)
     const { error } = await reviewRequest(cliente.id, estado, notes[cliente.id])
     setBusyId(null)
@@ -1134,14 +995,12 @@ function EducationalDiscountsPanel() {
       <div className="mx-auto max-w-3xl">
         <h2 className="text-lg font-bold text-ink">Descuentos educativos</h2>
         <p className="mt-1 text-sm text-ink/70">
-          Solicitudes pendientes de revisar. La validación es manual: abre el
-          justificante, comprueba que corresponde y decide.
+          Solicitudes pendientes de revisar. La validación es manual: abre el justificante, comprueba que corresponde y
+          decide.
         </p>
 
         {status === 'loading' && <p className="mt-6 text-sm text-ink/60">Cargando…</p>}
-        {status === 'error' && (
-          <p className="mt-6 text-sm text-danger">No se pudieron cargar las solicitudes.</p>
-        )}
+        {status === 'error' && <p className="mt-6 text-sm text-danger">No se pudieron cargar las solicitudes.</p>}
         {status === 'ready' && requests.length === 0 && (
           <p className="mt-6 rounded-[12px] border border-line bg-surface p-4 text-sm text-ink/60">
             No hay solicitudes pendientes.
@@ -1150,15 +1009,10 @@ function EducationalDiscountsPanel() {
 
         <ul className="mt-6 space-y-4">
           {requests.map((cliente) => (
-            <li
-              key={cliente.id}
-              className="rounded-[16px] border border-line bg-surface p-4 shadow-sm"
-            >
+            <li key={cliente.id} className="rounded-[16px] border border-line bg-surface p-4 shadow-sm">
               <div className="flex flex-wrap items-start gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-ink">
-                    {cliente.nombre || 'Sin nombre'}
-                  </p>
+                  <p className="font-semibold text-ink">{cliente.nombre || 'Sin nombre'}</p>
                   <p className="break-words text-sm text-ink/70">{cliente.email}</p>
                   <p className="mt-1 text-xs text-ink/60">
                     Subido {formatRelative(cliente.descuento_educativo_subido_at)}
@@ -1181,9 +1035,7 @@ function EducationalDiscountsPanel() {
                 </span>
                 <input
                   value={notes[cliente.id] ?? ''}
-                  onChange={(e) =>
-                    setNotes((prev) => ({ ...prev, [cliente.id]: e.target.value }))
-                  }
+                  onChange={(e) => setNotes((prev) => ({ ...prev, [cliente.id]: e.target.value }))}
                   className="field"
                   placeholder="Ej.: el documento no muestra el curso académico."
                 />
@@ -1225,11 +1077,10 @@ function SupabaseMissingScreen() {
         <h1 className="text-lg font-semibold text-ink">Panel de agentes</h1>
         <p className="text-sm text-ink/70">
           Este panel requiere Supabase configurado. Añade las variables
-          <code className="mx-1 rounded bg-neutral px-1 text-xs">VITE_SUPABASE_URL</code>
-          y
+          <code className="mx-1 rounded bg-neutral px-1 text-xs">VITE_SUPABASE_URL</code>y
           <code className="mx-1 rounded bg-neutral px-1 text-xs">VITE_SUPABASE_ANON_KEY</code>
-          en un archivo <code className="rounded bg-neutral px-1 text-xs">.env.local</code>
-          y reinicia el servidor de desarrollo.
+          en un archivo <code className="rounded bg-neutral px-1 text-xs">.env.local</code>y reinicia el servidor de
+          desarrollo.
         </p>
         <p className="text-sm text-ink/70">
           El script SQL para crear las tablas está en

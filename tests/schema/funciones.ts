@@ -10,12 +10,7 @@
  * que no la puede llamar nadie desde la API: solo el propietario, o el motor
  * cuando es un disparador o la evalúa una política.
  */
-export type Categoria =
-  | 'rpc-visitante'
-  | 'rpc-cliente'
-  | 'rpc-agente'
-  | 'auxiliar'
-  | 'trigger'
+export type Categoria = 'rpc-visitante' | 'rpc-cliente' | 'rpc-agente' | 'auxiliar' | 'trigger'
 
 export interface Clasificacion {
   categoria: Categoria
@@ -33,57 +28,89 @@ export interface Clasificacion {
 export const FUNCIONES: Record<string, Clasificacion> = {
   // ---- Visitante: sin cuenta, con sesión anónima --------------------------
   'abrir_conversacion(text,text,text,text)': {
-    categoria: 'rpc-visitante', ejecuta: ['anon', 'authenticated'], securityDefiner: true,
+    categoria: 'rpc-visitante',
+    ejecuta: ['anon', 'authenticated'],
+    securityDefiner: true,
   },
   'enviar_mensaje_visitante(uuid,text)': {
-    categoria: 'rpc-visitante', ejecuta: ['anon', 'authenticated'], securityDefiner: true,
+    categoria: 'rpc-visitante',
+    ejecuta: ['anon', 'authenticated'],
+    securityDefiner: true,
   },
   // La valoración la envía el visitante, que puede ser anónimo o tener cuenta.
   'enviar_valoracion(uuid,smallint,text)': {
-    categoria: 'rpc-visitante', ejecuta: ['anon', 'authenticated'], securityDefiner: true,
+    categoria: 'rpc-visitante',
+    ejecuta: ['anon', 'authenticated'],
+    securityDefiner: true,
   },
 
   // ---- Cliente con cuenta -------------------------------------------------
   'actualizar_mi_ficha(text,text,jsonb,jsonb)': {
-    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-cliente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'registrar_mi_justificante(text)': {
-    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-cliente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'crear_mis_reservas(jsonb)': {
-    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-cliente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'cancelar_mi_reserva(uuid)': {
-    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-cliente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'vincular_mi_visitante_a_cliente()': {
-    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-cliente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'posicion_en_cola(uuid)': {
-    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-cliente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
 
   // ---- Agente -------------------------------------------------------------
   'cambiar_mi_estado(text,text)': {
-    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-agente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'asignarme_conversacion(uuid)': {
-    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-agente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'liberar_mi_conversacion(uuid)': {
-    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-agente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'cerrar_conversacion(uuid,boolean)': {
-    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-agente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'reabrir_conversacion(uuid)': {
-    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-agente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'responder_como_agente(uuid,text)': {
-    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-agente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'cambiar_estado_reserva(uuid,text)': {
-    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+    categoria: 'rpc-agente',
+    ejecuta: ['authenticated'],
+    securityDefiner: true,
   },
   'revisar_descuento_educativo(uuid,text,text)': {
     categoria: 'rpc-agente',

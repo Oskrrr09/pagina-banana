@@ -77,7 +77,8 @@ export function SearchPage() {
 
 function ResultsSections({ results }: { results: SearchResults }) {
   const cat = useCatalogo()
-  const { exactMatch, appleDevices, relatedProducts, appleAccessories, compatibleAccessories, services, help, intent } = results
+  const { exactMatch, appleDevices, relatedProducts, appleAccessories, compatibleAccessories, services, help, intent } =
+    results
 
   const devicesBlock = appleDevices.length > 0 && (
     <section key="devices" className="mt-10" aria-labelledby="search-devices">
@@ -135,9 +136,7 @@ function ResultsSections({ results }: { results: SearchResults }) {
                 >
                   <Icon name="chevron-right" size={16} className="text-muted" />
                   <span>{s.name}</span>
-                  {s.description && (
-                    <span className="text-sm text-muted">— {cat(s.description)}</span>
-                  )}
+                  {s.description && <span className="text-sm text-muted">— {cat(s.description)}</span>}
                 </Link>
               </li>
             ))}
@@ -180,10 +179,7 @@ function ExactMatchCard({ item }: { item: SearchItem }) {
   }
   if (item.kind === 'apple-family' && item.route) {
     return (
-      <Link
-        to={item.route}
-        className="block rounded-[16px] border border-line bg-surface p-5 hover:border-ink/30"
-      >
+      <Link to={item.route} className="block rounded-[16px] border border-line bg-surface p-5 hover:border-ink/30">
         <p className="text-xs font-bold uppercase tracking-widest text-muted">Familia Apple</p>
         <p className="mt-1 text-xl font-extrabold text-ink">{item.name}</p>
         {item.description && <p className="mt-1 text-sm text-muted">{cat(item.description)}</p>}
@@ -276,12 +272,8 @@ function AccessoryVisualGrid({ items }: { items: SearchItem[] }) {
 function EmptyState({ query }: { query: string }) {
   return (
     <div className="mt-10 rounded-[12px] border border-dashed border-line py-16 text-center">
-      <p className="text-lg font-semibold text-ink">
-        No hemos encontrado resultados para “{query}”
-      </p>
-      <p className="mt-2 text-muted">
-        Prueba con otro término o explora las categorías principales.
-      </p>
+      <p className="text-lg font-semibold text-ink">No hemos encontrado resultados para “{query}”</p>
+      <p className="mt-2 text-muted">Prueba con otro término o explora las categorías principales.</p>
       <div className="mt-6 flex flex-wrap justify-center gap-2">
         {families.slice(0, 5).map((f) => (
           <Link

@@ -51,7 +51,9 @@ test.describe('DevicePreparationGuide — apertura y contenido', () => {
     const next = page.getByRole('button', { name: /^Siguiente/ })
     await expect(next).toBeDisabled()
     await page
-      .getByRole('checkbox', { name: /He revisado y desactivado esta protección cuando corresponde\./ })
+      .getByRole('checkbox', {
+        name: /He revisado y desactivado esta protección cuando corresponde\./,
+      })
       .check()
     await expect(next).toBeEnabled()
   })
@@ -61,13 +63,13 @@ test.describe('DevicePreparationGuide — apertura y contenido', () => {
     await page.getByRole('checkbox', { name: 'He realizado una copia de seguridad.' }).check()
     await advance(page)
     await page
-      .getByRole('checkbox', { name: /He revisado y desactivado esta protección cuando corresponde\./ })
+      .getByRole('checkbox', {
+        name: /He revisado y desactivado esta protección cuando corresponde\./,
+      })
       .check()
     await advance(page)
     await expect(page.getByText('Paso 3 de 4')).toBeVisible()
-    await expect(
-      page.getByRole('heading', { level: 3, name: 'Desactiva la función Buscar' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { level: 3, name: 'Desactiva la función Buscar' })).toBeVisible()
     const dialog = page.getByRole('dialog', { name: 'Preparar mi dispositivo' })
     for (const dev of ['Buscar mi iPhone', 'Buscar mi iPad', 'Buscar mi Mac']) {
       await expect(dialog.getByText(dev)).toBeVisible()
@@ -81,16 +83,16 @@ test.describe('DevicePreparationGuide — apertura y contenido', () => {
     await page.getByRole('checkbox', { name: 'He realizado una copia de seguridad.' }).check()
     await advance(page)
     await page
-      .getByRole('checkbox', { name: /He revisado y desactivado esta protección cuando corresponde\./ })
+      .getByRole('checkbox', {
+        name: /He revisado y desactivado esta protección cuando corresponde\./,
+      })
       .check()
     await advance(page)
     await page.getByRole('checkbox', { name: 'He desactivado la función Buscar.' }).check()
     await advance(page)
 
     await expect(page.getByText('Paso 4 de 4')).toBeVisible()
-    await expect(
-      page.getByRole('heading', { level: 3, name: 'Tu dispositivo está preparado' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { level: 3, name: 'Tu dispositivo está preparado' })).toBeVisible()
 
     const dialog = page.getByRole('dialog', { name: 'Preparar mi dispositivo' })
     const summary = (await dialog.textContent()) ?? ''
@@ -102,10 +104,9 @@ test.describe('DevicePreparationGuide — apertura y contenido', () => {
     expect(idxFind).toBeGreaterThan(idxAnti)
 
     await expect(
-      dialog.getByText(
-        'No compartas contraseñas, códigos de desbloqueo ni credenciales de Apple',
-        { exact: false },
-      ),
+      dialog.getByText('No compartas contraseñas, códigos de desbloqueo ni credenciales de Apple', {
+        exact: false,
+      }),
     ).toBeVisible()
 
     const cta = dialog.getByRole('link', { name: /Consultar tiendas y horarios/ })
@@ -121,9 +122,7 @@ test.describe('DevicePreparationGuide — apertura y contenido', () => {
 
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog', { name: 'Preparar mi dispositivo' })).toHaveCount(0)
-    await expect(
-      page.getByRole('button', { name: 'Preparar mi dispositivo' }).first(),
-    ).toBeFocused()
+    await expect(page.getByRole('button', { name: 'Preparar mi dispositivo' }).first()).toBeFocused()
   })
 
   test('trampa de foco: Tab y Shift+Tab no abandonan el diálogo', async ({ page }) => {
@@ -165,7 +164,9 @@ test.describe('DevicePreparationGuide — apertura y contenido', () => {
     await page.getByRole('checkbox', { name: 'He realizado una copia de seguridad.' }).check()
     await advance(page)
     await page
-      .getByRole('checkbox', { name: /He revisado y desactivado esta protección cuando corresponde\./ })
+      .getByRole('checkbox', {
+        name: /He revisado y desactivado esta protección cuando corresponde\./,
+      })
       .check()
     await advance(page)
     await page.getByRole('checkbox', { name: 'He desactivado la función Buscar.' }).check()
@@ -184,9 +185,7 @@ test.describe('DevicePreparationGuide — apertura y contenido', () => {
     // Reabrimos y comprobamos que arranca de nuevo en el paso 1 sin marcas.
     await page.getByRole('button', { name: 'Preparar mi dispositivo' }).first().click()
     await expect(page.getByText('Paso 1 de 4')).toBeVisible()
-    await expect(
-      page.getByRole('checkbox', { name: 'He realizado una copia de seguridad.' }),
-    ).not.toBeChecked()
+    await expect(page.getByRole('checkbox', { name: 'He realizado una copia de seguridad.' })).not.toBeChecked()
 
     const storage = await page.evaluate(() => ({
       local: Object.keys(localStorage).filter((k) => /prepar|guide|sat/i.test(k)),

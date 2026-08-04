@@ -138,20 +138,16 @@ async function como<T>(
 beforeAll(async () => {
   db = await PGlite.create({ extensions: { pgcrypto } })
   await db.exec(ANDAMIO)
-  for (const f of readdirSync(DIR).filter((f) => f.endsWith('.sql')).sort()) {
+  for (const f of readdirSync(DIR)
+    .filter((f) => f.endsWith('.sql'))
+    .sort()) {
     await db.exec(readFileSync(join(DIR, f), 'utf8'))
   }
   // Usuarios del escenario. En Supabase los crea GoTrue; aquí se insertan.
   for (const id of [ANA, BEA, CLIENTE, AGENTE, AGENTE_B, SUPERVISOR, CLIENTE_REVISION]) {
-    await db.query('insert into auth.users (id, email) values ($1, $2)', [
-      id,
-      `${id}@ejemplo.test`,
-    ])
+    await db.query('insert into auth.users (id, email) values ($1, $2)', [id, `${id}@ejemplo.test`])
   }
-  await db.query(
-    `insert into public.clientes (id, email) values ($1, $2)`,
-    [CLIENTE, 'cliente@ejemplo.test'],
-  )
+  await db.query(`insert into public.clientes (id, email) values ($1, $2)`, [CLIENTE, 'cliente@ejemplo.test'])
   await db.query(
     `insert into public.clientes (
        id, email, nombre, telefono, direccion_envio,
@@ -199,31 +195,26 @@ describe('chat del visitante', () => {
 
   it('un visitante no ve la ficha de otro', async () => {
     await como(BEA, 'anon', `select public.abrir_conversacion('Bea')`)
-    const { rows } = await como<{ nombre: string }>(
-      BEA,
-      'anon',
-      `select nombre from public.visitantes`,
-    )
-    expect(rows.map((r) => r.nombre), 'solo debe verse a sí misma').toEqual(['Bea'])
+    const { rows } = await como<{ nombre: string }>(BEA, 'anon', `select nombre from public.visitantes`)
+    expect(
+      rows.map((r) => r.nombre),
+      'solo debe verse a sí misma',
+    ).toEqual(['Bea'])
   })
 
   it('un visitante no puede insertar su ficha apuntando a otro cliente', async () => {
-    const { error } = await como(
+    const { error } = await como(ANA, 'anon', `insert into public.visitantes (auth_id, cliente_id) values ($1, $2)`, [
       ANA,
-      'anon',
-      `insert into public.visitantes (auth_id, cliente_id) values ($1, $2)`,
-      [ANA, CLIENTE],
-    )
+      CLIENTE,
+    ])
     expect(error, 'no hay INSERT directo para el visitante').not.toBeNull()
   })
 
   it('un visitante no puede cambiar su cliente_id después', async () => {
-    const { error } = await como(
+    const { error } = await como(ANA, 'anon', `update public.visitantes set cliente_id = $1 where auth_id = $2`, [
+      CLIENTE,
       ANA,
-      'anon',
-      `update public.visitantes set cliente_id = $1 where auth_id = $2`,
-      [CLIENTE, ANA],
-    )
+    ])
     expect(error).toMatch(/cliente_id/)
   })
 
@@ -265,64 +256,38 @@ describe('chat del visitante', () => {
          join public.visitantes v on v.id = c.visitor_id where v.auth_id = $1`,
       [ANA],
     )
-    const { error } = await como(
-      ANA,
-      'anon',
-      `select public.enviar_mensaje_visitante($1, '¿Tenéis el 17 Pro?')`,
-      [rows[0].id],
-    )
+    const { error } = await como(ANA, 'anon', `select public.enviar_mensaje_visitante($1, '¿Tenéis el 17 Pro?')`, [
+      rows[0].id,
+    ])
     expect(error, 'escribir en la propia conversación debe funcionar').toBeNull()
 
-    const { rows: leidos } = await como<{ texto: string }>(
-      ANA,
-      'anon',
-      `select texto from public.mensajes`,
-    )
+    const { rows: leidos } = await como<{ texto: string }>(ANA, 'anon', `select texto from public.mensajes`)
     expect(leidos.map((r) => r.texto)).toContain('¿Tenéis el 17 Pro?')
   })
 })
 
 describe('agente', () => {
   it('un autenticado sin fila en agentes no ve las conversaciones', async () => {
-    const { rows } = await como<{ id: string }>(
-      CLIENTE,
-      'authenticated',
-      `select id from public.conversaciones`,
-    )
+    const { rows } = await como<{ id: string }>(CLIENTE, 'authenticated', `select id from public.conversaciones`)
     expect(rows, 'tener cuenta no convierte a nadie en agente').toEqual([])
   })
 
   it('un agente válido lee visitantes, conversaciones y mensajes', async () => {
-    const visitantes = await como<{ id: string }>(
-      AGENTE,
-      'authenticated',
-      `select id from public.visitantes`,
-    )
+    const visitantes = await como<{ id: string }>(AGENTE, 'authenticated', `select id from public.visitantes`)
     expect(visitantes.rows.length, 'debe ver a los visitantes').toBeGreaterThan(0)
 
-    const conversaciones = await como<{ id: string }>(
-      AGENTE,
-      'authenticated',
-      `select id from public.conversaciones`,
-    )
+    const conversaciones = await como<{ id: string }>(AGENTE, 'authenticated', `select id from public.conversaciones`)
     expect(conversaciones.rows.length).toBeGreaterThan(0)
 
-    const mensajes = await como<{ id: string }>(
-      AGENTE,
-      'authenticated',
-      `select id from public.mensajes`,
-    )
+    const mensajes = await como<{ id: string }>(AGENTE, 'authenticated', `select id from public.mensajes`)
     expect(mensajes.rows.length).toBeGreaterThan(0)
   })
 
   it('un agente válido responde por RPC y el mensaje queda firmado con su UUID', async () => {
     const { rows } = await db.query<{ id: string }>(`select id from public.conversaciones limit 1`)
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.responder_como_agente($1, 'Buenos días')`,
-      [rows[0].id],
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.responder_como_agente($1, 'Buenos días')`, [
+      rows[0].id,
+    ])
     expect(error, 'el agente debe poder responder').toBeNull()
 
     const { rows: guardados } = await db.query<{ autor: string; agente_id: string }>(
@@ -369,54 +334,33 @@ describe('agente', () => {
     )
     const antes = rows[0].antes
 
-    await new Promise((r) => setTimeout(r, 5))
-    const { error } = await como(
-      ANA,
-      'anon',
-      `select public.enviar_mensaje_visitante($1, 'sigo aquí')`,
-      [rows[0].id],
-    )
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    const { error } = await como(ANA, 'anon', `select public.enviar_mensaje_visitante($1, 'sigo aquí')`, [rows[0].id])
     expect(error).toBeNull()
 
     const { rows: despues } = await db.query<{ ultimo_mensaje_at: string }>(
       `select ultimo_mensaje_at from public.conversaciones where id = $1`,
       [rows[0].id],
     )
-    expect(
-      new Date(despues[0].ultimo_mensaje_at).getTime(),
-      'la fecha debe avanzar',
-    ).toBeGreaterThan(new Date(antes).getTime())
+    expect(new Date(despues[0].ultimo_mensaje_at).getTime(), 'la fecha debe avanzar').toBeGreaterThan(
+      new Date(antes).getTime(),
+    )
   })
 
   it('el agente no puede ascenderse a supervisor', async () => {
     // Sin política de UPDATE, PostgreSQL no da error: simplemente no alcanza
     // ninguna fila. Se comprueba el efecto, que es lo que importa.
-    await como(
-      AGENTE,
-      'authenticated',
-      `update public.agentes set rol = 'supervisor' where id = $1`,
-      [AGENTE],
-    )
+    await como(AGENTE, 'authenticated', `update public.agentes set rol = 'supervisor' where id = $1`, [AGENTE])
 
-    const { rows } = await db.query<{ rol: string | null }>(
-      `select rol from public.agentes where id = $1`,
-      [AGENTE],
-    )
+    const { rows } = await db.query<{ rol: string | null }>(`select rol from public.agentes where id = $1`, [AGENTE])
     expect(rows[0].rol).not.toBe('supervisor')
   })
 
   it('el agente sí puede cambiar su estado por RPC', async () => {
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.cambiar_mi_estado('ocupado')`,
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.cambiar_mi_estado('ocupado')`)
     expect(error).toBeNull()
 
-    const { rows } = await db.query<{ estado: string }>(
-      `select estado from public.agentes where id = $1`,
-      [AGENTE],
-    )
+    const { rows } = await db.query<{ estado: string }>(`select estado from public.agentes where id = $1`, [AGENTE])
     expect(rows[0].estado).toBe('ocupado')
   })
 
@@ -429,10 +373,9 @@ describe('agente', () => {
     )
     // No hay UPDATE directo sobre clientes para nadie: o falla, o no alcanza
     // ninguna fila. Se comprueba el efecto, que es lo que importa.
-    const { rows } = await db.query<{ telefono: string | null }>(
-      `select telefono from public.clientes where id = $1`,
-      [CLIENTE],
-    )
+    const { rows } = await db.query<{ telefono: string | null }>(`select telefono from public.clientes where id = $1`, [
+      CLIENTE,
+    ])
     expect(rows[0].telefono, `el teléfono no debe cambiar (error: ${error})`).toBeNull()
   })
 
@@ -512,7 +455,7 @@ describe('agente', () => {
       )`,
     )
     expect(error).toMatch(/El cliente no existe/)
-    const { rows: despues } = await db.query<typeof antes[number]>(
+    const { rows: despues } = await db.query<(typeof antes)[number]>(
       `select descuento_educativo_estado as estado,
               descuento_educativo_nota as nota,
               descuento_educativo_revisado_por as revisado_por
@@ -524,12 +467,11 @@ describe('agente', () => {
 
   it('rechaza un estado NULL sin modificar ningún campo de revisión', async () => {
     const antes = await prepararRevisionEducativa()
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.revisar_descuento_educativo($1, $2, $3)`,
-      [CLIENTE_REVISION, null, 'No debe guardarse'],
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.revisar_descuento_educativo($1, $2, $3)`, [
+      CLIENTE_REVISION,
+      null,
+      'No debe guardarse',
+    ])
 
     expect(error).toMatch(/Estado no válido/)
     expect(await leerRevisionEducativa()).toEqual(antes)
@@ -537,12 +479,11 @@ describe('agente', () => {
 
   it('rechaza un estado textual no permitido sin modificar ningún campo de revisión', async () => {
     const antes = await prepararRevisionEducativa()
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.revisar_descuento_educativo($1, $2, $3)`,
-      [CLIENTE_REVISION, 'aprobada', 'No debe guardarse'],
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.revisar_descuento_educativo($1, $2, $3)`, [
+      CLIENTE_REVISION,
+      'aprobada',
+      'No debe guardarse',
+    ])
 
     expect(error).toMatch(/Estado no válido/)
     expect(await leerRevisionEducativa()).toEqual(antes)
@@ -562,7 +503,7 @@ describe('agente', () => {
       [CLIENTE_REVISION],
     )
     expect(error).toMatch(/Solo un agente autenticado/)
-    const { rows: despues } = await db.query<typeof antes[number]>(
+    const { rows: despues } = await db.query<(typeof antes)[number]>(
       `select descuento_educativo_estado as estado,
               descuento_educativo_nota as nota
          from public.clientes where id = $1`,
@@ -603,36 +544,22 @@ describe('cliente', () => {
   })
 
   it('no puede registrar un justificante que no existe', async () => {
-    const { error } = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.registrar_mi_justificante($1)`,
-      [`${CLIENTE}/justificante.pdf`],
-    )
+    const { error } = await como(CLIENTE, 'authenticated', `select public.registrar_mi_justificante($1)`, [
+      `${CLIENTE}/justificante.pdf`,
+    ])
     expect(error, 'la ruta debe existir en storage.objects').toMatch(/archivo subido/)
   })
 
   it('no puede registrar la carpeta de otro', async () => {
-    const { error } = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.registrar_mi_justificante($1)`,
-      [`${AGENTE}/justificante.pdf`],
-    )
+    const { error } = await como(CLIENTE, 'authenticated', `select public.registrar_mi_justificante($1)`, [
+      `${AGENTE}/justificante.pdf`,
+    ])
     expect(error).toMatch(/no pertenece/)
   })
 
   it('no puede registrar rutas anidadas ni extensiones fuera de la lista', async () => {
-    for (const ruta of [
-      `${CLIENTE}/otra/justificante.pdf`,
-      `${CLIENTE}/justificante.exe`,
-    ]) {
-      const { error } = await como(
-        CLIENTE,
-        'authenticated',
-        `select public.registrar_mi_justificante($1)`,
-        [ruta],
-      )
+    for (const ruta of [`${CLIENTE}/otra/justificante.pdf`, `${CLIENTE}/justificante.exe`]) {
+      const { error } = await como(CLIENTE, 'authenticated', `select public.registrar_mi_justificante($1)`, [ruta])
       expect(error).toMatch(/formato permitido/)
     }
   })
@@ -648,12 +575,7 @@ describe('cliente', () => {
       CLIENTE,
     ])
 
-    const { error } = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.registrar_mi_justificante($1)`,
-      [ruta],
-    )
+    const { error } = await como(CLIENTE, 'authenticated', `select public.registrar_mi_justificante($1)`, [ruta])
     expect(error).toBeNull()
 
     const { rows } = await db.query<{ estado: string; archivo: string }>(
@@ -720,48 +642,44 @@ describe('reservas', () => {
   })
 
   it('rechaza precios negativos y cantidades excesivas', async () => {
-    const negativo = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.crear_mis_reservas($1::jsonb)`,
-      [JSON.stringify([{ family: 'iphone', model_slug: '17', model_name: 'iPhone 17', variant_label: '128 GB', price: -5 }])],
-    )
+    const negativo = await como(CLIENTE, 'authenticated', `select public.crear_mis_reservas($1::jsonb)`, [
+      JSON.stringify([
+        {
+          family: 'iphone',
+          model_slug: '17',
+          model_name: 'iPhone 17',
+          variant_label: '128 GB',
+          price: -5,
+        },
+      ]),
+    ])
     expect(negativo.error).toMatch(/Precio inválido/)
 
-    const muchas = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.crear_mis_reservas($1::jsonb)`,
-      [JSON.stringify([{ family: 'iphone', model_slug: '17', model_name: 'iPhone 17', variant_label: '128 GB', price: 10, unidades: 999 }])],
-    )
+    const muchas = await como(CLIENTE, 'authenticated', `select public.crear_mis_reservas($1::jsonb)`, [
+      JSON.stringify([
+        {
+          family: 'iphone',
+          model_slug: '17',
+          model_name: 'iPhone 17',
+          variant_label: '128 GB',
+          price: 10,
+          unidades: 999,
+        },
+      ]),
+    ])
     expect(muchas.error).toMatch(/fuera de rango/)
   })
 
   it('cancela la propia y no la ajena', async () => {
     const { rows } = await db.query<{ id: string }>(`select id from public.reservas limit 1`)
 
-    const ajena = await como(
-      AGENTE,
-      'authenticated',
-      `select public.cancelar_mi_reserva($1)`,
-      [rows[0].id],
-    )
+    const ajena = await como(AGENTE, 'authenticated', `select public.cancelar_mi_reserva($1)`, [rows[0].id])
     expect(ajena.error, 'no es suya').not.toBeNull()
 
-    const propia = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.cancelar_mi_reserva($1)`,
-      [rows[0].id],
-    )
+    const propia = await como(CLIENTE, 'authenticated', `select public.cancelar_mi_reserva($1)`, [rows[0].id])
     expect(propia.error).toBeNull()
 
-    const repetida = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.cancelar_mi_reserva($1)`,
-      [rows[0].id],
-    )
+    const repetida = await como(CLIENTE, 'authenticated', `select public.cancelar_mi_reserva($1)`, [rows[0].id])
     expect(repetida.error, 'ya no está en espera').not.toBeNull()
   })
 })
@@ -778,10 +696,7 @@ describe('conversaciones: nadie escribe la fila a mano', () => {
   }
 
   it('un visitante no puede insertar una conversación directamente', async () => {
-    const { rows } = await db.query<{ id: string }>(
-      `select id from public.visitantes where auth_id = $1`,
-      [ANA],
-    )
+    const { rows } = await db.query<{ id: string }>(`select id from public.visitantes where auth_id = $1`, [ANA])
     // Ni siquiera con su propio visitor_id: la fila entera la elegía el
     // navegador —estado, agente, fechas, valoración—.
     const { error } = await como(
@@ -831,20 +746,12 @@ describe('conversaciones: nadie escribe la fila a mano', () => {
   it('el segundo agente no puede responder si la conversación ya es de otro', async () => {
     const conv = await nueva(BEA)
 
-    const primero = await como(
-      AGENTE,
-      'authenticated',
-      `select public.responder_como_agente($1, 'La atiendo yo')`,
-      [conv],
-    )
+    const primero = await como(AGENTE, 'authenticated', `select public.responder_como_agente($1, 'La atiendo yo')`, [
+      conv,
+    ])
     expect(primero.error).toBeNull()
 
-    const segundo = await como(
-      AGENTE_B,
-      'authenticated',
-      `select public.responder_como_agente($1, 'No, yo')`,
-      [conv],
-    )
+    const segundo = await como(AGENTE_B, 'authenticated', `select public.responder_como_agente($1, 'No, yo')`, [conv])
     expect(segundo.error, 'la lleva otro agente').toMatch(/otro agente/)
 
     const { rows } = await db.query<{ agente_id: string }>(
@@ -858,12 +765,7 @@ describe('conversaciones: nadie escribe la fila a mano', () => {
     const conv = await nueva(BEA)
     await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
 
-    const { error } = await como(
-      AGENTE_B,
-      'authenticated',
-      `select public.asignarme_conversacion($1)`,
-      [conv],
-    )
+    const { error } = await como(AGENTE_B, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
     expect(error).toMatch(/la lleva otro agente/i)
   })
 
@@ -872,12 +774,7 @@ describe('conversaciones: nadie escribe la fila a mano', () => {
     await como(BEA, 'anon', `select public.enviar_mensaje_visitante($1, 'hola')`, [conv])
     await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
 
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.cerrar_conversacion($1, true)`,
-      [conv],
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, true)`, [conv])
     expect(error).toBeNull()
 
     const { rows } = await db.query<{ n: number }>(
@@ -886,12 +783,7 @@ describe('conversaciones: nadie escribe la fila a mano', () => {
     )
     expect(rows[0].n, 'cerrar no borra el historial').toBeGreaterThan(0)
 
-    const despues = await como(
-      BEA,
-      'anon',
-      `select public.enviar_mensaje_visitante($1, 'y esto?')`,
-      [conv],
-    )
+    const despues = await como(BEA, 'anon', `select public.enviar_mensaje_visitante($1, 'y esto?')`, [conv])
     expect(despues.error).toMatch(/cerrada/)
   })
 
@@ -937,12 +829,9 @@ describe('mensajes: la fecha y el autor los pone el servidor', () => {
          join public.visitantes v on v.id = c.visitor_id where v.auth_id = $1 limit 1`,
       [ANA],
     )
-    const { error } = await como(
-      ANA,
-      'anon',
-      `select public.enviar_mensaje_visitante($1, '  con espacios  ')`,
-      [rows[0].id],
-    )
+    const { error } = await como(ANA, 'anon', `select public.enviar_mensaje_visitante($1, '  con espacios  ')`, [
+      rows[0].id,
+    ])
     expect(error).toBeNull()
 
     const { rows: m } = await db.query<{
@@ -966,17 +855,10 @@ describe('mensajes: la fecha y el autor los pone el servidor', () => {
          join public.visitantes v on v.id = c.visitor_id where v.auth_id = $1 limit 1`,
       [ANA],
     )
-    const vacio = await como(ANA, 'anon', `select public.enviar_mensaje_visitante($1, '   ')`, [
-      rows[0].id,
-    ])
+    const vacio = await como(ANA, 'anon', `select public.enviar_mensaje_visitante($1, '   ')`, [rows[0].id])
     expect(vacio.error).toMatch(/vacío/)
 
-    const largo = await como(
-      ANA,
-      'anon',
-      `select public.enviar_mensaje_visitante($1, repeat('x', 5000))`,
-      [rows[0].id],
-    )
+    const largo = await como(ANA, 'anon', `select public.enviar_mensaje_visitante($1, repeat('x', 5000))`, [rows[0].id])
     expect(largo.error).toMatch(/demasiado largo/)
   })
 })
@@ -1021,93 +903,65 @@ describe('reservas frente al agente', () => {
     )
     expect(despues.rows[0].price, 'el precio es inmutable').toBe(antes.rows[0].price)
     expect(despues.rows[0].cliente_id, 'el dueño es inmutable').toBe(antes.rows[0].cliente_id)
-    expect(despues.rows[0].pagado_at, 'la posición en la cola es inmutable').toEqual(
-      antes.rows[0].pagado_at,
-    )
+    expect(despues.rows[0].pagado_at, 'la posición en la cola es inmutable').toEqual(antes.rows[0].pagado_at)
 
-    const ok = await como(
-      AGENTE,
-      'authenticated',
-      `select public.cambiar_estado_reserva($1, 'disponible')`,
-      [id],
-    )
+    const ok = await como(AGENTE, 'authenticated', `select public.cambiar_estado_reserva($1, 'disponible')`, [id])
     expect(ok.error, 'en-espera → disponible es válida').toBeNull()
 
-    const mal = await como(
-      AGENTE,
-      'authenticated',
-      `select public.cambiar_estado_reserva($1, 'en-espera')`,
-      [id],
-    )
+    const mal = await como(AGENTE, 'authenticated', `select public.cambiar_estado_reserva($1, 'en-espera')`, [id])
     expect(mal.error, 'disponible → en-espera no lo es').toMatch(/Transición no permitida/)
   })
 
   it('un cliente no puede usar el RPC del agente', async () => {
     const id = await reserva()
-    const { error } = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.cambiar_estado_reserva($1, 'cancelada')`,
-      [id],
-    )
+    const { error } = await como(CLIENTE, 'authenticated', `select public.cambiar_estado_reserva($1, 'cancelada')`, [
+      id,
+    ])
     expect(error).toMatch(/agente dado de alta/)
   })
 
   it('el supervisor no obtiene UPDATE directo por serlo', async () => {
     const id = await reserva()
-    await como(
-      SUPERVISOR,
-      'authenticated',
-      `update public.reservas set price = 1 where id = $1`,
-      [id],
-    )
-    const { rows } = await db.query<{ price: string }>(
-      `select price from public.reservas where id = $1`,
-      [id],
-    )
+    await como(SUPERVISOR, 'authenticated', `update public.reservas set price = 1 where id = $1`, [id])
+    const { rows } = await db.query<{ price: string }>(`select price from public.reservas where id = $1`, [id])
     expect(Number(rows[0].price)).toBe(1329)
   })
 
   it('una cuenta de agente sin ficha de cliente no puede reservar', async () => {
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.crear_mis_reservas($1::jsonb)`,
-      [
-        JSON.stringify([
-          { family: 'iphone', model_slug: '17', model_name: 'iPhone 17', variant_label: '128 GB', price: 10 },
-        ]),
-      ],
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.crear_mis_reservas($1::jsonb)`, [
+      JSON.stringify([
+        {
+          family: 'iphone',
+          model_slug: '17',
+          model_name: 'iPhone 17',
+          variant_label: '128 GB',
+          price: 10,
+        },
+      ]),
+    ])
     expect(error).toMatch(/ficha de cliente/)
   })
 
   it('rechaza textos vacíos, listas vacías y precios con más de dos decimales', async () => {
-    const vacio = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.crear_mis_reservas($1::jsonb)`,
-      [JSON.stringify([{ family: '  ', model_slug: 'x', model_name: 'y', variant_label: 'z', price: 1 }])],
-    )
+    const vacio = await como(CLIENTE, 'authenticated', `select public.crear_mis_reservas($1::jsonb)`, [
+      JSON.stringify([{ family: '  ', model_slug: 'x', model_name: 'y', variant_label: 'z', price: 1 }]),
+    ])
     expect(vacio.error).toMatch(/Falta family/)
 
-    const lista = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.crear_mis_reservas('[]'::jsonb)`,
-    )
+    const lista = await como(CLIENTE, 'authenticated', `select public.crear_mis_reservas('[]'::jsonb)`)
     expect(lista.error).toMatch(/ninguna línea/)
 
-    const decimales = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.crear_mis_reservas($1::jsonb)`,
-      [
-        JSON.stringify([
-          { family: 'iphone', model_slug: '17', model_name: 'iPhone 17', variant_label: '128 GB', price: 10.123 },
-        ]),
-      ],
-    )
+    const decimales = await como(CLIENTE, 'authenticated', `select public.crear_mis_reservas($1::jsonb)`, [
+      JSON.stringify([
+        {
+          family: 'iphone',
+          model_slug: '17',
+          model_name: 'iPhone 17',
+          variant_label: '128 GB',
+          price: 10.123,
+        },
+      ]),
+    ])
     expect(decimales.error).toMatch(/dos decimales/)
   })
 })
@@ -1115,25 +969,14 @@ describe('reservas frente al agente', () => {
 describe('agentes entre sí', () => {
   it('B no puede cambiar el estado operativo de A', async () => {
     await como(AGENTE_B, 'authenticated', `select public.cambiar_mi_estado('ausente')`)
-    const { rows } = await db.query<{ estado: string }>(
-      `select estado from public.agentes where id = $1`,
-      [AGENTE],
-    )
+    const { rows } = await db.query<{ estado: string }>(`select estado from public.agentes where id = $1`, [AGENTE])
     // `cambiar_mi_estado` no acepta a quién: siempre es la sesión.
     expect(rows[0].estado, 'A no cambia porque lo pida B').not.toBe('ausente')
   })
 
   it('ser supervisor no da UPDATE directo sobre agentes', async () => {
-    await como(
-      SUPERVISOR,
-      'authenticated',
-      `update public.agentes set rol = 'supervisor' where id = $1`,
-      [AGENTE],
-    )
-    const { rows } = await db.query<{ rol: string }>(
-      `select rol from public.agentes where id = $1`,
-      [AGENTE],
-    )
+    await como(SUPERVISOR, 'authenticated', `update public.agentes set rol = 'supervisor' where id = $1`, [AGENTE])
+    const { rows } = await db.query<{ rol: string }>(`select rol from public.agentes where id = $1`, [AGENTE])
     expect(rows[0].rol).toBe('agente')
   })
 })
@@ -1151,10 +994,7 @@ describe('autorización de las operaciones sobre conversaciones', () => {
   async function nuevaAbierta(): Promise<string> {
     siguiente += 1
     const uid = `aaaaaaaa-0000-4000-8000-${String(siguiente).padStart(12, '0')}`
-    await db.query('insert into auth.users (id, email) values ($1, $2)', [
-      uid,
-      `v${siguiente}@ejemplo.test`,
-    ])
+    await db.query('insert into auth.users (id, email) values ($1, $2)', [uid, `v${siguiente}@ejemplo.test`])
     const { rows } = await como<{ abrir_conversacion: string }>(
       uid,
       'anon',
@@ -1181,12 +1021,7 @@ describe('autorización de las operaciones sobre conversaciones', () => {
     expect(previo.rows[0].estado, 'punto de partida').toBe('cerrada')
     expect(previo.rows[0].agente_id, 'y sin agente, que es lo que aísla el caso').toBeNull()
 
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.asignarme_conversacion($1)`,
-      [conv],
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
     expect(error).toMatch(/cerrada/)
 
     const despues = await db.query<{ estado: string; agente_id: string | null }>(
@@ -1202,12 +1037,7 @@ describe('autorización de las operaciones sobre conversaciones', () => {
     await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
     await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
 
-    const { error } = await como(
-      AGENTE_B,
-      'authenticated',
-      `select public.asignarme_conversacion($1)`,
-      [conv],
-    )
+    const { error } = await como(AGENTE_B, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
     expect(error).not.toBeNull()
     const { rows } = await db.query<{ agente_id: string }>(
       `select agente_id from public.conversaciones where id = $1`,
@@ -1218,12 +1048,7 @@ describe('autorización de las operaciones sobre conversaciones', () => {
 
   it('una conversación abierta y libre sí puede reclamarse', async () => {
     const conv = await nuevaAbierta()
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.asignarme_conversacion($1)`,
-      [conv],
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
     expect(error).toBeNull()
     const { rows } = await db.query<{ agente_id: string }>(
       `select agente_id from public.conversaciones where id = $1`,
@@ -1244,12 +1069,7 @@ describe('autorización de las operaciones sobre conversaciones', () => {
     )
 
     for (const quien of [AGENTE, SUPERVISOR]) {
-      const { error } = await como(
-        quien,
-        'authenticated',
-        `select public.liberar_mi_conversacion($1)`,
-        [conv],
-      )
+      const { error } = await como(quien, 'authenticated', `select public.liberar_mi_conversacion($1)`, [conv])
       expect(error, 'una cerrada conserva quién la atendió').toMatch(/cerrada|no es tuya/)
     }
 
@@ -1267,20 +1087,10 @@ describe('autorización de las operaciones sobre conversaciones', () => {
     // cualquier UUID. Si `liberar_mi_conversacion()` solo comprobara
     // `agente_id = auth.uid()`, ese cliente podría retirar la asignación.
     const conv = await nuevaAbierta()
-    await db.query(`update public.conversaciones set agente_id = $1 where id = $2`, [
-      CLIENTE,
-      conv,
-    ])
+    await db.query(`update public.conversaciones set agente_id = $1 where id = $2`, [CLIENTE, conv])
 
-    const { error } = await como(
-      CLIENTE,
-      'authenticated',
-      `select public.liberar_mi_conversacion($1)`,
-      [conv],
-    )
-    expect(error, 'tener el UUID ahí no convierte a nadie en agente').toMatch(
-      /agente dado de alta/,
-    )
+    const { error } = await como(CLIENTE, 'authenticated', `select public.liberar_mi_conversacion($1)`, [conv])
+    expect(error, 'tener el UUID ahí no convierte a nadie en agente').toMatch(/agente dado de alta/)
 
     const { rows } = await db.query<{ agente_id: string }>(
       `select agente_id from public.conversaciones where id = $1`,
@@ -1292,57 +1102,32 @@ describe('autorización de las operaciones sobre conversaciones', () => {
   it('un anónimo no puede liberar ninguna conversación', async () => {
     const conv = await nuevaAbierta()
     await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
-    const { error } = await como(
-      ANA,
-      'anon',
-      `select public.liberar_mi_conversacion($1)`,
-      [conv],
-    )
+    const { error } = await como(ANA, 'anon', `select public.liberar_mi_conversacion($1)`, [conv])
     expect(error).not.toBeNull()
   })
 
   it('asignarse la propia otra vez es idempotente', async () => {
     const conv = await nuevaAbierta()
     await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.asignarme_conversacion($1)`,
-      [conv],
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
     expect(error).toBeNull()
   })
 
   it('un agente normal no puede cerrar una conversación libre', async () => {
     const conv = await nuevaAbierta()
-    const { error } = await como(
-      AGENTE,
-      'authenticated',
-      `select public.cerrar_conversacion($1, false)`,
-      [conv],
-    )
+    const { error } = await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
     // Una conversación libre es la de otro compañero que aún no la ha cogido.
     expect(error, 'hay que asignársela primero').toMatch(/no es tuya/)
   })
 
   it('el supervisor sí puede cerrar una libre y una ajena', async () => {
     const libre = await nuevaAbierta()
-    const libreOk = await como(
-      SUPERVISOR,
-      'authenticated',
-      `select public.cerrar_conversacion($1, false)`,
-      [libre],
-    )
+    const libreOk = await como(SUPERVISOR, 'authenticated', `select public.cerrar_conversacion($1, false)`, [libre])
     expect(libreOk.error).toBeNull()
 
     const ajena = await nuevaAbierta()
     await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [ajena])
-    const ajenaOk = await como(
-      SUPERVISOR,
-      'authenticated',
-      `select public.cerrar_conversacion($1, false)`,
-      [ajena],
-    )
+    const ajenaOk = await como(SUPERVISOR, 'authenticated', `select public.cerrar_conversacion($1, false)`, [ajena])
     expect(ajenaOk.error).toBeNull()
   })
 
@@ -1350,21 +1135,11 @@ describe('autorización de las operaciones sobre conversaciones', () => {
     const conv = await nuevaAbierta()
     await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
 
-    const cerrar = await como(
-      AGENTE_B,
-      'authenticated',
-      `select public.cerrar_conversacion($1, false)`,
-      [conv],
-    )
+    const cerrar = await como(AGENTE_B, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
     expect(cerrar.error).toMatch(/no es tuya/)
 
     await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
-    const reabrir = await como(
-      AGENTE_B,
-      'authenticated',
-      `select public.reabrir_conversacion($1)`,
-      [conv],
-    )
+    const reabrir = await como(AGENTE_B, 'authenticated', `select public.reabrir_conversacion($1)`, [conv])
     expect(reabrir.error).toMatch(/no es tuya/)
   })
 
@@ -1374,10 +1149,11 @@ describe('autorización de las operaciones sobre conversaciones', () => {
     await como(AGENTE, 'authenticated', `select public.cerrar_conversacion($1, false)`, [conv])
     await como(AGENTE, 'authenticated', `select public.reabrir_conversacion($1)`, [conv])
 
-    const { rows } = await db.query<{ estado: string; agente_id: string; cerrada_at: string | null }>(
-      `select estado, agente_id, cerrada_at from public.conversaciones where id = $1`,
-      [conv],
-    )
+    const { rows } = await db.query<{
+      estado: string
+      agente_id: string
+      cerrada_at: string | null
+    }>(`select estado, agente_id, cerrada_at from public.conversaciones where id = $1`, [conv])
     expect(rows[0].estado).toBe('abierta')
     expect(rows[0].agente_id, 'reabrir no reasigna').toBe(AGENTE)
     expect(rows[0].cerrada_at).toBeNull()
@@ -1385,30 +1161,15 @@ describe('autorización de las operaciones sobre conversaciones', () => {
 
   it('liberar exige que esté abierta y asignada a quien libera', async () => {
     const sinAgente = await nuevaAbierta()
-    const nada = await como(
-      AGENTE,
-      'authenticated',
-      `select public.liberar_mi_conversacion($1)`,
-      [sinAgente],
-    )
+    const nada = await como(AGENTE, 'authenticated', `select public.liberar_mi_conversacion($1)`, [sinAgente])
     expect(nada.error, 'no hay nada que liberar').not.toBeNull()
 
     const conv = await nuevaAbierta()
     await como(AGENTE, 'authenticated', `select public.asignarme_conversacion($1)`, [conv])
-    const ajena = await como(
-      AGENTE_B,
-      'authenticated',
-      `select public.liberar_mi_conversacion($1)`,
-      [conv],
-    )
+    const ajena = await como(AGENTE_B, 'authenticated', `select public.liberar_mi_conversacion($1)`, [conv])
     expect(ajena.error, 'no es de B').not.toBeNull()
 
-    const propia = await como(
-      AGENTE,
-      'authenticated',
-      `select public.liberar_mi_conversacion($1)`,
-      [conv],
-    )
+    const propia = await como(AGENTE, 'authenticated', `select public.liberar_mi_conversacion($1)`, [conv])
     expect(propia.error).toBeNull()
   })
 
@@ -1461,12 +1222,7 @@ describe('máquina de estados de las reservas', () => {
   for (const [desde, hasta] of permitidas) {
     it(`permite ${desde} → ${hasta}`, async () => {
       const id = await reservaEn(desde)
-      const { error } = await como(
-        AGENTE,
-        'authenticated',
-        `select public.cambiar_estado_reserva($1, $2)`,
-        [id, hasta],
-      )
+      const { error } = await como(AGENTE, 'authenticated', `select public.cambiar_estado_reserva($1, $2)`, [id, hasta])
       expect(error).toBeNull()
     })
   }
@@ -1480,17 +1236,9 @@ describe('máquina de estados de las reservas', () => {
   for (const [desde, hasta] of rechazadas) {
     it(`rechaza ${desde} → ${hasta}`, async () => {
       const id = await reservaEn(desde)
-      const { error } = await como(
-        AGENTE,
-        'authenticated',
-        `select public.cambiar_estado_reserva($1, $2)`,
-        [id, hasta],
-      )
+      const { error } = await como(AGENTE, 'authenticated', `select public.cambiar_estado_reserva($1, $2)`, [id, hasta])
       expect(error).toMatch(/Transición no permitida/)
-      const { rows } = await db.query<{ estado: string }>(
-        `select estado from public.reservas where id = $1`,
-        [id],
-      )
+      const { rows } = await db.query<{ estado: string }>(`select estado from public.reservas where id = $1`, [id])
       expect(rows[0].estado, 'el estado no se mueve').toBe(desde)
     })
   }
@@ -1501,29 +1249,14 @@ describe('máquina de estados de las reservas', () => {
     // decisiones tomadas sobre la misma lectura se apliquen las dos.
     const id = await reservaEn('disponible')
 
-    const primera = await como(
-      AGENTE,
-      'authenticated',
-      `select public.cambiar_estado_reserva($1, 'completada')`,
-      [id],
-    )
+    const primera = await como(AGENTE, 'authenticated', `select public.cambiar_estado_reserva($1, 'completada')`, [id])
     expect(primera.error).toBeNull()
 
     // La segunda venía decidida cuando la reserva aún estaba 'disponible'.
-    const segunda = await como(
-      AGENTE_B,
-      'authenticated',
-      `select public.cambiar_estado_reserva($1, 'cancelada')`,
-      [id],
-    )
-    expect(segunda.error, 'completada → cancelada no está permitida').toMatch(
-      /Transición no permitida/,
-    )
+    const segunda = await como(AGENTE_B, 'authenticated', `select public.cambiar_estado_reserva($1, 'cancelada')`, [id])
+    expect(segunda.error, 'completada → cancelada no está permitida').toMatch(/Transición no permitida/)
 
-    const { rows } = await db.query<{ estado: string }>(
-      `select estado from public.reservas where id = $1`,
-      [id],
-    )
+    const { rows } = await db.query<{ estado: string }>(`select estado from public.reservas where id = $1`, [id])
     expect(rows[0].estado).toBe('completada')
   })
 })
@@ -1555,10 +1288,7 @@ describe('la fecha de los mensajes la pone el servidor', () => {
     // dejaba pasar cualquier fecha antigua.
     expect(t).toBeGreaterThanOrEqual(antes - TOLERANCIA_MS)
     expect(t).toBeLessThanOrEqual(despues + TOLERANCIA_MS)
-    expect(
-      new Date(rows[0].ultimo).getTime(),
-      'ultimo_mensaje_at debe coincidir con el mensaje',
-    ).toBe(t)
+    expect(new Date(rows[0].ultimo).getTime(), 'ultimo_mensaje_at debe coincidir con el mensaje').toBe(t)
   })
 
   it('la respuesta del agente también, y avanza la fecha', async () => {
@@ -1575,7 +1305,7 @@ describe('la fecha de los mensajes la pone el servidor', () => {
       [id],
     )
 
-    await new Promise((r) => setTimeout(r, 5))
+    await new Promise((resolve) => setTimeout(resolve, 5))
     const antes = Date.now()
     await como(AGENTE, 'authenticated', `select public.responder_como_agente($1, 'respondo')`, [id])
     const despues = Date.now()
@@ -1590,10 +1320,9 @@ describe('la fecha de los mensajes la pone el servidor', () => {
     expect(t).toBeGreaterThanOrEqual(antes - TOLERANCIA_MS)
     expect(t).toBeLessThanOrEqual(despues + TOLERANCIA_MS)
     expect(new Date(rows[0].ultimo).getTime()).toBe(t)
-    expect(
-      new Date(rows[0].ultimo).getTime(),
-      'la fecha avanza respecto al mensaje anterior',
-    ).toBeGreaterThan(new Date(previa[0].ultimo).getTime())
+    expect(new Date(rows[0].ultimo).getTime(), 'la fecha avanza respecto al mensaje anterior').toBeGreaterThan(
+      new Date(previa[0].ultimo).getTime(),
+    )
     expect(rows[0].agente_id).toBe(AGENTE)
   })
 

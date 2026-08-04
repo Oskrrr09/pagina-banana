@@ -136,9 +136,7 @@ test.describe('detección automática', () => {
 
     const contexto = await browser.newContext({ locale: 'ja-JP' })
     const japones = await contexto.newPage()
-    await japones.addInitScript(() =>
-      localStorage.setItem('banana:favorite-store-prompt', 'dismissed'),
-    )
+    await japones.addInitScript(() => localStorage.setItem('banana:favorite-store-prompt', 'dismissed'))
     await japones.goto(url)
     await expect(japones.locator('html')).toHaveAttribute('lang', 'es')
     await contexto.close()
@@ -164,11 +162,41 @@ test('en la app no hay selector de idioma y todo va en castellano', async ({ pag
 
 test('soporte y el selector de modelos traducen sus estados interactivos', async ({ page }) => {
   const escenarios = [
-    { code: 'es', search: 'Buscar en la ayuda', repair: 'Ir a Servicio Técnico', picker: /^Elegir modelo de/, modelSearch: 'Buscar iPhone' },
-    { code: 'en', search: 'Search help', repair: 'Go to Technical Service', picker: /^Choose a iPhone model/, modelSearch: 'Search iPhone' },
-    { code: 'de', search: 'Hilfe durchsuchen', repair: 'Zum technischen Service', picker: /^iPhone-Modell auswählen/, modelSearch: 'iPhone suchen' },
-    { code: 'fr', search: 'Rechercher dans l’aide', repair: 'Accéder au service technique', picker: /^Choisir un modèle de iPhone/, modelSearch: 'Rechercher iPhone' },
-    { code: 'it', search: 'Cerca nell’assistenza', repair: 'Vai al servizio tecnico', picker: /^Scegli un modello di iPhone/, modelSearch: 'Cerca iPhone' },
+    {
+      code: 'es',
+      search: 'Buscar en la ayuda',
+      repair: 'Ir a Servicio Técnico',
+      picker: /^Elegir modelo de/,
+      modelSearch: 'Buscar iPhone',
+    },
+    {
+      code: 'en',
+      search: 'Search help',
+      repair: 'Go to Technical Service',
+      picker: /^Choose a iPhone model/,
+      modelSearch: 'Search iPhone',
+    },
+    {
+      code: 'de',
+      search: 'Hilfe durchsuchen',
+      repair: 'Zum technischen Service',
+      picker: /^iPhone-Modell auswählen/,
+      modelSearch: 'iPhone suchen',
+    },
+    {
+      code: 'fr',
+      search: 'Rechercher dans l’aide',
+      repair: 'Accéder au service technique',
+      picker: /^Choisir un modèle de iPhone/,
+      modelSearch: 'Rechercher iPhone',
+    },
+    {
+      code: 'it',
+      search: 'Cerca nell’assistenza',
+      repair: 'Vai al servizio tecnico',
+      picker: /^Scegli un modello di iPhone/,
+      modelSearch: 'Cerca iPhone',
+    },
   ] as const
 
   for (const escenario of escenarios) {

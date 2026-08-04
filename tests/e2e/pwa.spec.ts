@@ -24,10 +24,7 @@ test.describe('identidad de app del panel', () => {
       'href',
       '/pagina-banana/icons/agente-apple-touch-180.png',
     )
-    await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
-      'content',
-      'Banana Agente',
-    )
+    await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content', 'Banana Agente')
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#ffce1f')
   })
 

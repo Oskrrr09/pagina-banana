@@ -139,9 +139,7 @@ test('un visitante no puede leer los mensajes de otra conversación', async () =
 
   const { data } = await bea.db.from('mensajes').select('texto')
   const textos = (data ?? []).map((m) => m.texto)
-  expect(textos, 'un anónimo no puede leer conversaciones ajenas').not.toContain(
-    'secreto de Ana',
-  )
+  expect(textos, 'un anónimo no puede leer conversaciones ajenas').not.toContain('secreto de Ana')
 })
 
 test('un visitante no puede escribir en la conversación de otro', async () => {
@@ -179,11 +177,7 @@ test('un visitante no puede cambiar el nombre ni el email de otro', async () => 
 
   await ana.db.rpc('abrir_conversacion', { p_nombre: 'Ana', p_email: emailAna })
 
-  const { data: fichaAna } = await ana.db
-    .from('visitantes')
-    .select('id')
-    .eq('email', emailAna)
-    .single()
+  const { data: fichaAna } = await ana.db.from('visitantes').select('id').eq('email', emailAna).single()
 
   const { data: tocadas } = await bea.db
     .from('visitantes')
@@ -193,11 +187,7 @@ test('un visitante no puede cambiar el nombre ni el email de otro', async () => 
 
   expect(tocadas ?? [], 'la actualización no debe alcanzar ninguna fila ajena').toEqual([])
 
-  const { data: despues } = await ana.db
-    .from('visitantes')
-    .select('nombre')
-    .eq('auth_id', ana.uid)
-    .single()
+  const { data: despues } = await ana.db.from('visitantes').select('nombre').eq('auth_id', ana.uid).single()
   expect(despues!.nombre, 'el nombre debe seguir intacto').toBe('Ana')
 })
 
@@ -245,10 +235,7 @@ async function clienteRegistrado(sufijo: string) {
 }
 
 /** Crea una cuenta de agente real en GoTrue y abre una sesión sin service_role. */
-async function agenteRegistrado(
-  sufijo: string,
-  rol: 'agente' | 'supervisor' = 'agente',
-) {
+async function agenteRegistrado(sufijo: string, rol: 'agente' | 'supervisor' = 'agente') {
   const admin = clienteServicio()
   const email = `${marca(`agente-${sufijo}`)}@ejemplo.test`
   const password = 'prueba-rls-agente-1234'
@@ -298,21 +285,11 @@ test('un cliente no puede leer los pedidos de otro', async () => {
 test('un cliente no puede aprobarse su propio descuento educativo', async () => {
   const uno = await clienteRegistrado('descuento')
 
-  await uno.db
-    .from('clientes')
-    .update({ descuento_educativo_estado: 'aprobado' })
-    .eq('id', uno.uid)
+  await uno.db.from('clientes').update({ descuento_educativo_estado: 'aprobado' }).eq('id', uno.uid)
 
-  const { data } = await uno.db
-    .from('clientes')
-    .select('descuento_educativo_estado')
-    .eq('id', uno.uid)
-    .single()
+  const { data } = await uno.db.from('clientes').select('descuento_educativo_estado').eq('id', uno.uid).single()
 
-  expect(
-    data!.descuento_educativo_estado,
-    'el estado del descuento solo lo mueve el agente',
-  ).not.toBe('aprobado')
+  expect(data!.descuento_educativo_estado, 'el estado del descuento solo lo mueve el agente').not.toBe('aprobado')
 })
 
 test('un visitante no puede colar una bienvenida falsa firmada por el bot', async () => {
@@ -339,10 +316,7 @@ test('un visitante no puede asignarse el cliente_id de otro', async () => {
   const otro = await clienteRegistrado('victima')
   await ana.db.rpc('abrir_conversacion', { p_nombre: 'Ana' })
 
-  const { error } = await ana.db
-    .from('visitantes')
-    .update({ cliente_id: otro.uid })
-    .eq('auth_id', ana.uid)
+  const { error } = await ana.db.from('visitantes').update({ cliente_id: otro.uid }).eq('auth_id', ana.uid)
 
   expect(error, 'el disparador debe rechazar el cambio de cliente_id').not.toBeNull()
 })
@@ -362,11 +336,7 @@ test('un cliente vincula su propio chat con su cuenta', async () => {
   const { error } = await uno.db.rpc('vincular_mi_visitante_a_cliente')
   expect(error, 'la vinculación legítima debe funcionar').toBeNull()
 
-  const { data } = await uno.db
-    .from('visitantes')
-    .select('cliente_id')
-    .eq('auth_id', uno.uid)
-    .single()
+  const { data } = await uno.db.from('visitantes').select('cliente_id').eq('auth_id', uno.uid).single()
   expect(data!.cliente_id).toBe(uno.uid)
 })
 
@@ -516,11 +486,7 @@ test('la reserva solo cambia por RPC de agente y conserva sus campos protegidos'
 
   expect(tocadas ?? [], 'no debe existir UPDATE directo del cliente').toEqual([])
 
-  const { data } = await uno.db
-    .from('reservas')
-    .select('price, estado, pagado_at')
-    .eq('id', reserva)
-    .single()
+  const { data } = await uno.db.from('reservas').select('price, estado, pagado_at').eq('id', reserva).single()
   expect(Number(data!.price)).toBe(1329)
   expect(data!.estado).toBe('en-espera')
 
@@ -545,11 +511,7 @@ test('la reserva solo cambia por RPC de agente y conserva sus campos protegidos'
     p_estado: 'cancelada',
   })
   expect(clienteComoAgente).not.toBeNull()
-  const { data: sinAtaque } = await uno.db
-    .from('reservas')
-    .select('estado')
-    .eq('id', reserva)
-    .single()
+  const { data: sinAtaque } = await uno.db.from('reservas').select('estado').eq('id', reserva).single()
   expect(sinAtaque!.estado).toBe('disponible')
 })
 
@@ -623,8 +585,7 @@ test('una cuenta normal no puede invocar operaciones de agente', async () => {
   })
   expect(revisionIlegal).not.toBeNull()
   expect(
-    (await cliente.db.from('clientes').select('descuento_educativo_estado').single()).data!
-      .descuento_educativo_estado,
+    (await cliente.db.from('clientes').select('descuento_educativo_estado').single()).data!.descuento_educativo_estado,
   ).toBeNull()
 
   const { error: revisionValida } = await agente.db.rpc('revisar_descuento_educativo', {
@@ -657,10 +618,7 @@ test('una cuenta normal no puede invocar operaciones de agente', async () => {
       'descuento_educativo_estado, descuento_educativo_nota, descuento_educativo_revisado_por, descuento_educativo_revisado_at',
     )
     .single()
-  expect(
-    despuesDelNulo,
-    'el estado NULL no cambia estado, nota, revisor ni fecha de revisión',
-  ).toEqual(revisado)
+  expect(despuesDelNulo, 'el estado NULL no cambia estado, nota, revisor ni fecha de revisión').toEqual(revisado)
 
   const { error: errorInexistente } = await agente.db.rpc('revisar_descuento_educativo', {
     p_cliente_id: crypto.randomUUID(),
@@ -669,8 +627,7 @@ test('una cuenta normal no puede invocar operaciones de agente', async () => {
   })
   expect(errorInexistente?.message).toContain('El cliente no existe')
   expect(
-    (await cliente.db.from('clientes').select('descuento_educativo_estado').single()).data!
-      .descuento_educativo_estado,
+    (await cliente.db.from('clientes').select('descuento_educativo_estado').single()).data!.descuento_educativo_estado,
     'el fallo sobre otro UUID no altera la ficha legítima',
   ).toBe('aprobado')
 })
@@ -691,11 +648,7 @@ test('un agente no puede ascenderse ni cambiar su ficha directamente', async () 
   })
   expect(errorEstado, 'el cambio acotado de estado sí debe funcionar').toBeNull()
 
-  const { data } = await agente.db
-    .from('agentes')
-    .select('rol, nombre, estado')
-    .eq('id', agente.uid)
-    .single()
+  const { data } = await agente.db.from('agentes').select('rol, nombre, estado').eq('id', agente.uid).single()
   expect(data!.rol).toBe('agente')
   expect(data!.nombre).not.toBe('Me ascendí')
   expect(data!.estado).toBe('ocupado')
@@ -716,35 +669,27 @@ test('cerrar y valorar exige asignación y respeta al dueño del chat', async ()
     p_solicitar_valoracion: true,
   })
   expect(sinAsignar, 'un agente normal no cierra una conversación libre').not.toBeNull()
-  expect(
-    (await agente.db.from('conversaciones').select('estado').eq('id', conv).single()).data!.estado,
-  ).toBe('abierta')
+  expect((await agente.db.from('conversaciones').select('estado').eq('id', conv).single()).data!.estado).toBe('abierta')
 
-  expect(
-    (await agente.db.rpc('asignarme_conversacion', { p_conversacion_id: conv })).error,
-  ).toBeNull()
+  expect((await agente.db.rpc('asignarme_conversacion', { p_conversacion_id: conv })).error).toBeNull()
 
   const { error: liberaAjena } = await otroAgente.db.rpc('liberar_mi_conversacion', {
     p_conversacion_id: conv,
   })
   expect(liberaAjena, 'un agente normal no libera la asignación de otro').not.toBeNull()
-  expect(
-    (await otroAgente.db.from('conversaciones').select('agente_id').eq('id', conv).single()).data!
-      .agente_id,
-  ).toBe(agente.uid)
+  expect((await otroAgente.db.from('conversaciones').select('agente_id').eq('id', conv).single()).data!.agente_id).toBe(
+    agente.uid,
+  )
 
   expect(
     (await supervisor.db.rpc('liberar_mi_conversacion', { p_conversacion_id: conv })).error,
     'el supervisor sí puede liberar una asignación ajena',
   ).toBeNull()
   expect(
-    (await supervisor.db.from('conversaciones').select('agente_id').eq('id', conv).single()).data!
-      .agente_id,
+    (await supervisor.db.from('conversaciones').select('agente_id').eq('id', conv).single()).data!.agente_id,
   ).toBeNull()
 
-  expect(
-    (await agente.db.rpc('asignarme_conversacion', { p_conversacion_id: conv })).error,
-  ).toBeNull()
+  expect((await agente.db.rpc('asignarme_conversacion', { p_conversacion_id: conv })).error).toBeNull()
   expect(
     (
       await supervisor.db.rpc('cerrar_conversacion', {
@@ -809,22 +754,18 @@ test('Storage aísla carpetas, permite upsert propio y deja leer al agente', asy
 
   expect(
     (
-      await bucket.upload(
-        `${uno.uid}/justificante.txt`,
-        new Blob(['texto no permitido'], { type: 'text/plain' }),
-        { contentType: 'text/plain' },
-      )
+      await bucket.upload(`${uno.uid}/justificante.txt`, new Blob(['texto no permitido'], { type: 'text/plain' }), {
+        contentType: 'text/plain',
+      })
     ).error,
     'Storage debe rechazar un MIME no permitido aunque se use la API directamente',
   ).not.toBeNull()
 
   expect(
     (
-      await bucket.upload(
-        `${uno.uid}/otra/justificante.pdf`,
-        new Blob(['ruta anidada'], { type: 'application/pdf' }),
-        { contentType: 'application/pdf' },
-      )
+      await bucket.upload(`${uno.uid}/otra/justificante.pdf`, new Blob(['ruta anidada'], { type: 'application/pdf' }), {
+        contentType: 'application/pdf',
+      })
     ).error,
     'la política no admite objetos fuera del nombre canónico de la carpeta propia',
   ).not.toBeNull()

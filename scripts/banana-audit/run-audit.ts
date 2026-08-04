@@ -120,9 +120,7 @@ function anonymize(text: string | null | undefined): string {
   return text
     .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[email]')
     .replace(/\+?\d[\d\s().-]{7,}/g, '[num]')
-    .replace(/\b[0-9A-Z]{6,}\b/g, (match) =>
-      /[a-z]/.test(match) ? match : '[id]',
-    )
+    .replace(/\b[0-9A-Z]{6,}\b/g, (match) => (/[a-z]/.test(match) ? match : '[id]'))
     .trim()
 }
 
@@ -171,9 +169,18 @@ async function auditPage(
     .filter(Boolean)
     .slice(0, 5)
 
-  const linkCount = await page.locator('a[href]').count().catch(() => 0)
-  const imageCount = await page.locator('img').count().catch(() => 0)
-  const imagesWithoutAlt = await page.locator('img:not([alt])').count().catch(() => 0)
+  const linkCount = await page
+    .locator('a[href]')
+    .count()
+    .catch(() => 0)
+  const imageCount = await page
+    .locator('img')
+    .count()
+    .catch(() => 0)
+  const imagesWithoutAlt = await page
+    .locator('img:not([alt])')
+    .count()
+    .catch(() => 0)
   const formFieldsWithoutLabel = await page
     .locator('input:not([type=hidden]):not([aria-label]):not([aria-labelledby])')
     .evaluateAll((nodes) => {
@@ -191,9 +198,7 @@ async function auditPage(
 
   const screenshot = resolve(OUTPUT_DIR, `${project}-${entry.id}.png`)
   mkdirSync(dirname(screenshot), { recursive: true })
-  await page
-    .screenshot({ path: screenshot, fullPage: false, timeout: 15_000 })
-    .catch(() => undefined)
+  await page.screenshot({ path: screenshot, fullPage: false, timeout: 15_000 }).catch(() => undefined)
 
   await page.close()
 

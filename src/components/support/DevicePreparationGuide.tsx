@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { isolateModalBranch } from '../../lib/modalIsolation'
 import { Icon } from '../ui/Icon'
@@ -46,13 +39,7 @@ function focusablesDentro(panel: HTMLElement): HTMLElement[] {
   )
 }
 
-export function DevicePreparationGuide({
-  open,
-  onClose,
-}: {
-  open: boolean
-  onClose: () => void
-}) {
+export function DevicePreparationGuide({ open, onClose }: { open: boolean; onClose: () => void }) {
   const titleId = useId()
   const descId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
@@ -161,10 +148,13 @@ export function DevicePreparationGuide({
   if (!open) return null
 
   const canAdvance =
-    step === 'backup' ? checked.backup :
-    step === 'antitheft' ? checked.antitheft :
-    step === 'find-my' ? checked['find-my'] :
-    true
+    step === 'backup'
+      ? checked.backup
+      : step === 'antitheft'
+        ? checked.antitheft
+        : step === 'find-my'
+          ? checked['find-my']
+          : true
 
   const goNext = () => {
     if (!canAdvance) return
@@ -177,10 +167,7 @@ export function DevicePreparationGuide({
   }
 
   return (
-    <div
-      data-preparation-root
-      className="fixed inset-0 z-[95] flex items-end justify-center sm:items-center"
-    >
+    <div data-preparation-root className="fixed inset-0 z-[95] flex items-end justify-center sm:items-center">
       {/* Fondo: no cierra al hacer clic para no perder el progreso por
           accidente. La única salida es Escape o el botón "Cerrar guía". */}
       <div className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" aria-hidden="true" />
@@ -199,9 +186,7 @@ export function DevicePreparationGuide({
         {/* Cabecera fija */}
         <div className="flex items-start justify-between gap-3 border-b border-line px-6 pb-4 pt-5">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-              Guía · Servicio técnico
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Guía · Servicio técnico</p>
             <h2 id={titleId} className="mt-1 text-lg font-bold text-ink">
               Preparar mi dispositivo
             </h2>
@@ -223,13 +208,12 @@ export function DevicePreparationGuide({
         {/* Progreso */}
         <div className="px-6 pt-4" aria-live="polite">
           <div className="flex items-center justify-between text-xs font-semibold text-ink">
-            <span>Paso {stepNumber} de {totalSteps}</span>
+            <span>
+              Paso {stepNumber} de {totalSteps}
+            </span>
             <span className="text-muted">{step === 'done' ? 'Resumen' : 'Preparación'}</span>
           </div>
-          <ol
-            aria-label="Progreso de la guía de preparación"
-            className="mt-2 flex gap-1.5"
-          >
+          <ol aria-label="Progreso de la guía de preparación" className="mt-2 flex gap-1.5">
             {STEP_ORDER.map((key, i) => {
               const active = i === stepIndex
               const done = i < stepIndex
@@ -237,9 +221,7 @@ export function DevicePreparationGuide({
                 <li
                   key={key}
                   aria-current={active ? 'step' : undefined}
-                  className={`h-1.5 flex-1 rounded-full ${
-                    done ? 'bg-ink' : active ? 'bg-brand-700' : 'bg-line'
-                  }`}
+                  className={`h-1.5 flex-1 rounded-full ${done ? 'bg-ink' : active ? 'bg-brand-700' : 'bg-line'}`}
                 />
               )
             })}
@@ -253,9 +235,8 @@ export function DevicePreparationGuide({
               heading="Haz una copia de seguridad"
               body={
                 <>
-                  Antes de entregar el dispositivo, guarda una copia actualizada de tus datos.
-                  El servicio técnico puede necesitar borrar o restaurar el equipo durante el
-                  diagnóstico o la reparación.
+                  Antes de entregar el dispositivo, guarda una copia actualizada de tus datos. El servicio técnico puede
+                  necesitar borrar o restaurar el equipo durante el diagnóstico o la reparación.
                 </>
               }
               confirmLabel="He realizado una copia de seguridad."
@@ -268,12 +249,11 @@ export function DevicePreparationGuide({
               heading="Desactiva la protección antirrobo"
               body={
                 <>
-                  Desactiva la Protección del dispositivo en caso de robo, el modo antirrobo o
-                  la función equivalente cuando esté activada o disponible en tu dispositivo.
+                  Desactiva la Protección del dispositivo en caso de robo, el modo antirrobo o la función equivalente
+                  cuando esté activada o disponible en tu dispositivo.
                   <span className="mt-2 block text-xs text-muted">
-                    Esta función no está disponible en todos los dispositivos o versiones del
-                    sistema. Cuando está activa, puede limitar algunas acciones necesarias
-                    durante la revisión o reparación.
+                    Esta función no está disponible en todos los dispositivos o versiones del sistema. Cuando está
+                    activa, puede limitar algunas acciones necesarias durante la revisión o reparación.
                   </span>
                 </>
               }
@@ -289,11 +269,11 @@ export function DevicePreparationGuide({
                 <>
                   Desactiva <strong className="font-semibold">Buscar mi iPhone</strong>,{' '}
                   <strong className="font-semibold">Buscar mi iPad</strong>,{' '}
-                  <strong className="font-semibold">Buscar mi Mac</strong> o la opción
-                  equivalente antes de entregar el dispositivo.
+                  <strong className="font-semibold">Buscar mi Mac</strong> o la opción equivalente antes de entregar el
+                  dispositivo.
                   <span className="mt-2 block text-xs text-muted">
-                    Esta función puede impedir que el servicio técnico revise, restaure o
-                    gestione correctamente el equipo.
+                    Esta función puede impedir que el servicio técnico revise, restaure o gestione correctamente el
+                    equipo.
                   </span>
                 </>
               }
@@ -331,8 +311,7 @@ export function DevicePreparationGuide({
                   Aviso de seguridad
                 </p>
                 <p className="mt-1">
-                  No compartas contraseñas, códigos de desbloqueo ni credenciales de Apple a
-                  través de esta web.
+                  No compartas contraseñas, códigos de desbloqueo ni credenciales de Apple a través de esta web.
                 </p>
               </div>
               <div className="mt-4 rounded-[10px] border border-line bg-neutral p-3 text-xs text-ink">

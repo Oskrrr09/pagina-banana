@@ -2,6 +2,8 @@ import js from '@eslint/js'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 import reactHooks from 'eslint-plugin-react-hooks'
+import importX from 'eslint-plugin-import-x'
+import promise from 'eslint-plugin-promise'
 
 // Configuración deliberadamente corta.
 //
@@ -11,8 +13,8 @@ import reactHooks from 'eslint-plugin-react-hooks'
 // fallo real (`HOOKS-001`)— y variables muertas que se acumulan al mover
 // código de sitio.
 //
-// Nada de reglas de estilo: no hay formateador configurado y meter opiniones
-// de formato ahora generaría un diff enorme sin arreglar ningún fallo.
+// El formato queda en Prettier. JSX a11y se cubre con axe hasta que su plugin
+// declare compatibilidad con ESLint 10; no se fuerza un peer incompatible.
 export default tseslint.config(
   {
     ignores: [
@@ -34,9 +36,27 @@ export default tseslint.config(
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
     },
-    plugins: { 'react-hooks': reactHooks },
+    plugins: {
+      'react-hooks': reactHooks,
+      'import-x': importX,
+      promise,
+    },
     rules: {
       ...reactHooks.configs.recommended.rules,
+
+      // TypeScript ya resuelve los módulos; ESLint vigila aquí estructura,
+      // duplicados y exports sin exigir un segundo resolver divergente.
+      'import-x/first': 'error',
+      'import-x/newline-after-import': 'error',
+      'import-x/no-duplicates': 'error',
+      'import-x/no-mutable-exports': 'error',
+
+      // Errores de promesa inequívocos. Los flujos `void` intencionados del
+      // proyecto siguen siendo válidos y los casos dudosos quedan en warning.
+      'promise/no-return-wrap': 'error',
+      'promise/param-names': 'error',
+      'promise/no-return-in-finally': 'error',
+      'promise/valid-params': 'warn',
 
       // El proyecto usa `_` como convención para lo que se recibe y no se usa
       // (índices de `map`, capturas de error vacías).

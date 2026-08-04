@@ -9,21 +9,10 @@ import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { ModelPickerDialog } from '../components/compare/ModelPickerDialog'
 import { useStore } from '../lib/store'
-import {
-  families,
-  getFamilyModels,
-  familyInfo,
-  developedFamilies,
-  productImage,
-  variantPath,
-} from '../data/products'
+import { families, getFamilyModels, familyInfo, developedFamilies, productImage, variantPath } from '../data/products'
 import type { Model } from '../data/types'
 import { euro } from '../lib/format'
-import {
-  buildDecisionSections,
-  buildDecisionSummary,
-  type FamilySlug,
-} from '../data/productDecisionData'
+import { buildDecisionSections, buildDecisionSummary, type FamilySlug } from '../data/productDecisionData'
 
 // ---------------------------------------------------------------------------
 // Comparador (versión simplificada).
@@ -50,29 +39,18 @@ const MAX_SLOTS = 3
 
 export function ComparePage() {
   const t = useT()
-  const {
-    compare,
-    toggleCompare,
-    removeCompare,
-    replaceCompareItem,
-    addToCart,
-    toggleFavorite,
-    isFavorite,
-  } = useStore()
+  const { compare, toggleCompare, removeCompare, replaceCompareItem, addToCart, toggleFavorite, isFavorite } =
+    useStore()
   const [params, setParams] = useSearchParams()
   const [onlyDifferences, setOnlyDifferences] = useState(true)
   const [pickerSlot, setPickerSlot] = useState<
-    | { kind: 'add' }
-    | { kind: 'replace'; currentId: string; currentSlug: string }
-    | null
+    { kind: 'add' } | { kind: 'replace'; currentId: string; currentSlug: string } | null
   >(null)
 
   const paramFamily = params.get('familia') ?? ''
-  const activeFamily = (compare.length > 0
-    ? compare[0].family
-    : developedFamilies.includes(paramFamily)
-      ? paramFamily
-      : 'iphone') as FamilySlug
+  const activeFamily = (
+    compare.length > 0 ? compare[0].family : developedFamilies.includes(paramFamily) ? paramFamily : 'iphone'
+  ) as FamilySlug
   const family = familyInfo(activeFamily)
   const models = getFamilyModels(activeFamily)
   const comparableFamilies = families.filter(
@@ -107,10 +85,7 @@ export function ComparePage() {
   }, [compare, models])
 
   const sections = useMemo(
-    () =>
-      contexts.length > 0
-        ? buildDecisionSections(contexts, activeFamily, { onlyDifferences })
-        : [],
+    () => (contexts.length > 0 ? buildDecisionSections(contexts, activeFamily, { onlyDifferences }) : []),
     [contexts, activeFamily, onlyDifferences],
   )
 
@@ -151,13 +126,9 @@ export function ComparePage() {
   return (
     <Container className="py-10">
       <header className="max-w-2xl">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-          Comparador
-        </p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Comparador</p>
         <h1 className="mt-1 text-3xl font-extrabold text-ink sm:text-4xl">{t('compare.heading')}</h1>
-        <p className="mt-2 text-muted">
-          {t('compare.intro')}
-        </p>
+        <p className="mt-2 text-muted">{t('compare.intro')}</p>
       </header>
 
       {isEmpty ? (
@@ -165,18 +136,12 @@ export function ComparePage() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-ink">Tipo de producto:</span>
             {comparableFamilies.map((f) => (
-              <Chip
-                key={f.slug}
-                selected={f.slug === activeFamily}
-                onClick={() => switchFamily(f.slug)}
-              >
+              <Chip key={f.slug} selected={f.slug === activeFamily} onClick={() => switchFamily(f.slug)}>
                 {f.name}
               </Chip>
             ))}
           </div>
-          <p className="mt-3 text-sm text-muted">
-            {t('compare.chooseUpTo', { familia: family?.name ?? '' })}
-          </p>
+          <p className="mt-3 text-sm text-muted">{t('compare.chooseUpTo', { familia: family?.name ?? '' })}</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {Array.from({ length: MAX_SLOTS }).map((_, i) => (
               <EmptySlot
@@ -195,9 +160,7 @@ export function ComparePage() {
             >
               <Icon name="chat" size={16} aria-hidden="true" /> {t('compare.needHelp')}
             </Link>
-            <p className="mt-2 text-xs text-muted">
-              {t('compare.needHelpNote')}
-            </p>
+            <p className="mt-2 text-xs text-muted">{t('compare.needHelpNote')}</p>
           </div>
         </section>
       ) : (
@@ -216,9 +179,7 @@ export function ComparePage() {
                 Mostrar todas
               </Chip>
               <span className="sr-only" aria-live="polite">
-                {onlyDifferences
-                  ? 'Mostrando solo diferencias'
-                  : 'Mostrando todas las características esenciales'}
+                {onlyDifferences ? 'Mostrando solo diferencias' : 'Mostrando todas las características esenciales'}
               </span>
             </div>
           ) : (
@@ -262,11 +223,7 @@ export function ComparePage() {
                         key={c.id}
                         className="flex h-full min-h-[520px] flex-col rounded-[12px] border border-line bg-surface p-3"
                       >
-                        <ProductImage
-                          src={productImage(c.modelSlug, c.color)}
-                          alt={c.name}
-                          ratio="4 / 3"
-                        />
+                        <ProductImage src={productImage(c.modelSlug, c.color)} alt={c.name} ratio="4 / 3" />
                         <p className="mt-2 text-sm font-bold text-ink">{c.name}</p>
                         <p className="text-xs text-muted">
                           {c.capacity} · {c.color}
@@ -277,10 +234,7 @@ export function ComparePage() {
                         </div>
 
                         {highlights.length > 0 && (
-                          <ul
-                            className="mt-2 flex flex-wrap gap-1"
-                            aria-label="Destaca por"
-                          >
+                          <ul className="mt-2 flex flex-wrap gap-1" aria-label="Destaca por">
                             {highlights.map((h) => (
                               <li
                                 key={h}
@@ -340,11 +294,7 @@ export function ComparePage() {
                             type="button"
                             onClick={() => toggleFavorite(favId)}
                             aria-pressed={fav}
-                            aria-label={
-                              fav
-                                ? `Quitar ${c.name} de favoritos`
-                                : `Añadir ${c.name} a favoritos`
-                            }
+                            aria-label={fav ? `Quitar ${c.name} de favoritos` : `Añadir ${c.name} a favoritos`}
                             className="grid h-8 w-8 place-items-center rounded-full border border-line text-ink hover:border-danger hover:text-danger"
                           >
                             <Icon
@@ -382,24 +332,16 @@ export function ComparePage() {
                   </colgroup>
                   <tbody>
                     {sections.map((section) => (
-                      <SectionGroup
-                        key={section.title}
-                        title={section.title}
-                        rows={section.rows}
-                        slots={MAX_SLOTS}
-                      />
+                      <SectionGroup key={section.title} title={section.title} rows={section.rows} slots={MAX_SLOTS} />
                     ))}
                     {compare.length >= 2 && sections.length === 0 && (
                       <tr>
-                        <th
-                          scope="row"
-                          className="p-3 text-left text-sm font-medium text-muted"
-                        >
+                        <th scope="row" className="p-3 text-left text-sm font-medium text-muted">
                           Diferencias
                         </th>
                         <td className="p-3 text-sm text-muted" colSpan={MAX_SLOTS}>
-                          Los modelos seleccionados comparten los datos esenciales
-                          disponibles. Cambia a "Mostrar todas" para verlos.
+                          Los modelos seleccionados comparten los datos esenciales disponibles. Cambia a "Mostrar todas"
+                          para verlos.
                         </td>
                       </tr>
                     )}
@@ -491,11 +433,7 @@ function SectionGroup({
           {Array.from({ length: slots }).map((_, i) => {
             const v = row.values[i]
             return (
-              <td
-                key={i}
-                className="p-3 text-sm text-ink"
-                style={{ scrollSnapAlign: 'start' }}
-              >
+              <td key={i} className="p-3 text-sm text-ink" style={{ scrollSnapAlign: 'start' }}>
                 {v ?? <span className="text-muted">—</span>}
               </td>
             )

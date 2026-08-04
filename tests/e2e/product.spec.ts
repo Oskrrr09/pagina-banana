@@ -26,7 +26,10 @@ test('cambiar color y capacidad conserva /pagina-banana/ en la URL', async ({ pa
   await expect(page).toHaveURL(/\/pagina-banana\/iphone\/17-pro\/256gb-naranja$/)
 
   // Cambio de capacidad: mismo color, otra capacidad, mismo basename.
-  await page.getByRole('button', { name: /^512GB/ }).first().click()
+  await page
+    .getByRole('button', { name: /^512GB/ })
+    .first()
+    .click()
   await expect(page).toHaveURL(/\/pagina-banana\/iphone\/17-pro\/512gb-naranja$/)
 
   expect(errors, `Errores de consola:\n${errors.join('\n')}`).toEqual([])
@@ -63,20 +66,23 @@ test('Apple Watch Series 11: cambiar tamaÃ±o y GPS/Cellular preserva la selecciÃ
 test('navegar entre pasos del checkout no genera errores de hooks en consola', async ({ page }) => {
   const errors = captureConsoleErrors(page)
   await page.addInitScript(() => {
-    localStorage.setItem('banana:cart', JSON.stringify([
-      {
-        id: 'iphone/17-pro/plata/256GB',
-        modelSlug: '17-pro',
-        family: 'iphone',
-        name: 'iPhone 17 Pro',
-        color: 'Plata',
-        capacity: '256GB',
-        price: 1229,
-        previousPrice: null,
-        qty: 1,
-        insured: false,
-      },
-    ]))
+    localStorage.setItem(
+      'banana:cart',
+      JSON.stringify([
+        {
+          id: 'iphone/17-pro/plata/256GB',
+          modelSlug: '17-pro',
+          family: 'iphone',
+          name: 'iPhone 17 Pro',
+          color: 'Plata',
+          capacity: '256GB',
+          price: 1229,
+          previousPrice: null,
+          qty: 1,
+          insured: false,
+        },
+      ]),
+    )
   })
   await page.goto('./checkout/1')
   await page.getByLabel('Nombre y apellidos').fill('Elena R.')

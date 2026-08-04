@@ -64,9 +64,7 @@ describe('instalación desde cero', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0].public).toBe(false)
     expect(Number(rows[0].file_size_limit)).toBe(5 * 1024 * 1024)
-    expect(rows[0].allowed_mime_types.sort()).toEqual(
-      ['application/pdf', 'image/jpeg', 'image/png'].sort(),
-    )
+    expect(rows[0].allowed_mime_types.sort()).toEqual(['application/pdf', 'image/jpeg', 'image/png'].sort())
   })
 
   it('supera la auditoría exacta del catálogo final', async () => {
@@ -79,9 +77,7 @@ describe('instalación desde cero', () => {
     try {
       await db.exec(`create function public.auditoria_public_temporal(p_valor integer)
         returns integer language sql as $$ select p_valor $$`)
-      const funcion = (await catalogarFunciones(db)).find(
-        (item) => item.firma === 'auditoria_public_temporal(integer)',
-      )
+      const funcion = (await catalogarFunciones(db)).find((item) => item.firma === 'auditoria_public_temporal(integer)')
       expect(funcion, 'la función temporal debe aparecer como propia').toBeDefined()
       expect(funcion!.ejecuta).toContain('PUBLIC')
     } finally {
@@ -161,8 +157,7 @@ describe('garantías individuales de la auditoría compartida', () => {
     const catalogo = await catalogarFunciones(db)
     const expuestos = catalogo.filter(
       (funcion) =>
-        ['rpc-cliente', 'rpc-agente'].includes(funcion.clasificacion!.categoria) &&
-        funcion.ejecuta.includes('anon'),
+        ['rpc-cliente', 'rpc-agente'].includes(funcion.clasificacion!.categoria) && funcion.ejecuta.includes('anon'),
     )
     expect(expuestos).toEqual([])
   })
@@ -170,9 +165,7 @@ describe('garantías individuales de la auditoría compartida', () => {
   it('toda función SECURITY DEFINER fija search_path', async () => {
     const catalogo = await catalogarFunciones(db)
     const sinRuta = catalogo.filter(
-      (funcion) =>
-        funcion.securityDefiner &&
-        !funcion.configuracion.some((valor) => valor.startsWith('search_path=')),
+      (funcion) => funcion.securityDefiner && !funcion.configuracion.some((valor) => valor.startsWith('search_path=')),
     )
     expect(sinRuta).toEqual([])
   })
@@ -263,13 +256,10 @@ describe('segunda aplicación idempotente', () => {
     const despues = await auditarCatalogo(db)
     expect(despues.problemas, despues.problemas.join('\n')).toEqual([])
     expect(serializarCatalogo(despues.catalogo)).toBe(catalogoAntes)
-    expect(new Set(despues.catalogo.map((funcion) => funcion.firma)).size).toBe(
-      despues.catalogo.length,
-    )
-    const { rows } = await db.query<{ n: number }>(
-      `select count(*)::int as n from public.clientes where id = $1`,
-      [CLIENTE_IDEMPOTENCIA],
-    )
+    expect(new Set(despues.catalogo.map((funcion) => funcion.firma)).size).toBe(despues.catalogo.length)
+    const { rows } = await db.query<{ n: number }>(`select count(*)::int as n from public.clientes where id = $1`, [
+      CLIENTE_IDEMPOTENCIA,
+    ])
     expect(rows[0].n, 'no borra ni duplica el cliente existente').toBe(1)
   })
 })

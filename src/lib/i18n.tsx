@@ -54,22 +54,26 @@ function esIdioma(valor: string | null): valor is Idioma {
   return IDIOMAS.some((i) => i.code === valor)
 }
 
-/** Idioma inicial: el que se eligió antes; si no, el del navegador; si no, castellano. */
-function idiomaInicial(): Idioma {
-  // En la app no hay selector, así que tampoco detección: quedarse en un
-  // idioma sin poder cambiarlo sería peor que no ofrecerlo.
-  if (isNativeApp) return 'es'
-  try {
-    const guardado = window.localStorage.getItem(CLAVE_GUARDADA)
-    if (esIdioma(guardado)) return guardado
-  } catch {
-    // Modo privado: se sigue con la detección.
-  }
-  for (const preferido of navigator.languages ?? [navigator.language]) {
+/** Resolución pura y comprobable del idioma de la tienda. */
+export function detectarIdioma(preferidos: readonly string[], guardado: string | null, appNativa = false): Idioma {
+  if (appNativa) return 'es'
+  if (esIdioma(guardado)) return guardado
+  for (const preferido of preferidos) {
     const base = preferido.slice(0, 2).toLowerCase()
     if (esIdioma(base)) return base
   }
   return 'es'
+}
+
+/** Idioma inicial: el que se eligió antes; si no, el del navegador; si no, castellano. */
+function idiomaInicial(): Idioma {
+  let guardado: string | null = null
+  try {
+    guardado = window.localStorage.getItem(CLAVE_GUARDADA)
+  } catch {
+    // Modo privado: se sigue con la detección.
+  }
+  return detectarIdioma(navigator.languages ?? [navigator.language], guardado, isNativeApp)
 }
 
 interface EstadoIdioma {

@@ -171,9 +171,7 @@ export function useInstallPrompt(): {
 } {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
   const [instalada, setInstalada] = useState(() => isStandalone())
-  const [dismissed, setDismissed] = useState(
-    () => window.localStorage.getItem(DISMISS_KEY) === '1',
-  )
+  const [dismissed, setDismissed] = useState(() => window.localStorage.getItem(DISMISS_KEY) === '1')
 
   useEffect(() => {
     function onBeforeInstall(event: Event) {
@@ -208,11 +206,7 @@ export function useInstallPrompt(): {
     setDismissed(true)
   }, [])
 
-  const mode: InstallMode = instalada
-    ? 'instalada'
-    : deferred
-      ? 'prompt'
-      : 'manual'
+  const mode: InstallMode = instalada ? 'instalada' : deferred ? 'prompt' : 'manual'
 
   return { mode, hint: manualInstallHint(), install, dismissed, dismiss }
 }

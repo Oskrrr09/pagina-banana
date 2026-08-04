@@ -279,10 +279,7 @@ test('el mapa de accesorios no acumula entradas que ya no usa nadie', () => {
     return !fuente.includes(inicio)
   })
 
-  expect(
-    huerfanas,
-    `Sobran en src/i18n/catalogo-accesorios.ts:\n  ${huerfanas.join('\n  ')}`,
-  ).toEqual([])
+  expect(huerfanas, `Sobran en src/i18n/catalogo-accesorios.ts:\n  ${huerfanas.join('\n  ')}`).toEqual([])
 })
 
 /**
@@ -316,13 +313,10 @@ test('las preguntas del asistente tienen traducción y sus identificadores no', 
   }
   expect(
     faltan,
-    `Faltan traducciones del asistente. Añádelas en src/i18n/asistente.ts:\n  ` +
-      faltan.join('\n  '),
+    `Faltan traducciones del asistente. Añádelas en src/i18n/asistente.ts:\n  ` + faltan.join('\n  '),
   ).toEqual([])
 
-  const identificadores = new Set(
-    [...src.matchAll(/\bvalue: '((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]),
-  )
+  const identificadores = new Set([...src.matchAll(/\bvalue: '((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]))
   // Estos son a la vez identificador y texto visible: el motor los compara en
   // crudo (`answers.specific['iphone.size'] === 'grande'`) y además los pinta
   // dentro de un motivo («Tamaño grande como preferiste»). Están en el mapa a

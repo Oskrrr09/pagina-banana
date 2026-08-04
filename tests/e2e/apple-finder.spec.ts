@@ -16,13 +16,16 @@ async function answerAndNext(page: Page, radio: string, nextText: RegExp = /^Sig
   await page.getByRole('button', { name: nextText }).click()
 }
 
-async function runIphoneFlow(page: Page, opts: {
-  use: string
-  size: string
-  priority: string
-  budget: string
-  flex: string
-}) {
+async function runIphoneFlow(
+  page: Page,
+  opts: {
+    use: string
+    size: string
+    priority: string
+    budget: string
+    flex: string
+  },
+) {
   await start(page)
   await page.getByRole('radio', { name: 'iPhone' }).click()
   await answerAndNext(page, opts.use)
@@ -62,9 +65,7 @@ test('flujo iPhone completo: preguntas → presupuesto → resumen editable → 
   await expect(page.getByText('Mejor encaje')).toBeVisible()
   // Reiniciar vuelve a la intro.
   await page.getByRole('button', { name: 'Empezar de nuevo' }).click()
-  await expect(
-    page.getByRole('heading', { name: 'Encuentra el Apple que encaja contigo' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Encuentra el Apple que encaja contigo' })).toBeVisible()
 })
 
 test('no se puede avanzar sin responder + Anterior conserva la respuesta', async ({ page }) => {
@@ -76,10 +77,7 @@ test('no se puede avanzar sin responder + Anterior conserva la respuesta', async
   await expect(nextBtn).toBeEnabled()
   await nextBtn.click()
   await page.getByRole('button', { name: 'Anterior' }).click()
-  await expect(page.getByRole('radio', { name: 'Programación' })).toHaveAttribute(
-    'aria-checked',
-    'true',
-  )
+  await expect(page.getByRole('radio', { name: 'Programación' })).toHaveAttribute('aria-checked', 'true')
 })
 
 // ---------------------------- "No lo tengo claro" -----------------------
@@ -136,9 +134,7 @@ test('desde la confirmación se puede "Ver todas las categorías" sin perder res
     portability: 'Sí, lo llevaré siempre encima',
   })
   await page.getByRole('button', { name: 'Ver todas las categorías' }).click()
-  await expect(
-    page.getByRole('heading', { name: '¿Qué producto estás buscando?' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: '¿Qué producto estás buscando?' })).toBeVisible()
 })
 
 // --------------------- ranking de familias (bug reportado) ---------------
@@ -338,15 +334,16 @@ test('workType se limpia al cambiar el uso a un valor distinto de Trabajo', asyn
   await expect(page.getByText('Ofimática, correo y videollamadas.')).toBeVisible()
 
   // Cambiamos el uso a Estudio desde el resumen.
-  await page
-    .getByRole('button', { name: /Cambiar: ¿Para qué lo utilizarás principalmente\?/ })
-    .click()
+  await page.getByRole('button', { name: /Cambiar: ¿Para qué lo utilizarás principalmente\?/ }).click()
   await page.getByRole('radio', { name: 'Estudio' }).click()
   // Estudio tiene 4 preguntas (use, productRole, priority, portability —
   // sin workType). Recorremos hasta family-confirm; cada respuesta previa
   // se conserva.
   for (let i = 0; i < 4; i++) {
-    await page.getByRole('button', { name: /Continuar|Siguiente/ }).first().click()
+    await page
+      .getByRole('button', { name: /Continuar|Siguiente/ })
+      .first()
+      .click()
   }
   // Confirmamos familia principal (iPad, según 'estudio + primary + portabilidad').
   const primaryIpad = page.locator('div').filter({ hasText: 'Recomendación principal' }).first()
@@ -428,12 +425,8 @@ test('Fotografía + complemento muestra estado sin coincidencias (sin recomendac
     priority: 'Cámara',
     portability: 'Sí, lo llevaré siempre encima',
   })
-  await expect(
-    page.getByRole('heading', { name: 'No encontramos una categoría que encaje con todo' }),
-  ).toBeVisible()
-  await expect(
-    page.getByText(/No encontramos una categoría de accesorio fotográfico/),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'No encontramos una categoría que encaje con todo' })).toBeVisible()
+  await expect(page.getByText(/No encontramos una categoría de accesorio fotográfico/)).toBeVisible()
   // No hay recomendación principal ni tarjetas candidatas.
   await expect(page.getByText('Recomendación principal')).toHaveCount(0)
   await expect(page.getByText('Segunda posibilidad')).toHaveCount(0)
@@ -442,7 +435,9 @@ test('Fotografía + complemento muestra estado sin coincidencias (sin recomendac
   await expect(page.getByRole('button', { name: 'Ver todas las categorías' })).toBeVisible()
 })
 
-test('Revisar respuestas: conserva respuestas y permite cambiar el rol para volver a tener candidatas', async ({ page }) => {
+test('Revisar respuestas: conserva respuestas y permite cambiar el rol para volver a tener candidatas', async ({
+  page,
+}) => {
   await start(page)
   await page.getByRole('radio', { name: 'No lo tengo claro' }).click()
   await answerGeneralFlow(page, {
@@ -454,14 +449,18 @@ test('Revisar respuestas: conserva respuestas y permite cambiar el rol para volv
   await page.getByRole('button', { name: /Revisar respuestas/ }).click()
   // Estamos de vuelta en la pregunta de productRole con "complemento" marcado.
   await expect(page.getByText('¿Qué tipo de producto necesitas?')).toBeVisible()
-  await expect(
-    page.getByRole('radio', { name: 'Un complemento, como auriculares o reloj.' }),
-  ).toHaveAttribute('aria-checked', 'true')
+  await expect(page.getByRole('radio', { name: 'Un complemento, como auriculares o reloj.' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
   // Cambiamos a "Un dispositivo móvil...".
   await page.getByRole('radio', { name: 'Un dispositivo móvil para llevar siempre conmigo.' }).click()
   // Continuamos el flujo hasta llegar de nuevo a la confirmación de familia.
   for (let i = 0; i < 3; i++) {
-    await page.getByRole('button', { name: /Continuar|Siguiente/ }).first().click()
+    await page
+      .getByRole('button', { name: /Continuar|Siguiente/ })
+      .first()
+      .click()
   }
   // Con foto + mobile SÍ hay familias válidas (iPhone al menos).
   await expect(page.getByText('Recomendación principal')).toBeVisible()
@@ -477,9 +476,7 @@ test('Ver todas las categorías desde estado sin coincidencias abre el selector 
     portability: 'Sí, lo llevaré siempre encima',
   })
   await page.getByRole('button', { name: 'Ver todas las categorías' }).click()
-  await expect(
-    page.getByRole('heading', { name: '¿Qué producto estás buscando?' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: '¿Qué producto estás buscando?' })).toBeVisible()
   // Ninguna familia está pre-seleccionada (todas los radios aria-checked=false).
   const radios = page.getByRole('radio')
   const total = await radios.count()
@@ -595,7 +592,10 @@ test('resumen editable: cambiar la respuesta del tamaño desde la ficha', async 
   // Siguiente hasta llegar de nuevo al resumen (specific→specific→budget→flex→summary).
   // Cada paso conserva la respuesta previa, así que Siguiente/Continuar avanzan.
   for (let i = 0; i < 4; i++) {
-    await page.getByRole('button', { name: /Continuar|Siguiente/ }).first().click()
+    await page
+      .getByRole('button', { name: /Continuar|Siguiente/ })
+      .first()
+      .click()
   }
   await expect(page.getByRole('heading', { name: 'Esto es lo que buscas' })).toBeVisible()
 })
@@ -675,9 +675,7 @@ test('axe: intro del asistente sin violaciones', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('./elige-tu-apple')
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => undefined)
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a'])
-    .analyze()
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a']).analyze()
   const detail = results.violations.map((v) => `${v.id}: ${v.help}`).join('\n')
   expect(results.violations, `Violaciones axe en /elige-tu-apple:\n${detail}`).toEqual([])
 })

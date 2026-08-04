@@ -29,9 +29,7 @@ test('"Ahora no" cierra el prompt y no vuelve a aparecer en la sesión', async (
   await page.getByRole('button', { name: 'Ahora no' }).click()
   await expect(page.getByRole('dialog', { name: /¿Cuál es tu tienda Banana habitual\?/ })).toHaveCount(0)
   await page.reload()
-  await expect(
-    page.getByRole('dialog', { name: /¿Cuál es tu tienda Banana habitual\?/ }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: /¿Cuál es tu tienda Banana habitual\?/ })).toHaveCount(0)
 })
 
 test('elegir tienda persiste, actualiza cabecera y aparece primero en /tiendas', async ({ page }) => {
@@ -51,9 +49,7 @@ test('elegir tienda persiste, actualiza cabecera y aparece primero en /tiendas',
 
   // En /tiendas la tienda favorita aparece con badge "Tu tienda".
   await page.goto('./tiendas')
-  const heading = page
-    .getByRole('heading', { name: 'Banana Triana', level: 2 })
-    .first()
+  const heading = page.getByRole('heading', { name: 'Banana Triana', level: 2 }).first()
   await expect(heading).toBeVisible()
   await expect(page.getByText(/Tu tienda/).first()).toBeVisible()
 })
@@ -61,15 +57,14 @@ test('elegir tienda persiste, actualiza cabecera y aparece primero en /tiendas',
 test('desde el detalle se puede marcar y quitar la tienda favorita', async ({ page }) => {
   await ensureFreshVisit(page)
   await page.goto('./tiendas/triana')
-  await expect(
-    page.getByRole('button', { name: /Marcar como mi tienda \(Banana Triana\)/ }),
-  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /Marcar como mi tienda \(Banana Triana\)/ })).toBeVisible()
   await page.getByRole('button', { name: /Marcar como mi tienda \(Banana Triana\)/ }).click()
   await expect(page.getByText(/Esta es tu tienda/)).toBeVisible()
-  await page.getByRole('button', { name: /Quitar/ }).first().click()
-  await expect(
-    page.getByRole('button', { name: /Marcar como mi tienda \(Banana Triana\)/ }),
-  ).toBeVisible()
+  await page
+    .getByRole('button', { name: /Quitar/ })
+    .first()
+    .click()
+  await expect(page.getByRole('button', { name: /Marcar como mi tienda \(Banana Triana\)/ })).toBeVisible()
 })
 
 test('no se guardan datos personales — sólo el slug elegido', async ({ page }) => {
@@ -127,9 +122,7 @@ test('el prompt no aparece dentro del checkout', async ({ page }) => {
   // Esperamos un tiempo similar al que tarda el prompt en aparecer y
   // comprobamos que sigue sin estar.
   await page.waitForTimeout(1200)
-  await expect(
-    page.getByRole('dialog', { name: /¿Cuál es tu tienda Banana habitual\?/ }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: /¿Cuál es tu tienda Banana habitual\?/ })).toHaveCount(0)
 })
 
 test('el aviso no aparece encima de un diálogo modal ni le roba el foco', async ({ page }) => {

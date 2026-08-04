@@ -24,17 +24,17 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <IdiomaProvider>
         <CustomerAuthProvider>
-        <AgentAuthProvider>
-          <StoreProvider>
-            <StorePreferenceProvider>
-              <FavoriteAlertsProvider>
-                <CheckoutProvider>
-                  <App />
-                </CheckoutProvider>
-              </FavoriteAlertsProvider>
-            </StorePreferenceProvider>
-          </StoreProvider>
-        </AgentAuthProvider>
+          <AgentAuthProvider>
+            <StoreProvider>
+              <StorePreferenceProvider>
+                <FavoriteAlertsProvider>
+                  <CheckoutProvider>
+                    <App />
+                  </CheckoutProvider>
+                </FavoriteAlertsProvider>
+              </StorePreferenceProvider>
+            </StoreProvider>
+          </AgentAuthProvider>
         </CustomerAuthProvider>
       </IdiomaProvider>
     </BrowserRouter>

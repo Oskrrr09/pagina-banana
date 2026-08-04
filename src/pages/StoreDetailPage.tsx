@@ -132,7 +132,11 @@ export function StoreDetailPage() {
                   <tr key={h.day} className={`border-b border-line ${isToday ? 'font-semibold text-ink' : 'text-ink'}`}>
                     <td className="py-2">
                       {h.day}
-                      {isToday && <span className="ml-2 rounded-full bg-banana px-2 py-0.5 text-[11px] font-bold text-ink">Hoy</span>}
+                      {isToday && (
+                        <span className="ml-2 rounded-full bg-banana px-2 py-0.5 text-[11px] font-bold text-ink">
+                          Hoy
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 text-right text-muted">{h.time}</td>
                   </tr>
@@ -159,12 +163,7 @@ export function StoreDetailPage() {
           <label htmlFor="stock-product" className="mb-1.5 block text-sm text-muted">
             {t('stores.chooseProduct')}
           </label>
-          <select
-            id="stock-product"
-            value={product}
-            onChange={(e) => setProduct(e.target.value)}
-            className="field"
-          >
+          <select id="stock-product" value={product} onChange={(e) => setProduct(e.target.value)} className="field">
             <option value="">Selecciona un producto…</option>
             {allModels.map((m) => (
               <option key={`${m.family}/${m.slug}`} value={m.name}>

@@ -61,14 +61,9 @@ export function StorePicker({
                 <div className="mt-2">
                   <StockIndicator status={av.status} note={av.note} size="sm" />
                 </div>
-                {isFav && (
-                  <p className="mt-1 text-xs text-muted">Consultar en tu tienda.</p>
-                )}
+                {isFav && <p className="mt-1 text-xs text-muted">Consultar en tu tienda.</p>}
               </div>
-              <Link
-                to={`/tiendas/${store.slug}`}
-                className="shrink-0 text-sm font-semibold text-ink hover:underline"
-              >
+              <Link to={`/tiendas/${store.slug}`} className="shrink-0 text-sm font-semibold text-ink hover:underline">
                 {t('common.viewStoreArrow')}
               </Link>
             </li>

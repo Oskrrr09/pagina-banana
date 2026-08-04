@@ -38,10 +38,9 @@ test('ninguna variable VITE_ expone una clave de servicio', () => {
       }
     }
   }
-  expect(
-    sospechosas,
-    `Una variable VITE_ acaba dentro del JavaScript público:\n  ` + sospechosas.join('\n  '),
-  ).toEqual([])
+  expect(sospechosas, `Una variable VITE_ acaba dentro del JavaScript público:\n  ` + sospechosas.join('\n  ')).toEqual(
+    [],
+  )
 })
 
 test('el código fuente no lee una clave de servicio desde el entorno del cliente', () => {
@@ -55,8 +54,7 @@ test('el código fuente no lee una clave de servicio desde el entorno del client
   }
   expect(
     ofensores,
-    `Estos ficheros leen una credencial de servidor desde el cliente:\n  ` +
-      ofensores.join('\n  '),
+    `Estos ficheros leen una credencial de servidor desde el cliente:\n  ` + ofensores.join('\n  '),
   ).toEqual([])
 })
 
@@ -74,10 +72,7 @@ test('el bundle construido no contiene una clave de servicio', () => {
       ofensores.push(ruta.replace(process.cwd() + '/', ''))
     }
   }
-  expect(
-    ofensores,
-    `Estos artefactos publicados mencionan service_role:\n  ` + ofensores.join('\n  '),
-  ).toEqual([])
+  expect(ofensores, `Estos artefactos publicados mencionan service_role:\n  ` + ofensores.join('\n  ')).toEqual([])
 })
 
 test('el bundle que sirven las pruebas no apunta a ningún Supabase', () => {
@@ -110,6 +105,7 @@ test('el bundle que sirven las pruebas no apunta a ningún Supabase', () => {
     conUrl,
     'El bundle servido en las pruebas lleva una URL de Supabase incrustada. ' +
       'Compila el artefacto de pruebas con VITE_SUPABASE_URL y ' +
-      'VITE_SUPABASE_ANON_KEY vacías:\n  ' + conUrl.join('\n  '),
+      'VITE_SUPABASE_ANON_KEY vacías:\n  ' +
+      conUrl.join('\n  '),
   ).toEqual([])
 })

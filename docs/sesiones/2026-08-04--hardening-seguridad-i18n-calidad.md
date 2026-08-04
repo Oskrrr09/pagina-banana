@@ -62,12 +62,24 @@ documentación solicitados en la auditoría exhaustiva.
 - Axe pasa en 14 estados de ruta y en guía, selector, menú y chat, sin reglas
   desactivadas.
 
+### Bloque 5 — Calidad
+
+- Añadidos Prettier y plugins ESLint compatibles para imports y promesas; JSX
+  a11y no se fuerza sobre ESLint 10 porque su peer actual termina en ESLint 9.
+- La línea base de formato cubre código, pruebas y configuración y excluye
+  generados, docs, catálogos y diccionarios grandes.
+- Separados `check` rápido y `check:full`; CI comprueba formato de forma
+  explícita.
+- Cinco pruebas unitarias nuevas cubren moneda, cuotas y detección de idioma.
+
 ## Comprobaciones acumuladas
 
 - TypeScript: correcto.
-- Vitest: 124/124; esquema PostgreSQL/PGlite: 102/102.
+- Vitest: 129/129; esquema PostgreSQL/PGlite: 102/102.
 - ESLint: 0 errores y 22 avisos preexistentes.
 - Build demostrativo: correcto; service worker generado.
+- Playwright sobre build: 273 aprobadas, una omisión esperada del caso de
+  service worker exclusivo de desarrollo y 6/6 del panel aislado.
 - RLS: 27 casos descubiertos y 27 omitidos por falta de entorno, no aprobados.
 
 ## Archivos afectados hasta ahora
@@ -79,5 +91,4 @@ documentación solicitados en la auditoría exhaustiva.
 
 ## Siguiente paso
 
-Completar el bloque de calidad con scripts coherentes, Prettier y CI; después
-ampliar la matriz de navegadores y validar PWA contra el build.
+Ampliar la matriz de navegadores y validar PWA contra el build.

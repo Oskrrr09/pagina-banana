@@ -37,10 +37,9 @@ export function ModelPickerDialog({
   const cat = useCatalogo()
   const { t, intl } = useIdioma()
   const [query, setQuery] = useState('')
-  const title = t(
-    mode === 'add' ? 'compare.picker.addTitle' : 'compare.picker.replaceTitle',
-    { familia: familyName },
-  )
+  const title = t(mode === 'add' ? 'compare.picker.addTitle' : 'compare.picker.replaceTitle', {
+    familia: familyName,
+  })
 
   const filtered = useMemo(() => {
     if (!query.trim()) return models
@@ -50,9 +49,7 @@ export function ModelPickerDialog({
 
   return (
     <Modal open={open} onClose={onClose} title={title}>
-      <p className="mb-3 text-sm text-muted">
-        {t('compare.picker.intro')}
-      </p>
+      <p className="mb-3 text-sm text-muted">{t('compare.picker.intro')}</p>
       <label className="mb-4 block">
         <span className="sr-only">{t('compare.picker.search')}</span>
         <div className="flex items-center gap-2 rounded-[12px] border border-line bg-surface px-3 py-2">
@@ -117,9 +114,7 @@ export function ModelPickerDialog({
                     </p>
                   )}
                 </div>
-                {!disabled && (
-                  <Icon name="chevron-right" size={16} className="text-muted" aria-hidden="true" />
-                )}
+                {!disabled && <Icon name="chevron-right" size={16} className="text-muted" aria-hidden="true" />}
               </button>
             </li>
           )

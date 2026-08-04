@@ -102,11 +102,7 @@ export async function catalogarFunciones(db: Queryable): Promise<FuncionCataloga
   }
 
   return rows.map((row) => {
-    const firma = normalizarFirmaIdentidad(
-      row.nombre,
-      row.argumentos_identidad,
-      row.nombres_argumentos,
-    )
+    const firma = normalizarFirmaIdentidad(row.nombre, row.argumentos_identidad, row.nombres_argumentos)
     return {
       oid: row.oid,
       identidadPostgres: row.identidad,
@@ -139,9 +135,7 @@ export async function auditarCatalogo(db: Queryable): Promise<ResultadoAuditoria
     }
     const ejecutaEsperado = [...clasificacion.ejecuta].sort()
     if (JSON.stringify(funcion.ejecuta) !== JSON.stringify(ejecutaEsperado)) {
-      problemas.push(
-        `${funcion.firma}: EXECUTE esperado [${ejecutaEsperado}] · real [${funcion.ejecuta}]`,
-      )
+      problemas.push(`${funcion.firma}: EXECUTE esperado [${ejecutaEsperado}] · real [${funcion.ejecuta}]`)
     }
     if (funcion.ejecuta.includes('PUBLIC')) {
       problemas.push(`${funcion.firma}: conserva EXECUTE para PUBLIC`)
@@ -152,10 +146,7 @@ export async function auditarCatalogo(db: Queryable): Promise<ResultadoAuditoria
           `real ${funcion.securityDefiner}`,
       )
     }
-    if (
-      funcion.securityDefiner &&
-      !funcion.configuracion.some((valor) => valor.startsWith('search_path='))
-    ) {
+    if (funcion.securityDefiner && !funcion.configuracion.some((valor) => valor.startsWith('search_path='))) {
       problemas.push(`${funcion.firma}: SECURITY DEFINER sin search_path fijo`)
     }
     for (const prohibido of PARAMETROS_PROHIBIDOS) {

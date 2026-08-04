@@ -75,10 +75,7 @@ export function useUnreadConversations(
  * En el primer render solo toma nota de lo que ya hay: sin esto, abrir el
  * panel dispararía una notificación por cada conversación pendiente.
  */
-export function useNewMessageAlert(
-  items: InboxItem[],
-  onNuevo: (item: InboxItem) => void,
-): void {
+export function useNewMessageAlert(items: InboxItem[], onNuevo: (item: InboxItem) => void): void {
   const conocidos = useRef<Map<string, string> | null>(null)
   const callback = useRef(onNuevo)
   // La asignación estaba suelta en el cuerpo del componente. Escribir en una

@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { getStore, stores } from '../data/stores'
 import type { Store } from '../data/types'
 
@@ -54,9 +47,7 @@ export function StorePreferenceProvider({ children }: { children: ReactNode }) {
     if (!raw) return null
     return stores.some((s) => s.slug === raw) ? raw : null
   })
-  const [promptDismissed, setPromptDismissed] = useState<boolean>(
-    () => readString(PROMPT_KEY) === 'dismissed',
-  )
+  const [promptDismissed, setPromptDismissed] = useState<boolean>(() => readString(PROMPT_KEY) === 'dismissed')
 
   useEffect(() => {
     writeString(STORAGE_KEY, favoriteSlug)

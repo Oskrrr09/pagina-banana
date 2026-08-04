@@ -63,24 +63,13 @@ export function CartPage() {
           <ul className="divide-y divide-line border-y border-line">
             {cart.map((line) => {
               const isAccessory = line.kind === 'accessory'
-              const src = isAccessory
-                ? line.image
-                : productImage(line.modelSlug, line.color)
-              const altText = isAccessory
-                ? line.name
-                : `${line.name} ${line.color}`
-              const subLabel = isAccessory
-                ? 'Accesorio Apple'
-                : `${line.capacity} · ${nombreColor(line.color)}`
+              const src = isAccessory ? line.image : productImage(line.modelSlug, line.color)
+              const altText = isAccessory ? line.name : `${line.name} ${line.color}`
+              const subLabel = isAccessory ? 'Accesorio Apple' : `${line.capacity} · ${nombreColor(line.color)}`
               return (
                 <li key={line.id} className="flex gap-4 py-5">
                   <div className="w-20 shrink-0 sm:w-24">
-                    <ProductImage
-                      src={src}
-                      alt={altText}
-                      ratio="1 / 1"
-                      blend={isAccessory}
-                    />
+                    <ProductImage src={src} alt={altText} ratio="1 / 1" blend={isAccessory} />
                   </div>
                   <div className="flex flex-1 flex-col">
                     <div className="flex items-start justify-between gap-3">
@@ -88,9 +77,7 @@ export function CartPage() {
                         <p className="font-semibold text-ink">{line.name}</p>
                         <p className="text-sm text-muted">{subLabel}</p>
                         {line.reservation && (
-                          <p className="mt-1 text-xs font-semibold text-ink">
-                            Reserva · entra en lista de espera
-                          </p>
+                          <p className="mt-1 text-xs font-semibold text-ink">Reserva · entra en lista de espera</p>
                         )}
                         <div className="mt-1">
                           <ProvisionalBadge />
@@ -138,9 +125,7 @@ export function CartPage() {
                         <Icon name="shield" size={18} />
                         <span>
                           <span className="font-semibold">{t('product.insurance')}</span>
-                          <span className="block text-xs text-muted">
-                            +{euro(insurancePrice)}/mes* por unidad
-                          </span>
+                          <span className="block text-xs text-muted">+{euro(insurancePrice)}/mes* por unidad</span>
                         </span>
                       </label>
                     )}
@@ -218,10 +203,7 @@ export function CartPage() {
             <ButtonLink to="/checkout/1" size="lg" className="mt-5 w-full">
               Finalizar compra
             </ButtonLink>
-            <Link
-              to="/iphone"
-              className="mt-3 block text-center text-sm font-semibold text-ink hover:underline"
-            >
+            <Link to="/iphone" className="mt-3 block text-center text-sm font-semibold text-ink hover:underline">
               Seguir comprando
             </Link>
           </div>
@@ -236,19 +218,13 @@ export function CartPage() {
 // Cross-sell contextual (§4.5): sugiere accesorios reales del catálogo
 // compatibles con las familias de los dispositivos que ya están en el
 // carrito. No se sugieren accesorios que el usuario ya tenga añadido.
-function CrossSellSuggestions({
-  cart,
-}: {
-  cart: ReturnType<typeof useStore>['cart']
-}) {
+function CrossSellSuggestions({ cart }: { cart: ReturnType<typeof useStore>['cart'] }) {
   const t = useT()
   const cat = useCatalogo()
   const suggestions = useMemo(() => {
     const inCart = new Set(cart.filter((l) => l.kind === 'accessory').map((l) => l.modelSlug))
     const deviceFamilies = new Set<FamilySlug>(
-      cart
-        .filter((l) => l.kind !== 'accessory')
-        .map((l) => l.family as FamilySlug),
+      cart.filter((l) => l.kind !== 'accessory').map((l) => l.family as FamilySlug),
     )
     const seen = new Set<string>()
     const items: Accessory[] = []
@@ -280,10 +256,7 @@ function CrossSellSuggestions({
     <div className="mt-12">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xl font-bold text-ink">{t('cart.complete')}</h2>
-        <Link
-          to="/accesorios"
-          className="text-sm font-semibold text-ink underline-offset-2 hover:underline"
-        >
+        <Link to="/accesorios" className="text-sm font-semibold text-ink underline-offset-2 hover:underline">
           {t('common.allAccessories')}
         </Link>
       </div>
@@ -305,9 +278,7 @@ function CrossSellSuggestions({
               <div className="flex flex-1 flex-col p-3">
                 <p className="text-sm font-semibold text-ink">{cat(a.name)}</p>
                 {a.price != null && (
-                  <p className="mt-1 text-xs text-muted">
-                    {t('common.priceDemo', { precio: euro(a.price) })}
-                  </p>
+                  <p className="mt-1 text-xs text-muted">{t('common.priceDemo', { precio: euro(a.price) })}</p>
                 )}
               </div>
             </Link>

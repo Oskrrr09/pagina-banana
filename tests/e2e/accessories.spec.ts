@@ -81,9 +81,7 @@ for (const fx of detailFixtures) {
     await expect(page.getByRole('heading', { name: new RegExp(fx.name), level: 1 })).toBeVisible()
     await expect(page.getByText('Especificaciones')).toBeVisible()
     await expect(page.getByText('Precio demostrativo').first()).toBeVisible()
-    await expect(
-      page.getByRole('link', { name: /Consultar disponibilidad en tiendas/ }),
-    ).toBeVisible()
+    await expect(page.getByRole('link', { name: /Consultar disponibilidad en tiendas/ })).toBeVisible()
     await expect(page.getByRole('link', { name: /Consultar disponibilidad en tiendas/ })).toHaveAttribute(
       'href',
       /\/tiendas$/,
@@ -91,12 +89,8 @@ for (const fx of detailFixtures) {
     // Los accesorios sí tienen "Añadir al carrito" (integración con
     // carrito), pero NO "Contratar seguro" — el seguro es solo para
     // dispositivos.
-    await expect(
-      page.getByRole('button', { name: /Añadir al carrito/ }),
-    ).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: /Contratar seguro/ }),
-    ).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Añadir al carrito/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Contratar seguro/ })).toHaveCount(0)
   })
 }
 
@@ -166,17 +160,15 @@ test('variantes de Magic Trackpad: blanco y negro tienen src DISTINTO', async ({
 
 test('iPhone 17 Pro: aparece funda exacta y no la de Pro Max', async ({ page }) => {
   await page.goto('./iphone/17-pro')
-  const section = page.getByRole('region', { name: /Accesorios compatibles/ }).or(
-    page.locator('section:has(h2:has-text("Accesorios compatibles"))'),
-  )
+  const section = page
+    .getByRole('region', { name: /Accesorios compatibles/ })
+    .or(page.locator('section:has(h2:has-text("Accesorios compatibles"))'))
   await expect(page.getByRole('heading', { name: 'Accesorios compatibles' })).toBeVisible()
   await expect(
     page.getByRole('link', { name: /Funda de trenzado técnico con MagSafe para el iPhone 17 Pro/ }),
   ).toBeVisible()
   // No debe aparecer una funda de iPhone 17 Pro Max ni de iPhone 17 estándar.
-  await expect(
-    page.getByRole('link', { name: /Funda.+iPhone 17 Pro Max/ }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /Funda.+iPhone 17 Pro Max/ })).toHaveCount(0)
   await expect(section).toBeVisible()
 })
 
@@ -246,7 +238,10 @@ test('Home: enlace de familias "Accesorios" lleva a /accesorios', async ({ page 
   await page.goto('./')
   // El grid de "Explora por categoría" incluye Accesorios; su enlace debe
   // ir al catálogo real.
-  const acc = page.getByRole('link', { name: /Accesorios/ }).filter({ hasNotText: 'Ir a' }).first()
+  const acc = page
+    .getByRole('link', { name: /Accesorios/ })
+    .filter({ hasNotText: 'Ir a' })
+    .first()
   const href = await acc.getAttribute('href')
   expect(href).toMatch(/\/accesorios/)
 })
@@ -294,9 +289,7 @@ async function openDesktopHeaderSearchStrict(page: Page) {
 test('sin ilustraciones inventadas: ningún src de accesorio real termina en .svg', async ({ page }) => {
   await page.goto('./accesorios')
   await page.waitForLoadState('networkidle')
-  const srcs = await page
-    .locator('main img')
-    .evaluateAll((imgs) => imgs.map((el) => (el as HTMLImageElement).src))
+  const srcs = await page.locator('main img').evaluateAll((imgs) => imgs.map((el) => (el as HTMLImageElement).src))
   expect(srcs.length).toBeGreaterThan(0)
   for (const s of srcs) {
     expect(s.toLowerCase().endsWith('.svg')).toBe(false)
@@ -334,7 +327,9 @@ test('/buscar?q=iPhone: la sección Accesorios Apple muestra tarjetas VISUALES c
   const accHeading = page.getByRole('heading', { name: /Accesorios Apple/ })
   await expect(accHeading).toBeVisible()
   // La sección debe contener enlaces a /accesorios/ con una imagen dentro.
-  const accSection = page.locator('section', { has: page.locator('h2', { hasText: 'Accesorios Apple' }) })
+  const accSection = page.locator('section', {
+    has: page.locator('h2', { hasText: 'Accesorios Apple' }),
+  })
   const links = accSection.locator('a[href*="/accesorios/"]')
   const linkCount = await links.count()
   expect(linkCount).toBeGreaterThan(0)
@@ -347,10 +342,14 @@ test('/buscar?q=iPhone: la sección Accesorios Apple muestra tarjetas VISUALES c
   }
 })
 
-test('/buscar?q=cargador: accesorios Apple aparecen con fotografía y sin "Contenido demostrativo"', async ({ page }) => {
+test('/buscar?q=cargador: accesorios Apple aparecen con fotografía y sin "Contenido demostrativo"', async ({
+  page,
+}) => {
   await page.goto('./buscar?q=cargador')
   await page.waitForLoadState('networkidle')
-  const accSection = page.locator('section', { has: page.locator('h2', { hasText: /Accesorios Apple/ }) })
+  const accSection = page.locator('section', {
+    has: page.locator('h2', { hasText: /Accesorios Apple/ }),
+  })
   await expect(accSection).toBeVisible()
   const links = accSection.locator('a[href*="/accesorios/"]')
   expect(await links.count()).toBeGreaterThan(0)
@@ -381,7 +380,10 @@ test('Header autocompletado: sugerencias de accesorios reales muestran miniatura
   await input.fill('MagSafe')
   await expect(page.getByRole('option').first()).toBeVisible()
   // Al menos una opción cuyo enlace apunte a /accesorios/ debe contener una img.
-  const accOption = page.getByRole('option').filter({ hasText: /MagSafe/i }).first()
+  const accOption = page
+    .getByRole('option')
+    .filter({ hasText: /MagSafe/i })
+    .first()
   await expect(accOption).toBeVisible()
   const img = accOption.locator('img').first()
   await expect(img).toHaveAttribute('src', /\/img\/accessories\//)
@@ -418,9 +420,7 @@ test('sin residuos: 0 archivos SVG dentro del catálogo (referencias en accessor
   await page.waitForLoadState('networkidle')
   const anySvg = await page
     .locator('main img')
-    .evaluateAll((imgs) =>
-      imgs.filter((el) => (el as HTMLImageElement).src.toLowerCase().endsWith('.svg')).length,
-    )
+    .evaluateAll((imgs) => imgs.filter((el) => (el as HTMLImageElement).src.toLowerCase().endsWith('.svg')).length)
   expect(anySvg).toBe(0)
 })
 
@@ -432,9 +432,9 @@ test('sin residuos: 0 archivos SVG dentro del catálogo (referencias en accessor
 test('no hay accesorios retirados en /accesorios (TB4 Pro, MK basic, funda iPhone Air)', async ({ page }) => {
   await page.goto('./accesorios')
   await page.waitForLoadState('networkidle')
-  const links = await page.locator('main a[href*="/accesorios/"]').evaluateAll(
-    (nodes) => nodes.map((n) => (n as HTMLAnchorElement).getAttribute('href') ?? ''),
-  )
+  const links = await page
+    .locator('main a[href*="/accesorios/"]')
+    .evaluateAll((nodes) => nodes.map((n) => (n as HTMLAnchorElement).getAttribute('href') ?? ''))
   expect(links.some((h) => h.includes('cable-thunderbolt-4-pro'))).toBe(false)
   expect(links.some((h) => h.includes('funda-magsafe-iphone-air'))).toBe(false)
   // magic-keyboard-usb-c básico retirado; magic-keyboard-touch-id-numeric permanece.
@@ -443,11 +443,7 @@ test('no hay accesorios retirados en /accesorios (TB4 Pro, MK basic, funda iPhon
 })
 
 test('rutas de accesorios retirados devuelven a /accesorios (no ficha huérfana)', async ({ page }) => {
-  for (const slug of [
-    'cable-thunderbolt-4-pro-1_8m',
-    'funda-magsafe-iphone-air',
-    'magic-keyboard-usb-c',
-  ]) {
+  for (const slug of ['cable-thunderbolt-4-pro-1_8m', 'funda-magsafe-iphone-air', 'magic-keyboard-usb-c']) {
     await page.goto(`./accesorios/${slug}`)
     // El componente AccessoryDetailPage redirige a /accesorios si no encuentra el slug.
     await expect(page).toHaveURL(/\/accesorios$/)
@@ -466,12 +462,14 @@ test('Magic Keyboard TouchID+numeric tiene dos variantes con imágenes distintas
   expect(srcBlack).not.toBe(srcWhite)
 })
 
-test('/buscar?q=iPhone: los accesorios Apple usan la MISMA tarjeta que /accesorios (min-h-[400px])', async ({ page }) => {
+test('/buscar?q=iPhone: los accesorios Apple usan la MISMA tarjeta que /accesorios (min-h-[400px])', async ({
+  page,
+}) => {
   await page.goto('./buscar?q=iPhone')
   await page.waitForLoadState('networkidle')
-  const accSection = page.locator(
-    'section', { has: page.locator('h2', { hasText: /Accesorios Apple/ }) },
-  )
+  const accSection = page.locator('section', {
+    has: page.locator('h2', { hasText: /Accesorios Apple/ }),
+  })
   const cards = accSection.locator('div.group.min-h-\\[400px\\]')
   // Al menos una tarjeta completa con altura mínima.
   expect(await cards.count()).toBeGreaterThan(0)
@@ -496,7 +494,9 @@ test('AccessoryCard comparte diseño con ProductCard: mismo borde, radio y min-h
   if (prodBox) expect(prodBox.height).toBeGreaterThanOrEqual(390)
 })
 
-test('AccessoryCard estructura: h3 → tagline → precio → badge (mismo orden que ProductCard, sin línea de categoría)', async ({ page }) => {
+test('AccessoryCard estructura: h3 → tagline → precio → badge (mismo orden que ProductCard, sin línea de categoría)', async ({
+  page,
+}) => {
   await page.goto('./accesorios')
   await page.waitForLoadState('networkidle')
   const card = page.locator('main .group.min-h-\\[400px\\]').first()
@@ -521,12 +521,14 @@ test('AccessoryCard estructura: h3 → tagline → precio → badge (mismo orden
   }
 })
 
-test('/buscar?q=iPhone: la tarjeta del accesorio comparte estructura con la del dispositivo (h3, tagline, precio, badge)', async ({ page }) => {
+test('/buscar?q=iPhone: la tarjeta del accesorio comparte estructura con la del dispositivo (h3, tagline, precio, badge)', async ({
+  page,
+}) => {
   await page.goto('./buscar?q=iPhone')
   await page.waitForLoadState('networkidle')
-  const accSection = page.locator(
-    'section', { has: page.locator('h2', { hasText: /Accesorios Apple/ }) },
-  )
+  const accSection = page.locator('section', {
+    has: page.locator('h2', { hasText: /Accesorios Apple/ }),
+  })
   const accCard = accSection.locator('div.group.min-h-\\[400px\\]').first()
   await expect(accCard.locator('h3').first()).toBeVisible()
   await expect(accCard.locator('span.text-lg.font-bold.text-ink').first()).toBeVisible()
@@ -558,7 +560,10 @@ test('carrito con dispositivo: sí muestra checkbox de seguro; y cross-sell rela
   // Seleccionar variante y añadir al carrito desde la ficha del modelo.
   // Alternativa fiable: ir a la variante directamente.
   await page.goto('./iphone/17-pro/256gb-plata')
-  await page.getByRole('button', { name: /Añadir a la cesta|Añadir al carrito/ }).first().click()
+  await page
+    .getByRole('button', { name: /Añadir a la cesta|Añadir al carrito/ })
+    .first()
+    .click()
   await page.goto('./carrito')
   const deviceItem = page.locator('li', { hasText: /iPhone 17 Pro/ }).first()
   await expect(deviceItem.getByText(/Seguro a todo riesgo/)).toBeVisible()
@@ -585,7 +590,9 @@ test('checkout resumen: la línea del accesorio muestra su fotografía real', as
   await page.goto('./accesorios/cargador-magsafe')
   await page.getByRole('button', { name: /Añadir al carrito/ }).click()
   await page.goto('./checkout/1')
-  const summary = page.locator('aside', { has: page.locator('h2', { hasText: /Resumen del pedido/ }) })
+  const summary = page.locator('aside', {
+    has: page.locator('h2', { hasText: /Resumen del pedido/ }),
+  })
   await expect(summary).toBeVisible()
   const line = summary.locator('li', { hasText: /Cargador MagSafe/ })
   await expect(line).toBeVisible()

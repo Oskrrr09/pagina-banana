@@ -24,42 +24,24 @@ test('Recogida en tienda seleccionada en el carrito llega al checkout', async ({
   await seedCart(page)
   await page.goto('./carrito')
   await page.getByRole('button', { name: /Recogida en tienda/ }).click()
-  await expect(page.getByRole('button', { name: /Recogida en tienda/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByRole('button', { name: /Recogida en tienda/ })).toHaveAttribute('aria-pressed', 'true')
 
   await page.goto('./checkout/1')
-  await expect(page.getByRole('button', { name: /Recogida en tienda/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByRole('button', { name: /Recogida en tienda/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('cambiar entrega en el checkout se refleja al volver al carrito', async ({ page }) => {
   await seedCart(page)
   await page.goto('./checkout/1')
   await page.getByRole('button', { name: /Recogida en tienda/ }).click()
-  await expect(page.getByRole('button', { name: /Recogida en tienda/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByRole('button', { name: /Recogida en tienda/ })).toHaveAttribute('aria-pressed', 'true')
   await page.goto('./carrito')
-  await expect(page.getByRole('button', { name: /Recogida en tienda/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByRole('button', { name: /Recogida en tienda/ })).toHaveAttribute('aria-pressed', 'true')
 
   await page.getByRole('button', { name: /Envío a domicilio/ }).click()
-  await expect(page.getByRole('button', { name: /Envío a domicilio/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByRole('button', { name: /Envío a domicilio/ })).toHaveAttribute('aria-pressed', 'true')
   await page.goto('./checkout/1')
-  await expect(page.getByRole('button', { name: /Envío a domicilio/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByRole('button', { name: /Envío a domicilio/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('activar el seguro no cambia la cantidad y aparece separado en el resumen', async ({ page }) => {

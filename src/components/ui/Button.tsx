@@ -40,7 +40,10 @@ export function Button({
   children,
   ...rest
 }: CommonProps & ButtonHTMLAttributes<HTMLButtonElement>) {
-  const cls = variant === 'tertiary' ? `${base} ${variants[variant]} ${className}` : `${base} ${variants[variant]} ${sizes[size]} ${className}`
+  const cls =
+    variant === 'tertiary'
+      ? `${base} ${variants[variant]} ${className}`
+      : `${base} ${variants[variant]} ${sizes[size]} ${className}`
   return (
     <button className={cls} {...rest}>
       {children}
@@ -55,7 +58,10 @@ export function ButtonLink({
   to,
   children,
 }: CommonProps & { to: string }) {
-  const cls = variant === 'tertiary' ? `${base} ${variants[variant]} ${className}` : `${base} ${variants[variant]} ${sizes[size]} ${className}`
+  const cls =
+    variant === 'tertiary'
+      ? `${base} ${variants[variant]} ${className}`
+      : `${base} ${variants[variant]} ${sizes[size]} ${className}`
   return (
     <Link to={to} className={cls}>
       {children}

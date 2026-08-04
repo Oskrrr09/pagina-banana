@@ -30,7 +30,9 @@ function Fixture() {
   return (
     <main>
       <h1>Conversación de prueba</h1>
-      <p data-testid="state">{estado} · {assignedTo ?? 'libre'}</p>
+      <p data-testid="state">
+        {estado} · {assignedTo ?? 'libre'}
+      </p>
       <p data-testid="last-operation">{lastOperation}</p>
       <ConversationActions
         conversationId="cccccccc-cccc-4ccc-8ccc-cccccccccccc"

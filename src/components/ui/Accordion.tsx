@@ -52,9 +52,7 @@ export function Accordion({ items, defaultOpen = -1 }: { items: AccordionItem[];
                 >
                   <div className="pb-4 pr-8 text-[15px] leading-relaxed text-muted">
                     {item.a}
-                    {item.note && (
-                      <span className="mt-2 block text-xs italic text-muted/80">Nota: {item.note}</span>
-                    )}
+                    {item.note && <span className="mt-2 block text-xs italic text-muted/80">Nota: {item.note}</span>}
                   </div>
                 </motion.div>
               )}

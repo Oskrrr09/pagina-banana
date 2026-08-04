@@ -59,10 +59,7 @@ export interface ChatSession {
     valoracionSolicitada: boolean
     valoracionEnviada: boolean
   }
-  enviarValoracion: (
-    estrellas: number,
-    observacion: string,
-  ) => Promise<{ error: string | null }>
+  enviarValoracion: (estrellas: number, observacion: string) => Promise<{ error: string | null }>
   /**
    * Abre una conversación nueva dejando atrás la cerrada, sin recargar la
    * página. El historial anterior sigue en la base de datos.
@@ -178,10 +175,7 @@ async function asegurarSesion(): Promise<boolean> {
  * como bot puede suplantarlo en la conversación de cualquiera. Ahora el
  * visitante solo puede escribir con `autor: 'visitor'`.
  */
-async function abrirConversacion(
-  identity: VisitorIdentity | null,
-  guest: GuestIdentity | null,
-): Promise<string> {
+async function abrirConversacion(identity: VisitorIdentity | null, guest: GuestIdentity | null): Promise<string> {
   if (!supabase) throw new Error('Supabase no configurado')
 
   // La cuenta manda sobre los datos escritos a mano como invitado.
@@ -217,13 +211,8 @@ async function abrirConversacion(
   return data as string
 }
 
-export function useVisitorChatSession(
-  active: boolean,
-  identity: VisitorIdentity | null = null,
-): ChatSession {
-  const [status, setStatus] = useState<Status>(
-    supabaseEnabled ? 'loading' : 'demo',
-  )
+export function useVisitorChatSession(active: boolean, identity: VisitorIdentity | null = null): ChatSession {
+  const [status, setStatus] = useState<Status>(supabaseEnabled ? 'loading' : 'demo')
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<DbMessage[]>([])
   const [guest, setGuest] = useState<GuestIdentity | null>(() => readGuest())
@@ -310,11 +299,7 @@ export function useVisitorChatSession(
         setConversationId(convId)
 
         // Estado de cierre/valoración de esta conversación.
-        const { data: conv } = await supabase!
-          .from('conversaciones')
-          .select('*')
-          .eq('id', convId)
-          .maybeSingle()
+        const { data: conv } = await supabase!.from('conversaciones').select('*').eq('id', convId).maybeSingle()
         if (!cancelled && conv) setConversation(conv as DbConversation)
 
         setStatus('ready')
@@ -411,10 +396,10 @@ export function useVisitorChatSession(
       // Por RPC. El insert directo dejaba que el navegador pusiera el
       // `created_at`, y el disparador de actividad ordena la bandeja por él:
       // con una fecha futura la conversación se quedaba clavada arriba.
-      const { data: nuevoId, error: errorEnvio } = await supabase.rpc(
-        'enviar_mensaje_visitante',
-        { p_conversacion_id: conversationId, p_texto: texto },
-      )
+      const { data: nuevoId, error: errorEnvio } = await supabase.rpc('enviar_mensaje_visitante', {
+        p_conversacion_id: conversationId,
+        p_texto: texto,
+      })
       if (errorEnvio) {
         console.error('[chatSession] send error', errorEnvio)
         return
@@ -555,9 +540,7 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
   items: InboxItem[]
   status: Status
 } {
-  const [status, setStatus] = useState<Status>(
-    supabaseEnabled ? 'loading' : 'demo',
-  )
+  const [status, setStatus] = useState<Status>(supabaseEnabled ? 'loading' : 'demo')
   const [items, setItems] = useState<InboxItem[]>([])
 
   const reload = useCallback(async () => {
@@ -583,11 +566,7 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
 
     if (ids.length > 0) {
       const [{ data: msgs }, { data: visitantes }] = await Promise.all([
-        supabaseAgent
-          .from('mensajes')
-          .select('*')
-          .in('conversacion_id', ids)
-          .order('created_at', { ascending: false }),
+        supabaseAgent.from('mensajes').select('*').in('conversacion_id', ids).order('created_at', { ascending: false }),
         supabaseAgent.from('visitantes').select('*').in('id', visitorIds),
       ])
 
@@ -623,30 +602,18 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
     if (!supabaseAgent) return
     const channel = supabaseAgent
       .channel('agent-inbox')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'mensajes' },
-        () => {
-          void reload()
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'conversaciones' },
-        () => {
-          void reload()
-        },
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mensajes' }, () => {
+        void reload()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones' }, () => {
+        void reload()
+      })
       // Un visitante que ya existía puede identificarse después (al dar sus
       // datos o al iniciar sesión). Sin esto, la bandeja seguiría enseñando
       // "Visitante ab12cd34" hasta el siguiente mensaje.
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'visitantes' },
-        () => {
-          void reload()
-        },
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'visitantes' }, () => {
+        void reload()
+      })
       .subscribe()
     return () => {
       supabaseAgent!.removeChannel(channel)
@@ -661,9 +628,7 @@ export function useAgentConversation(conversationId: string | null): {
   sendMessage: (texto: string) => Promise<{ error: string | null }>
   status: Status
 } {
-  const [status, setStatus] = useState<Status>(
-    supabaseEnabled ? (conversationId ? 'loading' : 'ready') : 'demo',
-  )
+  const [status, setStatus] = useState<Status>(supabaseEnabled ? (conversationId ? 'loading' : 'ready') : 'demo')
   const [messages, setMessages] = useState<DbMessage[]>([])
   const seenIdsRef = useRef<Set<string>>(new Set())
 
@@ -736,10 +701,10 @@ export function useAgentConversation(conversationId: string | null): {
         // Por RPC. El insert directo mandaba `agente_id` desde aquí, y quien
         // manda su propia firma puede mandar la de otro —o dejarla vacía—. El
         // servidor lo saca de la sesión.
-        const { data: nuevoId, error: errorEnvio } = await supabaseAgent.rpc(
-          'responder_como_agente',
-          { p_conversacion_id: conversationId, p_texto: texto },
-        )
+        const { data: nuevoId, error: errorEnvio } = await supabaseAgent.rpc('responder_como_agente', {
+          p_conversacion_id: conversationId,
+          p_texto: texto,
+        })
         if (errorEnvio) {
           console.error('[agentConversation] send error', errorEnvio)
           return { error: errorEnvio.message }
@@ -840,11 +805,7 @@ export function useAgentNames(): Record<string, string> {
       .select('id, nombre')
       .then(({ data, error }) => {
         if (!active || error || !data) return
-        setNames(
-          Object.fromEntries(
-            (data as { id: string; nombre: string }[]).map((a) => [a.id, a.nombre]),
-          ),
-        )
+        setNames(Object.fromEntries((data as { id: string; nombre: string }[]).map((a) => [a.id, a.nombre])))
       })
     return () => {
       active = false
@@ -889,11 +850,7 @@ export function useConversationVisitor(conversationId: string | null): {
       }
 
       const [{ data: v }, { data: otras }] = await Promise.all([
-        supabaseAgent!
-          .from('visitantes')
-          .select('*')
-          .eq('id', conv.visitor_id)
-          .maybeSingle(),
+        supabaseAgent!.from('visitantes').select('*').eq('id', conv.visitor_id).maybeSingle(),
         supabaseAgent!
           .from('conversaciones')
           .select('*')

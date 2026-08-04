@@ -120,20 +120,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const found = prev.find((l) => l.id === line.id)
         if (found) {
           return prev.map((l) =>
-            l.id === line.id
-              ? { ...l, qty: l.qty + qty, insured: Boolean(l.insured || line.insured) }
-              : l,
+            l.id === line.id ? { ...l, qty: l.qty + qty, insured: Boolean(l.insured || line.insured) } : l,
           )
         }
         return [...prev, { ...line, qty }]
       })
     }
-    const removeFromCart: StoreState['removeFromCart'] = (id) =>
-      setCart((prev) => prev.filter((l) => l.id !== id))
+    const removeFromCart: StoreState['removeFromCart'] = (id) => setCart((prev) => prev.filter((l) => l.id !== id))
     const setQty: StoreState['setQty'] = (id, qty) =>
-      setCart((prev) =>
-        prev.map((l) => (l.id === id ? { ...l, qty: Math.max(1, qty) } : l)),
-      )
+      setCart((prev) => prev.map((l) => (l.id === id ? { ...l, qty: Math.max(1, qty) } : l)))
     const setLineInsurance: StoreState['setLineInsurance'] = (id, insured) =>
       setCart((prev) => prev.map((line) => (line.id === id ? { ...line, insured } : line)))
     const clearCart = () => setCart([])
@@ -150,8 +145,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (prev.length >= MAX_COMPARE) return prev
         return [...prev, item]
       })
-    const removeCompare: StoreState['removeCompare'] = (id) =>
-      setCompare((prev) => prev.filter((c) => c.id !== id))
+    const removeCompare: StoreState['removeCompare'] = (id) => setCompare((prev) => prev.filter((c) => c.id !== id))
     const replaceCompareItem: StoreState['replaceCompareItem'] = (currentId, next) =>
       setCompare((prev) => {
         const idx = prev.findIndex((c) => c.id === currentId)
@@ -174,10 +168,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       clearCart,
       cartCount: cart.reduce((n, l) => n + l.qty, 0),
       cartSubtotal: cart.reduce((n, l) => n + l.price * l.qty, 0),
-      cartInsuranceTotal: cart.reduce(
-        (total, line) => total + (line.insured ? INSURANCE_PRICE * line.qty : 0),
-        0,
-      ),
+      cartInsuranceTotal: cart.reduce((total, line) => total + (line.insured ? INSURANCE_PRICE * line.qty : 0), 0),
       insurancePrice: INSURANCE_PRICE,
       favorites,
       toggleFavorite,
@@ -189,14 +180,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       isComparing: (id) => compare.some((c) => c.id === id),
       compareFull: compare.length >= MAX_COMPARE,
     }
-  }, [
-    cart,
-    favorites,
-    compare,
-    setCart,
-    setFavorites,
-    setCompare,
-  ])
+  }, [cart, favorites, compare, setCart, setFavorites, setCompare])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

@@ -21,10 +21,7 @@ const DISPONIBLE = './iphone/17-pro/256gb-plata'
 
 test('el icono de cuenta lleva a /login cuando no hay sesión', async ({ page }) => {
   await page.goto('./')
-  await expect(page.getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute(
-    'href',
-    /\/login$/,
-  )
+  await expect(page.getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute('href', /\/login$/)
 })
 
 test('/cuenta nunca muestra datos de cuenta sin sesión', async ({ page }) => {

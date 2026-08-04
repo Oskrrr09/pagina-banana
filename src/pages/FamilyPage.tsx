@@ -57,7 +57,9 @@ export function FamilyPage() {
           <div className="grid items-center gap-8 md:grid-cols-2">
             <div>
               <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">{family.name}</h1>
-              <p className="mt-3 max-w-md text-lg text-muted">{family.taglineKey ? t(family.taglineKey) : family.tagline}. {t('catalog.compareAndChoose')}</p>
+              <p className="mt-3 max-w-md text-lg text-muted">
+                {family.taglineKey ? t(family.taglineKey) : family.tagline}. {t('catalog.compareAndChoose')}
+              </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <ButtonLink to={`/comparar?familia=${family.slug}`} variant="secondary">
                   <Icon name="compare" size={18} /> Comparar modelos
@@ -94,7 +96,8 @@ export function FamilyPage() {
             </div>
           </div>
           <p className="text-sm text-muted">
-            {filtered.length} {filtered.length === 1 ? t('catalog.model') : t('catalog.models')} · {t('common.from', { precio: euro(minPrice, intl) })}
+            {filtered.length} {filtered.length === 1 ? t('catalog.model') : t('catalog.models')} ·{' '}
+            {t('common.from', { precio: euro(minPrice, intl) })}
           </p>
         </div>
 
@@ -142,9 +145,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
             <h1 className="mt-2 text-4xl font-extrabold text-ink sm:text-5xl">
               {t('catalog.buyA', { familia: family.name })}
             </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-muted">
-              {t('catalog.chooseModel')}
-            </p>
+            <p className="mx-auto mt-3 max-w-2xl text-muted">{t('catalog.chooseModel')}</p>
           </div>
 
           <nav aria-label={`Modelos de ${family.name}`} className="mt-8 overflow-x-auto no-scrollbar pb-2">
@@ -155,9 +156,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                     to={variantPath(model)}
                     className="group flex flex-col items-center rounded-[16px] border border-transparent px-3 py-3 text-center transition-[background-color,border-color,transform] hover:-translate-y-1 hover:border-line hover:bg-surface"
                   >
-                    <span
-                      className="grid aspect-square w-full place-items-center overflow-hidden rounded-[12px] bg-surface p-2"
-                    >
+                    <span className="grid aspect-square w-full place-items-center overflow-hidden rounded-[12px] bg-surface p-2">
                       <img
                         src={model.colors[0].image}
                         alt=""
@@ -169,7 +168,9 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                       />
                     </span>
                     <span className="mt-2 text-sm font-semibold leading-tight text-ink">{cat(model.name)}</span>
-                    <span className="mt-1 text-xs text-muted">{t('common.from', { precio: euro(model.fromPrice, intl) })}</span>
+                    <span className="mt-1 text-xs text-muted">
+                      {t('common.from', { precio: euro(model.fromPrice, intl) })}
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -185,17 +186,14 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
             <h2 className="mt-2 text-3xl font-extrabold text-ink sm:text-5xl">
               {t('catalog.featuredIn', { familia: family.name })}
             </h2>
-            <p className="mt-3 text-muted">
-              {t('family.demoPrices')}
-            </p>
+            <p className="mt-3 text-muted">{t('family.demoPrices')}</p>
           </div>
 
           <div className="mx-auto mt-10 grid max-w-5xl gap-5 sm:grid-cols-2">
             {(offerModels.length > 0 ? offerModels : models.slice(0, 4)).map((model) => {
               const firstColor = model.colors[0]
               const offer =
-                firstColor.capacities.find((capacity) => capacity.previousPrice != null) ??
-                firstColor.capacities[0]
+                firstColor.capacities.find((capacity) => capacity.previousPrice != null) ?? firstColor.capacities[0]
 
               return (
                 <Link
@@ -209,7 +207,10 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
                       <h3 className="mt-3 text-2xl font-extrabold text-ink">{cat(model.name)}</h3>
                       <p className="mt-1 text-sm text-muted">{cat(model.tagline)}</p>
                     </div>
-                    <Icon name="arrow-right" className="shrink-0 text-ink transition-transform group-hover:translate-x-1" />
+                    <Icon
+                      name="arrow-right"
+                      className="shrink-0 text-ink transition-transform group-hover:translate-x-1"
+                    />
                   </div>
                   <div className="mt-5 grid items-end gap-4 sm:grid-cols-[1fr_1.2fr]">
                     <div>

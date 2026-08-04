@@ -74,15 +74,15 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
       <div className="mt-auto pt-3">
         {hasOffer && firstCap.previousPrice ? (
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold leading-none text-danger">
-              {euro(model.fromPrice, intl)}
-            </span>
+            <span className="text-2xl font-extrabold leading-none text-danger">{euro(model.fromPrice, intl)}</span>
             <span className="text-sm font-semibold text-muted line-through decoration-2">
               {euro(firstCap.previousPrice, intl)}
             </span>
           </div>
         ) : (
-          <span className="text-lg font-bold text-ink">{t('common.from', { precio: euro(model.fromPrice, intl) })}</span>
+          <span className="text-lg font-bold text-ink">
+            {t('common.from', { precio: euro(model.fromPrice, intl) })}
+          </span>
         )}
       </div>
       <div className="mt-2">

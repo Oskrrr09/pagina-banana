@@ -15,9 +15,7 @@ export function ServicesPage() {
       <section className="border-b border-line bg-linear-to-b from-brand-050 to-surface">
         <Container className="py-12 md:py-16">
           <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">{t('services.title')}</h1>
-          <p className="mt-3 max-w-2xl text-lg text-muted">
-            {t('services.intro')}
-          </p>
+          <p className="mt-3 max-w-2xl text-lg text-muted">{t('services.intro')}</p>
         </Container>
       </section>
 
@@ -26,7 +24,10 @@ export function ServicesPage() {
         <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((s) => (
             <StaggerItem key={s.slug}>
-              <div id={s.slug} className="flex h-full flex-col rounded-[12px] border border-line bg-surface p-6 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]">
+              <div
+                id={s.slug}
+                className="flex h-full flex-col rounded-[12px] border border-line bg-surface p-6 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
+              >
                 <span className="grid h-12 w-12 place-items-center rounded-[12px] bg-brand-050 text-ink">
                   <Icon name={s.icon} size={24} />
                 </span>

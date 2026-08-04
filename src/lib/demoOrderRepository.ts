@@ -84,10 +84,7 @@ export interface CreateOrderInput {
 export const demoOrderRepository = {
   createFromCart(input: CreateOrderInput): DemoOrder {
     const id = generateId()
-    const insuredUnits = input.cart.reduce(
-      (n, line) => n + (line.insured ? line.qty : 0),
-      0,
-    )
+    const insuredUnits = input.cart.reduce((n, line) => n + (line.insured ? line.qty : 0), 0)
     const order: DemoOrder = {
       id,
       createdAt: new Date().toISOString(),
