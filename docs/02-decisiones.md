@@ -723,6 +723,46 @@ No atribuye motivaciones que el repositorio no documenta.
 - Es coherente con lo que ya se hace con los precios, marcados como
   demostrativos desde el principio.
 
+## D-049 — El visitante anónimo tiene identidad verificable y escribe por RPC
+
+- Fecha: 2026-08-02.
+- Estado: vigente. Sustituye el resto de acceso abierto que quedaba de
+  [[#D-025 — Fase 1 sin autenticación de agentes]].
+- Decisión: el chat no exige crear una cuenta, pero obtiene una sesión anónima
+  de Supabase. Las políticas relacionan cada fila con `auth.uid()`; el UUID de
+  `localStorage` solo recuerda la conversación y no autoriza nada.
+- Escritura: visitantes, agentes y clientes no insertan ni actualizan
+  directamente las columnas sensibles. Apertura, mensajes, valoración,
+  asignación, cierre, reservas y descuento educativo pasan por RPC que deriva
+  el propietario, autor, agente, estado y fechas desde la sesión.
+- Motivo: RLS filtra filas, no columnas. Una política de `UPDATE` correcta en
+  la fila no impide que el cliente cambie el descuento, el agente se ascienda
+  o alguien altere la fecha que fija el orden de una reserva.
+- Evidencia:
+  `supabase/migrations/20260802000100_estado_seguro.sql`,
+  `tests/schema/politicas.test.ts` y `tests/rls/politicas.spec.ts`.
+- Consecuencia: Anonymous sign-ins debe estar activado. El frontend anterior y
+  el esquema final no son compatibles entre sí; se despliegan en la misma
+  ventana.
+
+## D-050 — Una migración ejecutable y despliegue bloqueado por calidad
+
+- Fecha: 2026-08-02.
+- Estado: vigente.
+- Decisión: `supabase/migrations/` es la única fuente SQL ejecutable.
+  `supabase/schema.sql` queda como puntero, no como segunda definición. La
+  migración se prueba tanto desde cero como sobre el estado exacto anterior.
+- CI: un solo workflow encadena tipos, ESLint, Vitest/esquema, build, E2E y
+  RLS. Pages solo se publica desde `main` después de superar toda la cadena.
+- Validación RLS: PGlite comprueba PostgreSQL y las políticas en cada cambio;
+  GoTrue, PostgREST y Storage requieren además un proyecto Supabase dedicado.
+  Un push a `main` sin sus tres secretos debe fallar en vez de publicar.
+- Motivo: antes `schema.sql` podía reabrir políticas que las migraciones
+  cerraban y el workflow de Pages publicaba en paralelo antes de conocer el
+  resultado de los E2E.
+- Evidencia: `.github/workflows/ci.yml`, `tests/schema/` y
+  `tests/rls/README.md`.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

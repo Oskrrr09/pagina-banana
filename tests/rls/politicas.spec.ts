@@ -76,6 +76,14 @@ test.afterAll(async () => {
   if (!configurado) return
   const admin = clienteServicio()
 
+  // `visitantes.auth_id` usa ON DELETE SET NULL: borrar el usuario de Auth no
+  // limpia el chat, lo deja huérfano. Se elimina mientras el auth_id todavía
+  // permite reconocer todas las filas creadas por esta ejecución; las
+  // conversaciones y los mensajes caen por cascada.
+  if (usuarios.length > 0) {
+    await admin.from('visitantes').delete().in('auth_id', usuarios)
+  }
+
   // Orden inverso: los mensajes cuelgan de las conversaciones, y éstas de los
   // visitantes. Va en `afterAll` sin `if` de éxito a propósito: si una prueba
   // falla a mitad, la basura que dejó es justo la que más estorba a la
@@ -118,10 +126,9 @@ test('un visitante no puede leer los mensajes de otra conversación', async () =
   const { data: conv } = await ana.db.rpc('abrir_conversacion', {
     p_nombre: 'Ana',
   })
-  await ana.db.from('mensajes').insert({
-    conversacion_id: conv,
-    autor: 'visitor',
-    texto: 'secreto de Ana',
+  await ana.db.rpc('enviar_mensaje_visitante', {
+    p_conversacion_id: conv,
+    p_texto: 'secreto de Ana',
   })
 
   const { data } = await bea.db.from('mensajes').select('texto')
@@ -198,10 +205,9 @@ test('el chat legítimo sigue funcionando de punta a punta', async () => {
   expect(errorApertura, 'abrir conversación debe funcionar').toBeNull()
   expect(conv).toBeTruthy()
 
-  const { error: errorEnvio } = await ana.db.from('mensajes').insert({
-    conversacion_id: conv,
-    autor: 'visitor',
-    texto: '¿Tenéis el iPhone 17 en Triana?',
+  const { error: errorEnvio } = await ana.db.rpc('enviar_mensaje_visitante', {
+    p_conversacion_id: conv,
+    p_texto: '¿Tenéis el iPhone 17 en Triana?',
   })
   expect(errorEnvio, 'enviar un mensaje propio debe funcionar').toBeNull()
 
@@ -229,6 +235,38 @@ async function clienteRegistrado(sufijo: string) {
   const uid = anotarUsuario(data.user!.id)
   await db.from('clientes').insert({ id: uid, email })
   creados.push({ tabla: 'clientes', id: uid })
+  return { db, uid, email }
+}
+
+/** Crea una cuenta de agente real en GoTrue y abre una sesión sin service_role. */
+async function agenteRegistrado(
+  sufijo: string,
+  rol: 'agente' | 'supervisor' = 'agente',
+) {
+  const admin = clienteServicio()
+  const email = `rls-agente-${sufijo}-${Date.now()}@ejemplo.test`
+  const password = 'prueba-rls-agente-1234'
+  const { data: alta, error: errorAlta } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  })
+  expect(errorAlta, 'el alta administrativa del agente debe funcionar').toBeNull()
+  const uid = anotarUsuario(alta.user!.id)
+
+  const { error: errorFicha } = await admin.from('agentes').insert({
+    id: uid,
+    email,
+    nombre: `Agente ${sufijo}`,
+    rol,
+    estado: 'disponible',
+  })
+  expect(errorFicha, 'la ficha del agente debe poder prepararse').toBeNull()
+  creados.push({ tabla: 'agentes', id: uid })
+
+  const db = clienteAnonimo()
+  const { error: errorLogin } = await db.auth.signInWithPassword({ email, password })
+  expect(errorLogin, 'el login real del agente debe funcionar').toBeNull()
   return { db, uid, email }
 }
 
@@ -388,6 +426,15 @@ test('registrar un justificante devuelve la solicitud a pendiente y limpia la re
     .eq('id', uno.uid)
 
   const ruta = `${uno.uid}/justificante.pdf`
+  const { error: errorSubida } = await uno.db.storage
+    .from('descuentos-educativos')
+    .upload(ruta, new Blob(['justificante de prueba'], { type: 'application/pdf' }), {
+      contentType: 'application/pdf',
+      upsert: true,
+    })
+  expect(errorSubida, 'el cliente debe poder subir a su propia carpeta').toBeNull()
+  objetos.push(ruta)
+
   const { error } = await uno.db.rpc('registrar_mi_justificante', { p_ruta: ruta })
   expect(error).toBeNull()
 
@@ -408,27 +455,32 @@ test('registrar un justificante devuelve la solicitud a pendiente y limpia la re
 // ---- Reservas --------------------------------------------------------------
 
 /** Crea una reserva en espera para el cliente indicado. */
-async function reservaEnEspera(clienteId: string): Promise<string> {
-  const admin = clienteServicio()
-  const { data } = await admin
-    .from('reservas')
-    .insert({
-      cliente_id: clienteId,
-      family: 'iphone',
-      model_slug: '17-pro',
-      variant_label: '256 GB Plata',
-      price: 1329,
-      estado: 'en-espera',
-    })
-    .select('id')
-    .single()
-  creados.push({ tabla: 'reservas', id: data!.id })
-  return data!.id as string
+async function reservaEnEspera(
+  cliente: { db: SupabaseClient; uid: string },
+  variante = '256 GB Plata',
+): Promise<string> {
+  const { data, error } = await cliente.db.rpc('crear_mis_reservas', {
+    p_lineas: [
+      {
+        family: 'iphone',
+        model_slug: '17-pro',
+        model_name: 'iPhone 17 Pro',
+        variant_label: variante,
+        price: 1329,
+        unidades: 1,
+      },
+    ],
+  })
+  expect(error, 'la reserva legítima debe crearse por RPC').toBeNull()
+  const id = (data as string[] | null)?.[0]
+  expect(id, 'el RPC debe devolver el identificador creado').toBeTruthy()
+  creados.push({ tabla: 'reservas', id: id! })
+  return id!
 }
 
 test('un cliente cancela su reserva por RPC', async () => {
   const uno = await clienteRegistrado('reserva')
-  const reserva = await reservaEnEspera(uno.uid)
+  const reserva = await reservaEnEspera(uno)
 
   const { error } = await uno.db.rpc('cancelar_mi_reserva', { p_reserva_id: reserva })
   expect(error, 'cancelar la propia reserva debe funcionar').toBeNull()
@@ -441,7 +493,7 @@ test('un cliente cancela su reserva por RPC', async () => {
 test('un cliente no puede cancelar la reserva de otro', async () => {
   const uno = await clienteRegistrado('duenyo')
   const dos = await clienteRegistrado('intruso')
-  const reserva = await reservaEnEspera(uno.uid)
+  const reserva = await reservaEnEspera(uno)
 
   const { error } = await dos.db.rpc('cancelar_mi_reserva', { p_reserva_id: reserva })
   expect(error, 'no es suya').not.toBeNull()
@@ -449,7 +501,7 @@ test('un cliente no puede cancelar la reserva de otro', async () => {
 
 test('un cliente no puede cambiar el precio ni la fecha de su reserva', async () => {
   const uno = await clienteRegistrado('precio')
-  const reserva = await reservaEnEspera(uno.uid)
+  const reserva = await reservaEnEspera(uno)
 
   // `pagado_at` fija el puesto en la lista de espera: moverlo es colarse.
   const { data: tocadas } = await uno.db
@@ -472,7 +524,7 @@ test('un cliente no puede cambiar el precio ni la fecha de su reserva', async ()
 
 test('una reserva ya cancelada no se puede volver a cancelar', async () => {
   const uno = await clienteRegistrado('recancelar')
-  const reserva = await reservaEnEspera(uno.uid)
+  const reserva = await reservaEnEspera(uno)
 
   await uno.db.rpc('cancelar_mi_reserva', { p_reserva_id: reserva })
   const { error } = await uno.db.rpc('cancelar_mi_reserva', { p_reserva_id: reserva })
@@ -493,4 +545,176 @@ test('un autenticado que no es agente no puede actuar como agente', async () => 
 
   const { data } = await uno.db.from('visitantes').select('id')
   expect((data ?? []).length, 'un cliente normal no enumera visitantes').toBe(0)
+})
+
+// ---- Integración real de agente, Storage y RPC finales --------------------
+
+test('un agente responde por RPC sin poder elegir autor ni firmante', async () => {
+  const visitante = await visitanteAnonimo()
+  const agente = await agenteRegistrado('respuesta')
+  const { data: conv } = await visitante.db.rpc('abrir_conversacion', {
+    p_nombre: 'Visitante respuesta',
+  })
+
+  const { error } = await agente.db.rpc('responder_como_agente', {
+    p_conversacion_id: conv,
+    p_texto: 'Respuesta verificada',
+  })
+  expect(error, 'el agente debe poder responder').toBeNull()
+
+  const admin = clienteServicio()
+  const { data } = await admin
+    .from('mensajes')
+    .select('autor, agente_id, texto')
+    .eq('conversacion_id', conv)
+    .eq('texto', 'Respuesta verificada')
+    .single()
+  expect(data).toMatchObject({ autor: 'agent', agente_id: agente.uid })
+})
+
+test('una cuenta normal no puede invocar operaciones de agente', async () => {
+  const visitante = await visitanteAnonimo()
+  const cliente = await clienteRegistrado('no-agente-rpc')
+  const { data: conv } = await visitante.db.rpc('abrir_conversacion', {
+    p_nombre: 'Visitante protegido',
+  })
+
+  const { error } = await cliente.db.rpc('responder_como_agente', {
+    p_conversacion_id: conv,
+    p_texto: 'No soy agente',
+  })
+  expect(error, 'authenticated no basta: hace falta estar en agentes').not.toBeNull()
+})
+
+test('un agente no puede ascenderse ni cambiar su ficha directamente', async () => {
+  const agente = await agenteRegistrado('sin-ascenso')
+
+  const { data: tocadas } = await agente.db
+    .from('agentes')
+    .update({ rol: 'supervisor', nombre: 'Me ascendí' })
+    .eq('id', agente.uid)
+    .select()
+  expect(tocadas ?? [], 'no debe existir UPDATE directo de agentes').toEqual([])
+
+  const { error: errorEstado } = await agente.db.rpc('cambiar_mi_estado', {
+    p_estado: 'ocupado',
+    p_nombre: null,
+  })
+  expect(errorEstado, 'el cambio acotado de estado sí debe funcionar').toBeNull()
+
+  const admin = clienteServicio()
+  const { data } = await admin
+    .from('agentes')
+    .select('rol, nombre, estado')
+    .eq('id', agente.uid)
+    .single()
+  expect(data!.rol).toBe('agente')
+  expect(data!.nombre).not.toBe('Me ascendí')
+  expect(data!.estado).toBe('ocupado')
+})
+
+test('cerrar y valorar exige asignación y respeta al dueño del chat', async () => {
+  const visitante = await visitanteAnonimo()
+  const intruso = await visitanteAnonimo()
+  const agente = await agenteRegistrado('cierre')
+  const { data: conv } = await visitante.db.rpc('abrir_conversacion', {
+    p_nombre: 'Visitante cierre',
+  })
+
+  const { error: sinAsignar } = await agente.db.rpc('cerrar_conversacion', {
+    p_conversacion_id: conv,
+    p_solicitar_valoracion: true,
+  })
+  expect(sinAsignar, 'un agente normal no cierra una conversación libre').not.toBeNull()
+
+  expect(
+    (await agente.db.rpc('asignarme_conversacion', { p_conversacion_id: conv })).error,
+  ).toBeNull()
+  expect(
+    (
+      await agente.db.rpc('cerrar_conversacion', {
+        p_conversacion_id: conv,
+        p_solicitar_valoracion: true,
+      })
+    ).error,
+  ).toBeNull()
+
+  const { error: valoracionAjena } = await intruso.db.rpc('enviar_valoracion', {
+    p_conversacion_id: conv,
+    p_estrellas: 1,
+    p_observacion: 'No es mi conversación',
+  })
+  expect(valoracionAjena, 'otro visitante no puede valorar una conversación ajena').not.toBeNull()
+
+  const { error: valoracion } = await visitante.db.rpc('enviar_valoracion', {
+    p_conversacion_id: conv,
+    p_estrellas: 5,
+    p_observacion: 'Todo bien',
+  })
+  expect(valoracion, 'el dueño puede valorar una vez si se le pide').toBeNull()
+
+  const { error: repetida } = await visitante.db.rpc('enviar_valoracion', {
+    p_conversacion_id: conv,
+    p_estrellas: 1,
+    p_observacion: 'Intento de sobrescritura',
+  })
+  expect(repetida, 'la valoración no se puede sobrescribir').not.toBeNull()
+})
+
+test('Storage aísla carpetas, permite upsert propio y deja leer al agente', async () => {
+  const uno = await clienteRegistrado('storage-uno')
+  const dos = await clienteRegistrado('storage-dos')
+  const agente = await agenteRegistrado('storage-agente')
+  const ruta = `${uno.uid}/justificante.pdf`
+  const bucket = uno.db.storage.from('descuentos-educativos')
+
+  const archivo = new Blob(['primera versión'], { type: 'application/pdf' })
+  expect((await bucket.upload(ruta, archivo, { contentType: 'application/pdf' })).error).toBeNull()
+  objetos.push(ruta)
+
+  const reemplazo = new Blob(['segunda versión'], { type: 'application/pdf' })
+  expect(
+    (await bucket.upload(ruta, reemplazo, { contentType: 'application/pdf', upsert: true })).error,
+    'la segunda subida necesita la política UPDATE',
+  ).toBeNull()
+
+  expect(
+    (await dos.db.storage.from('descuentos-educativos').download(ruta)).error,
+    'otro cliente no puede leer el justificante',
+  ).not.toBeNull()
+  expect(
+    (await agente.db.storage.from('descuentos-educativos').download(ruta)).error,
+    'un agente dado de alta sí puede revisarlo',
+  ).toBeNull()
+
+  expect(
+    (await uno.db.rpc('registrar_mi_justificante', { p_ruta: ruta })).error,
+    'solo se registra una ruta que existe de verdad',
+  ).toBeNull()
+})
+
+test('la posición de reserva usa el orden real y no expone colas ajenas', async () => {
+  const uno = await clienteRegistrado('cola-uno')
+  const dos = await clienteRegistrado('cola-dos')
+  // Una variante exclusiva por ejecución evita que dos workflows paralelos
+  // compartan cola en el mismo proyecto dedicado y vuelvan el resultado
+  // dependiente de datos externos a esta prueba.
+  const variante = `RLS ${Date.now()} ${crypto.randomUUID()}`
+  const primera = await reservaEnEspera(uno, variante)
+  const segunda = await reservaEnEspera(dos, variante)
+
+  const { data: posicion, error } = await dos.db.rpc('posicion_en_cola', {
+    p_reserva_id: segunda,
+  })
+  expect(error).toBeNull()
+  expect(posicion).toBe(2)
+
+  const { data: ajena } = await uno.db.rpc('posicion_en_cola', {
+    p_reserva_id: segunda,
+  })
+  expect(ajena, 'el RPC no revela la posición de una reserva ajena').toBeNull()
+
+  // La variable se usa para dejar explícito qué fila va delante y evitar
+  // que una refactorización convierta sin querer esta prueba en una sola fila.
+  expect(primera).not.toBe(segunda)
 })

@@ -1,6 +1,6 @@
 ---
 tipo: roadmap
-actualizado: 2026-08-01
+actualizado: 2026-08-04
 ---
 
 # Roadmap
@@ -12,8 +12,13 @@ actualizado: 2026-08-01
 
 ## 1. Estabilizar el prototipo publicado
 
+- Crear o habilitar un Supabase **dedicado a RLS**, aplicar la migración y
+  ejecutar los 27 casos de `tests/rls/` contra GoTrue, PostgREST y Storage.
+- Solo después: integrar las PR #33 y #34, activar Anonymous sign-ins en el
+  proyecto de demostración, aplicar la migración y publicar el frontend
+  compatible en la misma ventana.
 - Actualizar React Router a una versión sin los avisos moderados actuales y
-  volver a ejecutar build y audit.
+  volver a ejecutar la suite completa y `npm audit`.
 
 Detalle: [[04-problemas-pendientes]].
 
@@ -53,13 +58,14 @@ Solo después de acordar alcance:
 - Mapas, reservas y seguimiento de pedidos.
 - Estrategia de privacidad, seguridad, analítica y tratamiento de datos.
 
-## 5. Añadir una base de calidad
+## 5. Mantener la base de calidad
 
-- Definir lint y formato.
-- Añadir tests unitarios para datos, formato y store.
-- Añadir tests de componentes para selección, modales y validación.
-- Añadir E2E para navegación profunda en GitHub Pages, carrito y checkout.
-- Incorporar comprobaciones de accesibilidad y presupuesto de bundle al CI.
+- [x] TypeScript, ESLint, Vitest, pruebas de esquema, Playwright y axe en CI.
+- [x] E2E contra el artefacto compilado y despliegue dependiente de calidad.
+- [ ] Resolver los 23 avisos actuales de hooks sin reescribir efectos a
+      ciegas; cada cambio necesita una regresión que justifique la conducta.
+- [ ] Añadir presupuesto o división de bundle: el JavaScript principal supera
+      actualmente el umbral de 500 kB sin comprimir de Vite.
 
 ## 6. Ideas surgidas de la auditoría UX de la web oficial (2026-07-28)
 
@@ -136,8 +142,7 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
 
 **Añadido el 2026-07-29** en `chore/release-candidate-cleanup`:
 
-- ✅ Node.js 24 en `.github/workflows/e2e.yml` y
-  `.github/workflows/deploy.yml`.
+- ✅ Node.js 24 en el workflow unificado `.github/workflows/ci.yml`.
 - ✅ `.nvmrc` en la raíz con `24`.
 - ✅ Retirado `tsconfig.tsbuildinfo` del repositorio y añadido
   `*.tsbuildinfo` al `.gitignore`.
@@ -146,8 +151,6 @@ Basado en [[auditorias/auditoria-web-oficial-banana]].
 
 - Franja fija "Total — Continuar" en checkout móvil, sin tocar la
   lógica del seguro ni la trampa de foco existente del chat.
-- Cobertura axe adicional del detalle de tienda
-  (`/tiendas/:slug`).
 
 Descartadas expresamente (mismo informe): tasador propio del Plan
 Renove, sistema de citas para servicio técnico y chat con IA real.
@@ -160,9 +163,9 @@ Fase 1 desplegada el 2026-07-30 (ver
 **Fase 2 — Piloto interno con auth** (implementada el 2026-07-31 con
 cuentas ficticias, ver [[02-decisiones#D-027 — Fase 2 con cuentas ficticias]]):
 
-- [x] Políticas RLS basadas en `auth.uid()` para todo lo que hace un
-      agente. La lectura anónima del chat se mantiene porque el widget
-      del visitante sigue sin login.
+- [x] Políticas RLS basadas en `auth.uid()` para agentes y visitantes. El
+      widget no pide cuenta, pero usa una sesión anónima verificable; ya no
+      existe lectura incondicional del chat.
 - [x] Login de agentes en `/agente/login` — con email y contraseña, no
       magic link (ver [[02-decisiones#D-029 — Email + contraseña en vez de magic link]]).
 - [x] Tabla `agentes` y asignación de conversaciones (`agente_id`).
@@ -212,15 +215,14 @@ distintas en vez de una, ver
   para que macOS no lo marcase como aplicación no identificada. La PWA da
   Dock, contador y notificaciones sin nada de eso.
 
-*Tienda — app nativa con Capacitor* (configurada, sin compilar):
+*Tienda — app nativa con Capacitor* (compilada en ambos sistemas):
 
 - [x] `capacitor.config.ts`, `npm run build:app`, proyectos `ios/` y
       `android/`, iconos y pantallas de carga.
 - [x] Compilar y ejecutar el binario de **Android** (2026-08-01): APK
       generado y verificado en emulador, con navegación profunda dentro
       del WebView.
-- [ ] Compilar y ejecutar el binario de **iOS**. Requiere Xcode completo,
-      ver [[04-problemas-pendientes#APP-001 — La app nativa: Android verificada, iOS sin compilar]].
+- [x] Compilar y ejecutar el binario de **iOS** en simulador (2026-08-01).
 - [ ] Publicar en App Store y Google Play. **No es trabajo de código**:
       exige autorización de Banana, sus cuentas de desarrollador
       (99 €/año + 25 $) y sustituir los datos demostrativos por reales.

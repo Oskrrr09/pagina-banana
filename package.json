@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test:schema": "vitest run tests/schema",
+    "test:rls": "playwright test --project=rls",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

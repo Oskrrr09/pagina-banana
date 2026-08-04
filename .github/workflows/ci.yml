@@ -140,12 +140,9 @@ jobs:
           path: playwright-report
           retention-days: 7
 
-  # Políticas RLS contra un Supabase dedicado. Solo corre si están los
-  # secretos; nunca contra el proyecto de la demostración.
-  #
-  # No bloquea al resto cuando falta configuración —el repositorio seguiría
-  # sin poder integrarse nunca— pero `deploy` sí depende de él, así que si los
-  # secretos existen y las políticas fallan, no se publica.
+  # Políticas RLS contra un Supabase dedicado; nunca contra el proyecto de la
+  # demostración. La ausencia de secretos falla de forma explícita: un check
+  # verde que no ha ejecutado nada no puede respaldar una PR de seguridad.
   rls:
     name: Políticas RLS (requiere proyecto dedicado)
     needs: calidad
@@ -173,40 +170,16 @@ jobs:
           if [ -z "$faltan" ]; then
             echo "hay=si" >> "$GITHUB_OUTPUT"
           elif [ "$faltan" = " RLS_TEST_URL RLS_TEST_ANON_KEY RLS_TEST_SERVICE_KEY" ]; then
-            # Ninguna configurada. En una pull request se tolera —el trabajo
-            # queda sin ejecutar y lo dice—, pero publicar en main sin haber
-            # comprobado las políticas contra Supabase no.
-            if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-              echo "::error::No se puede desplegar main sin los secretos de RLS. Ver tests/rls/README.md."
-              exit 1
-            fi
-            echo "hay=no" >> "$GITHUB_OUTPUT"
-            echo "::warning::Sin secretos de RLS. Las políticas NO se han verificado contra Supabase."
+            echo "::error::Faltan los secretos del Supabase dedicado. Las políticas RLS NO se han verificado. Ver tests/rls/README.md."
+            exit 1
           else
             # Configuración a medias: es peor que ninguna, porque parece
             # configurado y no lo está. Se corta aquí.
             echo "::error::Configuración de RLS incompleta. Faltan:$faltan"
             exit 1
           fi
-      # Un tick verde en un trabajo que no ha ejecutado nada es peor que no
-      # tenerlo: da por comprobado lo que no se ha comprobado. El resumen del
-      # trabajo lo dice con todas las letras.
       - name: Dejar constancia del estado real
-        run: |
-          if [ "${{ steps.cfg.outputs.hay }}" = "si" ]; then
-            echo "### Políticas RLS verificadas contra el proyecto de pruebas" >> "$GITHUB_STEP_SUMMARY"
-          else
-            {
-              echo "### ⚠️ Políticas RLS NO verificadas"
-              echo ""
-              echo "Este trabajo aparece en verde porque **no ha ejecutado ninguna prueba**."
-              echo "Faltan los secretos \`RLS_TEST_URL\`, \`RLS_TEST_ANON_KEY\` y"
-              echo "\`RLS_TEST_SERVICE_KEY\` de un proyecto de Supabase **dedicado**."
-              echo ""
-              echo "El bloque de seguridad no puede darse por comprobado hasta entonces."
-              echo "Instrucciones: \`tests/rls/README.md\`."
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+        run: echo "### Proyecto RLS dedicado configurado; comienza la verificación" >> "$GITHUB_STEP_SUMMARY"
       - name: Instalar navegador
         if: steps.cfg.outputs.hay == 'si'
         run: npx playwright install --with-deps chromium
@@ -220,7 +193,7 @@ jobs:
           # Se captura el código en vez de taparlo con `|| true`: hace falta
           # generar el informe antes de fallar, pero el código sigue contando.
           set +e
-          npx playwright test --project=rls --reporter=json > rls.json
+          npm run test:rls -- --reporter=json > rls.json
           echo "codigo=$?" >> "$GITHUB_OUTPUT"
           set -e
         id: pruebas

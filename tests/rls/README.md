@@ -19,8 +19,11 @@ a propósito.
 
 En ese proyecto:
 
-1. Aplicar `supabase/schema.sql` y luego los ficheros de
-   `supabase/migraciones/` en orden.
+1. Aplicar la fuente ejecutable única:
+   `supabase/migrations/20260802000100_estado_seguro.sql`. Con la CLI se hace
+   mediante `supabase db reset` en una base nueva o `supabase db push` sobre
+   una ya desplegada. `supabase/schema.sql` es solo un puntero y **no se
+   ejecuta**.
 2. Activar **Authentication → Providers → Anonymous sign-ins**.
 3. Desactivar la confirmación por email (Authentication → Providers → Email),
    para que el alta de clientes de prueba no se quede esperando un correo.
@@ -32,7 +35,7 @@ export RLS_TEST_URL=https://<proyecto-de-pruebas>.supabase.co
 export RLS_TEST_ANON_KEY=<clave anónima>
 export RLS_TEST_SERVICE_KEY=<clave de servicio>
 
-npx playwright test --project=rls
+npm run test:rls
 ```
 
 La clave de servicio se usa **solo** para montar el escenario y limpiar al
@@ -41,11 +44,12 @@ prefijo `VITE_`, que es lo que la expondría.
 
 ## Qué ya está comprobado sin ellas
 
-`npm run test:schema` instala las migraciones en un **PostgreSQL real**
+`npm run test:schema` instala las migraciones en **PostgreSQL real**
 (PGlite, Postgres 18 en WebAssembly, sin Docker) y comprueba el
 comportamiento de las políticas: aislamiento entre visitantes, suplantación
-del bot y del agente, alta de clientes, reservas y justificantes. **38
-pruebas, todas ejecutadas.**
+del bot y del agente, alta de clientes, reservas y justificantes. La suite
+forma parte de `npm run test:unit`; el conteo exacto lo informa Vitest en cada
+ejecución.
 
 Lo que ese arnés **no** cubre, y por lo que estas siguen haciendo falta:
 
@@ -63,6 +67,12 @@ Supabase, y los secretos que hay configurados en GitHub Actions
 (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) apuntan al proyecto de la demostración,
 que no debe usarse para esto.
 
+La suite tiene actualmente **27 casos** y ya usa la API final: RPC de chat,
+agentes y reservas, GoTrue real y operaciones reales de Storage. La versión
+anterior tenía 21 casos, pero varios seguían insertando directamente en
+`mensajes` y `reservas`, permisos que el esquema final retiró; por eso no era
+válido configurar secretos y ejecutarla sin actualizarla primero.
+
 Con el arnés de PGlite lo que falta por verificar se ha reducido mucho —las
 políticas ya están probadas contra Postgres— pero **no a cero**: la
 integración con GoTrue y Storage sigue sin comprobarse.
@@ -77,7 +87,7 @@ todo en local con Docker:
 
 ```sh
 supabase start
-supabase db reset            # aplica schema.sql y las migraciones
+supabase db reset            # aplica supabase/migrations/ en orden
 ```
 
 y las mismas variables apuntando a `http://127.0.0.1:54321`. Requiere Docker

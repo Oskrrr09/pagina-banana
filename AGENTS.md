@@ -23,9 +23,10 @@ Antes de cambiar código o contenido:
   cambios de funcionamiento, diseño, dependencias ni datos del catálogo.
 - No presentes como reales precios, stock, financiación, horarios, direcciones,
   reseñas, garantías o condiciones todavía marcados como demostrativos.
-- Centraliza el catálogo en `src/data/products.ts`, las tiendas en
-  `src/data/stores.ts` y el resto del contenido estático en
-  `src/data/content.ts`; evita duplicar esos datos en componentes.
+- Centraliza los dispositivos en `src/data/products/`, los accesorios en
+  `src/data/accessories/`, las tiendas en `src/data/stores.ts` y el resto del
+  contenido estático en `src/data/content.ts`; evita duplicar esos datos en
+  componentes.
 - Respeta el `basename` de React Router y `import.meta.env.BASE_URL`: producción
   se publica bajo `/pagina-banana/`, no en la raíz del dominio.
 - Conserva las medidas de accesibilidad existentes: foco visible, nombres
@@ -57,16 +58,18 @@ completas ni conviertas las sesiones en una segunda fuente de verdad.
 
 ## Verificación
 
-La comprobación disponible hoy es:
+La comprobación completa disponible hoy es:
 
 ```bash
 npm ci
-npm run build
+npm run check
 ```
 
-No hay scripts de test ni lint configurados. No afirmes que existen o que han
-pasado. Si añades uno en el futuro, documenta el comando aquí y en
-`docs/00-estado-actual.md`.
+`npm run check` ejecuta TypeScript, ESLint, Vitest (unitarias y esquema), un
+build sin credenciales y Playwright contra ese build en Chromium y móvil. Las
+pruebas de `tests/rls/` no forman parte de ese comando: exigen un Supabase
+dedicado y los tres secretos descritos en `tests/rls/README.md`. No presentes
+esas pruebas como aprobadas cuando se hayan omitido.
 
 Antes de terminar:
 

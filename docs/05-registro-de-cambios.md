@@ -1,12 +1,47 @@
 ---
 tipo: cambios
-actualizado: 2026-08-01
+actualizado: 2026-08-04
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-04 — La suite RLS se alinea con el esquema final
+
+- Detectado que los 21 casos contra Supabase real seguían usando operaciones
+  legítimas de la API anterior: INSERT directo de mensajes y reservas, y
+  registro de justificantes sin subir antes el objeto. Con el esquema final
+  habrían fallado por probar un flujo obsoleto.
+- Las operaciones legítimas pasan a los RPC finales. La suite crece a 27 casos
+  e incorpora login real de agentes, firma de respuestas, prohibición de
+  autoascenso, cierre/valoración, cola, aislamiento y upsert de Storage.
+- La limpieza borra los visitantes antes que los usuarios de Auth. Como
+  `visitantes.auth_id` usa `ON DELETE SET NULL`, el orden anterior dejaba chats
+  huérfanos en el proyecto de pruebas.
+- Se corrigen las instrucciones que aún mandaban ejecutar `schema.sql` y la
+  carpeta antigua `supabase/migraciones/`; la fuente única es
+  `supabase/migrations/20260802000100_estado_seguro.sql`.
+- Documentación viva actualizada con la arquitectura, CI, aplicaciones y el
+  bloqueo real: no hay proyecto Supabase dedicado ni secretos RLS.
+- Verificación local final: TypeScript limpio; ESLint con 0 errores y 23
+  avisos conocidos; 94 pruebas de esquema + 9 unitarias; build correcto; 264
+  E2E aprobadas y una omitida deliberadamente. Los 27 casos RLS se descubren,
+  pero siguen omitidos explícitamente por falta de infraestructura; por eso no
+  se integran ni despliegan todavía las PR de seguridad.
+
+## 2026-08-02 — Cierre de seguridad de Supabase y CI encadenado
+
+- Sesión anónima verificable para el visitante; se retira la lectura abierta
+  de chats y la autorización basada en UUID de `localStorage`.
+- Conversaciones, mensajes, agentes, clientes, descuentos y reservas escriben
+  mediante RPC acotados. Autor, propietario, fechas y transiciones sensibles
+  los fija el servidor.
+- Una sola migración ejecutable, probada desde cero y sobre el estado anterior
+  mediante PostgreSQL/PGlite.
+- CI unificado: calidad → build → E2E → RLS → Pages. Un push a `main`
+  sin el Supabase de pruebas debe fallar antes del despliegue.
 
 ## 2026-08-01 — La web habla cinco idiomas
 

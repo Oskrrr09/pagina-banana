@@ -3,7 +3,7 @@
 --
 -- FUENTE ÚNICA EJECUTABLE. `supabase db reset` aplica este directorio y deja
 -- la base en el estado seguro completo. `supabase/schema.sql` ya no se
--- ejecuta: se conserva solo como documento generado desde aquí.
+-- ejecuta: se conserva solo como puntero hacia esta migración.
 --
 -- POR QUÉ UNA SOLA MIGRACIÓN Y NO TRES
 --
@@ -52,10 +52,9 @@ drop function if exists public.enviar_valoracion(uuid, uuid, smallint, text);
 
 -- Esquema del chat de Bananito y de las cuentas — Fases 1 y 2
 -- ============================================================
--- Cómo aplicarlo: abre el SQL Editor en el panel de Supabase,
--- pega este archivo entero y pulsa "Run". Es idempotente (usa
--- `if not exists` y `create or replace`), así que puedes volver
--- a ejecutarlo sin miedo si iteramos.
+-- Cómo aplicarlo: `supabase db reset` en una base nueva o `supabase db push`
+-- en una ya desplegada. Si excepcionalmente se usa el SQL Editor, se pega
+-- este fichero entero; nunca `supabase/schema.sql`.
 --
 -- Modelo (chat, Fase 1):
 --   visitantes      → una fila por navegador que visita la web.
@@ -79,22 +78,20 @@ drop function if exists public.enviar_valoracion(uuid, uuid, smallint, text);
 --     crean solo para poder enseñar el flujo completo.
 --
 -- Seguridad (RLS):
---   - El widget de chat del visitante sigue SIN login, así que `anon`
---     conserva el acceso que necesita (crear visitante, conversación y
---     mensajes propios). Riesgo ya aceptado y documentado en
---     docs/04-problemas-pendientes.md (CHAT-001) y docs/02-decisiones.md
---     (D-025).
+--   - El widget no pide una cuenta, pero sí crea una sesión anónima firmada
+--     por GoTrue. `auth.uid()` identifica al visitante y solo los RPC
+--     `abrir_conversacion` y `enviar_mensaje_visitante` escriben por él.
+--     No existe lectura anónima incondicional ni INSERT directo.
 --   - Todo lo que hace un AGENTE (responder, asignarse una conversación,
 --     revisar descuentos) exige ahora `auth.uid()` presente en `agentes`.
 --   - Los datos de cada CLIENTE (perfil, pedidos, reservas) solo son
 --     accesibles por ese cliente; los agentes pueden leer lo que
 --     necesitan para gestionar la cola y los descuentos, nada más.
 --
--- ⚠️  ORDEN DE DESPLIEGUE: este archivo restringe la escritura de mensajes
---     con `autor='agent'` a agentes autenticados. Aplícalo a la vez (o
---     después) de desplegar la versión de la web que incluye
---     /agente/login; si lo aplicas antes, el panel de agentes dejará de
---     poder responder hasta que exista el login.
+-- ⚠️  ORDEN DE DESPLIEGUE: activa primero Anonymous sign-ins, valida esta
+--     migración en un proyecto dedicado y publica el frontend compatible en la
+--     misma ventana. El frontend anterior escribe directamente en tablas; el
+--     esquema final lo rechaza, y el frontend nuevo necesita estos RPC.
 
 -- --------------------------------------------------------------
 -- Extensión para generar UUIDs (viene activa en Supabase, pero
@@ -398,12 +395,6 @@ $$;
 -- también el estado o la asignación. Aquí solo puede dejar su nota, una
 -- vez, y únicamente si el agente se la ha pedido.
 --
--- Se exige además el `visitor_id` de la conversación: el visitante lo
--- tiene en su localStorage, así que hay que conocer los DOS uuid para
--- poder valorar. No es autenticación de verdad — el visitante no tiene
--- cuenta — pero evita que valga con adivinar un solo identificador.
-
-
 -- Revisión del descuento educativo por parte de un agente.
 -- Se hace con función (y no con una política de UPDATE sobre `clientes`)
 -- porque RLS es por FILA, no por columna: darle UPDATE al agente sobre

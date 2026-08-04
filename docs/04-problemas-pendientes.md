@@ -1,12 +1,13 @@
 ---
 tipo: problemas
-actualizado: 2026-08-01
+actualizado: 2026-08-04
 ---
 
 # Problemas pendientes
 
 Todos los elementos siguientes se observaron directamente en el estado auditado
-del repositorio. No se corrigen en la preparación documental.
+del repositorio. Los cerrados conservan la evidencia histórica; los abiertos
+forman el backlog verificable.
 
 ## WEB-001 — La URL de variante ignora el basename
 
@@ -117,7 +118,7 @@ del repositorio. No se corrigen en la preparación documental.
   `disclaimer`. La franja de confianza y otros bloques leen desde ahí; el
   home muestra un aviso discreto de que las condiciones son demostrativas.
 
-## CHAT-001 — Chat flotante visible en el checkout
+## CHAT-UI-001 — Chat flotante visible en el checkout
 
 - Estado: cerrado el 2026-07-28.
 - Evidencia: `<ChatBubble />` se renderizaba dentro de `/checkout/*`.
@@ -131,12 +132,15 @@ del repositorio. No se corrigen en la preparación documental.
 - Estado: abierto hasta decidir alcance.
 - Impacto: esperado en un prototipo, pero debe seguir señalizado.
 - Evidencia:
-  - Cuenta, idioma y tienda favorita no tienen acción.
-  - Newsletter impide el envío.
-  - Chat provisional (aviso "próximamente"), formulario, accesos rápidos de
-    soporte y "Cómo llegar" siguen sin conectarse a un backend real.
-  - Cupones no se aplican.
-  - Avisos de reposición usan `alert`.
+  - Newsletter y formulario de soporte impiden el envío; no existe proveedor
+    de correo ni sistema de tickets.
+  - Pago, financiación, envío y cupones siguen siendo simulaciones claramente
+    etiquetadas; no llaman a servicios comerciales reales.
+  - Los avisos de reposición son locales y demostrativos, no suscripciones
+    persistentes de una cuenta.
+  - El chat sí usa Supabase cuando está configurado, pero cae a una respuesta
+    local de demostración si no lo está y aún no envía el aviso por email de
+    CHAT-002.
 - Evolución 2026-07-28: la confirmación de checkout ya genera un pedido en
   `demoOrderRepository` con ID/fecha/productos, sobrevive a recargas dentro
   de la sesión y no se crea al abrir la URL. Sigue sin ser un pedido real:
@@ -144,15 +148,12 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## QA-001 — Suite E2E con Playwright + accesibilidad axe
 
-- Estado: ampliado el 2026-07-29. Pendiente completar cobertura del
-  detalle de tienda.
-- Evidencia: 64 pruebas en `tests/e2e/` (62 en `chromium` + 2 en
-  `mobile` etiquetadas `@mobile`), distribuidas en `home.spec.ts`,
-  `checkout.spec.ts`, `checkout-flow.spec.ts`, `chat.spec.ts`,
-  `product.spec.ts`, `favorites-compare.spec.ts`, `search.spec.ts`,
-  `audit-ux.spec.ts` (mejoras post-auditoría),
-  `device-preparation-guide.spec.ts` (guía interactiva) y
-  `accessibility.spec.ts` (axe-core sobre 8 rutas + la guía).
+- Estado: **cerrado como infraestructura y en ampliación continua**. La
+  ejecución completa del 2026-08-04 produjo 264 aprobadas y una omitida
+  deliberadamente porque solo aplica al servidor de desarrollo.
+- Evidencia: 22 especificaciones en `tests/e2e/` cubren escritorio y móvil,
+  catálogo, cuentas, app nativa, asistente, checkout, comparación, búsqueda,
+  PWA, i18n, secretos y accesibilidad.
 - `color-contrast` y `region` se ejecutan **sin excepciones
   globales** desde 2026-07-29.
 - Cobertura:
@@ -181,10 +182,9 @@ del repositorio. No se corrigen en la preparación documental.
     pasar sin botón.
   - Sincronización del buscador con la URL y destinos reales de los
     tiles de accesorios.
-- CI: `.github/workflows/e2e.yml` ejecuta `npm ci`, `npm run build`,
-  `npx playwright install --with-deps chromium` y `npm run test:e2e`
-  en cada push/PR sobre `main`, con el proyecto móvil corriendo sobre
-  Chromium (`Pixel 5`) para no requerir WebKit.
+- CI: `.github/workflows/ci.yml` encadena calidad, build y Playwright en cada
+  push/PR sobre `main`, con el proyecto móvil corriendo sobre Chromium
+  (`Pixel 5`) para no requerir WebKit.
 - Cobertura axe ampliada el 2026-07-30 al detalle de tienda
   (`/tiendas/castillo`, representativa de `/tiendas/:slug`). No queda
   pendiente ninguna ruta principal sin comprobación axe.
@@ -200,13 +200,12 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## SEG-001 — Avisos de seguridad en React Router
 
-- Estado: **abierto**. Reverificado el 2026-07-29 con el lockfile
+- Estado: **abierto**. Reverificado el 2026-08-04 con el lockfile
   actual (`npm ci` + `npm audit` + `npm audit --omit=dev` + `npm ls`).
 - Impacto: moderado según `npm audit`.
 - Evidencia (2026-07-29): `npm ls react-router react-router-dom` →
   `react-router-dom@6.30.4 → react-router@6.30.4`. `npm audit` reporta
-  **2 vulnerabilidades moderadas** con **"No fix available"** dentro
-  de la línea 6.x:
+  **2 vulnerabilidades moderadas**. No existe arreglo dentro de la línea 6.x:
   - `GHSA-wrjc-x8rr-h8h6`: React Router — Open redirect via backslash
     en `<Link>` y `useNavigate` (bypass de CVE-2025-68470).
   - `GHSA-337j-9hxr-rhxg`: React Router — Arbitrary Constructor
@@ -216,24 +215,22 @@ del repositorio. No se corrigen en la preparación documental.
   `<Link>` sí aplica en teoría, pero la URL de destino se compone en
   cliente a partir de datos del propio catálogo (no se pasa input de
   usuario a `<Link to>` en ninguna ruta).
-- Corrección disponible: **no** dentro de 6.x. La corrección oficial
-  requiere migrar a **React Router 7** (mayor, con `data routers` y
-  cambios de API). Esta migración queda fuera del alcance de la
-  presente PR y se evaluará por separado.
+- Corrección disponible: migrar al menos a React Router **7.18.0**; `npm audit`
+  ya marca `fixAvailable`. La API declarativa se conserva en v7, pero el
+  proyecto usa React 18 y 46 imports de `react-router-dom`, por lo que debe
+  hacerse como cambio separado y pasar la suite completa.
 - Acción tomada en esta PR: se mantiene `react-router-dom@6.30.4`
   intacto. No se ha ejecutado `npm audit fix` ni `--force`.
 
 ## CI-001 — Actions fuerza Node 24 por obsolescencia de Node 20
 
-- Estado: **resuelto en código el 2026-07-29**, pendiente de
-  validación del workflow de la PR.
+- Estado: **cerrado**. Los workflows actuales se han ejecutado con Node 24.
 - Cambio aplicado: `node-version: 20` → `node-version: 24` en
-  `.github/workflows/e2e.yml` y `.github/workflows/deploy.yml`.
+  el workflow unificado `.github/workflows/ci.yml`.
   Añadido `.nvmrc` con `24` en la raíz para que el entorno local
   con nvm coincida con CI.
-- Verificación final: se marcará cerrado en cuanto los workflows
-  E2E y Pages de esta PR terminen en verde utilizando Node 24
-  explícito (sin el aviso de deprecación).
+- Verificación: el workflow unificado de CI y Pages usa Node 24 de forma
+  explícita y `.nvmrc` mantiene el entorno local alineado.
 
 ## ARTEFACTOS-001 — `tsconfig.tsbuildinfo` versionado
 
@@ -320,24 +317,17 @@ del repositorio. No se corrigen en la preparación documental.
   ```
 - Workaround temporal: `npm install --cache /tmp/npm-cache-osk ...`.
 
-## CHAT-001 — `/agente` accesible por URL sin autenticación
+## CHAT-SEC-001 — Acceso anónimo incondicional a los datos del chat
 
-- Estado: **cerrado el 2026-07-31**. `/agente` exige ahora sesión de
-  Supabase y que la cuenta esté dada de alta en la tabla `agentes`
-  (`src/pages/AgentPage.tsx` + `src/lib/agentAuth.tsx`). Responder como
-  agente, asignarse conversaciones y revisar descuentos requieren
-  `auth.uid()` presente en `agentes`, comprobado en la RLS. El
-  `Disallow` de `robots.txt` se mantiene.
-- **Queda abierto un resto**: la LECTURA de `visitantes`,
-  `conversaciones` y `mensajes` sigue permitida al rol `anon`, porque el
-  widget de chat del visitante no tiene login y la necesita. Es decir,
-  quien conozca la URL del proyecto Supabase y la anon key (que viaja en
-  el bundle, como es normal) podría leer conversaciones aunque ya no
-  pueda responder como agente. Se cierra cuando el visitante tenga
-  también cuenta; hasta entonces sigue siendo un prototipo con datos
-  ficticios. Ver [[02-decisiones#D-027 — Fase 2 con cuentas ficticias]].
+- Estado en código: **cerrado el 2026-08-02**. `/agente` ya exigía una
+  cuenta dada de alta, pero todavía quedaba lectura `anon` incondicional.
+  La migración final da al visitante una sesión anónima firmada y relaciona
+  sus filas con `auth.uid()`; ya no existe `using (true)` ni escritura directa
+  en conversaciones o mensajes.
+- Estado desplegado: **pendiente**. La migración no se ha aplicado y las PR
+  #33/#34 siguen fuera de `main`. Ver SEC-RLS-001.
 
-## CHAT-001-HIST — Estado anterior de CHAT-001 (Fase 1)
+## CHAT-SEC-001-HIST — Estado anterior de CHAT-SEC-001 (Fase 1)
 
 - Estado: histórico, resuelto. Se conserva para no perder el contexto.
 - Impacto: medio en producción (`https://luis-lop-nas.github.io/pagina-banana/agente`).
@@ -444,21 +434,26 @@ del repositorio. No se corrigen en la preparación documental.
   autenticado. Aplicarlo **antes** de desplegar esta versión dejaría el
   panel de agentes sin poder responder.
 
-## CUENTAS-002 — Sin pruebas E2E del flujo autenticado
+## SEC-RLS-001 — Falta validar y desplegar la migración segura
 
-- Estado: abierto, asumido por ahora.
-- Evidencia: `tests/e2e/accounts.spec.ts` cubre el cableado (rutas,
-  redirecciones, CTA de reserva, que `/cuenta` no filtra datos sin
-  sesión) y pasa **con y sin** credenciales de Supabase, que es el
-  requisito para que CI siga en verde. Lo que no cubre es el camino
-  autenticado: registro, login, reserva de punta a punta, revisión de
-  descuentos.
-- Motivo: el workflow `e2e.yml` no tiene los secretos de Supabase, así
-  que en CI `supabaseEnabled` es false y no hay backend contra el que
-  probar.
-- Opciones cuando interese cerrarlo: añadir los secretos al workflow y
-  usar un proyecto Supabase de pruebas aparte del de la demo, o levantar
-  Supabase local con Docker en CI.
+- Estado: **abierto y bloqueante para publicar**.
+- Ya comprobado: 94 pruebas de esquema sobre PostgreSQL/PGlite cubren
+  instalación desde cero, actualización desde el estado desplegado, RLS, RPC
+  y permisos. Otras 9 unitarias completan las 103 pruebas Vitest del proyecto.
+- Falta: ejecutar los 27 casos de `tests/rls/politicas.spec.ts` contra un
+  Supabase dedicado para comprobar GoTrue, PostgREST y Storage reales. El
+  arnés se actualizó el 2026-08-04 porque la versión anterior seguía usando
+  INSERT directos que el esquema final ya no permite y no limpiaba los chats
+  huérfanos creados durante la prueba.
+- Infraestructura ausente: GitHub solo tiene `SUPABASE_URL` y
+  `SUPABASE_ANON_KEY` de la demostración; faltan `RLS_TEST_URL`,
+  `RLS_TEST_ANON_KEY` y `RLS_TEST_SERVICE_KEY`. Tampoco hay Docker ni CLI de
+  Supabase local.
+- Regla: nunca ejecutar esta suite contra la demostración. Crea y borra
+  usuarios, objetos y filas a propósito.
+- Cierre: configurar el proyecto dedicado, ejecutar 27/27, integrar PR #33 y
+  #34, activar Anonymous sign-ins en la demostración, aplicar la migración,
+  desplegar `main` y verificar web + chat.
 
 ## CUENTAS-003 — Favoritos y tienda favorita siguen fuera de la cuenta
 
@@ -533,7 +528,7 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## PWA-001 — El service worker no lo cubren las pruebas E2E
 
-- Estado: detectado el 2026-07-31, asumido.
+- Estado: **cerrado el 2026-08-02**.
 - Impacto: bajo.
 - Evidencia: la suite corre contra el dev server de Vite, y ahí el
   service worker no se registra a propósito (`src/lib/pwa.ts` comprueba
@@ -546,11 +541,10 @@ del repositorio. No se corrigen en la preparación documental.
   service worker toma el control, deja una sola caché con 10 ficheros en
   precache, y con la red cortada una ruta profunda (`/iphone`) sigue
   cargando la web y no el error del navegador.
-- Riesgo: una regresión en las estrategias de caché no la detectaría el
-  CI.
-- Resolución posible: un proyecto de Playwright aparte que sirva `dist/`
-  con `vite preview` en vez del dev server. No se hace ahora para no
-  duplicar el arranque de la suite por una superficie pequeña.
+- Resolución: CI sirve el `dist` compilado con `vite preview` y
+  `tests/e2e/pwa.spec.ts` comprueba que el service worker toma control y
+  precachea. La prueba contraria se conserva y se omite cuando la suite corre
+  contra build porque solo tiene sentido en el servidor de desarrollo.
 
 ## QA-003 — La trampa de foco de la guía escapaba con Shift+Tab
 
