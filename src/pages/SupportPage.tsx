@@ -55,8 +55,7 @@ export function SupportPage() {
         </Container>
       </section>
 
-      <main>
-        <Container className="py-10">
+      <Container className="py-10">
           {/* 2 — Accesos rápidos. "Preparar mi dispositivo" abre la guía
                 interactiva; el resto navegan a anclas o secciones. */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -176,8 +175,7 @@ export function SupportPage() {
               </Link>
             </div>
           </section>
-        </Container>
-      </main>
+      </Container>
 
       <DevicePreparationGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
     </>

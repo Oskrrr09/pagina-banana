@@ -8,6 +8,7 @@ import { isNativeApp } from '../../lib/nativeApp'
 import { useChatOpenRequest } from '../../lib/chatLauncher'
 import { ALTURA_TAB_BAR } from './AppTabBar'
 import { useT } from '../../lib/i18n'
+import { isolateModalBranch } from '../../lib/modalIsolation'
 
 // Chat "Bananito" — burbuja del visitante.
 // - Botón flotante circular con Bananito en azul del nav utilitario.
@@ -233,16 +234,7 @@ export function ChatBubble() {
   useEffect(() => {
     if (!open || !mounted) return
     const wrapper = panelRef.current?.closest('[data-chat-root]')
-    const siblings: Element[] = []
-    if (wrapper?.parentElement) {
-      for (const child of Array.from(wrapper.parentElement.children)) {
-        if (child !== wrapper) siblings.push(child)
-      }
-    }
-    for (const el of siblings) el.setAttribute('inert', '')
-    return () => {
-      for (const el of siblings) el.removeAttribute('inert')
-    }
+    return isolateModalBranch(wrapper ?? null)
   }, [open, mounted])
 
   // Devolución del foco al cerrar. Va DESPUÉS del efecto que aplica `inert`:
@@ -321,7 +313,7 @@ export function ChatBubble() {
           id="chat-bananito"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="chat-bananito-title"
+          aria-label={t('chat.dialogLabel')}
           onTransitionEnd={(e) => {
             if (e.target !== e.currentTarget) return
             if (!open) setMounted(false)
@@ -363,7 +355,7 @@ export function ChatBubble() {
               ref={closeRef}
               type="button"
               onClick={close}
-              aria-label="Cerrar chat"
+              aria-label={t('chat.close')}
               className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full text-ink/70 transition-colors hover:bg-black/10 hover:text-ink"
             >
               <Icon name="close" size={18} />
@@ -443,7 +435,7 @@ export function ChatBubble() {
       <button
         ref={buttonRef}
         type="button"
-        aria-label={open ? 'Ocultar chat de Bananito' : 'Abrir chat de Bananito'}
+        aria-label={open ? t('chat.hide') : t('chat.open')}
         aria-expanded={open}
         aria-controls="chat-bananito"
         aria-haspopup="dialog"

@@ -175,8 +175,10 @@ Android (2026-08-01).**
   [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
 - El chat ya no recopila `user_agent`; el bucket educativo impone 5 MB y
   PDF/JPEG/PNG en servidor. Ver [[07-modelo-seguridad]].
-- **axe** cubre 8 rutas más la guía interactiva, con `color-contrast`
-  y `region` activos y sin excepciones globales.
+- **axe** cubre 14 estados de ruta, la guía interactiva, el selector de
+  modelos, el menú móvil y el chat, con `color-contrast` y `region` activos y
+  sin excepciones globales. Un barrido adicional exige exactamente un
+  `<main>` en 19 rutas públicas.
 - Artefacto `tsconfig.tsbuildinfo` retirado del repositorio;
   `*.tsbuildinfo` en `.gitignore`.
 - Ya existían dos carpetas locales no versionadas: `.agents/` y

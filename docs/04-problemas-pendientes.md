@@ -630,7 +630,7 @@ forman el backlog verificable.
 
 ## A11Y-004 — `/soporte` tiene dos `<main>` anidados
 
-- Estado: detectado el 2026-08-01, sin resolver.
+- Estado: **cerrado en código el 2026-08-04; pendiente de despliegue**.
 - Impacto: bajo, pero es HTML inválido.
 - Evidencia: `SupportPage` monta su propio `<main>` dentro del `<main
   id="contenido">` de `Layout`. Se vio al intentar seleccionar `main` desde
@@ -639,8 +639,15 @@ forman el backlog verificable.
   La suite de axe no lo detecta porque `landmark-no-duplicate-main` es una
   regla de buenas prácticas, no de WCAG, y la suite solo ejecuta las
   etiquetas `wcag2a`, `wcag2aa` y `wcag21a`.
-- Resolución: quitar el `<main>` de la página y dejar solo el del layout.
-  Conviene revisar si alguna otra página hace lo mismo.
+- Resolución: `SupportPage` deja el único `<main>` al layout. Una regresión
+  recorre 19 rutas públicas, exige exactamente una región principal y activa
+  de forma explícita `landmark-no-duplicate-main`.
+- Cierre relacionado: `Modal`, `MobileMenu`, la guía de preparación y el chat
+  comparten aislamiento de fondo hasta `#root`; conservan cualquier `inert`
+  previo y restauran foco, scroll y teclado al cerrar. El modal deja de fundir
+  su contenido para no degradar temporalmente el contraste durante la entrada.
+- Verificación: 19/19 casos de `accessibility.spec.ts` sobre build en Chromium,
+  sin reglas axe desactivadas; TypeScript, build y 124/124 Vitest correctos.
 
 ## I18N-001 — La cobertura pública no estaba completa
 
@@ -653,7 +660,8 @@ forman el backlog verificable.
   interactivo por los cinco idiomas y la restauración del idioma al salir del
   panel.
 - Pendiente real: el barrido estático aún localiza literales públicos en
-  `DevicePreparationGuide`, `ChatBubble`, `SearchPage`, `ProfilePage`,
+  `DevicePreparationGuide`, `ChatBubble` fuera de sus nombres accesibles,
+  `SearchPage`, `ProfilePage`,
   `CartPage`, `CheckoutPage`, el comparador base y varios nombres accesibles
   genéricos. Hasta cerrarlos y recorrer todos los estados no se vuelve a usar
   la frase «traducción completa».

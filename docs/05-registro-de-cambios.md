@@ -8,6 +8,18 @@ actualizado: 2026-08-04
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-04 — Landmarks únicos y aislamiento modal común
+
+- `/soporte` elimina el `<main>` anidado; 19 rutas públicas quedan protegidas
+  por una regresión explícita de landmarks.
+- El modal genérico, el menú móvil, la guía y el chat aíslan todo el fondo
+  hasta `#root`, sin retirar atributos `inert` que no les pertenecen, y
+  restauran el foco al control de apertura.
+- El selector ya no reduce el contraste del texto durante su animación y el
+  chat tiene nombre y controles accesibles en los cinco idiomas.
+- Verificación: 19/19 pruebas de accesibilidad sobre build en Chromium, axe
+  sin excepciones, TypeScript, build y 124/124 Vitest correctos.
+
 ## 2026-08-04 — Supabase local reproducible en CI
 
 - Fijada la CLI 2.111.0 y añadidos `config.toml`, seed sin credenciales y

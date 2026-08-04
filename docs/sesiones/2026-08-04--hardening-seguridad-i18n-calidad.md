@@ -50,11 +50,23 @@ documentación solicitados en la auditoría exhaustiva.
 - El barrido descubrió más literales públicos históricos; se retira la
   afirmación de cobertura completa y se registra I18N-001 hasta corregirlos.
 
+### Bloque 4 — Accesibilidad
+
+- Eliminado el segundo `<main>` de `/soporte` y añadido un barrido de una sola
+  región principal sobre 19 rutas públicas.
+- Unificado el aislamiento del fondo en modal genérico, menú móvil, guía y
+  chat; se verifica foco inicial, ciclo completo, Escape y retorno al control
+  de apertura.
+- Eliminado el fundido que degradaba el contraste del texto del selector
+  durante la entrada y traducidos los nombres accesibles del chat.
+- Axe pasa en 14 estados de ruta y en guía, selector, menú y chat, sin reglas
+  desactivadas.
+
 ## Comprobaciones acumuladas
 
 - TypeScript: correcto.
 - Vitest: 124/124; esquema PostgreSQL/PGlite: 102/102.
-- ESLint: 0 errores y 23 avisos preexistentes.
+- ESLint: 0 errores y 22 avisos preexistentes.
 - Build demostrativo: correcto; service worker generado.
 - RLS: 27 casos descubiertos y 27 omitidos por falta de entorno, no aprobados.
 
@@ -67,5 +79,5 @@ documentación solicitados en la auditoría exhaustiva.
 
 ## Siguiente paso
 
-Preparar la configuración local de Supabase y su workflow aislado sin ejecutar
-nada contra la demostración; después continuar con i18n y accesibilidad.
+Completar el bloque de calidad con scripts coherentes, Prettier y CI; después
+ampliar la matriz de navegadores y validar PWA contra el build.

@@ -6,6 +6,7 @@ import { familiesNav, utilityLinks } from '../../data/nav'
 import { isNativeApp } from '../../lib/nativeApp'
 import { openChat } from '../../lib/chatLauncher'
 import { useT } from '../../lib/i18n'
+import { isolateModalBranch } from '../../lib/modalIsolation'
 import { useStorePreference } from '../../lib/storePreference'
 import { stores } from '../../data/stores'
 import { Icon } from '../ui/Icon'
@@ -32,8 +33,10 @@ export function MobileMenu({
     if (!open) return
 
     const previousOverflow = document.body.style.overflow
+    const returnFocusTo = returnFocusRef.current
     document.body.style.overflow = 'hidden'
     const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
+    const restoreOutside = isolateModalBranch(dialogRef.current)
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -74,7 +77,8 @@ export function MobileMenu({
       window.cancelAnimationFrame(focusFrame)
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
-      window.requestAnimationFrame(() => returnFocusRef.current?.focus())
+      restoreOutside()
+      window.requestAnimationFrame(() => returnFocusTo?.focus())
     }
   }, [onClose, open, returnFocusRef])
 
@@ -98,6 +102,7 @@ export function MobileMenu({
             <Logo onClick={onClose} />
             <button
               ref={closeButtonRef}
+              type="button"
               onClick={onClose}
               aria-label="Cerrar menú"
               className="grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-neutral"

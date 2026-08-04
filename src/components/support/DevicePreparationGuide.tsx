@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Link } from 'react-router-dom'
+import { isolateModalBranch } from '../../lib/modalIsolation'
 import { Icon } from '../ui/Icon'
 
 // Guía interactiva para preparar el dispositivo antes de entregarlo en el
@@ -146,22 +147,14 @@ export function DevicePreparationGuide({
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    // Marca como inert el resto de hermanos del portal para que el fondo no
-    // reciba interacción por teclado ni puntero.
     const root = panelRef.current?.closest('[data-preparation-root]')
-    const siblings: Element[] = []
-    if (root?.parentElement) {
-      for (const child of Array.from(root.parentElement.children)) {
-        if (child !== root) siblings.push(child)
-      }
-    }
-    for (const el of siblings) el.setAttribute('inert', '')
+    const restoreOutside = isolateModalBranch(root ?? null)
 
     return () => {
       window.cancelAnimationFrame(focusFrame)
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
-      for (const el of siblings) el.removeAttribute('inert')
+      restoreOutside()
     }
   }, [open, close])
 
