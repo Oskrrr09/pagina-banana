@@ -1,3 +1,36 @@
+import { readFileSync } from 'node:fs'
+
+function errorInformeInvalido(origen, detalle) {
+  return new Error(
+    `No se pudo leer un informe JSON válido de Playwright en «${origen}»: ${detalle}. ` +
+      'Las pruebas RLS no pueden considerarse verificadas.',
+  )
+}
+
+/** Valida y convierte exclusivamente el JSON emitido por Playwright. */
+export function parsearInformeRls(contenido, origen = 'contenido recibido') {
+  if (typeof contenido !== 'string' || contenido.trim() === '') {
+    throw errorInformeInvalido(origen, 'el archivo está vacío')
+  }
+
+  try {
+    return JSON.parse(contenido)
+  } catch (error) {
+    throw errorInformeInvalido(origen, `el contenido no es JSON (${error.message})`)
+  }
+}
+
+/** Lee el informe y falla también si la ruta no existe o no es legible. */
+export function leerInformeRls(ruta) {
+  let contenido
+  try {
+    contenido = readFileSync(ruta, 'utf8')
+  } catch (error) {
+    throw errorInformeInvalido(ruta, error.message)
+  }
+  return parsearInformeRls(contenido, ruta)
+}
+
 /** Recorre la estructura real del reporter JSON de Playwright. */
 export function contarPruebasRls(informe) {
   const cuenta = { total: 0, aprobadas: 0, fallidas: 0, omitidas: 0, inestables: 0 }

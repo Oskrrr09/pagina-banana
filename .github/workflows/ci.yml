@@ -195,11 +195,12 @@ jobs:
           # Se captura el código en vez de taparlo con `|| true`: hace falta
           # generar el informe antes de fallar, pero el código sigue contando.
           set +e
-          npm run test:rls -- --reporter=json > rls.json
-          echo "codigo=$?" >> "$GITHUB_OUTPUT"
+          npx playwright test --project=rls --reporter=json > rls.json
+          codigo=$?
           set -e
+          echo "codigo=$codigo" >> "$GITHUB_OUTPUT"
         id: pruebas
-      - name: Exigir que se hayan ejecutado y aprobado todas
+      - name: Validar el JSON y exigir que se hayan ejecutado y aprobado todas
         if: steps.cfg.outputs.hay == 'si'
         env:
           RLS_EXPECTED_TESTS: 27

@@ -636,7 +636,7 @@ test('una cuenta normal no puede invocar operaciones de agente', async () => {
   const { data: revisado } = await cliente.db
     .from('clientes')
     .select(
-      'descuento_educativo_estado, descuento_educativo_nota, descuento_educativo_revisado_por',
+      'descuento_educativo_estado, descuento_educativo_nota, descuento_educativo_revisado_por, descuento_educativo_revisado_at',
     )
     .single()
   expect(revisado).toMatchObject({
@@ -644,6 +644,23 @@ test('una cuenta normal no puede invocar operaciones de agente', async () => {
     descuento_educativo_nota: 'Identidad verificada',
     descuento_educativo_revisado_por: agente.uid,
   })
+
+  const { error: errorEstadoNulo } = await agente.db.rpc('revisar_descuento_educativo', {
+    p_cliente_id: cliente.uid,
+    p_estado: null,
+    p_nota: 'No debe guardarse',
+  })
+  expect(errorEstadoNulo?.message).toContain('Estado no válido')
+  const { data: despuesDelNulo } = await cliente.db
+    .from('clientes')
+    .select(
+      'descuento_educativo_estado, descuento_educativo_nota, descuento_educativo_revisado_por, descuento_educativo_revisado_at',
+    )
+    .single()
+  expect(
+    despuesDelNulo,
+    'el estado NULL no cambia estado, nota, revisor ni fecha de revisión',
+  ).toEqual(revisado)
 
   const { error: errorInexistente } = await agente.db.rpc('revisar_descuento_educativo', {
     p_cliente_id: crypto.randomUUID(),

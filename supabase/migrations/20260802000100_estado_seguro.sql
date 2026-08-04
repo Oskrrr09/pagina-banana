@@ -414,7 +414,10 @@ begin
   if not public.es_agente() then
     raise exception 'Solo un agente autenticado puede revisar descuentos educativos';
   end if;
-  if p_estado not in ('pendiente', 'aprobado', 'rechazado') then
+  -- En SQL, `NULL NOT IN (...)` produce NULL, no TRUE. Hay que rechazarlo
+  -- expresamente antes del UPDATE para que nunca borre una revisión válida.
+  if p_estado is null
+     or p_estado not in ('pendiente', 'aprobado', 'rechazado') then
     raise exception 'Estado no válido: %', p_estado;
   end if;
 

@@ -5,8 +5,7 @@
 // sobre el JSON entero, lo que confunde una prueba omitida con la palabra
 // apareciendo dentro de un mensaje de error. Y el comando llevaba `|| true`,
 // así que un fallo de Playwright se tragaba en silencio.
-import { readFileSync } from 'node:fs'
-import { validarInformeRls } from './lib/verificar-rls.mjs'
+import { leerInformeRls, validarInformeRls } from './lib/verificar-rls.mjs'
 
 const ruta = process.argv[2]
 const codigoPlaywright = Number(process.argv[3] ?? '0')
@@ -14,10 +13,9 @@ const cantidadEsperada = Number(process.env.RLS_EXPECTED_TESTS ?? process.argv[4
 
 let informe
 try {
-  informe = JSON.parse(readFileSync(ruta, 'utf8'))
+  informe = leerInformeRls(ruta)
 } catch (e) {
-  console.error(`No se pudo leer el informe de Playwright en «${ruta}»: ${e.message}`)
-  console.error('Sin informe no se puede afirmar nada sobre las pruebas RLS.')
+  console.error(e.message)
   process.exit(1)
 }
 

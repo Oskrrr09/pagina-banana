@@ -394,6 +394,9 @@ nombre accesible, trampa de foco, Escape y retorno del foco al activador.
 Playwright y validación RLS antes de GitHub Pages. Solo publica desde `main`.
 Las pruebas de navegador usan Chromium y Pixel 5; las RLS necesitan un
 Supabase dedicado y bloquean un despliegue de `main` si faltan sus secretos.
+El job RLS invoca Playwright directamente con `--reporter=json`, conserva su
+código de salida y rechaza informes ausentes, vacíos, malformados o con texto
+adicional antes de exigir exactamente 27 pruebas aprobadas.
 
 ## Pruebas Playwright
 

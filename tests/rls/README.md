@@ -73,6 +73,12 @@ anterior tenía 21 casos, pero varios seguían insertando directamente en
 `mensajes` y `reservas`, permisos que el esquema final retiró; por eso no era
 válido configurar secretos y ejecutarla sin actualizarla primero.
 
+En CI Playwright se ejecuta directamente con el reporter JSON. El workflow
+conserva su código de salida y `scripts/verificar-rls.mjs` solo acepta un
+archivo JSON legible con 27 descubiertas, 27 ejecutadas, 27 aprobadas, ninguna
+fallida, inestable u omitida y código Playwright 0. Un encabezado de `npm run`
+delante del JSON se rechaza expresamente.
+
 Con el arnés de PGlite lo que falta por verificar se ha reducido mucho —las
 políticas ya están probadas contra Postgres— pero **no a cero**: la
 integración con GoTrue y Storage sigue sin comprobarse.

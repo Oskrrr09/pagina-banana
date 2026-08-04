@@ -8,6 +8,24 @@ actualizado: 2026-08-04
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-04 — Estado educativo nulo e informe RLS estrictamente JSON
+
+- `revisar_descuento_educativo()` comprueba `p_estado is null` antes del
+  `UPDATE`. Dos regresiones PGlite rechazan `NULL` y `aprobada` y comparan las
+  cuatro columnas de revisión antes y después para demostrar que no hay efectos
+  secundarios. El caso real de Supabase se fortalece sin elevar la suite de 27.
+- El workflow sustituye `npm run test:rls -- --reporter=json` por la invocación
+  directa de Playwright, captura su código real y valida que `rls.json` exista,
+  no esté vacío y sea JSON puro antes del recuento estricto.
+- El verificador suma regresiones para JSON válido, vacío, truncado, inexistente
+  y precedido por el encabezado de npm. La simulación de seis escenarios solo
+  acepta 27 aprobadas con código Playwright 0.
+- Verificación: 122/122 Vitest (100 de esquema), 264 E2E generales sobre build,
+  6/6 E2E del panel, TypeScript y build correctos; ESLint conserva 0 errores y
+  23 avisos anteriores. Las 27 RLS se descubren pero siguen omitidas por falta
+  del Supabase dedicado. `npm audit` mantiene las 2 vulnerabilidades moderadas
+  ya documentadas en SEG-001.
+
 ## 2026-08-04 — Cierre de los hallazgos pendientes de la PR #34
 
 - Retirada completa la falsa eliminación de conversaciones: el archivo solo

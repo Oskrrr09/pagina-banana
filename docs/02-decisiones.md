@@ -784,6 +784,28 @@ No atribuye motivaciones que el repositorio no documenta.
   `tests/e2e-agent/agent-panel.spec.ts` y las pruebas de conversación en
   `tests/schema/politicas.test.ts` y `tests/rls/politicas.spec.ts`.
 
+## D-052 — El informe RLS es JSON puro y conserva el código de Playwright
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: el job RLS ejecuta directamente
+  `npx playwright test --project=rls --reporter=json > rls.json`, captura `$?`
+  antes de reactivar `set -e` y entrega ambos datos al verificador. No pasa por
+  `npm run`, porque sus líneas informativas pueden contaminar la salida
+  estándar que debe contener exclusivamente JSON.
+- Validación: antes de contar resultados, el verificador exige que el archivo
+  exista, no esté vacío y sea JSON válido. Un informe ausente, truncado,
+  malformado o precedido por el encabezado de npm bloquea la verificación con
+  un mensaje explícito.
+- Contrato SQL relacionado: los RPC que no admiten `NULL` deben comprobarlo de
+  forma explícita antes de escribir; `NULL NOT IN (...)` produce `NULL`, no
+  `TRUE`. `revisar_descuento_educativo()` aplica esta regla y conserva intactos
+  estado, nota, fecha y revisor cuando rechaza la llamada.
+- Evidencia: `.github/workflows/ci.yml`, `scripts/lib/verificar-rls.mjs`,
+  `tests/unit/verificar-rls.test.ts`,
+  `supabase/migrations/20260802000100_estado_seguro.sql` y
+  `tests/schema/politicas.test.ts`.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

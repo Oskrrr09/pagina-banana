@@ -69,6 +69,38 @@ const AGENTE_B = '66666666-6666-4666-8666-666666666666'
 const SUPERVISOR = '77777777-7777-4777-8777-777777777777'
 const CLIENTE_REVISION = '88888888-8888-4888-8888-888888888888'
 
+type RevisionEducativa = {
+  estado: string | null
+  nota: string | null
+  revisado_at: string | null
+  revisado_por: string | null
+}
+
+async function prepararRevisionEducativa(): Promise<RevisionEducativa> {
+  await db.query(
+    `update public.clientes
+        set descuento_educativo_estado = 'pendiente',
+            descuento_educativo_nota = 'Nota anterior',
+            descuento_educativo_revisado_at = '2026-08-02T12:00:00Z',
+            descuento_educativo_revisado_por = $2
+      where id = $1`,
+    [CLIENTE_REVISION, AGENTE_B],
+  )
+  return leerRevisionEducativa()
+}
+
+async function leerRevisionEducativa(): Promise<RevisionEducativa> {
+  const { rows } = await db.query<RevisionEducativa>(
+    `select descuento_educativo_estado as estado,
+            descuento_educativo_nota as nota,
+            descuento_educativo_revisado_at as revisado_at,
+            descuento_educativo_revisado_por as revisado_por
+       from public.clientes where id = $1`,
+    [CLIENTE_REVISION],
+  )
+  return rows[0]
+}
+
 /**
  * Ejecuta SQL como un usuario concreto.
  *
@@ -476,6 +508,32 @@ describe('agente', () => {
       [CLIENTE_REVISION],
     )
     expect(despues).toEqual(antes)
+  })
+
+  it('rechaza un estado NULL sin modificar ningún campo de revisión', async () => {
+    const antes = await prepararRevisionEducativa()
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.revisar_descuento_educativo($1, $2, $3)`,
+      [CLIENTE_REVISION, null, 'No debe guardarse'],
+    )
+
+    expect(error).toMatch(/Estado no válido/)
+    expect(await leerRevisionEducativa()).toEqual(antes)
+  })
+
+  it('rechaza un estado textual no permitido sin modificar ningún campo de revisión', async () => {
+    const antes = await prepararRevisionEducativa()
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.revisar_descuento_educativo($1, $2, $3)`,
+      [CLIENTE_REVISION, 'aprobada', 'No debe guardarse'],
+    )
+
+    expect(error).toMatch(/Estado no válido/)
+    expect(await leerRevisionEducativa()).toEqual(antes)
   })
 
   it('un cliente no puede revisar descuentos y el estado permanece intacto', async () => {
