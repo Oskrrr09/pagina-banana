@@ -441,11 +441,13 @@ function EmptySlot({
   primary?: boolean
   compact?: boolean
 }) {
+  const t = useT()
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`Elegir modelo de ${familyName} para el espacio ${index + 1}`}
+      data-model-picker-trigger
+      aria-label={t('compare.emptySlotAria', { familia: familyName, n: index + 1 })}
       className={[
         'group flex h-full w-full flex-col items-center justify-center gap-2 rounded-[12px] border border-dashed p-4 text-center transition-[transform,border-color] duration-150 hover:-translate-y-0.5',
         compact ? 'min-h-[520px]' : 'min-h-[180px]',
@@ -455,8 +457,8 @@ function EmptySlot({
       <span className="grid h-10 w-10 place-items-center rounded-full border border-line bg-surface text-ink">
         <Icon name="plus" size={18} aria-hidden="true" />
       </span>
-      <span className="text-sm font-semibold text-ink">Elegir modelo</span>
-      <span className="text-xs text-muted">Espacio {index + 1}</span>
+      <span className="text-sm font-semibold text-ink">{t('compare.chooseModel')}</span>
+      <span className="text-xs text-muted">{t('compare.slot', { n: index + 1 })}</span>
     </button>
   )
 }

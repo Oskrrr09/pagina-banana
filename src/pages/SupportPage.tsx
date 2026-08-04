@@ -43,10 +43,11 @@ export function SupportPage() {
             <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-5 py-3.5 shadow-[var(--shadow-rest)]">
               <Icon name="search" className="text-muted" />
               <input
+                type="search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={t('support.searchPlaceholder')}
-                aria-label="Buscar en la ayuda"
+                aria-label={t('support.searchAria')}
                 className="w-full bg-transparent text-base outline-none placeholder:text-muted"
               />
             </div>
@@ -112,13 +113,13 @@ export function SupportPage() {
                   onClick={() => setGuideOpen(true)}
                   className="inline-flex items-center gap-2 rounded-[12px] border border-line bg-surface px-5 py-3 text-sm font-semibold text-ink hover:border-ink/30"
                 >
-                  Preparar mi dispositivo
+                  {t('support.prepare.title')}
                 </button>
                 <Link
                   to="/servicio-tecnico"
                   className="inline-flex items-center gap-2 rounded-[12px] bg-action px-5 py-3 text-sm font-semibold text-ink hover:bg-action-600"
                 >
-                  Ir a Servicio Técnico
+                  {t('support.repairCta')}
                   <Icon name="arrow-right" size={16} aria-hidden="true" />
                 </Link>
               </div>
@@ -132,7 +133,7 @@ export function SupportPage() {
             </h2>
             {filteredTopics.length === 0 ? (
               <div className="rounded-[12px] border border-dashed border-line py-12 text-center">
-                <p className="text-ink">No hemos encontrado artículos sobre “{q}”.</p>
+                <p className="text-ink">{t('support.noResultsFor', { consulta: q })}</p>
                 <p className="mt-2 text-sm text-muted">{t('support.noResults')}</p>
               </div>
             ) : (

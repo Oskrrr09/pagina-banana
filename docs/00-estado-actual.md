@@ -157,7 +157,8 @@ Android (2026-08-01).**
 ## Referencia actual
 
 - Rama de producción: `main`.
-- `main` y `origin/main`: `30b7957`, traducción completa a cinco idiomas.
+- `main` y `origin/main`: `30b7957`, base multidioma a cinco idiomas. La
+  auditoría actual retiró la afirmación de cobertura completa: ver I18N-001.
 - Rama de consolidación: `fix/security-i18n-quality-hardening`, creada desde
   `main` e iniciada con los 14 commits de seguridad después de corregir el
   estado nulo y el informe JSON RLS.

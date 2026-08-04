@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { isNativeApp } from './nativeApp'
 import { traducirCatalogo } from '../i18n/catalogo'
 import { es } from '../i18n/es'
@@ -86,6 +87,7 @@ const IdiomaContext = createContext<EstadoIdioma | null>(null)
 
 export function IdiomaProvider({ children }: { children: ReactNode }) {
   const [idioma, setIdiomaEstado] = useState<Idioma>(idiomaInicial)
+  const { pathname } = useLocation()
 
   const setIdioma = useCallback((siguiente: Idioma) => {
     setIdiomaEstado(siguiente)
@@ -100,8 +102,8 @@ export function IdiomaProvider({ children }: { children: ReactNode }) {
   // para elegir voz y pronunciación, y el navegador para la partición de
   // palabras.
   useEffect(() => {
-    document.documentElement.lang = idioma
-  }, [idioma])
+    document.documentElement.lang = pathname.startsWith('/agente') ? 'es' : idioma
+  }, [idioma, pathname])
 
   const valor = useMemo<EstadoIdioma>(() => {
     const diccionario = DICCIONARIOS[idioma]

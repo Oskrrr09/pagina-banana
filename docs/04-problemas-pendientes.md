@@ -642,6 +642,22 @@ forman el backlog verificable.
 - Resolución: quitar el `<main>` de la página y dejar solo el del layout.
   Conviene revisar si alguna otra página hace lo mismo.
 
+## I18N-001 — La cobertura pública no estaba completa
+
+- Estado: **en corrección desde el 2026-08-04**.
+- Hallazgos cerrados: `/soporte` ya traduce búsqueda, CTAs y estado vacío; el
+  selector de modelos traduce título, ayuda, búsqueda, vacío, badges, nombres
+  accesibles y precio, y filtra por el nombre traducido visible.
+- Panel: decisión explícita de mantenerlo en español con `lang="es"` por ruta.
+- Regresión: 11 pruebas de idioma en Chromium, incluido el recorrido
+  interactivo por los cinco idiomas y la restauración del idioma al salir del
+  panel.
+- Pendiente real: el barrido estático aún localiza literales públicos en
+  `DevicePreparationGuide`, `ChatBubble`, `SearchPage`, `ProfilePage`,
+  `CartPage`, `CheckoutPage`, el comparador base y varios nombres accesibles
+  genéricos. Hasta cerrarlos y recorrer todos los estados no se vuelve a usar
+  la frase «traducción completa».
+
 ## SEG-CHAT-002 — El chat recopilaba un user-agent sin finalidad
 
 - Estado: **cerrado en código el 2026-08-04; pendiente de despliegue**.

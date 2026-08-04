@@ -844,6 +844,21 @@ No atribuye motivaciones que el repositorio no documenta.
 - Evidencia: `supabase/config.toml`, `supabase/seed.sql`,
   `scripts/test-supabase-local.mjs` y el workflow citado.
 
+## D-055 — El panel interno permanece en español con `lang` por ruta
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: el panel de agentes no se traduce en esta fase. `IdiomaProvider`
+  fuerza `document.documentElement.lang = 'es'` en `/agente` y
+  `/agente/login`; al volver a una ruta pública reaplica la preferencia del
+  visitante.
+- Motivo: es una herramienta interna de Canarias y traducir sus más de mil
+  líneas junto con la tienda pública ampliaría el alcance sin beneficio
+  demostrable. Mantener `lang` coherente evita que un lector de pantalla use
+  voz alemana, francesa, inglesa o italiana sobre textos españoles.
+- Evidencia: `tests/e2e/idiomas.spec.ts` entra desde alemán, comprueba español
+  en el panel y alemán de nuevo al salir.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

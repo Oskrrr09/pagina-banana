@@ -19,6 +19,18 @@ autores, diffs y marcas de tiempo.
 - Verificación local: JSON/YAML correctos y preflight de integración correcto;
   la ejecución se detiene con diagnóstico porque Docker no está instalado.
 
+## 2026-08-04 — Estados interactivos i18n y lenguaje del panel
+
+- Soporte y selector de modelos dejan de mezclar español; el filtro y los
+  nombres accesibles usan el nombre de catálogo traducido y los precios el
+  locale activo.
+- El panel interno se mantiene en castellano y fuerza `lang="es"` en sus dos
+  rutas, restaurando el idioma de tienda al salir.
+- Verificación: 11/11 casos de `idiomas.spec.ts` sobre build en Chromium,
+  TypeScript y 124/124 Vitest correctos; ESLint sin errores.
+- La afirmación documental de traducción completa se retira hasta cerrar el
+  resto del barrido registrado en I18N-001.
+
 ## 2026-08-04 — Minimización del chat y límites de Storage
 
 - Nueva migración incremental que deja de recopilar `user_agent`, limpia ese

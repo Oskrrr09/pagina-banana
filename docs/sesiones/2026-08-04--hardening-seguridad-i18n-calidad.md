@@ -41,6 +41,15 @@ documentación solicitados en la auditoría exhaustiva.
 - En esta máquina el preflight confirma el único bloqueo: Docker no está
   instalado. No se ha tocado ninguna base alojada.
 
+### Bloque 3 — Internacionalización
+
+- Traducidos todos los estados exigidos de SupportPage y ModelPickerDialog en
+  cinco idiomas; búsqueda por nombre traducido y moneda según locale.
+- El panel adopta la opción B: español con `lang="es"`, restaurado al salir.
+- La regresión de idiomas pasa 11/11 sobre el build.
+- El barrido descubrió más literales públicos históricos; se retira la
+  afirmación de cobertura completa y se registra I18N-001 hasta corregirlos.
+
 ## Comprobaciones acumuladas
 
 - TypeScript: correcto.
