@@ -16,7 +16,7 @@ sobre React + Vite + TypeScript y publicada en GitHub Pages.
 | --- | --- |
 | Node.js | 24 (versión utilizada en GitHub Actions) |
 | React / React DOM | 18.3.1 |
-| React Router DOM | 6.30.4 |
+| React Router DOM | 7.18.2 |
 | Motion (`motion/react`) | 11.x |
 | Vite | 6.x |
 | TypeScript | 5.x |
@@ -34,9 +34,12 @@ nvm use                 # opcional, si usas nvm — fija Node 24 según .nvmrc
 npm ci                  # instala dependencias reproducibles
 npm run dev             # http://localhost:5173/pagina-banana/
 npm run build           # comprueba tipos + genera dist/
-npm run check           # tipos + lint + Vitest/esquema + build + E2E
+npm run check           # formato + lint + tipos + Vitest/esquema + build
+npm run check:full      # check + E2E multi-navegador + panel de agentes
 npm run test:unit       # unitarias y PostgreSQL/PGlite
-npm run test:rls        # Supabase dedicado; ver tests/rls/README.md
+npm run test:integration # Supabase local: RLS + cierre de sesión PWA
+npm run test:smoke      # flujos críticos en Chromium, Firefox y WebKit
+npm run test:pwa        # manifest, precache y arranque offline
 npm run test:e2e        # pruebas end-to-end con Playwright
 npm run test:e2e:agent  # permisos y errores del panel con backend controlado
 npm run test:e2e:ui     # modo UI (Playwright test explorer)
@@ -46,7 +49,7 @@ npm run test:e2e:headed # con el navegador visible
 Antes de ejecutar los tests por primera vez:
 
 ```bash
-npx playwright install chromium
+npx playwright install chromium firefox webkit
 ```
 
 ## Aplicaciones
@@ -85,7 +88,8 @@ Cinco familias con datos, imágenes locales y variantes reales:
 | **Apple Watch** | 3 (Ultra 3, Series 11, SE 3) | Tamaño y GPS/Cellular seleccionables (excepto Ultra) |
 | **AirPods** | 2 (Pro 3, Max) | 5 colores de AirPods Max |
 
-**Accesorios** tiene catálogo y fichas propias bajo `/accesorios`, con
+**Accesorios** reúne 18 modelos demostrativos y fichas propias bajo
+`/accesorios`, con
 fotografías, variantes y compatibilidad estructurada. Sigue siendo contenido
 demostrativo, sin stock ni compra real.
 

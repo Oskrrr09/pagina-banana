@@ -20,7 +20,7 @@ import { supabaseEnabled } from '../lib/supabase'
  */
 export function safeRedirect(raw: string | null): string {
   if (!raw) return '/cuenta'
-  if (!raw.startsWith('/') || raw.startsWith('//')) return '/cuenta'
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return '/cuenta'
   return raw
 }
 

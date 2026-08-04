@@ -8,6 +8,25 @@ actualizado: 2026-08-04
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-04 — React Router 7, secretos y compilación nativa
+
+- Migrado React Router DOM de 6.30.4 a 7.18.2. La navegación declarativa,
+  `basename` y cinco flujos críticos pasan en Chromium, Firefox, WebKit y
+  Safari móvil (20/20).
+- El retorno posterior al login rechaza barras invertidas de forma explícita;
+  siete pruebas cubren destinos válidos, externos y ambiguos.
+- La auditoría actual y del historial no encuentra secretos versionados. Se
+  amplían los ignores para almacenes de firma, perfiles y configuración
+  privada de Google/Android/iOS.
+- `npm audit` deja de reportar los dos avisos moderados de Router 6. Conserva
+  un aviso upstream `high` del modo RSC, no utilizado por esta SPA, cuya
+  versión corregida 8.3.0 todavía no está publicada.
+- Capacitor sincroniza los proyectos actuales e iOS compila para simulador
+  con Xcode 26.6. Android queda sin recompilar en esta máquina por ausencia de
+  Java Runtime; no se sustituye por una afirmación sin comprobar.
+- README alinea scripts, Router 7 y el catálogo consolidado actual de 18
+  accesorios demostrativos.
+
 ## 2026-08-04 — Matriz multi-navegador y PWA offline real
 
 - Playwright suma Firefox, WebKit de escritorio y Safari móvil. Cinco flujos

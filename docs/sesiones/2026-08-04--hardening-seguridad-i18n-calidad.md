@@ -83,13 +83,26 @@ documentación solicitados en la auditoría exhaustiva.
 - Preparado un cierre de sesión real con cuenta ficticia en Supabase local;
   se descubre, pero no se ejecuta aquí porque Docker no está disponible.
 
+### Bloque 8 — Dependencias, secretos y aplicaciones nativas
+
+- Migrado React Router DOM 6.30.4 a 7.18.2 y reforzado `safeRedirect` frente a
+  barras invertidas. Los 20 smoke multi-navegador siguen aprobando.
+- La última estable cierra los avisos originales, pero npm registra un aviso
+  nuevo para acciones RSC. La SPA no usa esa superficie y la versión corregida
+  8.3.0 todavía no está publicada; queda seguimiento explícito en SEG-001.
+- Revisados ficheros actuales e historial sin encontrar secretos versionados;
+  ampliada la exclusión de credenciales de firma y configuración nativa.
+- El catálogo consolidado contiene 18 accesorios; README queda alineado.
+- `npm run app:sync` correcto e iOS Debug para simulador compilado con Xcode
+  26.6. Android no se recompila porque el sistema no dispone de Java Runtime.
+
 ## Comprobaciones acumuladas
 
 - TypeScript: correcto.
-- Vitest: 129/129; esquema PostgreSQL/PGlite: 102/102.
+- Vitest: 136/136; esquema PostgreSQL/PGlite: 102/102.
 - ESLint: 0 errores y 22 avisos preexistentes.
 - Build demostrativo: correcto; service worker generado.
-- Playwright sobre build: 273 aprobadas, una omisión esperada del caso de
+- Playwright sobre build: 295 aprobadas, una omisión esperada del caso de
   service worker exclusivo de desarrollo y 6/6 del panel aislado.
 - RLS: 27 casos descubiertos y 27 omitidos por falta de entorno, no aprobados.
 
@@ -102,5 +115,6 @@ documentación solicitados en la auditoría exhaustiva.
 
 ## Siguiente paso
 
-Auditar dependencias y secretos, evaluar React Router 7 y revisar la
-compilación nativa y la documentación final.
+Publicar la rama y dejar que CI ejecute las 27 pruebas RLS y el cierre de
+sesión PWA contra Supabase local antes de integrar en `main` o desplegar
+Pages.

@@ -173,11 +173,17 @@ Android (2026-08-01).**
   <https://luis-lop-nas.github.io/pagina-banana/>. Todavía representa `main`,
   no la migración de seguridad.
 - **Node.js 24** en el workflow unificado `ci.yml`; `.nvmrc` alinea local y CI.
-- **Estado de dependencias (2026-08-04)**: `npm audit` reporta 2
-  vulnerabilidades moderadas en `react-router@6.30.4` sin fix
-  dentro de la línea 6.x (requerirían migración mayor a React
-  Router 7.18 o posterior). Ver
+- **Estado de dependencias (2026-08-04)**: React Router se migró de 6.30.4 a
+  7.18.2 y se probó en cuatro motores. Esa versión cierra los dos avisos que
+  motivaron la migración. `npm audit` conserva dos entradas `high` por un
+  único aviso nuevo del modo RSC (`GHSA-qwww-vcr4-c8h2`), superficie que esta
+  SPA declarativa no usa y cuya versión corregida 8.3.0 todavía no existe en
+  npm. Ver
   [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
+- La auditoría de secretos no encuentra claves privadas, `service_role`,
+  JWT extensos ni ficheros de sesión versionados. `.env`, credenciales de
+  firma y configuración privada nativa quedan ignorados; solo se versionan
+  `.env.example` y `.env.test`, ambos sin secretos.
 - El chat ya no recopila `user_agent`; el bucket educativo impone 5 MB y
   PDF/JPEG/PNG en servidor. Ver [[07-modelo-seguridad]].
 - **axe** cubre 14 estados de ruta, la guía interactiva, el selector de
@@ -397,7 +403,7 @@ Las versiones instaladas desde `package-lock.json` durante la auditoría fueron:
 | Pieza | Versión |
 | --- | --- |
 | React / React DOM | 18.3.1 |
-| React Router DOM | 6.30.4 |
+| React Router DOM | 7.18.2 |
 | Motion | 11.18.2 |
 | Vite | 6.4.3 |
 | TypeScript | 5.9.3 |

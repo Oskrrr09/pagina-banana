@@ -201,27 +201,26 @@ forman el backlog verificable.
 
 ## SEG-001 — Avisos de seguridad en React Router
 
-- Estado: **abierto**. Reverificado el 2026-08-04 con el lockfile
-  actual (`npm ci` + `npm audit` + `npm audit --omit=dev` + `npm ls`).
-- Impacto: moderado según `npm audit`.
-- Evidencia (2026-07-29): `npm ls react-router react-router-dom` →
-  `react-router-dom@6.30.4 → react-router@6.30.4`. `npm audit` reporta
-  **2 vulnerabilidades moderadas**. No existe arreglo dentro de la línea 6.x:
+- Estado: **mitigado; seguimiento upstream abierto**. Revisado el 2026-08-04
+  con `npm audit`, `npm audit --omit=dev`, `npm ls` y la suite de navegador.
+- Resuelto: `react-router-dom@7.18.2 → react-router@7.18.2` cierra los dos
+  avisos de la línea 6.30.4 que motivaron este punto:
   - `GHSA-wrjc-x8rr-h8h6`: React Router — Open redirect via backslash
     en `<Link>` y `useNavigate` (bypass de CVE-2025-68470).
   - `GHSA-337j-9hxr-rhxg`: React Router — Arbitrary Constructor
     Injection via `deserializeErrors()` en la hidratación SSR.
-- Matiz: este prototipo es una SPA sin SSR, por lo que
-  `deserializeErrors` no se ejecuta; el aviso de open redirect vía
-  `<Link>` sí aplica en teoría, pero la URL de destino se compone en
-  cliente a partir de datos del propio catálogo (no se pasa input de
-  usuario a `<Link to>` en ninguna ruta).
-- Corrección disponible: migrar al menos a React Router **7.18.0**; `npm audit`
-  ya marca `fixAvailable`. La API declarativa se conserva en v7, pero el
-  proyecto usa React 18 y 46 imports de `react-router-dom`, por lo que debe
-  hacerse como cambio separado y pasar la suite completa.
-- Acción tomada en esta PR: se mantiene `react-router-dom@6.30.4`
-  intacto. No se ha ejecutado `npm audit fix` ni `--force`.
+- Defensa adicional: `safeRedirect` rechaza ahora cualquier barra invertida,
+  además de protocolos y rutas `//`; siete casos unitarios fijan el contrato.
+- Compatibilidad: se conserva `BrowserRouter basename={import.meta.env.BASE_URL}`.
+  Veinte smoke tests pasan en Chromium, Firefox, WebKit y Safari móvil e
+  incluyen inicio, cambio de idioma y navegación profunda.
+- Riesgo residual upstream: el registro de npm publicó
+  `GHSA-qwww-vcr4-c8h2` para el procesamiento de acciones del modo RSC entre
+  7.12.0 y `<8.3.0`. Esta aplicación no usa RSC, SSR, loaders ni actions, pero
+  npm agrega el aviso a `react-router-dom` y lo muestra como dos entradas
+  `high`. La versión corregida 8.3.0 aún no está publicada; bajar a 7.11.0
+  reabre múltiples XSS, redirects y DoS ya corregidos. Se mantiene la última
+  estable y se actualizará cuando exista una release corregida.
 
 ## CI-001 — Actions fuerza Node 24 por obsolescencia de Node 20
 

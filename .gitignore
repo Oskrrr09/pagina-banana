@@ -55,3 +55,12 @@ audit-temp/
 storageState*.json
 *.storage-state.json
 *.session.json
+
+# Firma y configuración privada de aplicaciones nativas
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+android/key.properties
+**/google-services.json
+**/GoogleService-Info.plist
