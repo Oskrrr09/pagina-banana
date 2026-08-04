@@ -656,7 +656,7 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
 
 export function useAgentConversation(conversationId: string | null): {
   messages: DbMessage[]
-  sendMessage: (texto: string) => Promise<void>
+  sendMessage: (texto: string) => Promise<{ error: string | null }>
   status: Status
 } {
   const [status, setStatus] = useState<Status>(
@@ -726,29 +726,38 @@ export function useAgentConversation(conversationId: string | null): {
 
   const sendMessage = useCallback(
     async (texto: string) => {
-      if (!supabaseAgent || !conversationId) return
+      if (!supabaseAgent || !conversationId) {
+        return { error: 'No hay una conversación disponible para responder.' }
+      }
 
-      // Por RPC. El insert directo mandaba `agente_id` desde aquí, y quien
-      // manda su propia firma puede mandar la de otro —o dejarla vacía—. El
-      // servidor lo saca de la sesión.
-      const { data: nuevoId, error: errorEnvio } = await supabaseAgent.rpc(
-        'responder_como_agente',
-        { p_conversacion_id: conversationId, p_texto: texto },
-      )
-      if (errorEnvio) {
-        console.error('[agentConversation] send error', errorEnvio)
-        return
+      try {
+        // Por RPC. El insert directo mandaba `agente_id` desde aquí, y quien
+        // manda su propia firma puede mandar la de otro —o dejarla vacía—. El
+        // servidor lo saca de la sesión.
+        const { data: nuevoId, error: errorEnvio } = await supabaseAgent.rpc(
+          'responder_como_agente',
+          { p_conversacion_id: conversationId, p_texto: texto },
+        )
+        if (errorEnvio) {
+          console.error('[agentConversation] send error', errorEnvio)
+          return { error: errorEnvio.message }
+        }
+        const { data, error } = await supabaseAgent
+          .from('mensajes')
+          .select('*')
+          .eq('id', nuevoId as string)
+          .single()
+        if (error) {
+          console.error('[agentConversation] no se pudo releer el mensaje', error)
+          return { error: error.message }
+        }
+        appendMessage(data as DbMessage)
+        return { error: null }
+      } catch (error) {
+        const mensaje = error instanceof Error ? error.message : 'No se pudo enviar el mensaje.'
+        console.error('[agentConversation] unexpected send error', error)
+        return { error: mensaje }
       }
-      const { data, error } = await supabaseAgent
-        .from('mensajes')
-        .select('*')
-        .eq('id', nuevoId as string)
-        .single()
-      if (error) {
-        console.error('[agentConversation] no se pudo releer el mensaje', error)
-        return
-      }
-      appendMessage(data as DbMessage)
     },
     [conversationId, appendMessage],
   )
@@ -785,23 +794,6 @@ export async function setConversationState(
     return { error: error.message }
   }
   return { error: null }
-}
-
-/**
- * Ya no borra: cierra.
- *
- * El borrado físico se retiró de la aplicación. `mensajes` cuelga de
- * `conversaciones` con `on delete cascade`, así que un clic de cualquier
- * agente se llevaba el historial entero y sin papelera. Cerrar la saca de la
- * bandeja y conserva todo, que es lo que el archivo necesitaba de verdad.
- *
- * Si alguna vez hace falta borrar de verdad, es tarea de administración con
- * `service_role`, fuera de aquí.
- */
-export async function deleteConversation(
-  conversationId: string,
-): Promise<{ error: string | null }> {
-  return setConversationState(conversationId, 'cerrada', { pedirValoracion: false })
 }
 
 /**

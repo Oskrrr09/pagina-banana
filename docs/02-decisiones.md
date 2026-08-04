@@ -763,6 +763,27 @@ No atribuye motivaciones que el repositorio no documenta.
 - Evidencia: `.github/workflows/ci.yml`, `tests/schema/` y
   `tests/rls/README.md`.
 
+## D-051 — El supervisor gestiona asignaciones sin suplantar respuestas
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: la interfaz refleja las capacidades del servidor. Un supervisor
+  puede liberar una asignación ajena y cerrar o reabrir conversaciones de otro
+  agente; la acción se llama explícitamente **«Liberar asignación»**. Un agente
+  normal solo gestiona las suyas.
+- Autoría: `responder_como_agente()` conserva la restricción de que la
+  conversación esté libre o asignada a la propia sesión. Ser supervisor no
+  autoriza a firmar una respuesta dentro de la asignación de otra persona. Para
+  responder, debe liberarla y asignársela de forma explícita.
+- Historial: el panel no ofrece borrado. Cerrar archiva y reabrir recupera; un
+  borrado físico sigue reservado a administración con `service_role` fuera del
+  navegador.
+- Motivo: gestión y autoría son capacidades distintas. Permitir supervisión no
+  debe atribuir a una persona mensajes escritos dentro del caso de otra.
+- Evidencia: `src/pages/AgentPage.tsx`,
+  `tests/e2e-agent/agent-panel.spec.ts` y las pruebas de conversación en
+  `tests/schema/politicas.test.ts` y `tests/rls/politicas.spec.ts`.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

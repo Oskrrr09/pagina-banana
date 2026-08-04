@@ -133,6 +133,8 @@ jobs:
         env:
           E2E_CONTRA_BUILD: '1'
         run: npx playwright test --project=chromium --project=mobile
+      - name: Probar permisos y errores del panel de agentes
+        run: npm run test:e2e:agent
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
@@ -199,6 +201,8 @@ jobs:
         id: pruebas
       - name: Exigir que se hayan ejecutado y aprobado todas
         if: steps.cfg.outputs.hay == 'si'
+        env:
+          RLS_EXPECTED_TESTS: 27
         run: node scripts/verificar-rls.mjs rls.json "${{ steps.pruebas.outputs.codigo }}"
 
   deploy:

@@ -20,6 +20,8 @@ export type Categoria =
 export interface Clasificacion {
   categoria: Categoria
   ejecuta: string[]
+  /** Todas las funciones del proyecto elevan privilegios de forma explícita. */
+  securityDefiner: boolean
   /**
    * Parámetros que la función puede recibir aunque parezcan sensibles, con el
    * motivo. Sin esta lista habría que excluir la función entera, y entonces un
@@ -30,30 +32,63 @@ export interface Clasificacion {
 
 export const FUNCIONES: Record<string, Clasificacion> = {
   // ---- Visitante: sin cuenta, con sesión anónima --------------------------
-  abrir_conversacion: { categoria: 'rpc-visitante', ejecuta: ['anon', 'authenticated'] },
-  enviar_mensaje_visitante: { categoria: 'rpc-visitante', ejecuta: ['anon', 'authenticated'] },
+  'abrir_conversacion(text,text,text,text)': {
+    categoria: 'rpc-visitante', ejecuta: ['anon', 'authenticated'], securityDefiner: true,
+  },
+  'enviar_mensaje_visitante(uuid,text)': {
+    categoria: 'rpc-visitante', ejecuta: ['anon', 'authenticated'], securityDefiner: true,
+  },
   // La valoración la envía el visitante, que puede ser anónimo o tener cuenta.
-  enviar_valoracion: { categoria: 'rpc-visitante', ejecuta: ['anon', 'authenticated'] },
+  'enviar_valoracion(uuid,smallint,text)': {
+    categoria: 'rpc-visitante', ejecuta: ['anon', 'authenticated'], securityDefiner: true,
+  },
 
   // ---- Cliente con cuenta -------------------------------------------------
-  actualizar_mi_ficha: { categoria: 'rpc-cliente', ejecuta: ['authenticated'] },
-  registrar_mi_justificante: { categoria: 'rpc-cliente', ejecuta: ['authenticated'] },
-  crear_mis_reservas: { categoria: 'rpc-cliente', ejecuta: ['authenticated'] },
-  cancelar_mi_reserva: { categoria: 'rpc-cliente', ejecuta: ['authenticated'] },
-  vincular_mi_visitante_a_cliente: { categoria: 'rpc-cliente', ejecuta: ['authenticated'] },
-  posicion_en_cola: { categoria: 'rpc-cliente', ejecuta: ['authenticated'] },
+  'actualizar_mi_ficha(text,text,jsonb,jsonb)': {
+    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'registrar_mi_justificante(text)': {
+    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'crear_mis_reservas(jsonb)': {
+    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'cancelar_mi_reserva(uuid)': {
+    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'vincular_mi_visitante_a_cliente()': {
+    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'posicion_en_cola(uuid)': {
+    categoria: 'rpc-cliente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
 
   // ---- Agente -------------------------------------------------------------
-  cambiar_mi_estado: { categoria: 'rpc-agente', ejecuta: ['authenticated'] },
-  asignarme_conversacion: { categoria: 'rpc-agente', ejecuta: ['authenticated'] },
-  liberar_mi_conversacion: { categoria: 'rpc-agente', ejecuta: ['authenticated'] },
-  cerrar_conversacion: { categoria: 'rpc-agente', ejecuta: ['authenticated'] },
-  reabrir_conversacion: { categoria: 'rpc-agente', ejecuta: ['authenticated'] },
-  responder_como_agente: { categoria: 'rpc-agente', ejecuta: ['authenticated'] },
-  cambiar_estado_reserva: { categoria: 'rpc-agente', ejecuta: ['authenticated'] },
-  revisar_descuento_educativo: {
+  'cambiar_mi_estado(text,text)': {
+    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'asignarme_conversacion(uuid)': {
+    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'liberar_mi_conversacion(uuid)': {
+    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'cerrar_conversacion(uuid,boolean)': {
+    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'reabrir_conversacion(uuid)': {
+    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'responder_como_agente(uuid,text)': {
+    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'cambiar_estado_reserva(uuid,text)': {
+    categoria: 'rpc-agente', ejecuta: ['authenticated'], securityDefiner: true,
+  },
+  'revisar_descuento_educativo(uuid,text,text)': {
     categoria: 'rpc-agente',
     ejecuta: ['authenticated'],
+    securityDefiner: true,
     parametrosPermitidos: {
       p_cliente_id:
         'El agente actúa sobre la ficha de OTRA persona, así que el destinatario ' +
@@ -65,12 +100,12 @@ export const FUNCIONES: Record<string, Clasificacion> = {
   // ---- Auxiliares: nadie las llama desde fuera ----------------------------
   // `es_agente` es la excepción: las políticas la invocan y se evalúan con los
   // permisos de quien consulta, así que `authenticated` necesita EXECUTE.
-  es_agente: { categoria: 'auxiliar', ejecuta: ['authenticated'] },
-  es_supervisor: { categoria: 'auxiliar', ejecuta: [] },
+  'es_agente()': { categoria: 'auxiliar', ejecuta: ['authenticated'], securityDefiner: true },
+  'es_supervisor()': { categoria: 'auxiliar', ejecuta: [], securityDefiner: true },
 
   // ---- Disparadores -------------------------------------------------------
-  touch_conversation_on_message: { categoria: 'trigger', ejecuta: [] },
-  visitantes_protege_columnas: { categoria: 'trigger', ejecuta: [] },
+  'touch_conversation_on_message()': { categoria: 'trigger', ejecuta: [], securityDefiner: true },
+  'visitantes_protege_columnas()': { categoria: 'trigger', ejecuta: [], securityDefiner: true },
 }
 
 /**
@@ -91,33 +126,3 @@ export const PARAMETROS_PROHIBIDOS = [
   'p_usuario',
   'p_user_id',
 ]
-
-/**
- * Funciones que trae la extensión `pgcrypto` y no son del proyecto. Se listan
- * para poder exigir que TODO lo demás esté clasificado.
- */
-export const DE_EXTENSIONES = new Set([
-  'armor',
-  'crypt',
-  'dearmor',
-  'decrypt',
-  'decrypt_iv',
-  'digest',
-  'encrypt',
-  'encrypt_iv',
-  'fips_mode',
-  'gen_random_bytes',
-  'gen_random_uuid',
-  'gen_salt',
-  'hmac',
-  'pgp_armor_headers',
-  'pgp_key_id',
-  'pgp_pub_decrypt',
-  'pgp_pub_decrypt_bytea',
-  'pgp_pub_encrypt',
-  'pgp_pub_encrypt_bytea',
-  'pgp_sym_decrypt',
-  'pgp_sym_decrypt_bytea',
-  'pgp_sym_encrypt',
-  'pgp_sym_encrypt_bytea',
-])

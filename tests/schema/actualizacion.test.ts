@@ -4,6 +4,7 @@ import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { ANDAMIO_SUPABASE } from './andamio'
+import { auditarCatalogo, serializarCatalogo } from './auditoria'
 
 // ============================================================================
 // Actualización desde el estado exacto de la PR #33.
@@ -156,31 +157,41 @@ describe('actualización desde la PR #33', () => {
     expect(mensajes[0].n, 'y sus mensajes').toBeGreaterThan(0)
   })
 
-  it('los privilegios heredados de PUBLIC quedan revocados', async () => {
-    // El estado anterior creaba funciones sin `revoke`, así que PUBLIC —y con
-    // él `anon`— podía ejecutarlas. Actualizar tiene que cerrarlas.
-    const { rows } = await db.query<{ nombre: string }>(
-      `select p.proname as nombre
-         from pg_proc p
-         join pg_namespace n on n.oid = p.pronamespace
-         cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
-        where n.nspname = 'public'
-          and a.privilege_type = 'EXECUTE'
-          and a.grantee = 0
-          and p.proname in (
-            'es_agente', 'posicion_en_cola', 'revisar_descuento_educativo',
-            'abrir_conversacion', 'enviar_valoracion'
-          )`,
-    )
-    expect(rows.map((r) => r.nombre), 'siguen abiertas a PUBLIC').toEqual([])
+  it('supera la misma auditoría exacta que una instalación limpia', async () => {
+    const auditoria = await auditarCatalogo(db)
+    expect(auditoria.problemas, auditoria.problemas.join('\n')).toEqual([])
   })
 
-  it('una segunda aplicación sigue siendo idempotente', async () => {
-    await expect(aplicarMigracionesNuevas(db)).resolves.toBeUndefined()
-    const { rows } = await db.query<{ n: number }>(
-      `select count(*)::int as n from public.visitantes`,
+  it('una segunda aplicación conserva catálogo y datos exactamente', async () => {
+    const antes = await auditarCatalogo(db)
+    expect(antes.problemas).toEqual([])
+    const catalogoAntes = serializarCatalogo(antes.catalogo)
+    const { rows: datosAntes } = await db.query<{
+      visitantes: number
+      conversaciones: number
+      mensajes: number
+      propietario: string
+    }>(
+      `select (select count(*)::int from public.visitantes) as visitantes,
+              (select count(*)::int from public.conversaciones) as conversaciones,
+              (select count(*)::int from public.mensajes) as mensajes,
+              (select auth_id::text from public.visitantes limit 1) as propietario`,
     )
-    expect(rows[0].n, 'no duplica ni borra filas').toBe(1)
+
+    await expect(aplicarMigracionesNuevas(db)).resolves.toBeUndefined()
+    const despues = await auditarCatalogo(db)
+    expect(despues.problemas, despues.problemas.join('\n')).toEqual([])
+    expect(serializarCatalogo(despues.catalogo)).toBe(catalogoAntes)
+    expect(new Set(despues.catalogo.map((funcion) => funcion.firma)).size).toBe(
+      despues.catalogo.length,
+    )
+    const { rows: datosDespues } = await db.query<typeof datosAntes[number]>(
+      `select (select count(*)::int from public.visitantes) as visitantes,
+              (select count(*)::int from public.conversaciones) as conversaciones,
+              (select count(*)::int from public.mensajes) as mensajes,
+              (select auth_id::text from public.visitantes limit 1) as propietario`,
+    )
+    expect(datosDespues).toEqual(datosAntes)
   })
 
   it('las políticas finales funcionan después de actualizar', async () => {

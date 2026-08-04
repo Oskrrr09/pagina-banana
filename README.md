@@ -38,6 +38,7 @@ npm run check           # tipos + lint + Vitest/esquema + build + E2E
 npm run test:unit       # unitarias y PostgreSQL/PGlite
 npm run test:rls        # Supabase dedicado; ver tests/rls/README.md
 npm run test:e2e        # pruebas end-to-end con Playwright
+npm run test:e2e:agent  # permisos y errores del panel con backend controlado
 npm run test:e2e:ui     # modo UI (Playwright test explorer)
 npm run test:e2e:headed # con el navegador visible
 ```

@@ -437,9 +437,12 @@ forman el backlog verificable.
 ## SEC-RLS-001 — Falta validar y desplegar la migración segura
 
 - Estado: **abierto y bloqueante para publicar**.
-- Ya comprobado: 94 pruebas de esquema sobre PostgreSQL/PGlite cubren
+- Ya comprobado: 98 pruebas de esquema sobre PostgreSQL/PGlite cubren
   instalación desde cero, actualización desde el estado desplegado, RLS, RPC
-  y permisos. Otras 9 unitarias completan las 103 pruebas Vitest del proyecto.
+  y permisos. Otras 16 unitarias completan las 114 pruebas Vitest del proyecto.
+- La auditoría clasifica cada función por firma exacta, detecta `PUBLIC` aunque
+  `aclexplode` lo represente como `grantee = 0`, y se repite tras instalación,
+  actualización e idempotencia. El verificador CI exige exactamente 27 casos.
 - Falta: ejecutar los 27 casos de `tests/rls/politicas.spec.ts` contra un
   Supabase dedicado para comprobar GoTrue, PostgREST y Storage reales. El
   arnés se actualizó el 2026-08-04 porque la versión anterior seguía usando

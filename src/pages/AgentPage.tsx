@@ -3,12 +3,12 @@ import { Link, Navigate } from 'react-router-dom'
 import {
   supabaseEnabled,
   type AgentStatus,
+  type DbAgent,
   type DbConversation,
   type DbCustomer,
 } from '../lib/supabase'
 import {
   assignConversation,
-  deleteConversation,
   setConversationState,
   useAgentConversation,
   useAgentInbox,
@@ -159,7 +159,6 @@ export function AgentPage() {
           <ConversationColumn
             conversationId={selectedId}
             conversation={selected?.conversation ?? null}
-            onDeleted={() => setSelectedId(null)}
           />
           <VisitorColumn conversationId={selectedId} />
         </div>
@@ -454,11 +453,9 @@ function BandejaTab({
 function ConversationColumn({
   conversationId,
   conversation,
-  onDeleted,
 }: {
   conversationId: string | null
   conversation: DbConversation | null
-  onDeleted: () => void
 }) {
   const assignedTo = conversation?.agente_id ?? null
   const estado = conversation?.estado ?? 'abierta'
@@ -466,17 +463,6 @@ function ConversationColumn({
   const { visitor } = useConversationVisitor(conversationId)
   const agentNames = useAgentNames()
   const { agente } = useAgentAuth()
-  const [input, setInput] = useState('')
-  const [assigning, setAssigning] = useState(false)
-  const [closing, setClosing] = useState(false)
-  // Las operaciones sobre la conversación ahora pueden ser rechazadas por el
-  // servidor —cerrar una que no es tuya, reclamar una cerrada—, así que el
-  // error tiene que verse. Antes se descartaba y el botón no hacía nada sin
-  // decir por qué.
-  const [avisoOperacion, setAvisoOperacion] = useState<string | null>(null)
-  const [closeDialog, setCloseDialog] = useState(false)
-  const [deleteDialog, setDeleteDialog] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -503,58 +489,13 @@ function ConversationColumn({
     )
   }
 
-  const submit = async () => {
-    const trimmed = input.trim()
-    if (!trimmed) return
-    setInput('')
-    await sendMessage(trimmed)
-  }
-
   const mine = assignedTo != null && assignedTo === agente?.id
   const takenByOther = assignedTo != null && assignedTo !== agente?.id
   const cerrada = estado === 'cerrada'
-
-  const toggleAssign = async () => {
-    if (!conversationId || !agente) return
-    setAssigning(true)
-    const { error } = await assignConversation(conversationId, mine ? null : agente.id)
-    setAvisoOperacion(error)
-    setAssigning(false)
-  }
-
-  // Reabrir es inmediato; cerrar pasa antes por el diálogo que pregunta si
-  // se le pide valoración al cliente.
-  const toggleEstado = async () => {
-    if (!conversationId) return
-    if (!cerrada) {
-      setCloseDialog(true)
-      return
-    }
-    setClosing(true)
-    const { error } = await setConversationState(conversationId, 'abierta')
-    setAvisoOperacion(error)
-    setClosing(false)
-  }
-
-  const confirmarCierre = async (pedirValoracion: boolean) => {
-    if (!conversationId) return
-    setClosing(true)
-    const { error } = await setConversationState(conversationId, 'cerrada', { pedirValoracion })
-    setAvisoOperacion(error)
-    setClosing(false)
-    setCloseDialog(false)
-  }
-
-  const confirmarBorrado = async () => {
-    if (!conversationId) return
-    setDeleting(true)
-    const { error } = await deleteConversation(conversationId)
-    setDeleting(false)
-    setDeleteDialog(false)
-    // La suscripción realtime refresca la bandeja; aquí solo soltamos la
-    // selección para no quedarnos apuntando a algo que ya no existe.
-    if (!error) onDeleted()
-  }
+  // Un supervisor puede gestionar estado y asignación de otros, pero no
+  // responder firmando dentro de una conversación ajena. Para responder debe
+  // liberarla y asumirla explícitamente; así se conserva la autoría real.
+  const puedeResponder = !cerrada && !takenByOther
 
   return (
     <main className="flex min-w-0 flex-1 flex-col bg-neutral">
@@ -591,43 +532,12 @@ function ConversationColumn({
             {cerrada && ' · Archivada'}
           </p>
         </div>
-        <div className="ml-auto flex shrink-0 gap-2">
-          <button
-            type="button"
-            onClick={() => void toggleAssign()}
-            disabled={assigning || takenByOther}
-            className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {mine ? 'Soltar' : 'Asignarme'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void toggleEstado()}
-            // Cerrar y reabrir exigen ser el agente asignado: sin esto el
-            // botón invita a una operación que el servidor va a rechazar.
-            disabled={closing || takenByOther}
-            className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {cerrada ? 'Reabrir' : 'Cerrar'}
-          </button>
-          {avisoOperacion && (
-            <p role="alert" className="w-full text-xs font-medium text-[#b3261e]">
-              {avisoOperacion}
-            </p>
-          )}
-          {/* Borrar solo desde el archivo: obliga a cerrar antes, así no se
-              elimina por error una conversación viva. */}
-          {cerrada && (
-            <button
-              type="button"
-              onClick={() => setDeleteDialog(true)}
-              disabled={deleting}
-              className="cursor-pointer rounded-full border border-danger px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Eliminar
-            </button>
-          )}
-        </div>
+        <ConversationActions
+          conversationId={conversationId}
+          estado={estado}
+          assignedTo={assignedTo}
+          agent={agente}
+        />
       </header>
 
       {/* Valoración recibida */}
@@ -657,68 +567,6 @@ function ConversationColumn({
             Valoración pedida al cliente · pendiente de respuesta
           </div>
         )}
-
-      {closeDialog && (
-        <ConfirmDialog
-          title="Cerrar conversación"
-          onCancel={() => setCloseDialog(false)}
-          busy={closing}
-        >
-          <p className="text-sm text-ink/80">
-            ¿Quieres pedirle al cliente que valore la atención? Verá un
-            formulario de estrellas la próxima vez que abra el chat.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void confirmarCierre(true)}
-              disabled={closing}
-              className="cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              Cerrar y pedir valoración
-            </button>
-            <button
-              type="button"
-              onClick={() => void confirmarCierre(false)}
-              disabled={closing}
-              className="cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold text-ink hover:bg-black/5 disabled:opacity-50"
-            >
-              Cerrar sin pedirla
-            </button>
-          </div>
-        </ConfirmDialog>
-      )}
-
-      {deleteDialog && (
-        <ConfirmDialog
-          title="Eliminar conversación"
-          onCancel={() => setDeleteDialog(false)}
-          busy={deleting}
-        >
-          <p className="text-sm text-ink/80">
-            Se borrarán la conversación y todos sus mensajes.{' '}
-            <strong>Esto no se puede deshacer.</strong>
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void confirmarBorrado()}
-              disabled={deleting}
-              className="cursor-pointer rounded-full bg-danger px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {deleting ? 'Eliminando…' : 'Sí, eliminar'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeleteDialog(false)}
-              disabled={deleting}
-              className="cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold text-ink hover:bg-black/5 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-          </div>
-        </ConfirmDialog>
-      )}
 
       <div
         ref={scrollRef}
@@ -799,31 +647,283 @@ function ConversationColumn({
           vuelve a escribir se le abrirá una conversación nueva.
         </div>
       ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void submit()
-          }}
-          className="flex items-center gap-2 border-t border-line bg-surface px-6 py-4"
-        >
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Responde al visitante…"
-            aria-label="Responder al visitante"
-            className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim()}
-            className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-            style={{ background: BANANA_BLUE }}
-          >
-            Enviar
-          </button>
-        </form>
+        <AgentMessageComposer
+          canReply={puedeResponder}
+          takenByOther={takenByOther}
+          sendMessage={sendMessage}
+        />
       )}
     </main>
+  )
+}
+
+export function AgentMessageComposer({
+  canReply,
+  takenByOther,
+  sendMessage,
+}: {
+  canReply: boolean
+  takenByOther: boolean
+  sendMessage: (text: string) => Promise<{ error: string | null }>
+}) {
+  const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const submit = async () => {
+    const trimmed = input.trim()
+    if (!trimmed) return
+    setNotice(null)
+    setSending(true)
+    try {
+      const { error } = await sendMessage(trimmed)
+      if (error) {
+        setNotice(error)
+        return
+      }
+      setInput('')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'No se pudo enviar el mensaje.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault()
+        void submit()
+      }}
+      className="flex items-center gap-2 border-t border-line bg-surface px-6 py-4"
+    >
+      <input
+        value={input}
+        onChange={(event) => setInput(event.target.value)}
+        placeholder="Responde al visitante…"
+        aria-label="Responder al visitante"
+        disabled={!canReply || sending}
+        className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30"
+      />
+      <button
+        type="submit"
+        disabled={!input.trim() || !canReply || sending}
+        className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+        style={{ background: BANANA_BLUE }}
+      >
+        {sending ? 'Enviando…' : 'Enviar'}
+      </button>
+      {!canReply && takenByOther && (
+        <p className="text-xs text-ink/60">
+          Libera la asignación y asígnatela antes de responder.
+        </p>
+      )}
+      {notice && (
+        <p role="alert" className="text-xs font-medium text-[#b3261e]">
+          {notice}
+        </p>
+      )}
+    </form>
+  )
+}
+
+type ConversationOperation = 'assign' | 'release' | 'close' | 'reopen'
+
+interface ConversationActionOperations {
+  assign: typeof assignConversation
+  changeState: typeof setConversationState
+}
+
+const DEFAULT_CONVERSATION_OPERATIONS: ConversationActionOperations = {
+  assign: assignConversation,
+  changeState: setConversationState,
+}
+
+function readableError(error: unknown): string {
+  return error instanceof Error ? error.message : 'La operación no se pudo completar.'
+}
+
+/**
+ * Acciones observables de una conversación. La autorización sigue en SQL;
+ * aquí se evita ofrecer operaciones que el rol actual no puede completar y se
+ * conserva siempre el error devuelto por el servidor.
+ */
+export function ConversationActions({
+  conversationId,
+  estado,
+  assignedTo,
+  agent,
+  operations = DEFAULT_CONVERSATION_OPERATIONS,
+  onSuccess,
+}: {
+  conversationId: string
+  estado: DbConversation['estado']
+  assignedTo: string | null
+  agent: Pick<DbAgent, 'id' | 'rol'> | null
+  operations?: ConversationActionOperations
+  onSuccess?: (operation: ConversationOperation) => void
+}) {
+  const [assigning, setAssigning] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const [closeDialog, setCloseDialog] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
+
+  const mine = assignedTo != null && assignedTo === agent?.id
+  const takenByOther = assignedTo != null && assignedTo !== agent?.id
+  const esSupervisor = agent?.rol === 'supervisor'
+  const cerrada = estado === 'cerrada'
+  const assignmentOperation: 'assign' | 'release' | null = cerrada
+    ? null
+    : mine || (takenByOther && esSupervisor)
+      ? 'release'
+      : assignedTo == null
+        ? 'assign'
+        : null
+  const assignmentLabel = mine
+    ? 'Soltar'
+    : takenByOther
+      ? esSupervisor
+        ? 'Liberar asignación'
+        : 'Asignada a otro agente'
+      : 'Asignarme'
+  const canChangeState = Boolean(agent && (mine || esSupervisor))
+  const stateDisabledReason = canChangeState
+    ? undefined
+    : takenByOther
+      ? 'Solo el agente asignado o un supervisor puede gestionar esta conversación.'
+      : 'Asígnate la conversación antes de cerrarla.'
+
+  const toggleAssign = async () => {
+    if (!agent || !assignmentOperation) return
+    setAviso(null)
+    setAssigning(true)
+    try {
+      const { error } = await operations.assign(
+        conversationId,
+        assignmentOperation === 'assign' ? agent.id : null,
+      )
+      if (error) {
+        setAviso(error)
+        return
+      }
+      onSuccess?.(assignmentOperation)
+    } catch (error) {
+      setAviso(readableError(error))
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  // Reabrir es inmediato; cerrar pasa por el diálogo de valoración.
+  const toggleState = async () => {
+    if (!canChangeState) return
+    setAviso(null)
+    if (!cerrada) {
+      setCloseDialog(true)
+      return
+    }
+    setClosing(true)
+    try {
+      const { error } = await operations.changeState(conversationId, 'abierta')
+      if (error) {
+        setAviso(error)
+        return
+      }
+      onSuccess?.('reopen')
+    } catch (error) {
+      setAviso(readableError(error))
+    } finally {
+      setClosing(false)
+    }
+  }
+
+  const confirmClose = async (requestRating: boolean) => {
+    setAviso(null)
+    setClosing(true)
+    try {
+      const { error } = await operations.changeState(conversationId, 'cerrada', {
+        pedirValoracion: requestRating,
+      })
+      if (error) {
+        setAviso(error)
+        return
+      }
+      setCloseDialog(false)
+      onSuccess?.('close')
+    } catch (error) {
+      setAviso(readableError(error))
+    } finally {
+      setClosing(false)
+    }
+  }
+
+  return (
+    <div className="ml-auto flex shrink-0 flex-wrap justify-end gap-2">
+      {!cerrada && (
+        <button
+          type="button"
+          onClick={() => void toggleAssign()}
+          disabled={assigning || assignmentOperation == null}
+          title={
+            assignmentOperation == null
+              ? 'Solo el agente asignado o un supervisor puede liberar esta asignación.'
+              : undefined
+          }
+          className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {assigning ? 'Guardando…' : assignmentLabel}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => void toggleState()}
+        disabled={closing || !canChangeState}
+        title={stateDisabledReason}
+        className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {closing ? 'Guardando…' : cerrada ? 'Reabrir' : 'Cerrar'}
+      </button>
+      {aviso && !closeDialog && (
+        <p role="alert" className="w-full text-right text-xs font-medium text-[#b3261e]">
+          {aviso}
+        </p>
+      )}
+      {closeDialog && (
+        <ConfirmDialog
+          title="Cerrar conversación"
+          onCancel={() => setCloseDialog(false)}
+          busy={closing}
+        >
+          <p className="text-sm text-ink/80">
+            ¿Quieres pedirle al cliente que valore la atención? Verá un
+            formulario de estrellas la próxima vez que abra el chat.
+          </p>
+          {aviso && (
+            <p role="alert" className="mt-3 text-sm font-medium text-[#b3261e]">
+              {aviso}
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void confirmClose(true)}
+              disabled={closing}
+              className="cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Cerrar y pedir valoración
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmClose(false)}
+              disabled={closing}
+              className="cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold text-ink hover:bg-black/5 disabled:opacity-50"
+            >
+              Cerrar sin pedirla
+            </button>
+          </div>
+        </ConfirmDialog>
+      )}
+    </div>
   )
 }
 

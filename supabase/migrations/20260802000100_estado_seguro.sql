@@ -424,6 +424,13 @@ begin
          descuento_educativo_revisado_at = now(),
          descuento_educativo_revisado_por = auth.uid()
    where id = p_cliente_id;
+  -- `UPDATE` sobre cero filas no es un error en PostgreSQL. Sin comprobar
+  -- FOUND, el panel informaba éxito aunque el UUID no correspondiera a ningún
+  -- cliente. P0002 es `no_data_found`: distingue un destinatario inexistente
+  -- de un rechazo de autorización (42501).
+  if not found then
+    raise exception 'El cliente no existe' using errcode = 'P0002';
+  end if;
 end;
 $$;
 

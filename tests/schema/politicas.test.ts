@@ -67,6 +67,7 @@ const CLIENTE = '33333333-3333-4333-8333-333333333333'
 const AGENTE = '44444444-4444-4444-8444-444444444444'
 const AGENTE_B = '66666666-6666-4666-8666-666666666666'
 const SUPERVISOR = '77777777-7777-4777-8777-777777777777'
+const CLIENTE_REVISION = '88888888-8888-4888-8888-888888888888'
 
 /**
  * Ejecuta SQL como un usuario concreto.
@@ -103,7 +104,7 @@ beforeAll(async () => {
     await db.exec(readFileSync(join(DIR, f), 'utf8'))
   }
   // Usuarios del escenario. En Supabase los crea GoTrue; aquí se insertan.
-  for (const id of [ANA, BEA, CLIENTE, AGENTE, AGENTE_B, SUPERVISOR]) {
+  for (const id of [ANA, BEA, CLIENTE, AGENTE, AGENTE_B, SUPERVISOR, CLIENTE_REVISION]) {
     await db.query('insert into auth.users (id, email) values ($1, $2)', [
       id,
       `${id}@ejemplo.test`,
@@ -112,6 +113,16 @@ beforeAll(async () => {
   await db.query(
     `insert into public.clientes (id, email) values ($1, $2)`,
     [CLIENTE, 'cliente@ejemplo.test'],
+  )
+  await db.query(
+    `insert into public.clientes (
+       id, email, nombre, telefono, direccion_envio,
+       descuento_educativo_estado, descuento_educativo_archivo,
+       descuento_educativo_subido_at
+     ) values ($1, 'revision@ejemplo.test', 'Persona revisada', '600111222',
+       '{"localidad":"Las Palmas"}'::jsonb, 'pendiente',
+       'justificantes/revision.pdf', '2026-08-01T10:00:00Z')`,
+    [CLIENTE_REVISION],
   )
   await db.query(
     `insert into public.agentes (id, email, nombre, rol) values
@@ -379,6 +390,115 @@ describe('agente', () => {
       [CLIENTE],
     )
     expect(rows[0].telefono, `el teléfono no debe cambiar (error: ${error})`).toBeNull()
+  })
+
+  it('revisa un cliente existente y solo cambia los campos de revisión', async () => {
+    const { rows: antes } = await db.query<{
+      email: string
+      nombre: string
+      telefono: string
+      direccion_envio: { localidad: string }
+      archivo: string
+      subido_at: string
+    }>(
+      `select email, nombre, telefono, direccion_envio,
+              descuento_educativo_archivo as archivo,
+              descuento_educativo_subido_at as subido_at
+         from public.clientes where id = $1`,
+      [CLIENTE_REVISION],
+    )
+
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.revisar_descuento_educativo($1, 'aprobado', 'Documentación válida')`,
+      [CLIENTE_REVISION],
+    )
+    expect(error).toBeNull()
+
+    const { rows: despues } = await db.query<{
+      email: string
+      nombre: string
+      telefono: string
+      direccion_envio: { localidad: string }
+      archivo: string
+      subido_at: string
+      estado: string
+      nota: string
+      revisado_por: string
+      revisado_at: string
+    }>(
+      `select email, nombre, telefono, direccion_envio,
+              descuento_educativo_archivo as archivo,
+              descuento_educativo_subido_at as subido_at,
+              descuento_educativo_estado as estado,
+              descuento_educativo_nota as nota,
+              descuento_educativo_revisado_por as revisado_por,
+              descuento_educativo_revisado_at as revisado_at
+         from public.clientes where id = $1`,
+      [CLIENTE_REVISION],
+    )
+    expect({
+      email: despues[0].email,
+      nombre: despues[0].nombre,
+      telefono: despues[0].telefono,
+      direccion_envio: despues[0].direccion_envio,
+      archivo: despues[0].archivo,
+      subido_at: despues[0].subido_at,
+    }).toEqual(antes[0])
+    expect(despues[0].estado).toBe('aprobado')
+    expect(despues[0].nota).toBe('Documentación válida')
+    expect(despues[0].revisado_por).toBe(AGENTE)
+    expect(despues[0].revisado_at).toBeTruthy()
+  })
+
+  it('rechaza un cliente inexistente y no modifica ninguna ficha', async () => {
+    const { rows: antes } = await db.query<{ estado: string; nota: string; revisado_por: string }>(
+      `select descuento_educativo_estado as estado,
+              descuento_educativo_nota as nota,
+              descuento_educativo_revisado_por as revisado_por
+         from public.clientes where id = $1`,
+      [CLIENTE_REVISION],
+    )
+    const { error } = await como(
+      AGENTE,
+      'authenticated',
+      `select public.revisar_descuento_educativo(
+        'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'rechazado', 'No debe aplicarse'
+      )`,
+    )
+    expect(error).toMatch(/El cliente no existe/)
+    const { rows: despues } = await db.query<typeof antes[number]>(
+      `select descuento_educativo_estado as estado,
+              descuento_educativo_nota as nota,
+              descuento_educativo_revisado_por as revisado_por
+         from public.clientes where id = $1`,
+      [CLIENTE_REVISION],
+    )
+    expect(despues).toEqual(antes)
+  })
+
+  it('un cliente no puede revisar descuentos y el estado permanece intacto', async () => {
+    const { rows: antes } = await db.query<{ estado: string; nota: string }>(
+      `select descuento_educativo_estado as estado,
+              descuento_educativo_nota as nota
+         from public.clientes where id = $1`,
+      [CLIENTE_REVISION],
+    )
+    const { error } = await como(
+      CLIENTE,
+      'authenticated',
+      `select public.revisar_descuento_educativo($1, 'rechazado', 'Ataque')`,
+      [CLIENTE_REVISION],
+    )
+    expect(error).toMatch(/Solo un agente autenticado/)
+    const { rows: despues } = await db.query<typeof antes[number]>(
+      `select descuento_educativo_estado as estado,
+              descuento_educativo_nota as nota
+         from public.clientes where id = $1`,
+      [CLIENTE_REVISION],
+    )
+    expect(despues).toEqual(antes)
   })
 })
 

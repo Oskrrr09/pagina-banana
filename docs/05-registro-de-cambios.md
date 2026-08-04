@@ -8,6 +8,31 @@ actualizado: 2026-08-04
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-04 — Cierre de los hallazgos pendientes de la PR #34
+
+- Retirada completa la falsa eliminación de conversaciones: el archivo solo
+  cierra y reabre, y conserva el historial. La UI diferencia agente normal y
+  supervisor, usa «Liberar asignación» para asignaciones ajenas y muestra los
+  errores del servidor como alertas accesibles sin dejar botones bloqueados.
+- `revisar_descuento_educativo()` devuelve `P0002` si el cliente no existe;
+  PGlite comprueba éxito, inexistencia, ausencia de efectos laterales y rechazo
+  de cuentas no agente.
+- La clasificación de funciones y la auditoría compartida usan firmas exactas,
+  roles `EXECUTE` exactos y un `LEFT JOIN` que conserva `PUBLIC`. La misma
+  auditoría pasa en instalación limpia, actualización desde PR #33 y segunda
+  aplicación idempotente sin perder datos ni cambiar el catálogo.
+- El verificador RLS exige exactamente 27 descubiertas y aprobadas, ninguna
+  omitida, fallida o inestable, y código de Playwright cero. Siete pruebas
+  unitarias cubren 27/26/28, omitida, inestable, vacío y salida no cero.
+- La suite RLS mantiene 27 casos, usa marcas únicas por ejecución y refuerza
+  revisión educativa, gestión agente/supervisor y estados de reserva. Se
+  descubrió localmente, pero las 27 siguen omitidas por falta del Supabase
+  dedicado; no se presentan como aprobadas.
+- Verificación desde `npm ci`: 114 Vitest aprobadas (98 de esquema), 264 E2E
+  generales aprobadas con 1 omisión propia del modo desarrollo, y 6 E2E del
+  panel aprobadas. ESLint: 0 errores y 23 avisos conocidos. `npm audit` mantiene
+  las 2 vulnerabilidades moderadas ya registradas en SEG-001.
+
 ## 2026-08-04 — La suite RLS se alinea con el esquema final
 
 - Detectado que los 21 casos contra Supabase real seguían usando operaciones

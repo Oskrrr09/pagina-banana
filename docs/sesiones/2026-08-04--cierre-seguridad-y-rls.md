@@ -33,6 +33,14 @@ después de validar la migración contra Supabase real.
   Auth para evitar chats huérfanos por `ON DELETE SET NULL`.
 - Se corrigieron las instrucciones SQL y la documentación viva: la única fuente
   ejecutable es `supabase/migrations/20260802000100_estado_seguro.sql`.
+- En la revisión final de la PR #34 se retiró la falsa eliminación del panel,
+  se alineó la UI con el rol supervisor y se conservaron separadas gestión y
+  autoría de respuestas.
+- Se centralizó la auditoría PostgreSQL por firma exacta y se aplicó a
+  instalación, actualización e idempotencia. El verificador CI exige 27 casos
+  RLS exactos y cuenta con siete regresiones unitarias.
+- `revisar_descuento_educativo()` falla con `P0002` sobre un UUID inexistente.
+  La suite RLS real se fortaleció sin aumentar ni reducir sus 27 casos.
 
 ## Decisiones
 
@@ -47,13 +55,20 @@ después de validar la migración contra Supabase real.
 - `npx eslint tests/rls/politicas.spec.ts`: sin incidencias.
 - `npm run test:rls`: 27 omitidas con motivo explícito por
   falta de los tres secretos.
-- `npm run check`: correcto después de los cambios (103 Vitest, build y
+- `npm run check`: correcto en la primera revisión (103 Vitest, build y
   264 E2E aprobados; 1 E2E omitido deliberadamente).
+- Revisión final: 114 Vitest (98 de esquema), 264 E2E generales y 6 E2E del
+  panel aprobadas; 23 avisos de lint y 0 errores. Los 27 casos RLS se descubren
+  y se omiten por falta de credenciales dedicadas.
 - El workflow se parseó como YAML y `git diff --check` no detectó errores.
 
 ## Archivos afectados
 
 - `tests/rls/politicas.spec.ts`, `tests/rls/README.md`.
+- `src/pages/AgentPage.tsx`, `src/lib/chatSession.ts`,
+  `tests/e2e-agent/` y `playwright.agent.config.ts`.
+- `tests/schema/`, `scripts/verificar-rls.mjs` y
+  `scripts/lib/verificar-rls.mjs`.
 - `supabase/migrations/20260802000100_estado_seguro.sql`.
 - `AGENTS.md`, `README.md` y `docs/00` a `docs/05` relacionados.
 

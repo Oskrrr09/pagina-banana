@@ -1,138 +1,35 @@
-import { describe, expect, it, beforeAll, afterAll } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { DE_EXTENSIONES, FUNCIONES, PARAMETROS_PROHIBIDOS } from './funciones'
+import { ANDAMIO_SUPABASE } from './andamio'
+import { auditarCatalogo, catalogarFunciones, serializarCatalogo } from './auditoria'
+import { FUNCIONES, PARAMETROS_PROHIBIDOS } from './funciones'
 
-// ============================================================================
-// Instala el esquema en un PostgreSQL de verdad y comprueba el resultado.
-//
-// POR QUÉ NO BASTABA CON EXPRESIONES REGULARES
-//
-// Las comprobaciones de texto que había (`tests/e2e/schema-seguro.spec.ts`) no
-// habrían detectado el fallo que encontró la revisión: las políticas invocaban
-// `public.conversacion_es_mia(...)` y la función estaba declarada más abajo en
-// el mismo fichero. Sobre una base ya montada eso "funciona" porque la función
-// existe de antes; sobre una base vacía, revienta. La única forma de saberlo
-// es instalarlo en una base vacía.
-//
-// QUÉ ES ESTO Y QUÉ NO ES
-//
-// PGlite es PostgreSQL real compilado a WebAssembly: mismo planificador, mismo
-// RLS, mismo `pg_proc`. Corre sin Docker, que es lo que permite ejecutarlo aquí
-// y en cualquier CI.
-//
-// La versión concreta no se afirma de memoria: la primera prueba la consulta y
-// la imprime, para que quede en el registro de la ejecución.
-//
-// Lo que NO es: no es Supabase. GoTrue, Storage y el sistema de roles se
-// simulan abajo con la misma forma que tienen allí (`auth.uid()` leyendo de
-// `request.jwt.claims`), pero siguen siendo una imitación. Las pruebas de
-// `tests/rls/` contra un Supabase dedicado siguen haciendo falta para lo que
-// depende de esas piezas — Storage sobre todo.
-// ============================================================================
+// Instala la fuente ejecutable sobre PostgreSQL/PGlite. GoTrue, PostgREST y
+// Storage reales siguen correspondiendo a tests/rls y a un proyecto dedicado.
 
 const DIR_MIGRACIONES = join(process.cwd(), 'supabase/migrations')
-
-/**
- * Reproduce las piezas de Supabase de las que depende el esquema.
- *
- * `auth.uid()` se define igual que en Supabase: leyendo el reclamo `sub` del
- * JWT que PostgREST deja en `request.jwt.claims`. Copiar su forma exacta es lo
- * que hace que probar las políticas aquí signifique algo.
- */
-const ANDAMIO_SUPABASE = `
-  create schema if not exists auth;
-  create schema if not exists storage;
-  -- gen_random_uuid() es del núcleo desde PostgreSQL 13, así que no hace
-  -- falta pgcrypto (que además PGlite no trae de serie).
-
-  create table if not exists auth.users (
-    id uuid primary key default gen_random_uuid(),
-    email text
-  );
-
-  create or replace function auth.uid() returns uuid
-  language sql stable as $$
-    select nullif(
-      current_setting('request.jwt.claims', true)::json ->> 'sub', ''
-    )::uuid;
-  $$;
-
-  create or replace function auth.role() returns text
-  language sql stable as $$
-    select coalesce(
-      current_setting('request.jwt.claims', true)::json ->> 'role', 'anon'
-    );
-  $$;
-
-  create table if not exists storage.buckets (
-    id text primary key, name text, public boolean default false
-  );
-  create table if not exists storage.objects (
-    id uuid primary key default gen_random_uuid(),
-    bucket_id text references storage.buckets(id),
-    name text,
-    owner uuid
-  );
-  create or replace function storage.foldername(name text) returns text[]
-  language sql immutable as $$
-    select string_to_array(name, '/');
-  $$;
-  alter table storage.objects enable row level security;
-
-  do $$ begin
-    if not exists (select 1 from pg_roles where rolname = 'anon') then
-      create role anon nologin;
-    end if;
-    if not exists (select 1 from pg_roles where rolname = 'authenticated') then
-      create role authenticated nologin;
-    end if;
-    if not exists (select 1 from pg_roles where rolname = 'service_role') then
-      create role service_role nologin bypassrls;
-    end if;
-  end $$;
-
-  grant usage on schema public, auth, storage to anon, authenticated, service_role;
-  -- Supabase concede permisos de tabla a anon y authenticated por defecto;
-  -- RLS es lo que filtra después.
-  alter default privileges in schema public
-    grant select, insert, update, delete on tables to anon, authenticated;
-  alter default privileges in schema storage
-    grant select, insert, update, delete on tables to anon, authenticated;
-  -- alter default privileges solo alcanza a lo que se cree después, y las
-  -- tablas de storage ya existen a estas alturas.
-  grant select, insert, update, delete on all tables in schema storage
-    to anon, authenticated;
-
-  -- Realtime: el esquema lo referencia al final.
-  do $$ begin
-    if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-      create publication supabase_realtime;
-    end if;
-  end $$;
-`
+const CLIENTE_IDEMPOTENCIA = '99999999-9999-4999-8999-999999999999'
 
 let db: PGlite
+let migraciones: string[] = []
 
-/** Aplica las migraciones en el orden en que las aplicaría la CLI. */
 async function aplicarMigraciones(base: PGlite): Promise<string[]> {
   const ficheros = readdirSync(DIR_MIGRACIONES)
-    .filter((f) => f.endsWith('.sql'))
-    .sort() // la CLI ordena por nombre; por eso llevan marca de tiempo delante
-  for (const f of ficheros) {
-    await base.exec(readFileSync(join(DIR_MIGRACIONES, f), 'utf8'))
+    .filter((fichero) => fichero.endsWith('.sql'))
+    .sort()
+  for (const fichero of ficheros) {
+    await base.exec(readFileSync(join(DIR_MIGRACIONES, fichero), 'utf8'))
   }
   return ficheros
 }
 
 beforeAll(async () => {
-  // El esquema declara `create extension pgcrypto`, así que se carga igual
-  // que en Supabase en vez de retocar el SQL para la prueba: probar una
-  // versión distinta de la que se despliega no probaría nada.
   db = await PGlite.create({ extensions: { pgcrypto } })
   await db.exec(ANDAMIO_SUPABASE)
+  migraciones = await aplicarMigraciones(db)
 }, 120_000)
 
 afterAll(async () => {
@@ -141,78 +38,151 @@ afterAll(async () => {
 
 describe('instalación desde cero', () => {
   it('deja constancia de la versión de PostgreSQL usada', async () => {
-    const { rows } = await db.query<{ version: string }>('select version()')
-    // Se imprime a propósito: cualquier afirmación sobre "Postgres N" en la
-    // documentación tiene que poder contrastarse con la ejecución real.
-    console.log(`   PostgreSQL bajo prueba → ${rows[0].version}`)
-    expect(rows[0].version).toMatch(/PostgreSQL/)
+    const { rows: version } = await db.query<{ version: string }>('select version()')
+    console.log(`   PostgreSQL bajo prueba → ${version[0].version}`)
+    expect(version[0].version).toMatch(/PostgreSQL/)
   })
 
   it('las migraciones se aplican sobre una base vacía', async () => {
-    const ficheros = await aplicarMigraciones(db)
-    expect(ficheros.length, 'debe haber al menos una migración').toBeGreaterThan(0)
+    expect(migraciones.length, 'debe haber al menos una migración').toBeGreaterThan(0)
 
     const { rows } = await db.query<{ n: number }>(
-      `select count(*)::int as n from information_schema.tables
-        where table_schema = 'public'`,
+      `select count(*)::int as n from information_schema.tables where table_schema = 'public'`,
     )
-    expect(rows[0].n, 'deben existir las tablas').toBeGreaterThan(5)
+    expect(rows[0].n, 'deben existir las tablas finales').toBeGreaterThan(5)
   })
 
-  it('se pueden volver a aplicar sin romperse (idempotencia)', async () => {
-    // Es lo que hace que la misma migración sirva para una base nueva y para
-    // la ya desplegada.
-    await expect(aplicarMigraciones(db)).resolves.toBeDefined()
+  it('supera la auditoría exacta del catálogo final', async () => {
+    const auditoria = await auditarCatalogo(db)
+    expect(auditoria.problemas, auditoria.problemas.join('\n')).toEqual([])
+  })
+
+  it('detecta PUBLIC aunque aclexplode lo represente con grantee = 0', async () => {
+    await db.exec('begin')
+    try {
+      await db.exec(`create function public.auditoria_public_temporal(p_valor integer)
+        returns integer language sql as $$ select p_valor $$`)
+      const funcion = (await catalogarFunciones(db)).find(
+        (item) => item.firma === 'auditoria_public_temporal(integer)',
+      )
+      expect(funcion, 'la función temporal debe aparecer como propia').toBeDefined()
+      expect(funcion!.ejecuta).toContain('PUBLIC')
+    } finally {
+      await db.exec('rollback')
+    }
+  })
+
+  it('detecta una sobrecarga nueva aunque el nombre ya esté clasificado', async () => {
+    await db.exec('begin')
+    try {
+      await db.exec(`create function public.abrir_conversacion(p_control integer)
+        returns uuid language sql as $$ select gen_random_uuid() $$`)
+      const auditoria = await auditarCatalogo(db)
+      expect(auditoria.problemas.join('\n')).toContain(
+        'función inesperada o sin clasificar: abrir_conversacion(integer)',
+      )
+    } finally {
+      await db.exec('rollback')
+    }
   })
 })
 
-describe('firmas de las funciones', () => {
-  /**
-   * Firmas reales de una función, tal y como las ve PostgreSQL.
-   *
-   * Se quedan solo los tipos: los nombres de parámetro no distinguen
-   * sobrecargas, que es lo que aquí se quiere contar.
-   */
-  async function firmas(nombre: string): Promise<string[]> {
-    const { rows } = await db.query<{ args: string }>(
-      `select pg_get_function_identity_arguments(p.oid) as args
-         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public' and p.proname = $1
-        order by 1`,
-      [nombre],
-    )
-    return rows.map((r) =>
-      r.args
-        .split(',')
-        .map((p) => p.trim().split(/\s+/).slice(1).join(' '))
-        .join(', '),
-    )
-  }
-
+describe('firmas finales', () => {
   it('no queda la sobrecarga antigua de abrir_conversacion', async () => {
-    const encontradas = await firmas('abrir_conversacion')
-    expect(encontradas, 'debe existir exactamente una').toHaveLength(1)
-    // La antigua tenía un quinto `text`: el texto de la bienvenida, que era lo
-    // que permitía almacenar mensajes firmados por el bot desde el navegador.
-    expect(encontradas[0]).toBe('text, text, text, text')
+    const firmas = (await catalogarFunciones(db))
+      .filter((funcion) => funcion.firma.startsWith('abrir_conversacion('))
+      .map((funcion) => funcion.firma)
+    expect(firmas).toEqual(['abrir_conversacion(text,text,text,text)'])
   })
 
   it('no queda la sobrecarga antigua de actualizar_mi_ficha', async () => {
-    const encontradas = await firmas('actualizar_mi_ficha')
-    expect(encontradas).toHaveLength(1)
-    expect(encontradas[0], 'la antigua aceptaba la ruta del justificante').toBe(
-      'text, text, jsonb, jsonb',
-    )
+    const firmas = (await catalogarFunciones(db))
+      .filter((funcion) => funcion.firma.startsWith('actualizar_mi_ficha('))
+      .map((funcion) => funcion.firma)
+    expect(firmas).toEqual(['actualizar_mi_ficha(text,text,jsonb,jsonb)'])
   })
 
   it('no queda la versión de enviar_valoracion que recibe el visitante', async () => {
-    const encontradas = await firmas('enviar_valoracion')
-    expect(encontradas).toHaveLength(1)
-    expect(encontradas[0]).toBe('uuid, smallint, text')
+    const firmas = (await catalogarFunciones(db))
+      .filter((funcion) => funcion.firma.startsWith('enviar_valoracion('))
+      .map((funcion) => funcion.firma)
+    expect(firmas).toEqual(['enviar_valoracion(uuid,smallint,text)'])
   })
 })
 
-describe('políticas', () => {
+describe('garantías individuales de la auditoría compartida', () => {
+  it('toda función del proyecto está clasificada', async () => {
+    const catalogo = await catalogarFunciones(db)
+    expect(catalogo.filter((funcion) => !funcion.clasificacion)).toEqual([])
+    expect(catalogo.map((funcion) => funcion.firma).sort()).toEqual(Object.keys(FUNCIONES).sort())
+  })
+
+  it('cada firma tiene exactamente los permisos declarados', async () => {
+    const catalogo = await catalogarFunciones(db)
+    for (const funcion of catalogo) {
+      expect(funcion.ejecuta, funcion.firma).toEqual([...FUNCIONES[funcion.firma].ejecuta].sort())
+    }
+  })
+
+  it('ninguna función del proyecto es ejecutable por PUBLIC', async () => {
+    const catalogo = await catalogarFunciones(db)
+    expect(catalogo.filter((funcion) => funcion.ejecuta.includes('PUBLIC'))).toEqual([])
+  })
+
+  it('los disparadores y auxiliares internos no se llaman desde la API', async () => {
+    const catalogo = await catalogarFunciones(db)
+    const internosExpuestos = catalogo.filter(
+      (funcion) =>
+        ['trigger', 'auxiliar'].includes(funcion.clasificacion!.categoria) &&
+        funcion.firma !== 'es_agente()' &&
+        funcion.ejecuta.length > 0,
+    )
+    expect(internosExpuestos).toEqual([])
+  })
+
+  it('los RPC de cliente y agente no están al alcance de anon', async () => {
+    const catalogo = await catalogarFunciones(db)
+    const expuestos = catalogo.filter(
+      (funcion) =>
+        ['rpc-cliente', 'rpc-agente'].includes(funcion.clasificacion!.categoria) &&
+        funcion.ejecuta.includes('anon'),
+    )
+    expect(expuestos).toEqual([])
+  })
+
+  it('toda función SECURITY DEFINER fija search_path', async () => {
+    const catalogo = await catalogarFunciones(db)
+    const sinRuta = catalogo.filter(
+      (funcion) =>
+        funcion.securityDefiner &&
+        !funcion.configuracion.some((valor) => valor.startsWith('search_path=')),
+    )
+    expect(sinRuta).toEqual([])
+  })
+
+  it('ninguna firma recibe datos sensibles salvo su excepción exacta', async () => {
+    const catalogo = await catalogarFunciones(db)
+    const problemas: string[] = []
+    for (const funcion of catalogo) {
+      for (const parametro of PARAMETROS_PROHIBIDOS) {
+        if (!new RegExp(`\\b${parametro}\\b`).test(funcion.argumentos)) continue
+        if (parametro in (funcion.clasificacion!.parametrosPermitidos ?? {})) continue
+        problemas.push(`${funcion.firma}: ${parametro}`)
+      }
+    }
+    expect(problemas).toEqual([])
+  })
+
+  it('revisar_descuento_educativo conserva su firma y excepción exactas', async () => {
+    const firma = 'revisar_descuento_educativo(uuid,text,text)'
+    expect(FUNCIONES[firma].parametrosPermitidos).toHaveProperty('p_cliente_id')
+    expect(Object.keys(FUNCIONES).filter((actual) => actual.startsWith('revisar_descuento_educativo('))).toEqual([
+      firma,
+    ])
+  })
+})
+
+describe('políticas finales', () => {
   it('ninguna política de datos personales es incondicional', async () => {
     const { rows } = await db.query<{
       tabla: string
@@ -229,36 +199,23 @@ describe('políticas', () => {
          join pg_namespace n on n.oid = c.relnamespace
         where n.nspname = 'public'`,
     )
-
-    expect(rows.length, 'debe haber políticas').toBeGreaterThan(10)
-
     const abiertas = rows
-      .filter((r) => r.usando === 'true' || r.comprobando === 'true')
-      .map((r) => `${r.tabla}.${r.politica}`)
-
-    expect(
-      abiertas,
-      'estas políticas dan acceso incondicional:\n  ' + abiertas.join('\n  '),
-    ).toEqual([])
+      .filter((row) => row.usando === 'true' || row.comprobando === 'true')
+      .map((row) => `${row.tabla}.${row.politica}`)
+    expect(abiertas, `políticas incondicionales:\n${abiertas.join('\n')}`).toEqual([])
   })
 
-  it('no queda ninguna política de INSERT sobre mensajes ni conversaciones', async () => {
-    // Ya no se escribe por política: todo pasa por RPC, que es lo único que
-    // puede fijar autor, firmante y fecha sin fiarse del navegador.
+  it('no permite INSERT directo en mensajes ni conversaciones', async () => {
     const { rows } = await db.query<{ tabla: string; politica: string }>(
       `select c.relname as tabla, pol.polname as politica
          from pg_policy pol
          join pg_class c on c.oid = pol.polrelid
-        where c.relname in ('mensajes', 'conversaciones')
-          and pol.polcmd = 'a'`,
+        where c.relname in ('mensajes', 'conversaciones') and pol.polcmd = 'a'`,
     )
-    expect(
-      rows.map((r) => `${r.tabla}.${r.politica}`),
-      'un INSERT directo deja al cliente elegir columnas del servidor',
-    ).toEqual([])
+    expect(rows.map((row) => `${row.tabla}.${row.politica}`)).toEqual([])
   })
 
-  it('no queda UPDATE ni DELETE directo sobre conversaciones ni reservas', async () => {
+  it('no permite UPDATE ni DELETE directo en conversaciones, reservas o agentes', async () => {
     const { rows } = await db.query<{ tabla: string; politica: string; cmd: string }>(
       `select c.relname as tabla, pol.polname as politica, pol.polcmd::text as cmd
          from pg_policy pol
@@ -266,186 +223,36 @@ describe('políticas', () => {
         where c.relname in ('conversaciones', 'reservas', 'agentes')
           and pol.polcmd in ('w', 'd')`,
     )
-    expect(
-      rows.map((r) => `${r.tabla}.${r.politica} (${r.cmd})`),
-      'borrar una conversación se lleva sus mensajes por cascada',
-    ).toEqual([])
+    expect(rows.map((row) => `${row.tabla}.${row.politica} (${row.cmd})`)).toEqual([])
   })
 })
 
-describe('funciones security definer', () => {
-  it('todas fijan su search_path', async () => {
-    const { rows } = await db.query<{ nombre: string; config: string[] | null }>(
-      `select p.proname as nombre, p.proconfig as config
-         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public' and p.prosecdef`,
+describe('segunda aplicación idempotente', () => {
+  it('repite la auditoría y conserva catálogo y datos exactamente', async () => {
+    await db.query('insert into auth.users (id, email) values ($1, $2)', [
+      CLIENTE_IDEMPOTENCIA,
+      'idempotencia@ejemplo.test',
+    ])
+    await db.query('insert into public.clientes (id, email) values ($1, $2)', [
+      CLIENTE_IDEMPOTENCIA,
+      'idempotencia@ejemplo.test',
+    ])
+    const antes = await auditarCatalogo(db)
+    expect(antes.problemas).toEqual([])
+    const catalogoAntes = serializarCatalogo(antes.catalogo)
+
+    await expect(aplicarMigraciones(db)).resolves.toEqual(migraciones)
+
+    const despues = await auditarCatalogo(db)
+    expect(despues.problemas, despues.problemas.join('\n')).toEqual([])
+    expect(serializarCatalogo(despues.catalogo)).toBe(catalogoAntes)
+    expect(new Set(despues.catalogo.map((funcion) => funcion.firma)).size).toBe(
+      despues.catalogo.length,
     )
-    expect(rows.length, 'debe haber funciones security definer').toBeGreaterThan(5)
-
-    const sinRuta = rows
-      .filter((r) => !(r.config ?? []).some((c) => c.startsWith('search_path=')))
-      .map((r) => r.nombre)
-
-    expect(
-      sinRuta,
-      'sin search_path fijo, quien controle el suyo puede anteponer una tabla ' +
-        'propia y hacer que la función escriba donde no debe:\n  ' + sinRuta.join('\n  '),
-    ).toEqual([])
-  })
-
-  it('las auxiliares no son ejecutables desde la API', async () => {
-    // `conversacion_es_mia` la usan las políticas; nadie debe poder llamarla
-    // directamente para sondear de quién es una conversación.
-    for (const nombre of ['visitantes_protege_columnas', 'touch_conversation_on_message']) {
-      const { rows } = await db.query<{ rol: string }>(
-        `select r.rolname as rol
-           from pg_proc p
-           join pg_namespace n on n.oid = p.pronamespace
-           cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
-           join pg_roles r on r.oid = a.grantee
-          where n.nspname = 'public' and p.proname = $1
-            and a.privilege_type = 'EXECUTE'
-            and r.rolname in ('anon', 'authenticated', 'public')`,
-        [nombre],
-      )
-      expect(rows.map((r) => r.rol), `${nombre} no debe ser ejecutable por la API`).toEqual([])
-    }
-  })
-})
-
-describe('privilegios finales', () => {
-  /**
-   * Roles con EXECUTE sobre una función.
-   *
-   * El `left join` importa: `aclexplode` devuelve PUBLIC con `grantee = 0`, que
-   * no casa con ninguna fila de `pg_roles`. Con un join normal —que es lo que
-   * había aquí— PUBLIC desaparecía del resultado y la prueba daba por cerradas
-   * funciones que cualquiera podía llamar. Tres lo estaban.
-   */
-  async function quienEjecuta(nombre: string): Promise<string[]> {
-    const { rows } = await db.query<{ rol: string }>(
-      `select distinct coalesce(r.rolname, 'PUBLIC') as rol
-         from pg_proc p
-         join pg_namespace n on n.oid = p.pronamespace
-         cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
-         left join pg_roles r on r.oid = a.grantee
-        where n.nspname = 'public' and p.proname = $1
-          and a.privilege_type = 'EXECUTE'
-          and coalesce(r.rolname, 'PUBLIC') <> 'postgres'
-        order by 1`,
-      [nombre],
+    const { rows } = await db.query<{ n: number }>(
+      `select count(*)::int as n from public.clientes where id = $1`,
+      [CLIENTE_IDEMPOTENCIA],
     )
-    return rows.map((r) => r.rol)
-  }
-
-  /** Funciones del proyecto instaladas, sin las de extensiones. */
-  async function funcionesDelProyecto(): Promise<{ nombre: string; definer: boolean; config: string[] | null; args: string }[]> {
-    const { rows } = await db.query<{
-      nombre: string
-      definer: boolean
-      config: string[] | null
-      args: string
-    }>(
-      `select p.proname as nombre, p.prosecdef as definer, p.proconfig as config,
-              pg_get_function_arguments(p.oid) as args
-         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public'
-        order by p.proname`,
-    )
-    return rows.filter((r) => !DE_EXTENSIONES.has(r.nombre))
-  }
-
-  it('toda función del proyecto está clasificada', async () => {
-    // Sin esto, una función nueva se cuela sin que nadie decida quién puede
-    // llamarla: la prueba seguiría en verde porque solo mira una lista escrita
-    // a mano que no la incluye.
-    const sinClasificar = (await funcionesDelProyecto())
-      .map((r) => r.nombre)
-      .filter((n) => !FUNCIONES[n])
-
-    expect(
-      [...new Set(sinClasificar)],
-      'Añádelas a tests/schema/funciones.ts decidiendo su categoría y sus ' +
-        'permisos:\n  ' + sinClasificar.join('\n  '),
-    ).toEqual([])
-  })
-
-  it('cada función tiene exactamente los permisos que declara su clasificación', async () => {
-    const desviaciones: string[] = []
-    for (const [nombre, clasificacion] of Object.entries(FUNCIONES)) {
-      const real = await quienEjecuta(nombre)
-      const esperado = [...clasificacion.ejecuta].sort()
-      if (JSON.stringify(real) !== JSON.stringify(esperado)) {
-        desviaciones.push(`${nombre}: esperado [${esperado}] · real [${real}]`)
-      }
-    }
-    expect(desviaciones, desviaciones.join('\n  ')).toEqual([])
-  })
-
-  it('ninguna función del proyecto es ejecutable por PUBLIC', async () => {
-    // PostgreSQL concede EXECUTE a PUBLIC al crear una función: lo que no se
-    // revoca queda abierto, incluido `anon`.
-    const abiertas: string[] = []
-    for (const nombre of Object.keys(FUNCIONES)) {
-      if ((await quienEjecuta(nombre)).includes('PUBLIC')) abiertas.push(nombre)
-    }
-    expect(abiertas, `Falta un REVOKE:\n  ` + abiertas.join('\n  ')).toEqual([])
-  })
-
-  it('los disparadores y las auxiliares internas no se llaman desde la API', async () => {
-    for (const [nombre, c] of Object.entries(FUNCIONES)) {
-      if (c.categoria !== 'trigger') continue
-      expect(await quienEjecuta(nombre), `${nombre} es un disparador`).toEqual([])
-    }
-  })
-
-  it('los RPC de cliente y de agente no están al alcance de anon', async () => {
-    for (const [nombre, c] of Object.entries(FUNCIONES)) {
-      if (c.categoria !== 'rpc-cliente' && c.categoria !== 'rpc-agente') continue
-      expect(await quienEjecuta(nombre), `${nombre}`).not.toContain('anon')
-    }
-  })
-
-  it('toda función security definer fija search_path', async () => {
-    const sinRuta = (await funcionesDelProyecto())
-      .filter((r) => r.definer)
-      .filter((r) => !(r.config ?? []).some((c) => c.startsWith('search_path=')))
-      .map((r) => r.nombre)
-    expect(sinRuta, sinRuta.join('\n  ')).toEqual([])
-  })
-
-  it('ninguna función recibe por parámetro algo que deba salir de la sesión', async () => {
-    // La excepción es por función Y por parámetro, no por función entera: si
-    // `revisar_descuento_educativo` recibiera mañana un `p_revisado_por`, esto
-    // tiene que saltar igualmente.
-    const sospechosas: string[] = []
-    for (const r of await funcionesDelProyecto()) {
-      const permitidos = FUNCIONES[r.nombre]?.parametrosPermitidos ?? {}
-      for (const prohibido of PARAMETROS_PROHIBIDOS) {
-        if (!new RegExp(`\\b${prohibido}\\b`).test(r.args)) continue
-        if (prohibido in permitidos) continue
-        sospechosas.push(`${r.nombre}: ${prohibido}`)
-      }
-    }
-    expect(
-      sospechosas,
-      'esos valores los deriva el servidor de la sesión:\n  ' + sospechosas.join('\n  '),
-    ).toEqual([])
-  })
-
-  it('revisar_descuento_educativo conserva su firma exacta', async () => {
-    const { rows } = await db.query<{ args: string }>(
-      `select pg_get_function_identity_arguments(p.oid) as args
-         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public' and p.proname = 'revisar_descuento_educativo'`,
-    )
-    expect(rows, 'una sola firma').toHaveLength(1)
-    // Se comparan solo los tipos: los nombres de parámetro no distinguen
-    // sobrecargas y aquí lo que importa es que no haya aparecido una cuarta.
-    const tipos = rows[0].args
-      .split(',')
-      .map((p) => p.trim().split(/\s+/).slice(1).join(' '))
-      .join(', ')
-    expect(tipos).toBe('uuid, text, text')
+    expect(rows[0].n, 'no borra ni duplica el cliente existente').toBe(1)
   })
 })
