@@ -21,16 +21,16 @@ mensajes, agentes, clientes y reservas. El visitante usa ahora una sesión
 anónima firmada; propietario, autor, agente, estado y fechas sensibles los
 deduce el servidor mediante RPC.
 
-La fuente SQL se consolidó en
-`supabase/migrations/20260802000100_estado_seguro.sql`. Una auditoría común por
+La fuente SQL se consolidó en `supabase/migrations/`, con la migración de
+estado seguro y el cierre incremental de privacidad/Storage. Una auditoría común por
 firma PostgreSQL exacta se ejecuta tras instalación limpia, actualización desde
 PR #33 y segunda aplicación idempotente. La suite local pasa con 102 pruebas de
 esquema y 22 unitarias en Vitest, además de 264 E2E generales y 6 E2E aisladas
 del panel de agentes. `revisar_descuento_educativo()` rechaza también estados
-`NULL` sin tocar la revisión, y el CI invoca Playwright directamente para que
-el informe RLS sea JSON puro antes de validarlo. Las **27 pruebas contra GoTrue,
-PostgREST y Storage reales siguen omitidas** porque no existe un Supabase
-dedicado. Este bloqueo impide integrar y desplegar la rama. Ver
+`NULL` sin tocar la revisión. La CLI, configuración y workflow de Supabase
+local ya están versionados y no usan secretos remotos. Las **27 pruebas contra
+GoTrue, PostgREST y Storage reales siguen sin ejecutarse en esta máquina**
+porque no tiene Docker. Este bloqueo impide integrar y desplegar la rama. Ver
 [[04-problemas-pendientes#SEC-RLS-001 — Falta validar y desplegar la migración segura]].
 
 ## Fase 2 — cuentas, reservas y panel con auth (2026-07-31)

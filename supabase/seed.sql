@@ -1,0 +1,5 @@
+-- El escenario RLS se crea por API en tests/rls/politicas.spec.ts y se limpia
+-- al terminar. Es necesario hacerlo después de arrancar GoTrue para obtener
+-- sesiones y JWT reales; insertar auth.users a mano aquí no probaría ese flujo.
+--
+-- No añadas contraseñas, tokens ni copias de datos de la demostración.

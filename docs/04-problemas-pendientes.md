@@ -455,14 +455,16 @@ forman el backlog verificable.
   arnés se actualizó el 2026-08-04 porque la versión anterior seguía usando
   INSERT directos que el esquema final ya no permite y no limpiaba los chats
   huérfanos creados durante la prueba.
-- Infraestructura ausente: GitHub solo tiene `SUPABASE_URL` y
-  `SUPABASE_ANON_KEY` de la demostración; faltan `RLS_TEST_URL`,
-  `RLS_TEST_ANON_KEY` y `RLS_TEST_SERVICE_KEY`. Tampoco hay Docker ni CLI de
-  Supabase local.
+- Infraestructura versionada el 2026-08-04: CLI 2.111.0, configuración local,
+  seed sin credenciales, lanzador de pruebas y workflow reutilizable. CI ya no
+  depende de `RLS_TEST_*` ni puede caer sobre la demostración.
+- Bloqueo local restante: esta máquina no tiene Docker, por lo que todavía no
+  se han obtenido 27/27 contra los servicios reales. El nuevo workflow debe
+  confirmarse en GitHub Actions cuando se publique la rama.
 - Regla: nunca ejecutar esta suite contra la demostración. Crea y borra
   usuarios, objetos y filas a propósito.
-- Cierre: configurar el proyecto dedicado, ejecutar 27/27, integrar PR #33 y
-  #34, activar Anonymous sign-ins en la demostración, aplicar la migración,
+- Cierre: ejecutar 27/27 en Supabase local (CI o una máquina con Docker),
+  activar Anonymous sign-ins en la demostración, aplicar las dos migraciones,
   desplegar `main` y verificar web + chat.
 
 ## CUENTAS-003 — Favoritos y tienda favorita siguen fuera de la cuenta

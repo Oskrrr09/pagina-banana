@@ -31,6 +31,16 @@ documentación solicitados en la auditoría exhaustiva.
 - Creado `docs/07-modelo-seguridad.md` con roles, amenazas, RPC, Storage y
   diagrama de datos.
 
+### Bloque 2 — Integración Supabase
+
+- CLI 2.111.0 fijada como dependencia de desarrollo.
+- Añadidos configuración local, seed sin secretos y lanzador que obtiene las
+  claves efímeras sin imprimirlas.
+- El workflow reutilizable levanta Docker, aplica migraciones, ejecuta 27
+  flujos reales y detiene los contenedores siempre.
+- En esta máquina el preflight confirma el único bloqueo: Docker no está
+  instalado. No se ha tocado ninguna base alojada.
+
 ## Comprobaciones acumuladas
 
 - TypeScript: correcto.

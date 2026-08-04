@@ -89,8 +89,7 @@ Las rutas se sirven bajo `/pagina-banana/` en GitHub Pages. React Router usa
   RPC; ninguna clave `service_role` puede entrar en variables `VITE_*` ni en el
   bundle.
 
-La fuente SQL única es
-`supabase/migrations/20260802000100_estado_seguro.sql`.
+La fuente SQL única es `supabase/migrations/`; sus archivos se aplican en orden.
 `supabase/schema.sql` es solo un puntero para impedir que vuelva a aplicarse un
 estado obsoleto.
 

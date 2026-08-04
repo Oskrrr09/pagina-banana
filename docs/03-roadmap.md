@@ -12,8 +12,8 @@ actualizado: 2026-08-04
 
 ## 1. Estabilizar el prototipo publicado
 
-- Crear o habilitar un Supabase **dedicado a RLS**, aplicar la migración y
-  ejecutar los 27 casos de `tests/rls/` contra GoTrue, PostgREST y Storage.
+- Confirmar en CI el Supabase local ya versionado y ejecutar los 27 casos de
+  `tests/rls/` contra GoTrue, PostgREST y Storage.
 - Solo después: integrar las PR #33 y #34, activar Anonymous sign-ins en el
   proyecto de demostración, aplicar la migración y publicar el frontend
   compatible en la misma ventana.

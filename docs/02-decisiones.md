@@ -826,6 +826,24 @@ No atribuye motivaciones que el repositorio no documenta.
   conversación ni mensaje. La columna se conserva para compatibilidad y una
   reversión operativa simple.
 
+## D-054 — La integración RLS usa Supabase local y datos efímeros por API
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: la verificación de GoTrue, PostgREST y Storage en CI levanta
+  Supabase local con Docker. No depende de secretos ni de un proyecto alojado.
+- Datos: `seed.sql` no inserta usuarios de Auth a mano. La suite crea por API
+  dos visitantes, dos clientes, agentes y solicitudes ficticias con marcas
+  únicas, obtiene JWT reales y limpia el escenario. Sembrar `auth.users`
+  directamente evitaría probar precisamente GoTrue.
+- Ejecución: `test:integration` consulta `supabase status -o json`, pasa las
+  claves locales al proceso hijo sin imprimirlas y corta antes con un mensaje
+  claro si Docker no está disponible.
+- CI: `ci.yml` llama al workflow reutilizable
+  `supabase-integration.yml`; Pages continúa dependiendo de ese trabajo.
+- Evidencia: `supabase/config.toml`, `supabase/seed.sql`,
+  `scripts/test-supabase-local.mjs` y el workflow citado.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

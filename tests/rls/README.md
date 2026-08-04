@@ -11,7 +11,28 @@ real. Un mock devolvería lo que yo le programe, que es justo la afirmación que
 se quiere verificar — así que una prueba con mocks aquí no probaría nada y
 daría una falsa sensación de cobertura.
 
-## Qué hace falta para ejecutarlas
+## Opción recomendada: Supabase local
+
+El repositorio incluye la CLI, `supabase/config.toml` y un seed deliberadamente
+sin credenciales. Los usuarios y datos A/B se crean por las APIs reales en la
+propia suite y se limpian al terminar; así también se prueba GoTrue.
+
+Requisito externo: Docker Desktop o un daemon Docker compatible.
+
+```sh
+npm ci
+npm run supabase:start
+npm run supabase:reset
+npm run test:integration
+npm run supabase:stop
+```
+
+`test:integration` obtiene URL y claves efímeras mediante
+`supabase status -o json`; no las imprime ni las guarda en archivos. CI ejecuta
+la misma secuencia desde `.github/workflows/supabase-integration.yml` y no usa
+secretos de la demostración.
+
+## Alternativa: proyecto dedicado alojado
 
 Un **proyecto de Supabase dedicado a pruebas**. Nunca el de la demostración:
 las pruebas crean y borran filas, y una de ellas intenta escribir datos ajenos
@@ -60,12 +81,12 @@ Lo que ese arnés **no** cubre, y por lo que estas siguen haciendo falta:
   servicio real.
 - **PostgREST**: cómo traduce las peticiones y aplica los roles.
 
-## Estado actual
+## Estado actual en esta máquina
 
-**No se han ejecutado.** El entorno de desarrollo no tiene Docker ni la CLI de
-Supabase, y los secretos que hay configurados en GitHub Actions
-(`SUPABASE_URL`, `SUPABASE_ANON_KEY`) apuntan al proyecto de la demostración,
-que no debe usarse para esto.
+**No se han ejecutado contra servicios reales.** La CLI 2.111.0 ya está fijada
+en el proyecto, pero esta máquina no tiene Docker. `npm run test:integration`
+falla antes de consultar Supabase con un diagnóstico explícito. La suite no
+cae nunca sobre la demostración como alternativa silenciosa.
 
 La suite tiene actualmente **27 casos** y ya usa la API final: RPC de chat,
 agentes y reservas, GoTrue real y operaciones reales de Storage. La versión
@@ -73,11 +94,10 @@ anterior tenía 21 casos, pero varios seguían insertando directamente en
 `mensajes` y `reservas`, permisos que el esquema final retiró; por eso no era
 válido configurar secretos y ejecutarla sin actualizarla primero.
 
-En CI Playwright se ejecuta directamente con el reporter JSON. El workflow
-conserva su código de salida y `scripts/verificar-rls.mjs` solo acepta un
-archivo JSON legible con 27 descubiertas, 27 ejecutadas, 27 aprobadas, ninguna
-fallida, inestable u omitida y código Playwright 0. Un encabezado de `npm run`
-delante del JSON se rechaza expresamente.
+El workflow anterior, dependiente de secretos, conservaba un informe JSON y un
+recuento exacto. Se mantiene ese verificador como regresión unitaria, pero CI
+usa ahora Supabase local y deja que Playwright falle directamente ante una
+prueba omitida o fallida.
 
 Con el arnés de PGlite lo que falta por verificar se ha reducido mucho —las
 políticas ya están probadas contra Postgres— pero **no a cero**: la
@@ -85,16 +105,3 @@ integración con GoTrue y Storage sigue sin comprobarse.
 
 Sin ese proyecto dedicado, `test.skip` las marca como omitidas con el motivo
 escrito. No se declaran verdes.
-
-## Alternativa sin proyecto en la nube
-
-Si se prefiere no depender de un proyecto alojado, la CLI de Supabase levanta
-todo en local con Docker:
-
-```sh
-supabase start
-supabase db reset            # aplica supabase/migrations/ en orden
-```
-
-y las mismas variables apuntando a `http://127.0.0.1:54321`. Requiere Docker
-instalado, que es el requisito externo que hoy falta.

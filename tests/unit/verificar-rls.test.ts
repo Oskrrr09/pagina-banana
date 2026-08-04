@@ -30,12 +30,17 @@ function validar(estados: string[], codigoPlaywright = 0) {
 }
 
 describe('verificador estricto del informe RLS', () => {
-  it('el workflow invoca Playwright directamente para generar JSON limpio', () => {
+  it('CI usa Supabase local sin secretos de un proyecto alojado', () => {
     const workflow = readFileSync('.github/workflows/ci.yml', 'utf8')
-    expect(workflow).toMatch(
-      /npx playwright test --project=rls --reporter=json > rls\.json/,
+    const integration = readFileSync(
+      '.github/workflows/supabase-integration.yml',
+      'utf8',
     )
-    expect(workflow).not.toMatch(/npm run test:rls -- --reporter=json > rls\.json/)
+    expect(workflow).toContain('uses: ./.github/workflows/supabase-integration.yml')
+    expect(integration).toContain('run: npm run supabase:start')
+    expect(integration).toContain('run: npm run supabase:reset')
+    expect(integration).toContain('run: npm run test:integration')
+    expect(`${workflow}\n${integration}`).not.toMatch(/RLS_TEST_(URL|ANON_KEY|SERVICE_KEY)/)
   })
 
   it('lee un informe JSON válido sin aceptar texto adicional', () => {

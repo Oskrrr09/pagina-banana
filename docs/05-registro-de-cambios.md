@@ -8,6 +8,17 @@ actualizado: 2026-08-04
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-04 — Supabase local reproducible en CI
+
+- Fijada la CLI 2.111.0 y añadidos `config.toml`, seed sin credenciales y
+  scripts de start/reset/status/stop.
+- El escenario se crea por GoTrue/PostgREST/Storage en cada ejecución, en vez
+  de insertar usuarios Auth a mano.
+- Nuevo workflow reutilizable de integración local; `ci.yml` lo necesita antes
+  de Pages y deja de depender de secretos `RLS_TEST_*`.
+- Verificación local: JSON/YAML correctos y preflight de integración correcto;
+  la ejecución se detiene con diagnóstico porque Docker no está instalado.
+
 ## 2026-08-04 — Minimización del chat y límites de Storage
 
 - Nueva migración incremental que deja de recopilar `user_agent`, limpia ese

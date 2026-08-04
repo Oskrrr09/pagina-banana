@@ -1,0 +1,33 @@
+name: Integración Supabase local
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: GoTrue, PostgREST, Storage y RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Arrancar Supabase aislado
+        run: npm run supabase:start
+      - name: Reiniciar y aplicar migraciones + seed
+        run: npm run supabase:reset
+      - name: Ejecutar flujos reales de auth, RLS y Storage
+        run: npm run test:integration
+      - name: Estado de contenedores si falla
+        if: failure()
+        run: docker ps -a --filter label=com.supabase.cli.project=pagina-banana
+      - name: Detener Supabase
+        if: always()
+        run: npm run supabase:stop
