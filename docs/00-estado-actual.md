@@ -128,6 +128,10 @@ Dos aplicaciones distintas, por públicos distintos. Ver
   —una demostración nunca debe servir contenido viejo—, assets con hash a
   caché primero, y Supabase **siempre** a la red. Sin conexión la app
   sigue navegando el catálogo y avisa con una barra.
+- `npm run test:pwa` valida el build real: control del service worker,
+  manifest, precache, ruta profunda offline y ausencia de respuestas Supabase
+  o rutas privadas en Cache Storage. El matching de assets usa el pathname de
+  la caché versionada para que una ruta profunda funcione también sin red.
 - El manifest **solo existe mientras se está en `/agente`**: se inyecta al
   entrar y se retira al salir, para que ninguna página pública de la
   tienda ofrezca instalar el panel interno. Cubierto por
@@ -180,6 +184,9 @@ Android (2026-08-01).**
   modelos, el menú móvil y el chat, con `color-contrast` y `region` activos y
   sin excepciones globales. Un barrido adicional exige exactamente un
   `<main>` en 19 rutas públicas.
+- **Navegadores**: la suite completa queda en Chromium; 5 flujos críticos
+  pasan como smoke en Chromium, Firefox, WebKit de escritorio y Safari móvil
+  (20/20). El móvil Chromium conserva sus recorridos específicos.
 - Artefacto `tsconfig.tsbuildinfo` retirado del repositorio;
   `*.tsbuildinfo` en `.gitignore`.
 - Ya existían dos carpetas locales no versionadas: `.agents/` y

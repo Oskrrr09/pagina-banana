@@ -72,6 +72,17 @@ documentación solicitados en la auditoría exhaustiva.
   explícita.
 - Cinco pruebas unitarias nuevas cubren moneda, cuotas y detección de idioma.
 
+### Bloques 6 y 7 — Navegadores y PWA
+
+- Añadidos smoke críticos para Chromium, Firefox, WebKit y Safari móvil:
+  20/20 aprobados sobre build.
+- `test:pwa` cubre manifest, precache, control, exclusión de Supabase/rutas
+  privadas y arranque profundo offline: 9 aprobados y una omisión esperada.
+- La prueba encontró y corrigió el lookup de JS/CSS precacheados desde rutas
+  profundas.
+- Preparado un cierre de sesión real con cuenta ficticia en Supabase local;
+  se descubre, pero no se ejecuta aquí porque Docker no está disponible.
+
 ## Comprobaciones acumuladas
 
 - TypeScript: correcto.
@@ -91,4 +102,5 @@ documentación solicitados en la auditoría exhaustiva.
 
 ## Siguiente paso
 
-Ampliar la matriz de navegadores y validar PWA contra el build.
+Auditar dependencias y secretos, evaluar React Router 7 y revisar la
+compilación nativa y la documentación final.

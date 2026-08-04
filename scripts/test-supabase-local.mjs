@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 const docker = spawnSync('docker', ['info', '--format', '{{.ServerVersion}}'], {
   encoding: 'utf8',
@@ -53,4 +54,28 @@ const tests = spawnSync(npx, ['playwright', 'test', '--project=rls'], {
   },
 })
 
-process.exit(tests.status ?? 1)
+if (tests.status !== 0) process.exit(tests.status ?? 1)
+
+const publicEnv = {
+  ...process.env,
+  VITE_SUPABASE_URL: url,
+  VITE_SUPABASE_ANON_KEY: anon,
+}
+
+console.log('Compilando la PWA contra el Supabase local efímero.')
+const build = spawnSync(npm, ['run', 'build'], {
+  stdio: 'inherit',
+  env: publicEnv,
+})
+if (build.status !== 0) process.exit(build.status ?? 1)
+
+console.log('Comprobando cierre de sesión y recarga offline sin datos privados.')
+const pwaAuth = spawnSync(npx, ['playwright', 'test', '--project=pwa-auth'], {
+  stdio: 'inherit',
+  env: {
+    ...publicEnv,
+    E2E_CONTRA_BUILD: '1',
+  },
+})
+
+process.exit(pwaAuth.status ?? 1)

@@ -183,8 +183,9 @@ forman el backlog verificable.
   - Sincronización del buscador con la URL y destinos reales de los
     tiles de accesorios.
 - CI: `.github/workflows/ci.yml` encadena calidad, build y Playwright en cada
-  push/PR sobre `main`, con el proyecto móvil corriendo sobre Chromium
-  (`Pixel 5`) para no requerir WebKit.
+  push/PR sobre `main`. La suite completa corre en Chromium; cinco flujos
+  críticos corren en Firefox, WebKit de escritorio y Safari móvil, y el
+  proyecto Pixel 5 conserva los recorridos móviles específicos.
 - Cobertura axe ampliada el 2026-07-30 al detalle de tienda
   (`/tiendas/castillo`, representativa de `/tiendas/:slug`). No queda
   pendiente ninguna ruta principal sin comprobación axe.
@@ -540,7 +541,7 @@ forman el backlog verificable.
 
 ## PWA-001 — El service worker no lo cubren las pruebas E2E
 
-- Estado: **cerrado el 2026-08-02**.
+- Estado: **cerrado el 2026-08-02 y reforzado el 2026-08-04**.
 - Impacto: bajo.
 - Evidencia: la suite corre contra el dev server de Vite, y ahí el
   service worker no se registra a propósito (`src/lib/pwa.ts` comprueba
@@ -549,14 +550,19 @@ forman el backlog verificable.
   desarrollo **no** haya ningún registro —regresión deliberada, por lo
   ocurrido en [[04-problemas-pendientes#QA-002 — Las pruebas E2E escribían en el Supabase real]]—
   pero no el precache ni el arranque sin conexión.
-- Verificación que sí se hizo, a mano y contra un build servido: el
-  service worker toma el control, deja una sola caché con 10 ficheros en
-  precache, y con la red cortada una ruta profunda (`/iphone`) sigue
-  cargando la web y no el error del navegador.
-- Resolución: CI sirve el `dist` compilado con `vite preview` y
-  `tests/e2e/pwa.spec.ts` comprueba que el service worker toma control y
-  precachea. La prueba contraria se conserva y se omite cuando la suite corre
-  contra build porque solo tiene sentido en el servidor de desarrollo.
+- Resolución: `npm run test:pwa` compila sin backend, sirve `dist` con
+  `vite preview` y comprueba de forma automática control, manifest, iconos,
+  precache, arranque de `/agente/login` sin red y exclusión de Supabase y
+  rutas privadas de Cache Storage. La prueba contraria se conserva y se omite
+  contra build porque solo tiene sentido en desarrollo.
+- Hallazgo de la nueva prueba: el HTML offline cargaba, pero JS/CSS intentaban
+  ir a red desde una ruta profunda. `cacheFirst` resuelve ahora la entrada por
+  pathname dentro de la caché versionada. Verificación local: 9 aprobadas y la
+  prueba exclusiva de desarrollo omitida con motivo explícito.
+- Cierre de sesión real: `tests/integration/pwa-auth.spec.ts` crea una cuenta
+  ficticia en Supabase local, cierra sesión, corta red y exige que email y
+  perfil no reaparezcan. Está integrada después de las 27 RLS; en esta máquina
+  se descubre correctamente pero no se ha ejecutado por falta de Docker.
 
 ## QA-003 — La trampa de foco de la guía escapaba con Shift+Tab
 

@@ -105,11 +105,13 @@ npm run check:full
 
 `check` incluye Prettier, ESLint, tipos, Vitest, instalación y actualización
 del esquema sobre PostgreSQL/PGlite y build sin credenciales. `check:full`
-añade Playwright contra el artefacto en Chromium, móvil y el panel aislado.
+añade Playwright contra el artefacto: cobertura completa Chromium, smoke
+Firefox/WebKit/Safari móvil, móvil Chromium y panel aislado.
 
 Las pruebas de `tests/rls/` son aparte: `npm run test:integration` necesita
-Docker y levanta un Supabase local efímero para comprobar GoTrue, PostgREST y
-Storage reales. Un preflight bloqueado no cuenta como verificación aprobada.
+Docker y levanta un Supabase local efímero para comprobar GoTrue, PostgREST,
+Storage y cierre de sesión PWA offline reales. Un preflight bloqueado no
+cuenta como verificación aprobada.
 
 GitHub Actions encadena calidad → build → E2E → RLS → Pages. Solo un
 push a `main` publica, y el despliegue debe fallar si no existen las

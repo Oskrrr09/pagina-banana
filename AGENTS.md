@@ -68,10 +68,12 @@ npm run check:full
 
 `npm run check` es la pasada rápida: Prettier, ESLint, TypeScript, Vitest
 (unitarias y esquema) y build sin credenciales. `check:full` añade Playwright
-contra ese build en Chromium, móvil y el panel aislado. Las 27 pruebas RLS
+contra ese build: suite completa en Chromium, smoke en Firefox/WebKit/Safari
+móvil, recorridos móviles Chromium y el panel aislado. Las 27 pruebas RLS
 reales no forman parte de esos comandos: `npm run test:integration` levanta
-Supabase local y exige Docker. No presentes esas pruebas como aprobadas cuando
-el preflight no haya podido ejecutarlas.
+Supabase local, prueba también un cierre de sesión PWA real y exige Docker. No
+presentes esas pruebas como aprobadas cuando el preflight no haya podido
+ejecutarlas.
 
 Antes de terminar:
 

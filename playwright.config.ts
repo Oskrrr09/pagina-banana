@@ -37,6 +37,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'firefox',
+      testMatch: /smoke-cross-browser\.spec\.ts/,
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      testMatch: /smoke-cross-browser\.spec\.ts/,
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
       // Mobile project usa un dispositivo Chromium (Pixel 5) para no exigir
       // que WebKit esté instalado en CI. Solo corren las pruebas con marca
       // `@mobile` o `@all`.
@@ -45,11 +55,23 @@ export default defineConfig({
       grep: /@mobile|@all/,
     },
     {
+      name: 'mobile-webkit',
+      testMatch: /smoke-cross-browser\.spec\.ts/,
+      use: { ...devices['iPhone 13'] },
+    },
+    {
       // Políticas RLS contra un proyecto de Supabase dedicado. No entra en la
       // ejecución por defecto: necesita base de datos real y credenciales
       // propias. Ver tests/rls/README.md.
       name: 'rls',
       testDir: './tests/rls',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Cierre de sesión offline contra el Supabase local. El orquestador de
+      // integración compila primero con sus claves efímeras.
+      name: 'pwa-auth',
+      testDir: './tests/integration',
       use: { ...devices['Desktop Chrome'] },
     },
   ],

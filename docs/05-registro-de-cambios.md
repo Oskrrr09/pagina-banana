@@ -8,6 +8,21 @@ actualizado: 2026-08-04
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-04 — Matriz multi-navegador y PWA offline real
+
+- Playwright suma Firefox, WebKit de escritorio y Safari móvil. Cinco flujos
+  críticos cubren inicio/idioma/ruta profunda, carrito/checkout, comparador,
+  chat y login: 20/20 aprobados en los cuatro proyectos locales.
+- `test:pwa` compila y sirve el build sin Supabase remoto. Nueve casos validan
+  manifest, iconos, control, precache, ruta profunda offline y que ni Supabase
+  ni rutas privadas entren en Cache Storage.
+- La prueba offline descubrió que JS/CSS no encontraban el precache desde una
+  ruta profunda; el service worker busca ahora por pathname en su caché
+  versionada.
+- La integración local añade una cuenta ficticia y un cierre de sesión real
+  antes de cortar red. Está descubierta, pero su ejecución local sigue
+  bloqueada por la ausencia de Docker; CI la ejecutará junto a las 27 RLS.
+
 ## 2026-08-04 — Contrato reproducible de calidad
 
 - Prettier 3.9.6 establece formato para código, pruebas y configuración; deja

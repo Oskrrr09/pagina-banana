@@ -19,11 +19,13 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Instalar Chromium para el cierre de sesión PWA
+        run: npx playwright install --with-deps chromium
       - name: Arrancar Supabase aislado
         run: npm run supabase:start
       - name: Reiniciar y aplicar migraciones + seed
         run: npm run supabase:reset
-      - name: Ejecutar flujos reales de auth, RLS y Storage
+      - name: Ejecutar auth, RLS, Storage y cierre de sesión PWA
         run: npm run test:integration
       - name: Estado de contenedores si falla
         if: failure()

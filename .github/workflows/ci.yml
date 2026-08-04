@@ -126,7 +126,7 @@ jobs:
           name: dist-test
           path: dist
       - name: Instalar navegadores de Playwright
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
       # Las pruebas corren SIEMPRE en modo demostración, con las variables de
       # Supabase vacías. Nunca tocan el proyecto real.
       # Contra el artefacto compilado, no contra el servidor de desarrollo:
@@ -134,7 +134,7 @@ jobs:
       - name: Ejecutar pruebas
         env:
           E2E_CONTRA_BUILD: '1'
-        run: npx playwright test --project=chromium --project=mobile
+        run: npx playwright test --project=chromium --project=firefox --project=webkit --project=mobile --project=mobile-webkit
       - name: Probar permisos y errores del panel de agentes
         run: npm run test:e2e:agent
       - uses: actions/upload-artifact@v4
