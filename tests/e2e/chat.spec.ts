@@ -109,3 +109,32 @@ test('sin sesión ni datos previos, el chat pide nombre y email antes de empezar
   const guardado = await page.evaluate(() => localStorage.getItem('bananito:guest'))
   expect(guardado).toContain('elena@example.test')
 })
+
+test('el chat se desmonta al cerrar aunque el navegador no entregue rAF', async ({ page }) => {
+  // El desmontaje del panel colgaba solo de `transitionend`. Si el navegador
+  // no entrega el requestAnimationFrame que activa la clase visible —ventana
+  // ocluida o throttled, lo normal en CI—, al cerrar no hay cambio de estilo,
+  // ni transición, ni evento: el diálogo se quedaba invisible pero presente,
+  // anunciándose todavía como `role="dialog" aria-modal="true"`.
+  //
+  // Apareció como fallo de WebKit y de Safari móvil, pero el mecanismo no es
+  // de ningún navegador en concreto: aquí se provoca en Chromium.
+  await page.addInitScript(() => {
+    localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
+    localStorage.setItem('bananito:guest', JSON.stringify({ nombre: 'Elena R.', email: 'elena@example.test' }))
+    window.requestAnimationFrame = (() => 1) as typeof window.requestAnimationFrame
+  })
+  await page.goto('./')
+
+  const opener = page.getByRole('button', { name: 'Abrir chat de Bananito' })
+  await opener.click()
+  const dialog = page.getByRole('dialog', { name: 'Bananito' })
+  await expect(dialog).toBeVisible()
+
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(
+    page.locator('#chat-bananito'),
+    'el diálogo debe salir del DOM, no solo volverse transparente',
+  ).toHaveCount(0)
+})

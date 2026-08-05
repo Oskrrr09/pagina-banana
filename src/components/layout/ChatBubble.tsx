@@ -23,6 +23,11 @@ const BANANA_YELLOW = '#ffce1f' // mismo amarillo del nav (--color-brand)
 const CHAT_BG_PATTERN = `${import.meta.env.BASE_URL}img/chat/pattern-bananas.png`
 const BANANITO_IMG = `${import.meta.env.BASE_URL}img/chat/bananito-square.png`
 
+// Duración de la animación de cierre, la misma que `duration-200` en las
+// clases del panel. Se necesita en JavaScript porque el desmontaje no puede
+// depender solo de `transitionend`; ver el efecto de coreografía.
+const CIERRE_MS = 200
+
 const FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',
@@ -168,7 +173,18 @@ export function ChatBubble() {
 
   // Coreografía de montaje/animación:
   //  open=true  → montamos, y en el siguiente frame activamos `visible`.
-  //  open=false → quitamos `visible` y desmontamos al terminar la transición.
+  //  open=false → quitamos `visible` y desmontamos al acabar la animación.
+  //
+  // El desmontaje colgaba solo de `transitionend`, y eso dejaba el diálogo
+  // clavado en el DOM. Basta con que el navegador no entregue el
+  // requestAnimationFrame que activa `visible` —ventana ocluida o throttled,
+  // que es lo normal en CI— para que al cerrar no haya cambio de estilo, ni
+  // transición, ni evento: el panel se quedaba invisible pero presente, y
+  // seguía anunciándose como `role="dialog" aria-modal="true"`. WebKit lo
+  // destapó; el fallo no era suyo.
+  //
+  // Ahora el temporizador es la garantía y `transitionend` solo adelanta el
+  // desmontaje cuando sí llega.
   useEffect(() => {
     if (open) {
       setMounted(true)
@@ -176,6 +192,8 @@ export function ChatBubble() {
       return () => window.cancelAnimationFrame(raf)
     }
     setVisible(false)
+    const cierre = window.setTimeout(() => setMounted(false), CIERRE_MS)
+    return () => window.clearTimeout(cierre)
   }, [open])
 
   // Foco al abrir, trampa de tab, Escape cierra.
