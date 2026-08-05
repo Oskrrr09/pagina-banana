@@ -41,9 +41,11 @@ porque se concedía esos permisos a sí mismo. Corregido y vigilado por
 
 La CLI, configuración y workflow de Supabase
 local ya están versionados y no usan secretos remotos. Las **27 pruebas contra
-GoTrue, PostgREST y Storage reales siguen sin ejecutarse en esta máquina**
-porque no tiene Docker; las ejecuta CI. Hasta que ese trabajo pase, la rama no
-se integra ni se despliega. Ver
+GoTrue, PostgREST y Storage reales pasan 27/27 en CI desde el 2026-08-05**,
+junto con el cierre de sesión PWA. Esta máquina sigue sin Docker y no puede
+ejecutarlas. Con eso, la PR #35 queda en verde completo; lo que falta para
+publicar es el despliegue en sí: activar Anonymous sign-ins en la demostración
+y aplicar las **tres** migraciones, la de permisos incluida. Ver
 [[04-problemas-pendientes#SEC-RLS-001 — Falta validar y desplegar la migración segura]].
 
 ## Fase 2 — cuentas, reservas y panel con auth (2026-07-31)

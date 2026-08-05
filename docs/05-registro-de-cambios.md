@@ -29,9 +29,20 @@ autores, diffs y marcas de tiempo.
   `requestAnimationFrame`. Colgaba sólo de `transitionend`; cuando no llegaba,
   quedaba invisible pero presente como `role="dialog" aria-modal="true"`.
   Salió como fallo de WebKit y Safari móvil y se reprodujo en Chromium.
-- Comprobado: Prettier, ESLint, TypeScript, 159 unitarias, build sin
-  credenciales, 296 E2E aprobadas y 1 omitida esperada en Chromium, Firefox,
-  WebKit, móvil y Safari móvil, y 6 del panel aislado.
+- El pedido de prueba de `tests/rls/politicas.spec.ts` trae `delivery` y
+  `payment_method`, que son NOT NULL sin valor por defecto. El insert nunca
+  podía funcionar; estaba tapado porque el alta de clientes fallaba antes.
+- Cerrar sesión en `/cuenta` lleva a la portada. `signOut()` dejaba la sesión a
+  null con la página aún montada, el guardia disparaba
+  `<Navigate to="/login?redirect=%2Fcuenta">` y ganaba la carrera, así que
+  quien salía aterrizaba en un formulario pidiéndole volver a entrar. Lo
+  destapó la prueba de cierre de sesión PWA, que hasta ahora nunca llegaba a
+  ejecutarse porque el paso de RLS fallaba antes en el mismo trabajo.
+- Comprobado en CI (run 31053972151, todo en verde): Prettier, ESLint,
+  TypeScript, 159 unitarias, build, **27/27 pruebas RLS contra GoTrue,
+  PostgREST y Storage reales** más el cierre de sesión PWA, 296 E2E aprobadas
+  y 1 omitida esperada en Chromium, Firefox, WebKit, móvil y Safari móvil, y 6
+  del panel aislado.
 - `npm audit`: se mantiene React Router 7.18.2. Los dos avisos `high` son el
   mismo, contado en `react-router` y en `react-router-dom`, y describen el modo
   RSC que esta SPA no usa. Bajar a 7.11.0 no limpia el árbol: cambia el aviso

@@ -436,8 +436,8 @@ forman el backlog verificable.
 
 ## SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla
 
-- Estado: **cerrado en código el 2026-08-05; pendiente de la verificación de
-  CI contra Supabase local**.
+- Estado: **cerrado y verificado el 2026-08-05**. CI informa 27/27 en el
+  trabajo `Integración Supabase local`.
 - Evidencia: reproducción sobre PostgreSQL real (PGlite) imitando el proyecto
   de Supabase —roles creados, sin conceder nada a mano— tras aplicar las
   migraciones:
@@ -461,8 +461,11 @@ forman el backlog verificable.
 - Además, `clienteRegistrado()` en `tests/rls/politicas.spec.ts` insertaba la
   ficha sin mirar el error: el fallo se tragaba allí y reaparecía disfrazado en
   cada prueba que la necesita. Ahora se comprueba donde ocurre.
-- Pendiente: confirmar 27/27 en el trabajo `Integración Supabase local`. Esta
-  máquina no tiene Docker y no puede ejecutarlas.
+- Verificado: la primera ejecución con la migración pasó de 10/27 a 26/27. El
+  caso restante, «un cliente no puede leer los pedidos de otro», resultó ser un
+  defecto distinto que el fallo anterior tapaba: el pedido de prueba no traía
+  `delivery` ni `payment_method`, que son NOT NULL sin valor por defecto, y
+  tampoco se miraba el error del insert. Corregido, CI informa 27/27.
 
 ## QA-CHAT-003 — El diálogo del chat no se desmontaba al cerrar
 
@@ -483,10 +486,15 @@ forman el backlog verificable.
 
 ## SEC-RLS-001 — Falta validar y desplegar la migración segura
 
-- Estado: **abierto y bloqueante para publicar**.
-- Ya comprobado: 100 pruebas de esquema sobre PostgreSQL/PGlite cubren
+- Estado: **las 27 pruebas ya pasan en CI (2026-08-05)**. Queda el despliegue,
+  que sigue siendo responsabilidad de una sesión con acceso a la demostración.
+- Comprobado el 2026-08-05 en el trabajo `Integración Supabase local`: GoTrue,
+  PostgREST y Storage reales, **27/27 aprobadas**, más el cierre de sesión PWA.
+  Llegar ahí exigió conceder los permisos de tabla que faltaban; ver
+  [[04-problemas-pendientes#SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla]].
+- Ya comprobado además: las pruebas de esquema sobre PostgreSQL/PGlite cubren
   instalación desde cero, actualización desde el estado desplegado, RLS, RPC
-  y permisos. Otras 22 unitarias completan las 122 pruebas Vitest del proyecto.
+  y permisos, dentro de las 159 pruebas Vitest del proyecto.
 - La auditoría clasifica cada función por firma exacta, detecta `PUBLIC` aunque
   `aclexplode` lo represente como `grantee = 0`, y se repite tras instalación,
   actualización e idempotencia. El verificador CI exige exactamente 27 casos.
@@ -497,22 +505,36 @@ forman el backlog verificable.
 - `revisar_descuento_educativo()` rechaza `NULL` y estados textuales no
   permitidos antes del `UPDATE`; PGlite comprueba que estado, nota, fecha y
   revisor no cambian tras ambos errores.
-- Falta: ejecutar los 27 casos de `tests/rls/politicas.spec.ts` contra un
-  Supabase dedicado para comprobar GoTrue, PostgREST y Storage reales. El
+- Hecho el 2026-08-05: los 27 casos de `tests/rls/politicas.spec.ts` se
+  ejecutan contra GoTrue, PostgREST y Storage reales en Supabase local. El
   arnés se actualizó el 2026-08-04 porque la versión anterior seguía usando
   INSERT directos que el esquema final ya no permite y no limpiaba los chats
   huérfanos creados durante la prueba.
 - Infraestructura versionada el 2026-08-04: CLI 2.111.0, configuración local,
   seed sin credenciales, lanzador de pruebas y workflow reutilizable. CI ya no
   depende de `RLS_TEST_*` ni puede caer sobre la demostración.
-- Bloqueo local restante: esta máquina no tiene Docker, por lo que todavía no
-  se han obtenido 27/27 contra los servicios reales. El nuevo workflow debe
-  confirmarse en GitHub Actions cuando se publique la rama.
+- Bloqueo local: esta máquina sigue sin Docker, así que la suite no puede
+  ejecutarse aquí. La ejecuta CI, que es donde se obtuvo el 27/27.
 - Regla: nunca ejecutar esta suite contra la demostración. Crea y borra
   usuarios, objetos y filas a propósito.
-- Cierre: ejecutar 27/27 en Supabase local (CI o una máquina con Docker),
-  activar Anonymous sign-ins en la demostración, aplicar las dos migraciones,
-  desplegar `main` y verificar web + chat.
+- Cierre restante: activar Anonymous sign-ins en la demostración, aplicar las
+  **tres** migraciones —la de permisos incluida, sin ella la web queda sin
+  acceso a sus propias tablas—, desplegar `main` y verificar web + chat.
+
+## QA-CUENTA-001 — Cerrar sesión devolvía al login en vez de a la portada
+
+- Estado: **cerrado el 2026-08-05**.
+- Evidencia: `tests/integration/pwa-auth.spec.ts` esperaba `/pagina-banana/`
+  tras pulsar «Cerrar sesión» y recibía `/login?redirect=%2Fcuenta`.
+- Causa: `signOut()` dejaba `session` a null mientras `/cuenta` seguía montada,
+  así que el guardia de la propia página disparaba
+  `<Navigate to="/login?redirect=%2Fcuenta">` y ganaba la carrera al
+  `navigate('/')` posterior. Quien acababa de cerrar sesión aterrizaba en un
+  formulario pidiéndole volver a entrar en la cuenta que acababa de dejar.
+- Resolución: se sale de la página antes de cerrar la sesión, con `replace`
+  para que el botón Atrás tampoco devuelva a `/cuenta`.
+- Por qué no se había visto: esta prueba nunca llegaba a ejecutarse. Vive en el
+  mismo trabajo que las RLS y el paso anterior fallaba antes.
 
 ## CUENTAS-003 — Favoritos y tienda favorita siguen fuera de la cuenta
 

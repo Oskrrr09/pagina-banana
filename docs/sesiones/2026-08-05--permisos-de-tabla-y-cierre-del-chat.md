@@ -80,9 +80,25 @@ y en su dependiente.
   y Safari móvil: **296 aprobadas, 1 omitida, 0 fallidas**. La omisión es el
   caso exclusivo del servidor de desarrollo.
 - Panel de agentes aislado: 6 aprobadas.
-- Las 27 pruebas RLS **no se han ejecutado en esta máquina**: exigen Docker.
-  Las ejecuta el trabajo `Integración Supabase local` del CI. No se declaran
-  aprobadas.
+- Las 27 pruebas RLS **no pueden ejecutarse en esta máquina**: exigen Docker.
+  Las ejecutó CI en tres pasadas. La primera con la migración de permisos pasó
+  de 10/27 a **26/27**; la segunda, tras corregir el pedido de prueba,
+  **27/27**; la tercera dejó todo el CI en verde.
+- CI, run 31053972151: los cuatro trabajos en verde. 27/27 RLS contra GoTrue,
+  PostgREST y Storage reales, más el cierre de sesión PWA.
+
+## Lo que aparecía al ir destapando capas
+
+Cada arreglo dejaba ver el siguiente, porque el fallo anterior impedía llegar
+hasta él.
+
+- Con los permisos concedidos, «un cliente no puede leer los pedidos de otro»
+  falló por su cuenta: el pedido de prueba no traía `delivery` ni
+  `payment_method`, que son NOT NULL sin valor por defecto, y tampoco se miraba
+  el error del insert. La prueba moría al leer el `id` de un pedido inexistente.
+- Con las 27 en verde, el mismo trabajo llegó por fin al cierre de sesión PWA,
+  que nunca se había ejecutado. Y falló por un defecto real de la web:
+  [[04-problemas-pendientes#QA-CUENTA-001 — Cerrar sesión devolvía al login en vez de a la portada]].
 
 ## Archivos afectados
 
@@ -91,10 +107,13 @@ y en su dependiente.
 - `tests/schema/andamio.ts`, `tests/schema/politicas.test.ts`
 - `tests/rls/politicas.spec.ts`
 - `src/components/layout/ChatBubble.tsx`, `tests/e2e/chat.spec.ts`
+- `src/pages/ProfilePage.tsx`
 - `docs/00-estado-actual.md`, `docs/02-decisiones.md`,
   `docs/04-problemas-pendientes.md`, `docs/05-registro-de-cambios.md`
 
 ## Siguiente paso
 
-Ver el resultado del trabajo `Integración Supabase local` en la PR #35. Hasta
-que informe 27/27, la rama no se integra ni se despliega.
+La PR #35 tiene el CI completamente en verde. Lo que queda no es de código: en
+la demostración hay que activar Anonymous sign-ins y aplicar las **tres**
+migraciones —sin la de permisos la web se queda sin acceso a sus propias
+tablas—, y después verificar web y chat contra la URL pública.
