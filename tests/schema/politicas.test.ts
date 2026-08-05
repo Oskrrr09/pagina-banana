@@ -3,6 +3,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { ANDAMIO_SUPABASE } from './andamio'
 
 // ============================================================================
 // Comportamiento real de las políticas RLS, contra PostgreSQL de verdad.
@@ -19,50 +20,6 @@ import { join } from 'node:path'
 // ============================================================================
 
 const DIR = join(process.cwd(), 'supabase/migrations')
-
-const ANDAMIO = `
-  create schema if not exists auth;
-  create schema if not exists storage;
-  create table if not exists auth.users (id uuid primary key, email text);
-  create or replace function auth.uid() returns uuid language sql stable as $$
-    select nullif(current_setting('request.jwt.claims', true)::json ->> 'sub', '')::uuid;
-  $$;
-  create table if not exists storage.buckets (
-    id text primary key,
-    name text,
-    public boolean,
-    file_size_limit bigint,
-    allowed_mime_types text[]
-  );
-  create table if not exists storage.objects (
-    id uuid primary key default gen_random_uuid(),
-    bucket_id text references storage.buckets(id), name text, owner uuid
-  );
-  create or replace function storage.foldername(name text) returns text[]
-  language sql immutable as $$ select string_to_array(name, '/'); $$;
-  alter table storage.objects enable row level security;
-  do $$ begin
-    if not exists (select 1 from pg_roles where rolname='anon') then create role anon nologin; end if;
-    if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if;
-  end $$;
-  grant usage on schema public, auth, storage to anon, authenticated;
-  -- Supabase concede permisos de tabla a anon y authenticated por defecto;
-  -- RLS es lo que filtra después. Sin esto las pruebas fallarían por falta de
-  -- permiso y no por la política, que es justo lo que se quiere medir.
-  alter default privileges in schema public
-    grant select, insert, update, delete on tables to anon, authenticated;
-  alter default privileges in schema storage
-    grant select, insert, update, delete on tables to anon, authenticated;
-  -- alter default privileges solo alcanza a lo que se cree después, y las
-  -- tablas de storage ya existen a estas alturas.
-  grant select, insert, update, delete on all tables in schema storage
-    to anon, authenticated;
-  do $$ begin
-    if not exists (select 1 from pg_publication where pubname='supabase_realtime') then
-      create publication supabase_realtime;
-    end if;
-  end $$;
-`
 
 let db: PGlite
 
@@ -137,7 +94,7 @@ async function como<T>(
 
 beforeAll(async () => {
   db = await PGlite.create({ extensions: { pgcrypto } })
-  await db.exec(ANDAMIO)
+  await db.exec(ANDAMIO_SUPABASE)
   for (const f of readdirSync(DIR)
     .filter((f) => f.endsWith('.sql'))
     .sort()) {
