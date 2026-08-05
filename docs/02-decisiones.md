@@ -859,6 +859,70 @@ No atribuye motivaciones que el repositorio no documenta.
 - Evidencia: `tests/e2e/idiomas.spec.ts` entra desde alemán, comprueba español
   en el panel y alemán de nuevo al salir.
 
+## D-056 — Los permisos de tabla se conceden en la migración, no se heredan
+
+- Fecha: 2026-08-05.
+- Estado: vigente.
+- Decisión: `supabase/migrations/20260805000300_permisos_de_tabla.sql` concede
+  explícitamente cada permiso de tabla a `anon`, `authenticated` y
+  `service_role`. Ninguna tabla depende ya de las *default privileges* del
+  proyecto.
+- Motivo: las migraciones anteriores no concedían ni un GRANT. Se apoyaban, sin
+  decirlo, en las default privileges que Supabase deja preparadas en `public`;
+  esas defaults las fijó otro rol antes y **no alcanzan a las tablas que crea
+  la migración**, así que nacían sin permisos para nadie. RLS filtra filas
+  *después* de que exista el permiso: sin GRANT no se evaluaba ninguna política
+  y PostgreSQL cortaba antes con «permission denied for table …».
+  `service_role` salta RLS por BYPASSRLS, pero no salta los GRANT, de ahí que
+  el alta administrativa de un agente fallara.
+- Consecuencia buscada: cada línea del fichero es el reflejo de una política.
+  Donde el esquema dice «NO hay INSERT directo», aquí no hay GRANT — la
+  operación se corta en la base y deja de depender de que nadie escriba la
+  política por descuido. Lo que no aparece pasa por un RPC `security definer`,
+  que se ejecuta con los permisos de su propietario.
+- Evidencia: `tests/schema/permisos.test.ts` comprueba el cuadro tabla por
+  tabla, incluido lo que **no** debe poder hacerse y que `PUBLIC` no recibe
+  nada.
+
+## D-057 — El arnés de PGlite deja de concederse permisos a sí mismo
+
+- Fecha: 2026-08-05.
+- Estado: vigente. Reemplaza el supuesto que traía `tests/schema/andamio.ts`.
+- Decisión: el andamio prepara los roles (`anon`, `authenticated` y ahora
+  `service_role`) pero **no concede nada sobre `public`**. Los permisos los
+  concede la migración, que es lo que se despliega.
+- Motivo: el andamio ejecutaba `alter default privileges … grant …` antes de
+  aplicar las migraciones, con el argumento de que «Supabase los concede por
+  defecto». Al hacerlo respondía que las políticas funcionaban mientras
+  Supabase local caía con permisos denegados: 17 de las 27 pruebas RLS en rojo
+  con el arnés en verde. Un arnés que se concede lo que va a medir no mide
+  nada.
+- Consecuencia: `tests/schema/politicas.test.ts` usa el mismo andamio en vez de
+  su copia, para que no vuelvan a divergir dos supuestos.
+- Evidencia: las 125 pruebas de esquema pasan sin que el andamio conceda ningún
+  permiso sobre `public`.
+
+## D-058 — Se permanece en React Router 7.18.2 pese al aviso `high`
+
+- Fecha: 2026-08-05.
+- Estado: vigente. Concreta el análisis anotado en
+  [[05-registro-de-cambios]] el 2026-08-04.
+- Decisión: no se baja de versión. `npm audit` seguirá informando de dos avisos
+  `high`, que son el mismo aviso contado en `react-router` y en su dependiente
+  `react-router-dom`.
+- Motivo: `GHSA-qwww-vcr4-c8h2` afecta al rango `>=7.12.0 <8.3.0` y describe un
+  *bypass* de CSRF **en modo RSC**: acciones de servidor ejecutadas antes de
+  devolver un 400. Esta SPA no tiene servidor, ni React Server Components, ni
+  router de datos: importa `BrowserRouter`, `Routes`, `Route`, `Link`,
+  `Navigate`, `Outlet`, `useLocation`, `useNavigate`, `useParams` y
+  `useSearchParams`, y nada más. El camino vulnerable no existe aquí.
+- Alternativa descartada: `npm audit fix --force` propone bajar a 7.11.0, que
+  **no** deja el árbol limpio — cambia este aviso por `GHSA-2j2x-hqr9-3h42`
+  (redirección abierta mediante URL relativa al protocolo, rango
+  `7.0.0-pre.0 - 7.11.0`), también `high`. No hay ninguna versión 7.x sin aviso
+  y la 8.3.0 corregida sigue sin publicarse.
+- Revisión: volver a evaluarlo cuando exista 8.3.0.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

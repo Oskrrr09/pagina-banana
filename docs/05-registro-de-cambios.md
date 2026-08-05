@@ -1,12 +1,41 @@
 ---
 tipo: cambios
-actualizado: 2026-08-04
+actualizado: 2026-08-05
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-05 — Permisos de tabla, cierre del chat y aviso de Router
+
+- Nueva migración `20260805000300_permisos_de_tabla.sql`: las tablas ya no
+  nacen sin permisos. Concede el mínimo que refleja cada política a `anon`,
+  `authenticated` y `service_role`; lo que no aparece pasa por un RPC
+  `security definer`. Sin ella, RLS no llegaba a evaluarse y `service_role`
+  —que salta RLS pero no los GRANT— no podía dar de alta un agente.
+- `tests/schema/andamio.ts` deja de concederse permisos sobre `public` antes de
+  aplicar las migraciones. Se concedía lo que iba a medir, así que respondía en
+  verde mientras Supabase local estaba en rojo. Gana el rol `service_role` y
+  `tests/schema/politicas.test.ts` pasa a usarlo en vez de su propia copia.
+- `tests/schema/permisos.test.ts` (nuevo) comprueba el cuadro de permisos tabla
+  por tabla, incluido lo que **no** debe poder hacerse y que `PUBLIC` no recibe
+  nada. Las pruebas de esquema pasan de 125 a 159 unitarias en total.
+- `clienteRegistrado()` de las pruebas RLS comprueba el error del alta. Antes
+  lo ignoraba, así que un fallo del alta reaparecía disfrazado a diecisiete
+  pruebas de distancia.
+- El diálogo del chat se desmonta al cerrar aunque el navegador no entregue
+  `requestAnimationFrame`. Colgaba sólo de `transitionend`; cuando no llegaba,
+  quedaba invisible pero presente como `role="dialog" aria-modal="true"`.
+  Salió como fallo de WebKit y Safari móvil y se reprodujo en Chromium.
+- Comprobado: Prettier, ESLint, TypeScript, 159 unitarias, build sin
+  credenciales, 296 E2E aprobadas y 1 omitida esperada en Chromium, Firefox,
+  WebKit, móvil y Safari móvil, y 6 del panel aislado.
+- `npm audit`: se mantiene React Router 7.18.2. Los dos avisos `high` son el
+  mismo, contado en `react-router` y en `react-router-dom`, y describen el modo
+  RSC que esta SPA no usa. Bajar a 7.11.0 no limpia el árbol: cambia el aviso
+  por una redirección abierta. Ver [[02-decisiones#D-058]].
 
 ## 2026-08-04 — React Router 7, secretos y compilación nativa
 

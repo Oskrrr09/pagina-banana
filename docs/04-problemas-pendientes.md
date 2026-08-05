@@ -434,6 +434,53 @@ forman el backlog verificable.
   autenticado. Aplicarlo **antes** de desplegar esta versión dejaría el
   panel de agentes sin poder responder.
 
+## SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla
+
+- Estado: **cerrado en código el 2026-08-05; pendiente de la verificación de
+  CI contra Supabase local**.
+- Evidencia: reproducción sobre PostgreSQL real (PGlite) imitando el proyecto
+  de Supabase —roles creados, sin conceder nada a mano— tras aplicar las
+  migraciones:
+  `authenticated → insert en public.clientes: permission denied for table clientes`,
+  `service_role → insert en public.agentes: permission denied for table agentes`,
+  y las siete tablas sin un solo permiso concedido.
+- Causa: las migraciones se apoyaban en las *default privileges* de Supabase,
+  que las fijó otro rol antes y no alcanzan a las tablas que ellas crean. RLS
+  filtra filas después del permiso de tabla, así que ninguna política llegaba a
+  evaluarse. `service_role` salta RLS pero no los GRANT.
+- Por qué no se vio antes: el síntoma engañaba. Las pruebas negativas seguían
+  pasando —un permiso denegado también es un error—, así que sólo caían los
+  recorridos legítimos: 10 aprobadas y 17 fallidas. Y `tests/schema/andamio.ts`
+  se concedía los permisos a sí mismo antes de aplicar las migraciones, con lo
+  que el arnés de esquema respondía en verde.
+- Resolución: `supabase/migrations/20260805000300_permisos_de_tabla.sql`
+  concede el mínimo que refleja cada política; el andamio deja de conceder nada
+  sobre `public`; `tests/schema/permisos.test.ts` vigila el cuadro completo,
+  incluido lo que no debe poder hacerse. Ver [[02-decisiones#D-056]] y
+  [[02-decisiones#D-057]].
+- Además, `clienteRegistrado()` en `tests/rls/politicas.spec.ts` insertaba la
+  ficha sin mirar el error: el fallo se tragaba allí y reaparecía disfrazado en
+  cada prueba que la necesita. Ahora se comprueba donde ocurre.
+- Pendiente: confirmar 27/27 en el trabajo `Integración Supabase local`. Esta
+  máquina no tiene Docker y no puede ejecutarlas.
+
+## QA-CHAT-003 — El diálogo del chat no se desmontaba al cerrar
+
+- Estado: **cerrado el 2026-08-05**.
+- Evidencia: dos fallos en CI, WebKit y Safari móvil, en «chat abre, recibe
+  foco y cierra con Escape». Al cerrar, el panel quedaba con `opacity-0` y
+  `pointer-events-none` pero seguía en el DOM anunciándose como
+  `role="dialog" aria-modal="true"`.
+- Causa: el desmontaje colgaba sólo de `onTransitionEnd`. Si el navegador no
+  entrega el `requestAnimationFrame` que activa la clase visible —ventana
+  ocluida o *throttled*, lo normal en CI—, al cerrar no hay cambio de estilo,
+  ni transición, ni evento. No es un fallo de WebKit: reproducido en Chromium
+  anulando `requestAnimationFrame`.
+- Resolución: un temporizador de la misma duración que la animación garantiza
+  el desmontaje; `transitionend` sólo lo adelanta cuando llega.
+- Regresión: `tests/e2e/chat.spec.ts` provoca la causa y exige que el diálogo
+  salga del DOM, no que se vuelva transparente.
+
 ## SEC-RLS-001 — Falta validar y desplegar la migración segura
 
 - Estado: **abierto y bloqueante para publicar**.

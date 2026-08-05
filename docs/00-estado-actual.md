@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-04
+actualizado: 2026-08-05
 ---
 
 # Estado actual
@@ -12,7 +12,7 @@ actualizado: 2026-08-04
 > tiempo real con Supabase + panel de agentes** (Fase 1 desplegada el
 > 2026-07-30). No hay integración comercial real ni motor de pago.
 
-## Auditoría de seguridad en curso (2026-08-02 a 2026-08-04)
+## Auditoría de seguridad en curso (2026-08-02 a 2026-08-05)
 
 Las PR [#33](https://github.com/luis-lop-nas/pagina-banana/pull/33) y
 [#34](https://github.com/luis-lop-nas/pagina-banana/pull/34) cierran la lectura
@@ -22,16 +22,28 @@ anónima firmada; propietario, autor, agente, estado y fechas sensibles los
 deduce el servidor mediante RPC.
 
 La fuente SQL se consolidó en `supabase/migrations/`, con la migración de
-estado seguro y el cierre incremental de privacidad/Storage. Una auditoría común por
+estado seguro, el cierre incremental de privacidad/Storage y —desde el
+2026-08-05— los permisos de tabla explícitos. Una auditoría común por
 firma PostgreSQL exacta se ejecuta tras instalación limpia, actualización desde
-PR #33 y segunda aplicación idempotente. La suite local pasa con 102 pruebas de
-esquema y 27 unitarias en Vitest, además de 273 E2E generales aprobadas, una
+PR #33 y segunda aplicación idempotente. La suite local pasa con 159 pruebas
+Vitest entre esquema y unitarias, además de 296 E2E aprobadas, una
 omisión esperada del caso exclusivo de desarrollo y 6 E2E aisladas
 del panel de agentes. `revisar_descuento_educativo()` rechaza también estados
-`NULL` sin tocar la revisión. La CLI, configuración y workflow de Supabase
+`NULL` sin tocar la revisión.
+
+La primera ejecución real contra Supabase local destapó que las migraciones no
+concedían **ningún** permiso de tabla: se apoyaban en unas *default privileges*
+que no alcanzan a las tablas que crean, así que RLS no llegaba a evaluarse y
+`service_role` no podía dar de alta un agente. El arnés de PGlite lo ocultaba
+porque se concedía esos permisos a sí mismo. Corregido y vigilado por
+`tests/schema/permisos.test.ts`; ver
+[[04-problemas-pendientes#SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla]].
+
+La CLI, configuración y workflow de Supabase
 local ya están versionados y no usan secretos remotos. Las **27 pruebas contra
 GoTrue, PostgREST y Storage reales siguen sin ejecutarse en esta máquina**
-porque no tiene Docker. Este bloqueo impide integrar y desplegar la rama. Ver
+porque no tiene Docker; las ejecuta CI. Hasta que ese trabajo pase, la rama no
+se integra ni se despliega. Ver
 [[04-problemas-pendientes#SEC-RLS-001 — Falta validar y desplegar la migración segura]].
 
 ## Fase 2 — cuentas, reservas y panel con auth (2026-07-31)
