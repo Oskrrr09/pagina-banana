@@ -229,7 +229,14 @@ async function clienteRegistrado(sufijo: string) {
   const { data, error } = await db.auth.signUp({ email, password: 'prueba-rls-1234' })
   expect(error, 'el alta de cliente de prueba debe funcionar').toBeNull()
   const uid = anotarUsuario(data.user!.id)
-  await db.from('clientes').insert({ id: uid, email })
+
+  // El error del alta se comprobaba. Sin hacerlo, el fallo se tragaba aquí y
+  // reaparecía disfrazado en cada prueba que necesita la ficha —«no hay ficha
+  // de cliente para esta sesión»—, a diecisiete sitios de distancia de su
+  // causa. Es el mismo recorrido que hace /registro en la web, así que si
+  // falla, lo que está roto es el alta de clientes.
+  const { error: errorFicha } = await db.from('clientes').insert({ id: uid, email })
+  expect(errorFicha, 'el cliente debe poder crear su propia ficha').toBeNull()
   creados.push({ tabla: 'clientes', id: uid })
   return { db, uid, email }
 }
