@@ -275,11 +275,22 @@ test('un cliente no puede leer los pedidos de otro', async () => {
   const dos = await clienteRegistrado('dos')
 
   const admin = clienteServicio()
-  const { data: pedido } = await admin
+  // `delivery` y `payment_method` son NOT NULL y no tienen valor por defecto,
+  // así que el pedido de prueba tiene que traerlos. Faltaban, y el error del
+  // insert no se miraba: el pedido nunca llegaba a existir y la prueba moría
+  // más abajo al leer su `id` en vez de decir qué había pasado.
+  const { data: pedido, error: errorPedido } = await admin
     .from('pedidos')
-    .insert({ id: `BC-${marca('pedido')}`, cliente_id: uno.uid, products_total: 100 })
+    .insert({
+      id: `BC-${marca('pedido')}`,
+      cliente_id: uno.uid,
+      delivery: 'envio',
+      payment_method: 'tarjeta',
+      products_total: 100,
+    })
     .select()
     .single()
+  expect(errorPedido, 'el pedido de prueba debe poder prepararse').toBeNull()
   creados.push({ tabla: 'pedidos', id: pedido!.id })
 
   const { data } = await dos.db.from('pedidos').select('id')
