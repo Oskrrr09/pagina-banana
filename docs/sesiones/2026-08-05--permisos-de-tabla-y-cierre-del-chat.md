@@ -62,10 +62,17 @@ y en su dependiente.
 - [[02-decisiones#D-057]]: el arnés de PGlite deja de concederse permisos. Un
   arnés que se concede lo que va a medir no mide nada.
 - [[02-decisiones#D-058]]: se permanece en React Router 7.18.2.
-  `GHSA-qwww-vcr4-c8h2` describe el modo RSC, que esta SPA no usa —importa sólo
-  la API declarativa—. Bajar a 7.11.0 no limpia el árbol: cambia el aviso por
-  `GHSA-2j2x-hqr9-3h42`, redirección abierta, también `high`. No hay ninguna
-  7.x sin aviso y la 8.3.0 corregida no está publicada.
+  `GHSA-qwww-vcr4-c8h2` alcanza sólo a las APIs RSC inestables, que esta SPA no
+  usa —importa sólo la API declarativa—. Bajar a 7.11.0 no limpia el árbol:
+  cambia el aviso por `GHSA-2j2x-hqr9-3h42`, redirección abierta, también
+  `high`. Ninguna 7.x está sin aviso.
+  **Corrección del 2026-08-06:** esta nota añadía que «la 8.3.0 corregida no
+  está publicada». Era falso: `react-router@8.3.0` salió el 2026-07-22. El
+  error vino de consultar `react-router-dom`, que se queda en 7.18.2 porque la
+  8 retira ese paquete. La decisión no cambia, pero el motivo sí: no se
+  actualiza porque la 8 exige Node ≥ 22.22.0, React/React DOM ≥ 19.2.7 y dejar
+  `react-router-dom`, lo que la convierte en una migración con suite propia
+  —[[03-roadmap#5.1 Migración a React Router 8]]— y no en un salto de versión.
 - El desmontaje del chat pasa a garantizarlo un temporizador de la misma
   duración que la animación; `transitionend` sólo lo adelanta cuando llega.
 - `clienteRegistrado()` comprueba el error del alta. No se relajó ninguna

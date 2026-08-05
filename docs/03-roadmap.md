@@ -1,6 +1,6 @@
 ---
 tipo: roadmap
-actualizado: 2026-08-04
+actualizado: 2026-08-06
 ---
 
 # Roadmap
@@ -66,6 +66,41 @@ Solo después de acordar alcance:
       ciegas; cada cambio necesita una regresión que justifique la conducta.
 - [ ] Añadir presupuesto o división de bundle: el JavaScript principal supera
       actualmente el umbral de 500 kB sin comprimir de Vite.
+- [ ] **Migración a React Router 8** — ver el apartado dedicado más abajo.
+
+## 5.1 Migración a React Router 8
+
+Tarea técnica propia, registrada el 2026-08-06. **No** entra en la PR #35, que
+es de *hardening* de seguridad, i18n y calidad: mezclar una migración de
+framework con ese trabajo juntaría dos riesgos que conviene evaluar por
+separado.
+
+Motivo: `react-router@8.3.0`, publicada el 2026-07-22, es la versión que
+corrige `GHSA-qwww-vcr4-c8h2`. Mientras el proyecto siga en la rama 7.x,
+`npm audit` seguirá mostrando dos entradas `high` por ese aviso. El aviso sólo
+alcanza a las **APIs RSC inestables**, que esta SPA declarativa con
+`BrowserRouter` no usa —no hay servidor de React Router, ni acciones RSC, ni
+React Server Components—, así que el camino vulnerable no es aplicable y la
+migración es mantenimiento, no una urgencia de seguridad.
+
+Lo que exige la versión 8, y por lo que no es un simple salto de versión:
+
+- **Node ≥ 22.22.0**. Hoy `.nvmrc` y CI van con Node 24, así que esto ya se
+  cumple; conviene confirmarlo también en cualquier máquina de desarrollo.
+- **React y React DOM ≥ 19.2.7**. El proyecto va con React 18.3.1, de modo que
+  la migración arrastra un salto mayor de React con su propia superficie de
+  cambios.
+- **Retirada de `react-router-dom`**. Todas las importaciones del proyecto
+  vienen de ese paquete y pasan a `react-router`.
+- Revisar la convivencia con **Vite 6** y con la compilación nativa de
+  Capacitor.
+
+Criterio de cierre: migración completa, `basename` y rutas profundas intactos,
+y la **suite completa** en verde —`npm run check` y `npm run check:full`, con
+los cinco motores de Playwright— antes de integrar.
+
+Ver [[02-decisiones#D-058]] y
+[[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
 
 ## 6. Ideas surgidas de la auditoría UX de la web oficial (2026-07-28)
 

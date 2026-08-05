@@ -216,11 +216,22 @@ forman el backlog verificable.
   incluyen inicio, cambio de idioma y navegación profunda.
 - Riesgo residual upstream: el registro de npm publicó
   `GHSA-qwww-vcr4-c8h2` para el procesamiento de acciones del modo RSC entre
-  7.12.0 y `<8.3.0`. Esta aplicación no usa RSC, SSR, loaders ni actions, pero
-  npm agrega el aviso a `react-router-dom` y lo muestra como dos entradas
-  `high`. La versión corregida 8.3.0 aún no está publicada; bajar a 7.11.0
-  reabre múltiples XSS, redirects y DoS ya corregidos. Se mantiene la última
-  estable y se actualizará cuando exista una release corregida.
+  7.12.0 y `<8.3.0`. El aviso sólo alcanza a las **APIs RSC inestables**. Esta
+  aplicación es una SPA declarativa con `BrowserRouter`: no tiene servidor de
+  React Router, ni acciones RSC, ni React Server Components, ni loaders ni
+  actions. El camino vulnerable no es aplicable. npm agrega igualmente el aviso
+  a `react-router-dom` y lo muestra como dos entradas `high`.
+- Corregido el 2026-08-06: este documento afirmaba que la 8.3.0 «aún no está
+  publicada». **Es falso.** `react-router@8.3.0` salió el 2026-07-22 y es la
+  versión corregida. El error vino de mirar `react-router-dom`, que se queda en
+  7.18.2 porque React Router 8 retira ese paquete.
+- No se actualiza aquí: React Router 8 exige Node ≥ 22.22.0 y React/React DOM
+  ≥ 19.2.7, y retira `react-router-dom`. El proyecto usa React 18, Vite 6 e
+  importa desde `react-router-dom`. Es una migración con su propia suite, no un
+  salto de versión; queda registrada en
+  [[03-roadmap#Migración a React Router 8]].
+- Bajar a 7.11.0 sigue descartado: reabre múltiples XSS, redirects y DoS ya
+  corregidos. Se mantiene la última 7.x estable hasta la migración.
 
 ## CI-001 — Actions fuerza Node 24 por obsolescencia de Node 20
 

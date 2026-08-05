@@ -88,8 +88,12 @@ documentación solicitados en la auditoría exhaustiva.
 - Migrado React Router DOM 6.30.4 a 7.18.2 y reforzado `safeRedirect` frente a
   barras invertidas. Los 20 smoke multi-navegador siguen aprobando.
 - La última estable cierra los avisos originales, pero npm registra un aviso
-  nuevo para acciones RSC. La SPA no usa esa superficie y la versión corregida
-  8.3.0 todavía no está publicada; queda seguimiento explícito en SEG-001.
+  nuevo para las APIs RSC inestables. La SPA no usa esa superficie; queda
+  seguimiento explícito en SEG-001.
+  **Corrección del 2026-08-06:** aquí se afirmaba que la versión corregida
+  8.3.0 «todavía no está publicada». Era falso: `react-router@8.3.0` salió el
+  2026-07-22. Lo que se queda en 7.18.2 es `react-router-dom`, retirado en la
+  8. Ver [[02-decisiones#D-058]].
 - Revisados ficheros actuales e historial sin encontrar secretos versionados;
   ampliada la exclusión de credenciales de firma y configuración nativa.
 - El catálogo consolidado contiene 18 accesorios; README queda alineado.

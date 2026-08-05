@@ -902,26 +902,40 @@ No atribuye motivaciones que el repositorio no documenta.
 - Evidencia: las 125 pruebas de esquema pasan sin que el andamio conceda ningún
   permiso sobre `public`.
 
-## D-058 — Se permanece en React Router 7.18.2 pese al aviso `high`
+## D-058 — Se permanece en React Router 7.18.2 en esta PR, con 8.3.0 ya disponible
 
-- Fecha: 2026-08-05.
-- Estado: vigente. Concreta el análisis anotado en
-  [[05-registro-de-cambios]] el 2026-08-04.
-- Decisión: no se baja de versión. `npm audit` seguirá informando de dos avisos
-  `high`, que son el mismo aviso contado en `react-router` y en su dependiente
-  `react-router-dom`.
-- Motivo: `GHSA-qwww-vcr4-c8h2` afecta al rango `>=7.12.0 <8.3.0` y describe un
-  *bypass* de CSRF **en modo RSC**: acciones de servidor ejecutadas antes de
-  devolver un 400. Esta SPA no tiene servidor, ni React Server Components, ni
-  router de datos: importa `BrowserRouter`, `Routes`, `Route`, `Link`,
-  `Navigate`, `Outlet`, `useLocation`, `useNavigate`, `useParams` y
-  `useSearchParams`, y nada más. El camino vulnerable no existe aquí.
+- Fecha: 2026-08-05. **Corregida el 2026-08-06.**
+- Estado: vigente, con la corrección aplicada.
+- Corrección: la primera redacción afirmaba que «la 8.3.0 corregida sigue sin
+  publicarse». **Es falso.** `react-router@8.3.0` se publicó el 2026-07-22 y es
+  la versión que corrige `GHSA-qwww-vcr4-c8h2`. El error vino de consultar
+  `npm view react-router-dom version`, que responde `7.18.2` porque React
+  Router 8 **retira `react-router-dom`**: el paquete que sigue publicándose es
+  `react-router`. La decisión de no actualizar en esta PR no cambia, pero el
+  motivo sí: no es que no exista arreglo, es que adoptarlo no cabe aquí.
+- Decisión: no se toca ninguna dependencia en esta PR. `npm audit` seguirá
+  informando de dos avisos `high`, que son el mismo aviso contado en
+  `react-router` y en su dependiente `react-router-dom`.
+- Motivo del aviso: `GHSA-qwww-vcr4-c8h2` afecta al rango `>=7.12.0 <8.3.0` y
+  describe un *bypass* de CSRF que sólo alcanza a las **APIs RSC inestables**:
+  acciones de servidor ejecutadas antes de devolver un 400.
+- Por qué no aplica aquí: esta SPA es declarativa. No tiene servidor de React
+  Router, ni acciones RSC, ni React Server Components, ni router de datos.
+  Importa `BrowserRouter`, `Routes`, `Route`, `Link`, `Navigate`, `Outlet`,
+  `useLocation`, `useNavigate`, `useParams` y `useSearchParams`, y nada más. El
+  camino vulnerable no existe en este código.
+- Por qué no se actualiza en esta PR: React Router 8 exige **Node ≥ 22.22.0** y
+  **React y React DOM ≥ 19.2.7**, y retira `react-router-dom`. El proyecto va
+  con React 18.3.1, Vite 6 e importa desde `react-router-dom` en toda la base
+  de código. No es un cambio de versión: es una migración de framework que
+  necesita su propia suite completa, y meterla en una PR de *hardening* de
+  seguridad, i18n y calidad mezclaría dos riesgos distintos.
 - Alternativa descartada: `npm audit fix --force` propone bajar a 7.11.0, que
   **no** deja el árbol limpio — cambia este aviso por `GHSA-2j2x-hqr9-3h42`
   (redirección abierta mediante URL relativa al protocolo, rango
-  `7.0.0-pre.0 - 7.11.0`), también `high`. No hay ninguna versión 7.x sin aviso
-  y la 8.3.0 corregida sigue sin publicarse.
-- Revisión: volver a evaluarlo cuando exista 8.3.0.
+  `7.0.0-pre.0 - 7.11.0`), también `high`. Ninguna versión 7.x está sin aviso.
+- Seguimiento: [[03-roadmap#Migración a React Router 8]] y
+  [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
 
 ## Cómo añadir una decisión
 

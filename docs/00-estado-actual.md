@@ -187,12 +187,18 @@ Android (2026-08-01).**
   <https://luis-lop-nas.github.io/pagina-banana/>. Todavía representa `main`,
   no la migración de seguridad.
 - **Node.js 24** en el workflow unificado `ci.yml`; `.nvmrc` alinea local y CI.
-- **Estado de dependencias (2026-08-04)**: React Router se migró de 6.30.4 a
-  7.18.2 y se probó en cuatro motores. Esa versión cierra los dos avisos que
-  motivaron la migración. `npm audit` conserva dos entradas `high` por un
-  único aviso nuevo del modo RSC (`GHSA-qwww-vcr4-c8h2`), superficie que esta
-  SPA declarativa no usa y cuya versión corregida 8.3.0 todavía no existe en
-  npm. Ver
+- **Estado de dependencias (actualizado el 2026-08-06)**: React Router se migró
+  de 6.30.4 a 7.18.2 y se probó en cuatro motores. Esa versión cierra los dos
+  avisos que motivaron la migración. `npm audit` conserva dos entradas `high`
+  por un único aviso del modo RSC (`GHSA-qwww-vcr4-c8h2`), que sólo alcanza a
+  las APIs RSC inestables: esta SPA declarativa con `BrowserRouter` no tiene
+  servidor de React Router, ni acciones RSC, ni React Server Components, así
+  que el camino vulnerable no es aplicable. La versión corregida
+  `react-router@8.3.0` **sí existe** desde el 2026-07-22 —lo que se quedó en
+  7.18.2 es `react-router-dom`, retirado en la 8—, pero adoptarla exige Node
+  ≥ 22.22.0, React/React DOM ≥ 19.2.7 y dejar de usar `react-router-dom`, con
+  React 18 y Vite 6 en el proyecto. Va como tarea propia:
+  [[03-roadmap#Migración a React Router 8]] y
   [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
 - La auditoría de secretos no encuentra claves privadas, `service_role`,
   JWT extensos ni ficheros de sesión versionados. `.env`, credenciales de

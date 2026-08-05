@@ -43,10 +43,28 @@ autores, diffs y marcas de tiempo.
   PostgREST y Storage reales** más el cierre de sesión PWA, 296 E2E aprobadas
   y 1 omitida esperada en Chromium, Firefox, WebKit, móvil y Safari móvil, y 6
   del panel aislado.
-- `npm audit`: se mantiene React Router 7.18.2. Los dos avisos `high` son el
-  mismo, contado en `react-router` y en `react-router-dom`, y describen el modo
-  RSC que esta SPA no usa. Bajar a 7.11.0 no limpia el árbol: cambia el aviso
+- `npm audit`: se mantiene React Router 7.18.2 y no se toca ninguna dependencia
+  en esta PR. Los dos avisos `high` son el mismo, contado en `react-router` y
+  en `react-router-dom`, y alcanzan sólo a las APIs RSC inestables, que esta
+  SPA declarativa no usa. Bajar a 7.11.0 no limpia el árbol: cambia el aviso
   por una redirección abierta. Ver [[02-decisiones#D-058]].
+
+### Corrección del 2026-08-06 — la 8.3.0 sí estaba publicada
+
+- Lo registrado el 2026-08-04 y el 2026-08-05 decía que la versión corregida
+  `8.3.0` «todavía no está publicada». **Era falso.** `react-router@8.3.0`
+  salió el 2026-07-22 y corrige `GHSA-qwww-vcr4-c8h2`. El error vino de
+  consultar `react-router-dom`, que se queda en 7.18.2 porque React Router 8
+  retira ese paquete: el que sigue publicándose es `react-router`.
+- Lo que no cambia: el aviso sólo afecta a las APIs RSC inestables y esta SPA
+  declarativa con `BrowserRouter` no tiene servidor de React Router, acciones
+  RSC ni React Server Components. El camino vulnerable no es aplicable.
+- Lo que sí cambia: el motivo de no actualizar. No es que falte el arreglo, es
+  que React Router 8 exige Node ≥ 22.22.0, React/React DOM ≥ 19.2.7 y retirar
+  `react-router-dom`, y el proyecto usa React 18, Vite 6 y `react-router-dom`.
+  Queda como tarea propia en [[03-roadmap#Migración a React Router 8]].
+- Alcance: sólo documentación. No se modificó `package.json`, `package-lock.json`
+  ni ningún fichero de `src/`.
 
 ## 2026-08-04 — React Router 7, secretos y compilación nativa
 
@@ -59,8 +77,10 @@ autores, diffs y marcas de tiempo.
   amplían los ignores para almacenes de firma, perfiles y configuración
   privada de Google/Android/iOS.
 - `npm audit` deja de reportar los dos avisos moderados de Router 6. Conserva
-  un aviso upstream `high` del modo RSC, no utilizado por esta SPA, cuya
-  versión corregida 8.3.0 todavía no está publicada.
+  un aviso upstream `high` de las APIs RSC inestables, no utilizadas por esta
+  SPA. (Corregido el 2026-08-06: aquí se afirmaba que la 8.3.0 no estaba
+  publicada; sí lo estaba, desde el 2026-07-22. Ver la corrección fechada más
+  arriba.)
 - Capacitor sincroniza los proyectos actuales e iOS compila para simulador
   con Xcode 26.6. Android queda sin recompilar en esta máquina por ausencia de
   Java Runtime; no se sustituye por una afirmación sin comprobar.
