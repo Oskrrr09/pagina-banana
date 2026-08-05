@@ -79,8 +79,16 @@ export function ProfilePage() {
         <Button
           variant="secondary"
           onClick={async () => {
+            // Se sale de la página ANTES de cerrar la sesión. Al revés,
+            // `signOut()` deja `session` a null mientras esta página sigue
+            // montada: el guardia de arriba dispara
+            // <Navigate to="/login?redirect=%2Fcuenta"> y gana la carrera, así
+            // que quien acaba de cerrar sesión aterriza en un formulario que
+            // le pide volver a entrar en la cuenta que acaba de dejar.
+            //
+            // `replace` además evita que el botón Atrás devuelva a /cuenta.
+            navigate('/', { replace: true })
             await signOut()
-            navigate('/')
           }}
         >
           Cerrar sesión
