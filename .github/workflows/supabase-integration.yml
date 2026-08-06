@@ -27,6 +27,14 @@ jobs:
         run: npm run supabase:reset
       - name: Ejecutar auth, RLS, Storage y cierre de sesión PWA
         run: npm run test:integration
+      # Segunda pasada con la confirmación de email ENCENDIDA. La conversión de
+      # una sesión anónima en cuenta permanente se comporta distinto según ese
+      # ajuste, y probar sólo la configuración por defecto dejaba el camino
+      # documentado —verificar el correo antes de poner contraseña— sin cubrir.
+      # El guion enciende la confirmación, levanta Supabase con ella y restaura
+      # `config.toml` pase lo que pase.
+      - name: Ejecutar la conversión con confirmación de email
+        run: npm run test:confirmacion
       - name: Estado de contenedores si falla
         if: failure()
         run: docker ps -a --filter label=com.supabase.cli.project=pagina-banana

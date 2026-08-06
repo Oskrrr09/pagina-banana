@@ -209,24 +209,36 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       // base sigue viendo la sesión como anónima y rechaza el alta de la ficha.
       const { data: actual } = await supabase.auth.getSession()
       if (esSesionAnonima(actual.session)) {
-        const { error: errorConversion } = await supabase.auth.updateUser({
-          email,
-          password,
-          data: { nombre },
-        })
-        if (errorConversion) {
-          return { error: errorConversion.message, needsEmailConfirmation: false }
+        // Orden de dos pasos, el que documenta Supabase: PRIMERO el email, y
+        // la contraseña sólo después de que ese email esté verificado. Se
+        // hacía en una sola llamada con los dos campos, que funciona cuando el
+        // proyecto tiene la confirmación desactivada y falla en cuanto no lo
+        // está. El orden correcto sirve para las dos configuraciones.
+        const { error: errorEmail } = await supabase.auth.updateUser({ email, data: { nombre } })
+        if (errorEmail) {
+          return { error: errorEmail.message, needsEmailConfirmation: false }
         }
 
+        // `is_anonymous` viaja dentro del access token: hasta que no se emite
+        // uno nuevo, la base sigue viendo la sesión como anónima y rechazaría
+        // el alta de la ficha.
         const { data: renovada, error: errorRefresco } = await supabase.auth.refreshSession()
         if (errorRefresco) {
           return { error: errorRefresco.message, needsEmailConfirmation: false }
         }
 
-        // Con "Confirm email" activo la cuenta sigue siendo anónima hasta que
-        // se valide el correo. No se crea la ficha: la base la rechazaría.
-        if (esSesionAnonima(renovada.session) || !renovada.session) {
+        // Quién decide si hace falta confirmar no es una constante nuestra ni
+        // una suposición sobre la configuración del proyecto: es lo que
+        // responde el servidor. Si tras refrescar la sesión sigue siendo
+        // anónima, el email está pendiente de verificación.
+        if (!renovada.session || esSesionAnonima(renovada.session)) {
           return { error: null, needsEmailConfirmation: true }
+        }
+
+        // Verificado. Ahora sí la contraseña, y sólo entonces la ficha.
+        const { error: errorPassword } = await supabase.auth.updateUser({ password })
+        if (errorPassword) {
+          return { error: errorPassword.message, needsEmailConfirmation: false }
         }
 
         await crearFicha(renovada.session.user.id, email, nombre)

@@ -68,6 +68,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // Conversión de sesión anónima en cuenta permanente con la confirmación
+      // de email ACTIVADA. Va en su propio proyecto porque necesita un
+      // Supabase levantado con otra configuración; lo prepara y lo restaura
+      // `scripts/test-supabase-confirmacion.mjs`.
+      name: 'confirmacion',
+      testDir: './tests/confirmacion',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Cierre de sesión offline contra el Supabase local. El orquestador de
       // integración compila primero con sus claves efímeras.
       name: 'pwa-auth',
