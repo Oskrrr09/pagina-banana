@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-01
+actualizado: 2026-08-06
 ---
 
 # Estado actual
@@ -12,14 +12,60 @@ actualizado: 2026-08-01
 > tiempo real con Supabase + panel de agentes** (Fase 1 desplegada el
 > 2026-07-30). No hay integración comercial real ni motor de pago.
 
+## Auditoría de seguridad en curso (2026-08-02 a 2026-08-06)
+
+Las PR [#33](https://github.com/luis-lop-nas/pagina-banana/pull/33) y
+[#34](https://github.com/luis-lop-nas/pagina-banana/pull/34) cierran la lectura
+anónima incondicional del chat y las escrituras directas sobre conversaciones,
+mensajes, agentes, clientes y reservas. El visitante usa ahora una sesión
+anónima firmada; propietario, autor, agente, estado y fechas sensibles los
+deduce el servidor mediante RPC.
+
+La fuente SQL se consolidó en `supabase/migrations/`, con la migración de
+estado seguro, el cierre incremental de privacidad/Storage y —desde el
+2026-08-05— los permisos de tabla explícitos. Una auditoría común por
+firma PostgreSQL exacta se ejecuta tras instalación limpia, actualización desde
+PR #33 y segunda aplicación idempotente. La suite local pasa con 159 pruebas
+Vitest entre esquema y unitarias, además de 296 E2E aprobadas, una
+omisión esperada del caso exclusivo de desarrollo y 6 E2E aisladas
+del panel de agentes. `revisar_descuento_educativo()` rechaza también estados
+`NULL` sin tocar la revisión.
+
+La primera ejecución real contra Supabase local destapó que las migraciones no
+concedían **ningún** permiso de tabla: se apoyaban en unas *default privileges*
+que no alcanzan a las tablas que crean, así que RLS no llegaba a evaluarse y
+`service_role` no podía dar de alta un agente. El arnés de PGlite lo ocultaba
+porque se concedía esos permisos a sí mismo. Corregido y vigilado por
+`tests/schema/permisos.test.ts`; ver
+[[04-problemas-pendientes#SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla]].
+
+La CLI, configuración y workflow de Supabase local ya están versionados y no
+usan secretos remotos. Las pruebas contra GoTrue, PostgREST y Storage reales
+pasan en CI desde el 2026-08-05, junto con el cierre de sesión PWA y la
+conversión de sesión anónima con confirmación de email.
+
+**El 2026-08-06 las cuatro migraciones se aplicaron en el proyecto real.**
+`supabase migration list` muestra los cuatro identificadores iguales en Local y
+Remote, y `db push --dry-run` responde `Remote database is up to date`. Una
+comprobación por API pública de sólo lectura confirma el efecto: el rol anónimo
+pasó de leer **36 filas de `visitantes`** —con nombre, email y teléfono— a no
+leer ninguna.
+
+Queda publicar el frontend. Hasta que la PR #35 se fusione, GitHub Pages sirve
+el frontend anterior, que escribe directamente en las tablas y ya no puede: **el
+chat de la web pública no funciona ahora mismo**. El resto de la tienda sí,
+porque no depende de Supabase. El detalle y el orden restante están en
+[[08-predespliegue-supabase]].
+
 ## Fase 2 — cuentas, reservas y panel con auth (2026-07-31)
 
-> [!check] Esquema aplicado y verificado el 2026-07-31
-> Oscar ejecutó `supabase/schema.sql` completo (las dos tandas). Se
+> [!check] Esquema de Fase 2 aplicado y verificado el 2026-07-31
+> Oscar ejecutó el esquema que existía entonces. Se
 > comprobó contra la base de datos real, vía la API REST, que existen las
 > tablas y columnas nuevas, que las funciones responden, y que un
 > anónimo **no** puede escribir como agente (`42501`), aprobar descuentos
-> ni borrar conversaciones. El bucket de justificantes es privado. Ver
+> ni borrar conversaciones. El bucket de justificantes es privado. Ese estado
+> es anterior a la migración segura de agosto, que aún no se ha aplicado. Ver
 > [[04-problemas-pendientes#CUENTAS-004 — Segunda tanda de SQL pendiente de ejecutar]].
 
 Todo lo de esta sección es **demostrativo, con cuentas ficticias**: no
@@ -65,8 +111,9 @@ Segunda mitad de la sesión de Fase 2, ya con el esquema aplicado:
 - **Cierre con valoración opcional.** Al cerrar, el agente elige entre
   cerrar sin más o pedir una valoración de 1 a 5 estrellas con
   observación. Si no la pide, el cliente solo ve que el chat se cerró.
-- **Borrado permanente** de conversaciones archivadas, con confirmación
-  previa. Reservado a agentes por RLS.
+- **Archivo sin borrado físico.** Cerrar saca la conversación de la bandeja y
+  conserva el historial. El esquema final retira el DELETE de la aplicación;
+  un borrado administrativo requeriría `service_role` fuera del navegador.
 - **El cliente puede volver a escribir sin recargar** cuando su
   conversación se cierra
   ([[02-decisiones#D-038 — El visitante puede abrir otra conversación sin recargar]]).
@@ -78,8 +125,8 @@ Segunda mitad de la sesión de Fase 2, ya con el esquema aplicado:
   orden que pidió Oscar, cada dirección puede copiarse de la otra, y el
   checkout se rellena solo con los datos de la cuenta.
 
-Pasos manuales que quedan por hacer en el panel de Supabase: dar de alta
-los agentes ficticios que falten y desactivar "Confirm email".
+Antes de aplicar la migración final hay que activar Anonymous sign-ins y
+validarla en el proyecto dedicado descrito en `tests/rls/README.md`.
 
 ## Aplicaciones — tienda nativa y panel instalable (2026-07-31)
 
@@ -104,6 +151,10 @@ Dos aplicaciones distintas, por públicos distintos. Ver
   —una demostración nunca debe servir contenido viejo—, assets con hash a
   caché primero, y Supabase **siempre** a la red. Sin conexión la app
   sigue navegando el catálogo y avisa con una barra.
+- `npm run test:pwa` valida el build real: control del service worker,
+  manifest, precache, ruta profunda offline y ausencia de respuestas Supabase
+  o rutas privadas en Cache Storage. El matching de assets usa el pathname de
+  la caché versionada para que una ruta profunda funcione también sin red.
 - El manifest **solo existe mientras se está en `/agente`**: se inyecta al
   entrar y se retira al salir, para que ninguna página pública de la
   tienda ofrezca instalar el panel interno. Cubierto por
@@ -134,25 +185,43 @@ Android (2026-08-01).**
 ## Referencia actual
 
 - Rama de producción: `main`.
-- Último merge relevante: PR
-  [#14](https://github.com/luis-lop-nas/pagina-banana/pull/14) —
-  "Corrige portada, guía de preparación y accesibilidad",
-  merge en `78c38894` el 2026-07-29. Rama en curso
-  `chore/release-candidate-cleanup` para limpieza de release
-  candidate y mantenimiento técnico (Node 24, `.tsbuildinfo`
-  ignorado, `.nvmrc`).
-- URL pública verificada el 2026-07-29:
-  <https://luis-lop-nas.github.io/pagina-banana/> (HTTP 200).
-- **Node.js 24** en ambos workflows (`e2e.yml` y `deploy.yml`)
-  desde 2026-07-29. `.nvmrc` en la raíz para alinear el entorno
-  local con CI.
-- **Estado de dependencias (2026-07-29)**: `npm audit` reporta 2
-  vulnerabilidades moderadas en `react-router@6.30.4` sin fix
-  dentro de la línea 6.x (requerirían migración mayor a React
-  Router 7, fuera de alcance). Ver
+- `main` y `origin/main`: `30b7957`, base multidioma a cinco idiomas. La
+  auditoría actual retiró la afirmación de cobertura completa: ver I18N-001.
+- Rama de consolidación: `fix/security-i18n-quality-hardening`, creada desde
+  `main` e iniciada con los 14 commits de seguridad después de corregir el
+  estado nulo y el informe JSON RLS.
+- PR #33 y PR #34: abiertas en borrador, encadenadas y sin conflictos. No han
+  desplegado Pages.
+- URL pública conocida:
+  <https://luis-lop-nas.github.io/pagina-banana/>. Todavía representa `main`,
+  no la migración de seguridad.
+- **Node.js 24** en el workflow unificado `ci.yml`; `.nvmrc` alinea local y CI.
+- **Estado de dependencias (actualizado el 2026-08-06)**: React Router se migró
+  de 6.30.4 a 7.18.2 y se probó en cuatro motores. Esa versión cierra los dos
+  avisos que motivaron la migración. `npm audit` conserva dos entradas `high`
+  por un único aviso del modo RSC (`GHSA-qwww-vcr4-c8h2`), que sólo alcanza a
+  las APIs RSC inestables: esta SPA declarativa con `BrowserRouter` no tiene
+  servidor de React Router, ni acciones RSC, ni React Server Components, así
+  que el camino vulnerable no es aplicable. La versión corregida
+  `react-router@8.3.0` **sí existe** desde el 2026-07-22 —lo que se quedó en
+  7.18.2 es `react-router-dom`, retirado en la 8—, pero adoptarla exige Node
+  ≥ 22.22.0, React/React DOM ≥ 19.2.7 y dejar de usar `react-router-dom`, con
+  React 18 y Vite 6 en el proyecto. Va como tarea propia:
+  [[03-roadmap#Migración a React Router 8]] y
   [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
-- **axe** cubre 8 rutas más la guía interactiva, con `color-contrast`
-  y `region` activos y sin excepciones globales.
+- La auditoría de secretos no encuentra claves privadas, `service_role`,
+  JWT extensos ni ficheros de sesión versionados. `.env`, credenciales de
+  firma y configuración privada nativa quedan ignorados; solo se versionan
+  `.env.example` y `.env.test`, ambos sin secretos.
+- El chat ya no recopila `user_agent`; el bucket educativo impone 5 MB y
+  PDF/JPEG/PNG en servidor. Ver [[07-modelo-seguridad]].
+- **axe** cubre 14 estados de ruta, la guía interactiva, el selector de
+  modelos, el menú móvil y el chat, con `color-contrast` y `region` activos y
+  sin excepciones globales. Un barrido adicional exige exactamente un
+  `<main>` en 19 rutas públicas.
+- **Navegadores**: la suite completa queda en Chromium; 5 flujos críticos
+  pasan como smoke en Chromium, Firefox, WebKit de escritorio y Safari móvil
+  (20/20). El móvil Chromium conserva sus recorridos específicos.
 - Artefacto `tsconfig.tsbuildinfo` retirado del repositorio;
   `*.tsbuildinfo` en `.gitignore`.
 - Ya existían dos carpetas locales no versionadas: `.agents/` y
@@ -170,12 +239,12 @@ Android (2026-08-01).**
   demostración y se sustituirán por reseñas reales cuando Banana Computer las
   autorice.
 - Catálogo desarrollado para cinco familias, con **21 modelos** totales
-  contados sobre `src/data/products.ts`: iPhone (4: 17 Pro Max, 17 Pro,
+  contados sobre `src/data/products/`: iPhone (4: 17 Pro Max, 17 Pro,
   Air, 17), Mac (8: MacBook Neo, MacBook Air M4, MacBook Air M5,
   MacBook Pro M4, MacBook Pro M5, iMac 24" M4, Mac Studio, Mac mini M4),
   iPad (4: Pro, Air, mini, A16), Apple Watch (3: Ultra 3, Series 11,
-  SE 3) y AirPods (2: Pro 3, Max). Accesorios no tiene catálogo propio:
-  los cinco tiles de la home enlazan a `/buscar?q=<término>`.
+  SE 3) y AirPods (2: Pro 3, Max). Accesorios tiene catálogo y fichas propias
+  bajo `/accesorios` y `/accesorios/:slug`.
 - Cada modelo cuenta con variantes de color/capacidad, imágenes locales
   en WebP, precios y disponibilidad de ejemplo.
 - Las familias iPhone y Mac presentan un selector horizontal de modelos y una
@@ -206,14 +275,13 @@ Android (2026-08-01).**
   ficha del visitante y pestaña de descuentos educativos. Suscripción
   realtime a `mensajes`, `conversaciones` y `visitantes` sin recargar.
 - **Backend Supabase** en región EU (Postgres 17 estándar).
-  Esquema versionado en `supabase/schema.sql`: `visitantes`,
+  Esquema final versionado en `supabase/migrations/`: `visitantes`,
   `conversaciones`, `mensajes`, `agentes`, `clientes`, `pedidos` y
   `reservas`, todas con RLS activa. Escribir como agente, asignarse
-  conversaciones, aprobar descuentos y borrar exigen `auth.uid()`
-  presente en `agentes`; la **lectura** de las tres tablas del chat
-  sigue abierta al rol `anon` porque el widget del visitante no tiene
-  login. Ver [[02-decisiones#D-023 — Backend en Supabase (Fase 1)]] y
-  [[04-problemas-pendientes#CHAT-001 — /agente accesible por URL sin autenticación]].
+  conversaciones y aprobar descuentos exigen `auth.uid()` presente en
+  `agentes`; el visitante solo ve las filas ligadas a su sesión anónima. No
+  hay DELETE de conversaciones desde la aplicación. Este es el estado del
+  código de la rama; desplegarlo sigue bloqueado por SEC-RLS-001.
 - Las tarjetas de producto reservan las mismas áreas para imagen, nombre y
   descripción, de modo que mantienen una altura alineada dentro de cada rejilla.
 - El carrusel de tiendas y el mega-menú de escritorio mantienen una altura fija
@@ -279,11 +347,10 @@ Android (2026-08-01).**
   pathname empieza por `/checkout/`. El panel gana `aria-modal`,
   `aria-haspopup`, foco al botón de cerrar al abrir y retorno de foco al
   botón flotante al cerrar.
-- **Suite E2E con Playwright**: `playwright.config.ts` + `tests/e2e/`
-  (home, checkout, search) con 9 pruebas iniciales. Scripts
-  `test:e2e`/`test:e2e:ui`/`test:e2e:headed` en `package.json`. Workflow
-  `.github/workflows/e2e.yml` ejecuta build + install + tests en cada push
-  y PR sobre `main` y sube el reporte HTML como artefacto si falla.
+- **Suite E2E con Playwright**: nació con 9 pruebas de home, checkout y
+  búsqueda; hoy reúne 265 casos descubiertos (264 aprobados y 1 omitido en la
+  ejecución del 2026-08-04). Los scripts viven en `package.json` y el workflow
+  unificado `.github/workflows/ci.yml` ejecuta build + navegador + pruebas.
 
 ## Cambios recientes (rama `fix/checkout-hooks-docs-e2e`)
 
@@ -353,9 +420,10 @@ Android (2026-08-01).**
 - Aviso al cliente cuando su descuento educativo se resuelve o cuando le
   toca el turno en una reserva: el estado cambia en la base de datos,
   pero no se le notifica por ningún canal.
-- Catálogo desarrollado para accesorios (siguen enlazando al buscador con
-  un término que puede no tener resultados aún).
-- Tests unitarios ni lint automáticos (solo E2E con Playwright).
+- Catálogo comercial real de accesorios: existe un catálogo demostrativo con
+  fotografías y compatibilidad, pero no stock ni compra real.
+- Validación autenticada contra Supabase real: el arnés existe, pero sigue sin
+  proyecto dedicado y sus 27 casos se omiten.
 
 ## Stack efectivo
 
@@ -364,14 +432,15 @@ Las versiones instaladas desde `package-lock.json` durante la auditoría fueron:
 | Pieza | Versión |
 | --- | --- |
 | React / React DOM | 18.3.1 |
-| React Router DOM | 6.30.4 |
+| React Router DOM | 7.18.2 |
 | Motion | 11.18.2 |
 | Vite | 6.4.3 |
 | TypeScript | 5.9.3 |
 | Tailwind CSS / plugin de Vite | 4.3.3 |
 
-El workflow de GitHub Actions usa Node 20, ejecuta `npm ci` y `npm run build`, y
-publica `dist/` en GitHub Pages en cada push a `main`.
+El workflow unificado usa Node 24 y encadena Prettier, tipos, lint,
+Vitest/esquema, build, E2E, RLS y Pages. Solo publica `dist/` en pushes a `main`, y debe
+bloquear el despliegue si falta la validación RLS dedicada.
 
 ### Historial de despliegues verificados
 

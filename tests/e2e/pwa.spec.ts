@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
 // Aplicación instalable (PWA) del panel de agentes.
 //
@@ -24,10 +24,7 @@ test.describe('identidad de app del panel', () => {
       'href',
       '/pagina-banana/icons/agente-apple-touch-180.png',
     )
-    await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
-      'content',
-      'Banana Agente',
-    )
+    await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content', 'Banana Agente')
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#ffce1f')
   })
 
@@ -95,7 +92,22 @@ test.describe('manifest', () => {
   })
 })
 
+// El service worker solo se registra en producción (`src/lib/pwa.ts` mira
+// `import.meta.env.PROD`), así que la comprobación depende de contra qué se
+// esté sirviendo la suite.
+const CONTRA_BUILD = Boolean(process.env.E2E_CONTRA_BUILD)
+
+async function waitForServiceWorker(page: Page) {
+  await page.goto('./agente')
+  await page.evaluate(async () => {
+    if (!('serviceWorker' in navigator)) return
+    await navigator.serviceWorker.ready
+  })
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker?.controller))).toBe(true)
+}
+
 test('en desarrollo no se registra ningún service worker', async ({ page }) => {
+  test.skip(CONTRA_BUILD, 'Se está sirviendo el build: ahí el SW sí debe registrarse.')
   // Regresión deliberada. Un service worker cacheando entre recargas pelearía
   // con el HMR de Vite y, sobre todo, con esta misma suite: es el mismo tipo
   // de fuga que hizo que las pruebas escribieran en el Supabase real (QA-002).
@@ -105,4 +117,76 @@ test('en desarrollo no se registra ningún service worker', async ({ page }) => 
     return (await navigator.serviceWorker.getRegistrations()).length
   })
   expect(registros).toBe(0)
+})
+
+test('sobre el build sí se registra el service worker y precachea', async ({ page }) => {
+  test.skip(!CONTRA_BUILD, 'Necesita el artefacto compilado (E2E_CONTRA_BUILD=1).')
+  // Esto es parte de PWA-001: hasta ahora el service worker no lo cubría
+  // ninguna prueba porque la suite corría contra el servidor de desarrollo,
+  // donde no se registra. Al pasar el CI a probar el build, se puede.
+  await page.goto('./')
+  const activo = await page.evaluate(async () => {
+    if (!('serviceWorker' in navigator)) return false
+    const reg = await navigator.serviceWorker.ready
+    return Boolean(reg.active)
+  })
+  expect(activo, 'el service worker debe tomar el control sobre el build').toBe(true)
+
+  const cacheados = await page.evaluate(async () => {
+    const nombres = await caches.keys()
+    if (nombres.length === 0) return 0
+    const cache = await caches.open(nombres[0])
+    return (await cache.keys()).length
+  })
+  expect(cacheados, 'debe haber precache').toBeGreaterThan(0)
+})
+
+test('una ruta profunda arranca sin conexión desde el build', async ({ page, context }) => {
+  test.skip(!CONTRA_BUILD, 'Necesita el artefacto compilado (E2E_CONTRA_BUILD=1).')
+  await waitForServiceWorker(page)
+
+  await context.setOffline(true)
+  try {
+    await page.goto('./agente/login')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'es')
+    await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', MANIFEST)
+  } finally {
+    await context.setOffline(false)
+  }
+})
+
+test('Supabase y las rutas privadas no quedan en Cache Storage', async ({ page }) => {
+  test.skip(!CONTRA_BUILD, 'Necesita el artefacto compilado (E2E_CONTRA_BUILD=1).')
+  await waitForServiceWorker(page)
+
+  const supabaseUrl = 'https://pwa-test.supabase.co/rest/v1/clientes'
+  await page.route(`${supabaseUrl}*`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify([{ nombre: 'Dato privado ficticio' }]),
+    })
+  })
+  await page.evaluate(async (url) => {
+    await fetch(url)
+  }, supabaseUrl)
+
+  // Visitar pantallas sensibles no debe crear entradas de navegación con su
+  // URL: el SW solo actualiza la clave del shell (`BASE`). Tras cerrar sesión,
+  // el SDK retira el token y no queda una respuesta privada recuperable de la
+  // caché cuando el equipo pierde la red.
+  await page.goto('./cuenta')
+  await page.goto('./agente')
+  const cachedUrls = await page.evaluate(async () => {
+    const urls: string[] = []
+    for (const name of await caches.keys()) {
+      const cache = await caches.open(name)
+      urls.push(...(await cache.keys()).map((request) => request.url))
+    }
+    return urls
+  })
+
+  expect(cachedUrls.some((url) => url.includes('supabase.co'))).toBe(false)
+  expect(cachedUrls.some((url) => /\/pagina-banana\/(cuenta|agente)(?:[/?#]|$)/.test(url))).toBe(false)
 })

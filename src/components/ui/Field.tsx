@@ -20,18 +20,12 @@ export function Field({
   hint?: string
   full?: boolean
   /** Recibe los atributos que hay que aplicar al input/select/textarea. */
-  children: (props: {
-    id: string
-    'aria-invalid'?: true
-    'aria-describedby'?: string
-  }) => ReactNode
+  children: (props: { id: string; 'aria-invalid'?: true; 'aria-describedby'?: string }) => ReactNode
 }) {
   const id = useId()
   const errorId = `${id}-error`
   const hintId = `${id}-hint`
-  const describedBy = [hint ? hintId : null, error ? errorId : null]
-    .filter(Boolean)
-    .join(' ')
+  const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ')
 
   return (
     <div className={full ? 'sm:col-span-2' : undefined}>

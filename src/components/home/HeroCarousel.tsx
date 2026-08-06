@@ -153,9 +153,7 @@ export function HeroCarousel() {
                 <Link
                   to={slide.to}
                   className={`inline-flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition-colors ${
-                    light
-                      ? 'border-white/40 text-white hover:bg-white/10'
-                      : 'border-ink/25 text-ink hover:bg-ink/5'
+                    light ? 'border-white/40 text-white hover:bg-white/10' : 'border-ink/25 text-ink hover:bg-ink/5'
                   }`}
                 >
                   {t('common.moreInfoShort')}

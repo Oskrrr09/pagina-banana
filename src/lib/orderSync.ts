@@ -11,10 +11,7 @@ import type { DemoOrder } from './demoOrderRepository'
 // Si el espejo falla, NO se rompe la compra: el pedido demostrativo ya
 // existe y el usuario ve su confirmación igual. Solo se registra el error.
 
-export async function mirrorOrderToSupabase(
-  clienteId: string,
-  order: DemoOrder,
-): Promise<{ error: string | null }> {
+export async function mirrorOrderToSupabase(clienteId: string, order: DemoOrder): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase no está configurado.' }
 
   const row = {
@@ -47,9 +44,7 @@ export async function mirrorOrderToSupabase(
   return { error: null }
 }
 
-export async function listMyOrders(
-  clienteId: string,
-): Promise<{ orders: DbOrder[]; error: string | null }> {
+export async function listMyOrders(clienteId: string): Promise<{ orders: DbOrder[]; error: string | null }> {
   if (!supabase) return { orders: [], error: 'Supabase no está configurado.' }
   const { data, error } = await supabase
     .from('pedidos')

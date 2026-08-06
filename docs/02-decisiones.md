@@ -1,6 +1,6 @@
 ---
 tipo: decisiones
-actualizado: 2026-07-31
+actualizado: 2026-08-06
 ---
 
 # Decisiones
@@ -722,6 +722,334 @@ No atribuye motivaciones que el repositorio no documenta.
   cierra sin leerlo. Se puede descartar y ofrece volver al castellano.
 - Es coherente con lo que ya se hace con los precios, marcados como
   demostrativos desde el principio.
+
+## D-049 — El visitante anónimo tiene identidad verificable y escribe por RPC
+
+- Fecha: 2026-08-02.
+- Estado: vigente. Sustituye el resto de acceso abierto que quedaba de
+  [[#D-025 — Fase 1 sin autenticación de agentes]].
+- Decisión: el chat no exige crear una cuenta, pero obtiene una sesión anónima
+  de Supabase. Las políticas relacionan cada fila con `auth.uid()`; el UUID de
+  `localStorage` solo recuerda la conversación y no autoriza nada.
+- Escritura: visitantes, agentes y clientes no insertan ni actualizan
+  directamente las columnas sensibles. Apertura, mensajes, valoración,
+  asignación, cierre, reservas y descuento educativo pasan por RPC que deriva
+  el propietario, autor, agente, estado y fechas desde la sesión.
+- Motivo: RLS filtra filas, no columnas. Una política de `UPDATE` correcta en
+  la fila no impide que el cliente cambie el descuento, el agente se ascienda
+  o alguien altere la fecha que fija el orden de una reserva.
+- Evidencia:
+  `supabase/migrations/20260802000100_estado_seguro.sql`,
+  `tests/schema/politicas.test.ts` y `tests/rls/politicas.spec.ts`.
+- Consecuencia: Anonymous sign-ins debe estar activado. El frontend anterior y
+  el esquema final no son compatibles entre sí; se despliegan en la misma
+  ventana.
+
+## D-050 — Una migración ejecutable y despliegue bloqueado por calidad
+
+- Fecha: 2026-08-02.
+- Estado: vigente.
+- Decisión: `supabase/migrations/` es la única fuente SQL ejecutable.
+  `supabase/schema.sql` queda como puntero, no como segunda definición. La
+  migración se prueba tanto desde cero como sobre el estado exacto anterior.
+- CI: un solo workflow encadena tipos, ESLint, Vitest/esquema, build, E2E y
+  RLS. Pages solo se publica desde `main` después de superar toda la cadena.
+- Validación RLS: PGlite comprueba PostgreSQL y las políticas en cada cambio;
+  GoTrue, PostgREST y Storage requieren además un proyecto Supabase dedicado.
+  Un push a `main` sin sus tres secretos debe fallar en vez de publicar.
+- Motivo: antes `schema.sql` podía reabrir políticas que las migraciones
+  cerraban y el workflow de Pages publicaba en paralelo antes de conocer el
+  resultado de los E2E.
+- Evidencia: `.github/workflows/ci.yml`, `tests/schema/` y
+  `tests/rls/README.md`.
+
+## D-051 — El supervisor gestiona asignaciones sin suplantar respuestas
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: la interfaz refleja las capacidades del servidor. Un supervisor
+  puede liberar una asignación ajena y cerrar o reabrir conversaciones de otro
+  agente; la acción se llama explícitamente **«Liberar asignación»**. Un agente
+  normal solo gestiona las suyas.
+- Autoría: `responder_como_agente()` conserva la restricción de que la
+  conversación esté libre o asignada a la propia sesión. Ser supervisor no
+  autoriza a firmar una respuesta dentro de la asignación de otra persona. Para
+  responder, debe liberarla y asignársela de forma explícita.
+- Historial: el panel no ofrece borrado. Cerrar archiva y reabrir recupera; un
+  borrado físico sigue reservado a administración con `service_role` fuera del
+  navegador.
+- Motivo: gestión y autoría son capacidades distintas. Permitir supervisión no
+  debe atribuir a una persona mensajes escritos dentro del caso de otra.
+- Evidencia: `src/pages/AgentPage.tsx`,
+  `tests/e2e-agent/agent-panel.spec.ts` y las pruebas de conversación en
+  `tests/schema/politicas.test.ts` y `tests/rls/politicas.spec.ts`.
+
+## D-052 — El informe RLS es JSON puro y conserva el código de Playwright
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: el job RLS ejecuta directamente
+  `npx playwright test --project=rls --reporter=json > rls.json`, captura `$?`
+  antes de reactivar `set -e` y entrega ambos datos al verificador. No pasa por
+  `npm run`, porque sus líneas informativas pueden contaminar la salida
+  estándar que debe contener exclusivamente JSON.
+- Validación: antes de contar resultados, el verificador exige que el archivo
+  exista, no esté vacío y sea JSON válido. Un informe ausente, truncado,
+  malformado o precedido por el encabezado de npm bloquea la verificación con
+  un mensaje explícito.
+- Contrato SQL relacionado: los RPC que no admiten `NULL` deben comprobarlo de
+  forma explícita antes de escribir; `NULL NOT IN (...)` produce `NULL`, no
+  `TRUE`. `revisar_descuento_educativo()` aplica esta regla y conserva intactos
+  estado, nota, fecha y revisor cuando rechaza la llamada.
+- Evidencia: `.github/workflows/ci.yml`, `scripts/lib/verificar-rls.mjs`,
+  `tests/unit/verificar-rls.test.ts`,
+  `supabase/migrations/20260802000100_estado_seguro.sql` y
+  `tests/schema/politicas.test.ts`.
+
+## D-053 — El chat no recopila user-agent y Storage impone sus propios límites
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: `abrir_conversacion()` conserva el parámetro `p_user_agent` para
+  no romper clientes anteriores, pero lo ignora, escribe `NULL` y la migración
+  limpia los valores históricos. El dato no participa en ninguna función del
+  prototipo y no justifica ampliar la huella de identificación del visitante.
+- Storage: el bucket privado `descuentos-educativos` limita en servidor los
+  objetos a 5 MB y a PDF, JPEG o PNG. Las escrituras solo admiten el nombre
+  canónico `<auth.uid()>/justificante.<ext>`; la URL firmada del agente dura
+  60 segundos.
+- Evidencia: migración
+  `20260804000200_minimiza_chat_y_limita_storage.sql`, pruebas de instalación y
+  políticas en `tests/schema/`, y el caso Storage de `tests/rls/`.
+- Consecuencia de datos: al aplicar la migración se eliminan únicamente los
+  valores históricos de `visitantes.user_agent`; no se borra ninguna ficha,
+  conversación ni mensaje. La columna se conserva para compatibilidad y una
+  reversión operativa simple.
+
+## D-054 — La integración RLS usa Supabase local y datos efímeros por API
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: la verificación de GoTrue, PostgREST y Storage en CI levanta
+  Supabase local con Docker. No depende de secretos ni de un proyecto alojado.
+- Datos: `seed.sql` no inserta usuarios de Auth a mano. La suite crea por API
+  dos visitantes, dos clientes, agentes y solicitudes ficticias con marcas
+  únicas, obtiene JWT reales y limpia el escenario. Sembrar `auth.users`
+  directamente evitaría probar precisamente GoTrue.
+- Ejecución: `test:integration` consulta `supabase status -o json`, pasa las
+  claves locales al proceso hijo sin imprimirlas y corta antes con un mensaje
+  claro si Docker no está disponible.
+- CI: `ci.yml` llama al workflow reutilizable
+  `supabase-integration.yml`; Pages continúa dependiendo de ese trabajo.
+- Evidencia: `supabase/config.toml`, `supabase/seed.sql`,
+  `scripts/test-supabase-local.mjs` y el workflow citado.
+
+## D-055 — El panel interno permanece en español con `lang` por ruta
+
+- Fecha: 2026-08-04.
+- Estado: vigente.
+- Decisión: el panel de agentes no se traduce en esta fase. `IdiomaProvider`
+  fuerza `document.documentElement.lang = 'es'` en `/agente` y
+  `/agente/login`; al volver a una ruta pública reaplica la preferencia del
+  visitante.
+- Motivo: es una herramienta interna de Canarias y traducir sus más de mil
+  líneas junto con la tienda pública ampliaría el alcance sin beneficio
+  demostrable. Mantener `lang` coherente evita que un lector de pantalla use
+  voz alemana, francesa, inglesa o italiana sobre textos españoles.
+- Evidencia: `tests/e2e/idiomas.spec.ts` entra desde alemán, comprueba español
+  en el panel y alemán de nuevo al salir.
+
+## D-056 — Los permisos de tabla se conceden en la migración, no se heredan
+
+- Fecha: 2026-08-05.
+- Estado: vigente.
+- Decisión: `supabase/migrations/20260805000300_permisos_de_tabla.sql` concede
+  explícitamente cada permiso de tabla a `anon`, `authenticated` y
+  `service_role`. Ninguna tabla depende ya de las *default privileges* del
+  proyecto.
+- Motivo: las migraciones anteriores no concedían ni un GRANT. Se apoyaban, sin
+  decirlo, en las default privileges que Supabase deja preparadas en `public`;
+  esas defaults las fijó otro rol antes y **no alcanzan a las tablas que crea
+  la migración**, así que nacían sin permisos para nadie. RLS filtra filas
+  *después* de que exista el permiso: sin GRANT no se evaluaba ninguna política
+  y PostgreSQL cortaba antes con «permission denied for table …».
+  `service_role` salta RLS por BYPASSRLS, pero no salta los GRANT, de ahí que
+  el alta administrativa de un agente fallara.
+- Consecuencia buscada: cada línea del fichero es el reflejo de una política.
+  Donde el esquema dice «NO hay INSERT directo», aquí no hay GRANT — la
+  operación se corta en la base y deja de depender de que nadie escriba la
+  política por descuido. Lo que no aparece pasa por un RPC `security definer`,
+  que se ejecuta con los permisos de su propietario.
+- Evidencia: `tests/schema/permisos.test.ts` comprueba el cuadro tabla por
+  tabla, incluido lo que **no** debe poder hacerse y que `PUBLIC` no recibe
+  nada.
+
+## D-057 — El arnés de PGlite deja de concederse permisos a sí mismo
+
+- Fecha: 2026-08-05.
+- Estado: vigente. Reemplaza el supuesto que traía `tests/schema/andamio.ts`.
+- Decisión: el andamio prepara los roles (`anon`, `authenticated` y ahora
+  `service_role`) pero **no concede nada sobre `public`**. Los permisos los
+  concede la migración, que es lo que se despliega.
+- Motivo: el andamio ejecutaba `alter default privileges … grant …` antes de
+  aplicar las migraciones, con el argumento de que «Supabase los concede por
+  defecto». Al hacerlo respondía que las políticas funcionaban mientras
+  Supabase local caía con permisos denegados: 17 de las 27 pruebas RLS en rojo
+  con el arnés en verde. Un arnés que se concede lo que va a medir no mide
+  nada.
+- Consecuencia: `tests/schema/politicas.test.ts` usa el mismo andamio en vez de
+  su copia, para que no vuelvan a divergir dos supuestos.
+- Evidencia: las 125 pruebas de esquema pasan sin que el andamio conceda ningún
+  permiso sobre `public`.
+
+## D-058 — Se permanece en React Router 7.18.2 en esta PR, con 8.3.0 ya disponible
+
+- Fecha: 2026-08-05. **Corregida el 2026-08-06.**
+- Estado: vigente, con la corrección aplicada.
+- Corrección: la primera redacción afirmaba que «la 8.3.0 corregida sigue sin
+  publicarse». **Es falso.** `react-router@8.3.0` se publicó el 2026-07-22 y es
+  la versión que corrige `GHSA-qwww-vcr4-c8h2`. El error vino de consultar
+  `npm view react-router-dom version`, que responde `7.18.2` porque React
+  Router 8 **retira `react-router-dom`**: el paquete que sigue publicándose es
+  `react-router`. La decisión de no actualizar en esta PR no cambia, pero el
+  motivo sí: no es que no exista arreglo, es que adoptarlo no cabe aquí.
+- Decisión: no se toca ninguna dependencia en esta PR. `npm audit` seguirá
+  informando de dos avisos `high`, que son el mismo aviso contado en
+  `react-router` y en su dependiente `react-router-dom`.
+- Motivo del aviso: `GHSA-qwww-vcr4-c8h2` afecta al rango `>=7.12.0 <8.3.0` y
+  describe un *bypass* de CSRF que sólo alcanza a las **APIs RSC inestables**:
+  acciones de servidor ejecutadas antes de devolver un 400.
+- Por qué no aplica aquí: esta SPA es declarativa. No tiene servidor de React
+  Router, ni acciones RSC, ni React Server Components, ni router de datos.
+  Importa `BrowserRouter`, `Routes`, `Route`, `Link`, `Navigate`, `Outlet`,
+  `useLocation`, `useNavigate`, `useParams` y `useSearchParams`, y nada más. El
+  camino vulnerable no existe en este código.
+- Por qué no se actualiza en esta PR: React Router 8 exige **Node ≥ 22.22.0** y
+  **React y React DOM ≥ 19.2.7**, y retira `react-router-dom`. El proyecto va
+  con React 18.3.1, Vite 6 e importa desde `react-router-dom` en toda la base
+  de código. No es un cambio de versión: es una migración de framework que
+  necesita su propia suite completa, y meterla en una PR de *hardening* de
+  seguridad, i18n y calidad mezclaría dos riesgos distintos.
+- Alternativa descartada: `npm audit fix --force` propone bajar a 7.11.0, que
+  **no** deja el árbol limpio — cambia este aviso por `GHSA-2j2x-hqr9-3h42`
+  (redirección abierta mediante URL relativa al protocolo, rango
+  `7.0.0-pre.0 - 7.11.0`), también `high`. Ninguna versión 7.x está sin aviso.
+- Seguimiento: [[03-roadmap#Migración a React Router 8]] y
+  [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
+
+## D-059 — Una sesión anónima del chat no es una sesión de cliente
+
+- Fecha: 2026-08-06.
+- Estado: vigente.
+- Contexto: `signInAnonymously()` no crea un rol aparte. Supabase le da a la
+  sesión anónima el **mismo** rol PostgreSQL que a una cuenta de verdad,
+  `authenticated`, y la única diferencia es el reclamo `is_anonymous: true` del
+  JWT. Toda política escrita `to authenticated` alcanzaba por tanto también a
+  quien sólo había abierto el widget del chat.
+- Decisión: la permanencia de la cuenta es una condición explícita, escrita en
+  la base y en el frontend. `public.es_usuario_permanente()` la resuelve leyendo
+  el reclamo, y `CustomerAuthProvider` publica `session = null` mientras la
+  sesión sea anónima.
+- Dónde y por qué de cada forma:
+  - **Políticas RESTRICTIVAS** en `clientes`, `pedidos` y `reservas`. Las
+    políticas normales son permisivas y se combinan con OR: añadir la condición
+    sólo a las existentes dejaría que una política nueva volviera a conceder el
+    acceso por su cuenta. Una restrictiva se combina con AND sobre todas.
+  - **Condición incorporada** en las políticas del bucket educativo. Una
+    restrictiva sobre `storage.objects` alcanzaría a todos los buckets del
+    proyecto, incluidos los que no son de esta aplicación.
+  - **Comprobación dentro de cada RPC** de cliente. Son `security definer`: se
+    ejecutan con los permisos de su propietario y RLS no los filtra.
+- El chat sigue siendo anónimo a propósito: `abrir_conversacion()`,
+  `enviar_mensaje_visitante()` y `enviar_valoracion()` no llevan la condición.
+- Evidencia: `tests/schema/anonimos.test.ts` (PostgreSQL real, 18 casos, uno de
+  ellos añade una política permisiva abierta y comprueba que la restrictiva
+  sigue cortando), seis casos de `tests/rls/politicas.spec.ts` con sesiones
+  anónimas de GoTrue y `tests/integration/chat-anonimo.spec.ts` con la
+  aplicación entera montada.
+
+## D-060 — El registro convierte la sesión anónima, no la reemplaza
+
+- Fecha: 2026-08-06.
+- Estado: vigente.
+- Decisión: cuando el visitante ya tiene sesión anónima del chat y se registra,
+  `signUp()` **convierte esa misma cuenta** en permanente mediante
+  `updateUser({ email, password })` seguido de `refreshSession()`. No se cierra
+  la sesión anónima para crear otra.
+- Motivo: `vincular_mi_visitante_a_cliente()` enlaza la ficha de visitante con
+  la de cliente **por el mismo `auth.uid()`**. Cerrar la sesión anónima daría un
+  uid distinto, dejaría la conversación huérfana y el visitante perdería el hilo
+  que acababa de escribir con un agente. El esquema está construido para la
+  conversión; la alternativa obligaría a reescribirlo o a aceptar esa pérdida.
+- Por qué se decide de forma explícita y no se deja a `signUp()`: con una sesión
+  anónima abierta, el comportamiento de `signUp()` depende de la configuración
+  de GoTrue —puede convertir la cuenta o crear otra—, y de eso depende si el
+  visitante conserva su chat. Un detalle así no puede quedar implícito.
+- Detalle que costó encontrar: `is_anonymous` viaja **dentro del access token**.
+  Sin `refreshSession()` después de convertir, la base sigue viendo la sesión
+  como anónima y rechaza el alta de la ficha, aunque en `auth.users` ya sea
+  permanente.
+- **Corrección del 2026-08-06 — el orden de los dos pasos.** La primera versión
+  hacía `updateUser({ email, password })` en una sola llamada. Eso funciona
+  cuando el proyecto tiene la confirmación de email desactivada y falla en
+  cuanto no lo está: Supabase no acepta la contraseña hasta que el email esté
+  verificado. Ahora se sigue el orden documentado —primero el email, la
+  contraseña sólo después—, que es correcto en las dos configuraciones **a
+  nivel de API**. Que la interfaz sepa terminar el registro es otra cosa, y con
+  Confirm Email activado no sabe: ver la limitación de más abajo.
+- Y quién decide si hace falta confirmar **no es una suposición nuestra**: es lo
+  que responde el servidor. Si tras `refreshSession()` la sesión sigue siendo
+  anónima, el email está pendiente y se devuelve `needsEmailConfirmation` sin
+  crear la ficha. No se lee ningún ajuste de configuración ni se codifica un
+  camino según el entorno.
+- Se conserva el camino rápido —conversión completa en una visita— porque es lo
+  que ocurre cuando la confirmación está desactivada, pero como **consecuencia**
+  de lo que responde el servidor, no como una rama aparte.
+- **Limitación, y es bloqueante para activar Confirm Email**: con la
+  confirmación activada el recorrido no se puede terminar desde el navegador.
+  `signUp()` añade el email y devuelve `needsEmailConfirmation` antes de haber
+  podido fijar la contraseña; `RegisterPage` dice «revisa tu correo y luego
+  inicia sesión», pero no hay contraseña con la que iniciar sesión ni pantalla
+  donde establecerla al volver. La cuenta queda verificada y sin contraseña.
+  Por eso **Confirm Email debe permanecer desactivado en este despliegue**.
+- Alcance de las pruebas: `tests/confirmacion/conversion.spec.ts` valida el
+  procedimiento de backend y las garantías de seguridad, no el recorrido
+  completo en el navegador. Soportarlo entero es tarea aparte; ver
+  [[03-roadmap#5.2 Registro con Confirm Email activado]] y
+  [[08-predespliegue-supabase]].
+- Evidencia: el caso «convertir la sesión anónima en cuenta permanente habilita
+  los recorridos de cliente» de `tests/rls/politicas.spec.ts` (confirmación
+  desactivada) y la suite `tests/confirmacion/conversion.spec.ts` con la
+  confirmación **activada**, que recorre los siete pasos documentados leyendo el
+  enlace del buzón local, más email ocupado, contraseña rechazada, token no
+  válido o ya consumido y refresco fallido.
+
+## D-061 — La base se migra antes que el frontend, y los anónimos al final
+
+- Fecha: 2026-08-06.
+- Estado: vigente, en ejecución.
+- Decisión: el despliegue va en tres tiempos: **primero las migraciones**,
+  después el frontend, y **los inicios de sesión anónimos al final**.
+- Motivo del primer tiempo: la base estaba exponiendo 36 fichas de visitante
+  —nombre, email y teléfono— a cualquiera con la clave publicable, que viaja en
+  el bundle por diseño. Esperar a tener el frontend listo para cerrar eso habría
+  alargado la exposición sin ganar nada.
+- Coste aceptado a cambio: entre la migración y la publicación del frontend, el
+  chat de la web pública **no funciona**. El frontend anterior escribe
+  directamente en las tablas y el esquema nuevo lo rechaza. Es una degradación
+  conocida, acotada y reversible publicando; el resto de la tienda no depende de
+  Supabase y sigue igual.
+- Motivo del tercer tiempo: activar los anónimos antes de publicar no aporta
+  nada —el frontend viejo no sabe usarlos— y el nuevo, si los encuentra
+  desactivados, cae a modo demostración sin romperse. Se activan cuando hay
+  frontend que los aproveche.
+- Lo que ya no condiciona el orden: la migración `20260806000400` está aplicada,
+  así que activar los anónimos ya no puede abrir el agujero de que una sesión
+  anónima valga como cuenta de cliente.
+- Evidencia: `supabase migration list` con los cuatro identificadores iguales en
+  Local y Remote, `db push --dry-run` con `Remote database is up to date`, las
+  cinco comprobaciones SQL en `true`, y la lectura pública que pasó de 36 filas
+  a cero. Detalle en [[08-predespliegue-supabase]].
 
 ## Cómo añadir una decisión
 

@@ -30,11 +30,7 @@ export function AgentLoginPage() {
     const { error: signInError } = await signIn(email.trim(), password)
     setSubmitting(false)
     if (signInError) {
-      setError(
-        signInError === 'Invalid login credentials'
-          ? 'Email o contraseña incorrectos.'
-          : signInError,
-      )
+      setError(signInError === 'Invalid login credentials' ? 'Email o contraseña incorrectos.' : signInError)
     }
   }
 
@@ -48,10 +44,9 @@ export function AgentLoginPage() {
     return (
       <CenteredCard title="Panel de agentes">
         <p className="text-sm text-muted">
-          Supabase no está configurado en este entorno, así que no hay acceso de
-          agentes. Copia <code className="font-mono text-xs">.env.example</code> a{' '}
-          <code className="font-mono text-xs">.env.local</code> con las credenciales
-          del proyecto para habilitarlo.
+          Supabase no está configurado en este entorno, así que no hay acceso de agentes. Copia{' '}
+          <code className="font-mono text-xs">.env.example</code> a{' '}
+          <code className="font-mono text-xs">.env.local</code> con las credenciales del proyecto para habilitarlo.
         </p>
         <Link to="/" className="mt-4 inline-block text-sm font-semibold underline">
           Volver a la tienda
@@ -63,8 +58,7 @@ export function AgentLoginPage() {
   return (
     <CenteredCard title="Panel de agentes">
       <p className="text-sm text-muted">
-        Acceso para el equipo de tienda. Entorno de demostración con cuentas
-        ficticias.
+        Acceso para el equipo de tienda. Entorno de demostración con cuentas ficticias.
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 grid gap-4" noValidate>
@@ -104,8 +98,7 @@ export function AgentLoginPage() {
         {/* La cuenta existe pero no está dada de alta como agente. */}
         {session && !agente && !loading && !error && (
           <p role="alert" className="text-sm text-danger">
-            Esta cuenta no tiene permiso de agente. Habla con quien administre el
-            panel para que te dé de alta.
+            Esta cuenta no tiene permiso de agente. Habla con quien administre el panel para que te dé de alta.
           </p>
         )}
 
@@ -127,10 +120,7 @@ function CenteredCard({ title, children }: { title: string; children: React.Reac
   return (
     <main className="grid min-h-screen place-items-center bg-neutral px-4 py-10">
       <div className="w-full max-w-sm rounded-[20px] border border-line bg-surface p-6 shadow-[var(--shadow-raised)]">
-        <div
-          className="-mx-6 -mt-6 mb-6 rounded-t-[20px] px-6 py-4"
-          style={{ background: BANANA_YELLOW }}
-        >
+        <div className="-mx-6 -mt-6 mb-6 rounded-t-[20px] px-6 py-4" style={{ background: BANANA_YELLOW }}>
           <h1 className="text-lg font-bold text-ink">{title}</h1>
         </div>
         {children}

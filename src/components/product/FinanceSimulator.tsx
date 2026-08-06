@@ -53,9 +53,8 @@ export function FinanceSimulator({
       </div>
 
       <p className="mt-4 text-xs leading-relaxed text-muted">
-        Cuota <strong>orientativa</strong>. TIN/TAE y comisión de apertura pendientes de validación con Banana
-        Computer. La contratación de la financiación se completa hoy de forma <strong>presencial</strong> en
-        tienda.
+        Cuota <strong>orientativa</strong>. TIN/TAE y comisión de apertura pendientes de validación con Banana Computer.
+        La contratación de la financiación se completa hoy de forma <strong>presencial</strong> en tienda.
       </p>
     </Modal>
   )

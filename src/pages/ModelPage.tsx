@@ -96,9 +96,7 @@ export function ModelPage() {
           ))}
         </div>
 
-        <p className="mt-8 text-sm text-muted">
-          {t('product.quickTip')}
-        </p>
+        <p className="mt-8 text-sm text-muted">{t('product.quickTip')}</p>
 
         <CompatibleAccessoriesSection family={family.slug} modelSlug={model.slug} />
       </Container>
@@ -127,8 +125,7 @@ function ColorCard({
   const [financeOpen, setFinanceOpen] = useState(false)
 
   // Respeta el filtro de capacidad: si está activo y esta capacidad no existe, la 1ª válida
-  const initialCap =
-    (capFilter && color.capacities.find((c) => c.capacity === capFilter)) || color.capacities[0]
+  const initialCap = (capFilter && color.capacities.find((c) => c.capacity === capFilter)) || color.capacities[0]
   const [selectedCap, setSelectedCap] = useState(initialCap.capacity)
   const current = color.capacities.find((c) => c.capacity === selectedCap) ?? color.capacities[0]
 
@@ -140,8 +137,7 @@ function ColorCard({
   const compareId = `${family}/${model.slug}/${color.color}/${current.capacity}`
   const needsReservation = current.availability !== 'disponible'
 
-  const openVariant = () =>
-    navigate(variantPath(model, color, current))
+  const openVariant = () => navigate(variantPath(model, color, current))
 
   return (
     <div className="flex flex-col rounded-[12px] border border-line bg-surface p-5 shadow-[var(--shadow-rest)]">
@@ -250,13 +246,7 @@ function ColorCard({
 // Sección "Accesorios compatibles" en la ficha del dispositivo (§4.5).
 // Muestra hasta 4 accesorios: primero compatibilidad exacta con el modelo,
 // después compatibilidad por familia. Sin lógica de carrito ni favoritos.
-function CompatibleAccessoriesSection({
-  family,
-  modelSlug,
-}: {
-  family: string
-  modelSlug: string
-}) {
+function CompatibleAccessoriesSection({ family, modelSlug }: { family: string; modelSlug: string }) {
   const t = useT()
   const cat = useCatalogo()
   const items = getAccessoriesForModel(`${family}/${modelSlug}`).slice(0, 4)
@@ -267,10 +257,7 @@ function CompatibleAccessoriesSection({
         <h2 id="compat-accessories" className="text-xl font-bold text-ink">
           Accesorios compatibles
         </h2>
-        <Link
-          to="/accesorios"
-          className="text-sm font-semibold text-ink underline-offset-2 hover:underline"
-        >
+        <Link to="/accesorios" className="text-sm font-semibold text-ink underline-offset-2 hover:underline">
           {t('common.allAccessories')}
         </Link>
       </div>

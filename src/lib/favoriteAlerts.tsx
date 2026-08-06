@@ -1,17 +1,5 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
-import {
-  getInventoryState,
-  setInventoryOverride,
-  type InventoryState,
-} from '../data/demoStoreInventory'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { getInventoryState, setInventoryOverride, type InventoryState } from '../data/demoStoreInventory'
 
 // Estado global de seguimiento de disponibilidad + notificaciones internas.
 // Persistencia:
@@ -80,9 +68,7 @@ let notificationCounter = 0
 
 export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<FavoriteAlert[]>(() => readJSON(ALERTS_KEY, []))
-  const [notifications, setNotifications] = useState<AlertNotification[]>(() =>
-    readJSON(NOTIFICATIONS_KEY, []),
-  )
+  const [notifications, setNotifications] = useState<AlertNotification[]>(() => readJSON(NOTIFICATIONS_KEY, []))
 
   useEffect(() => {
     writeJSON(ALERTS_KEY, alerts)
@@ -108,9 +94,7 @@ export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const changeAlertStore = useCallback((productId: string, storeSlug: string) => {
-    setAlerts((prev) =>
-      prev.map((a) => (a.productId === productId ? { ...a, storeSlug, enabled: true } : a)),
-    )
+    setAlerts((prev) => prev.map((a) => (a.productId === productId ? { ...a, storeSlug, enabled: true } : a)))
   }, [])
 
   const disableAlert = useCallback((productId: string) => {
@@ -125,11 +109,7 @@ export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
       const alert = alerts.find((a) => a.productId === productId)
       if (!alert) return
       // Efecto secundario en el inventario en memoria: marcamos disponible.
-      setInventoryOverride(
-        alert.storeSlug,
-        productId.split('/')[1] ?? productId,
-        'disponible',
-      )
+      setInventoryOverride(alert.storeSlug, productId.split('/')[1] ?? productId, 'disponible')
       notificationCounter += 1
       const notification: AlertNotification = {
         id: `${Date.now()}-${notificationCounter}`,
@@ -146,9 +126,7 @@ export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
   )
 
   const markRead = useCallback((notificationId: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
-    )
+    setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)))
   }, [])
   const markAllRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))

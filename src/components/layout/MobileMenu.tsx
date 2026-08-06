@@ -6,6 +6,7 @@ import { familiesNav, utilityLinks } from '../../data/nav'
 import { isNativeApp } from '../../lib/nativeApp'
 import { openChat } from '../../lib/chatLauncher'
 import { useT } from '../../lib/i18n'
+import { isolateModalBranch } from '../../lib/modalIsolation'
 import { useStorePreference } from '../../lib/storePreference'
 import { stores } from '../../data/stores'
 import { Icon } from '../ui/Icon'
@@ -32,8 +33,10 @@ export function MobileMenu({
     if (!open) return
 
     const previousOverflow = document.body.style.overflow
+    const returnFocusTo = returnFocusRef.current
     document.body.style.overflow = 'hidden'
     const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
+    const restoreOutside = isolateModalBranch(dialogRef.current)
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -74,7 +77,8 @@ export function MobileMenu({
       window.cancelAnimationFrame(focusFrame)
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
-      window.requestAnimationFrame(() => returnFocusRef.current?.focus())
+      restoreOutside()
+      window.requestAnimationFrame(() => returnFocusTo?.focus())
     }
   }, [onClose, open, returnFocusRef])
 
@@ -98,6 +102,7 @@ export function MobileMenu({
             <Logo onClick={onClose} />
             <button
               ref={closeButtonRef}
+              type="button"
               onClick={onClose}
               aria-label="Cerrar menú"
               className="grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-neutral"
@@ -163,7 +168,6 @@ export function MobileMenu({
                     </li>
                   )
                 })}
-
               </ul>
             </nav>
 
@@ -175,9 +179,7 @@ export function MobileMenu({
                 navegación inferior), así que el chat entra por aquí. */}
             {isNativeApp && (
               <div className="mt-6 rounded-[16px] border border-line p-4">
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
-                  Contacta con nosotros
-                </p>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Contacta con nosotros</p>
                 <ul className="grid gap-1">
                   <li>
                     <button
@@ -202,9 +204,7 @@ export function MobileMenu({
                       </span>
                       <span>
                         Chatea con Bananito
-                        <span className="block text-xs font-normal text-muted">
-                          Te responde una persona del equipo
-                        </span>
+                        <span className="block text-xs font-normal text-muted">Te responde una persona del equipo</span>
                       </span>
                     </button>
                   </li>
@@ -226,9 +226,7 @@ export function MobileMenu({
 
             {/* Servicios y ayuda — mismos enlaces que la barra superior de escritorio */}
             <div className="mt-6 rounded-[16px] bg-neutral p-4">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
-                Servicios y ayuda
-              </p>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Servicios y ayuda</p>
               <ul className="grid grid-cols-2 gap-1">
                 {utilityLinks.map((l) => (
                   <li key={l.label}>
@@ -252,11 +250,7 @@ export function MobileMenu({
                   inferior: repetirlo aquí solo ocupa sitio. En la web sí se
                   queda, porque en móvil este menú es la vía para llegar. */}
               {!isNativeApp && (
-                <Link
-                  to="/favoritos"
-                  onClick={onClose}
-                  className="flex items-center gap-1.5 hover:text-ink"
-                >
+                <Link to="/favoritos" onClick={onClose} className="flex items-center gap-1.5 hover:text-ink">
                   <Icon name="heart" size={18} /> Favoritos
                 </Link>
               )}
@@ -278,9 +272,7 @@ function FavoriteStoreMobileBlock({ onClose }: { onClose: () => void }) {
   const [expanded, setExpanded] = useState(false)
   return (
     <div className="mt-6 rounded-[16px] bg-neutral p-4">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">
-        Tu tienda
-      </p>
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Tu tienda</p>
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}

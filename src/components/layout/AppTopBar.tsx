@@ -46,7 +46,6 @@ export function AppTopBar() {
             <span>Buscar productos, accesorios…</span>
           </button>
         </div>
-
       </header>
 
       {searchOpen && (
@@ -56,11 +55,7 @@ export function AppTopBar() {
           aria-modal="true"
           className="app-safe-area fixed inset-0 z-[85] flex flex-col bg-surface"
         >
-          <HeaderSearch
-            mode="mobile"
-            onClose={() => setSearchOpen(false)}
-            restoreFocusTo={searchButtonRef}
-          />
+          <HeaderSearch mode="mobile" onClose={() => setSearchOpen(false)} restoreFocusTo={searchButtonRef} />
         </div>
       )}
     </>

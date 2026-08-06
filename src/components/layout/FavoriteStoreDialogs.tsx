@@ -14,8 +14,7 @@ import { ALTURA_TAB_BAR } from './AppTabBar'
 // El estado de "cerrado" persiste en banana:favorite-store-prompt.
 export function FavoriteStoreDialogs() {
   const t = useT()
-  const { favoriteSlug, favoriteStore, promptDismissed, setFavorite, dismissPrompt } =
-    useStorePreference()
+  const { favoriteSlug, favoriteStore, promptDismissed, setFavorite, dismissPrompt } = useStorePreference()
   const { pathname } = useLocation()
 
   const inCheckout = pathname.startsWith('/checkout')
@@ -84,12 +83,7 @@ export function FavoriteStoreDialogs() {
 
   return (
     <>
-      {dialogOpen && (
-        <FavoriteStorePrompt
-          onChoose={handleChoose}
-          onLater={handleLater}
-        />
-      )}
+      {dialogOpen && <FavoriteStorePrompt onChoose={handleChoose} onLater={handleLater} />}
       {confirmationText && !dialogOpen && (
         <div
           role="status"
@@ -109,13 +103,7 @@ export function FavoriteStoreDialogs() {
   )
 }
 
-function FavoriteStorePrompt({
-  onChoose,
-  onLater,
-}: {
-  onChoose: (slug: string) => void
-  onLater: () => void
-}) {
+function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) => void; onLater: () => void }) {
   const t = useT()
   const panelRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
@@ -157,9 +145,7 @@ function FavoriteStorePrompt({
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-              {t('favStore.kicker')}
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">{t('favStore.kicker')}</p>
             <h2 id="fav-store-title" className="mt-1 text-lg font-bold text-ink">
               {t('favStore.title')}
             </h2>
@@ -224,9 +210,7 @@ function FavoriteStorePrompt({
                       <span className="block text-xs text-muted">
                         {store.island} · {store.address}
                       </span>
-                      <span className="mt-1 block text-xs text-muted">
-                        Hoy: {today?.time ?? 'Consulta horario'}
-                      </span>
+                      <span className="mt-1 block text-xs text-muted">Hoy: {today?.time ?? 'Consulta horario'}</span>
                     </span>
                   </button>
                 </li>

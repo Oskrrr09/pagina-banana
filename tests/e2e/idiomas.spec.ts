@@ -136,9 +136,7 @@ test.describe('detección automática', () => {
 
     const contexto = await browser.newContext({ locale: 'ja-JP' })
     const japones = await contexto.newPage()
-    await japones.addInitScript(() =>
-      localStorage.setItem('banana:favorite-store-prompt', 'dismissed'),
-    )
+    await japones.addInitScript(() => localStorage.setItem('banana:favorite-store-prompt', 'dismissed'))
     await japones.goto(url)
     await expect(japones.locator('html')).toHaveAttribute('lang', 'es')
     await contexto.close()
@@ -160,4 +158,79 @@ test('en la app no hay selector de idioma y todo va en castellano', async ({ pag
   await expect(page.locator('html')).toHaveAttribute('lang', 'es')
   await expect(page.locator('[data-language-picker]')).toHaveCount(0)
   await expect(page.getByText(/Demonstrative Übersetzung/)).toHaveCount(0)
+})
+
+test('soporte y el selector de modelos traducen sus estados interactivos', async ({ page }) => {
+  const escenarios = [
+    {
+      code: 'es',
+      search: 'Buscar en la ayuda',
+      repair: 'Ir a Servicio Técnico',
+      picker: /^Elegir modelo de/,
+      modelSearch: 'Buscar iPhone',
+    },
+    {
+      code: 'en',
+      search: 'Search help',
+      repair: 'Go to Technical Service',
+      picker: /^Choose a iPhone model/,
+      modelSearch: 'Search iPhone',
+    },
+    {
+      code: 'de',
+      search: 'Hilfe durchsuchen',
+      repair: 'Zum technischen Service',
+      picker: /^iPhone-Modell auswählen/,
+      modelSearch: 'iPhone suchen',
+    },
+    {
+      code: 'fr',
+      search: 'Rechercher dans l’aide',
+      repair: 'Accéder au service technique',
+      picker: /^Choisir un modèle de iPhone/,
+      modelSearch: 'Rechercher iPhone',
+    },
+    {
+      code: 'it',
+      search: 'Cerca nell’assistenza',
+      repair: 'Vai al servizio tecnico',
+      picker: /^Scegli un modello di iPhone/,
+      modelSearch: 'Cerca iPhone',
+    },
+  ] as const
+
+  for (const escenario of escenarios) {
+    await page.goto('./')
+    await page.evaluate((code) => {
+      localStorage.setItem('banana:idioma', code)
+      localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
+    }, escenario.code)
+
+    await page.goto('./soporte')
+    await expect(page.locator('html')).toHaveAttribute('lang', escenario.code)
+    await expect(page.getByRole('searchbox', { name: escenario.search })).toBeVisible()
+    await expect(page.getByRole('link', { name: new RegExp(escenario.repair) })).toBeVisible()
+
+    await page.goto('./comparar')
+    await page.locator('[data-model-picker-trigger]').first().click()
+    const dialog = page.getByRole('dialog', { name: escenario.picker })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole('searchbox', { name: escenario.modelSearch })).toBeVisible()
+  }
+})
+
+test('las rutas de agente fuerzan español y restauran el idioma público', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('banana:idioma', 'de')
+    localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
+  })
+
+  await page.goto('./soporte')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+
+  await page.goto('./agente/login')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es')
+
+  await page.goto('./soporte')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
 })

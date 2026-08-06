@@ -70,10 +70,7 @@ test.describe('sin desbordamiento horizontal', () => {
       const desborde = await page.evaluate(() => {
         const de = document.documentElement
         const contenido = document.getElementById('contenido')
-        return Math.max(
-          de.scrollWidth - de.clientWidth,
-          contenido ? contenido.scrollWidth - contenido.clientWidth : 0,
-        )
+        return Math.max(de.scrollWidth - de.clientWidth, contenido ? contenido.scrollWidth - contenido.clientWidth : 0)
       })
       expect(desborde, `${ruta} desborda ${desborde}px en la app`).toBeLessThanOrEqual(1)
     }
@@ -129,9 +126,7 @@ test.describe('los campos no provocan zoom en iOS', () => {
     const campos = await medirCampos(page)
     expect(campos.length).toBeGreaterThan(0)
     for (const campo of campos) {
-      expect(campo.tamano, `"${campo.descripcion}" mide ${campo.tamano}px`).toBeGreaterThanOrEqual(
-        16,
-      )
+      expect(campo.tamano, `"${campo.descripcion}" mide ${campo.tamano}px`).toBeGreaterThanOrEqual(16)
     }
   })
 
@@ -143,9 +138,7 @@ test.describe('los campos no provocan zoom en iOS', () => {
 
     const campos = await medirCampos(page)
     for (const campo of campos) {
-      expect(campo.tamano, `"${campo.descripcion}" mide ${campo.tamano}px`).toBeGreaterThanOrEqual(
-        16,
-      )
+      expect(campo.tamano, `"${campo.descripcion}" mide ${campo.tamano}px`).toBeGreaterThanOrEqual(16)
     }
   })
 
@@ -155,10 +148,7 @@ test.describe('los campos no provocan zoom en iOS', () => {
       await page.goto(ruta)
       const campos = await medirCampos(page)
       for (const campo of campos) {
-        expect(
-          campo.tamano,
-          `${ruta} — "${campo.descripcion}" mide ${campo.tamano}px`,
-        ).toBeGreaterThanOrEqual(16)
+        expect(campo.tamano, `${ruta} — "${campo.descripcion}" mide ${campo.tamano}px`).toBeGreaterThanOrEqual(16)
       }
     }
   })

@@ -1,0 +1,128 @@
+---
+tipo: sesion
+fecha: 2026-08-04
+---
+
+# Hardening de seguridad, i18n y calidad
+
+## Objetivo
+
+Consolidar las PR de seguridad pendientes y completar los cierres de
+integración Supabase, traducción, accesibilidad, calidad, navegadores, PWA y
+documentación solicitados en la auditoría exhaustiva.
+
+## Estado inicial
+
+- `main` en `30b7957`; seguridad repartida en las PR #33 y #34.
+- Rama superior limpia en `c4b5162`, con 27 casos RLS aún omitidos.
+- Sin Docker ni Supabase CLI local; autenticación de `gh` caducada.
+- 23 avisos ESLint conocidos, React Router 6.30.4 con dos avisos moderados.
+
+## Trabajo realizado
+
+### Bloque 1 — Seguridad
+
+- Creada `fix/security-i18n-quality-hardening` desde `main` e incorporados por
+  avance rápido los 14 commits de seguridad existentes.
+- Añadida una migración incremental: el chat deja de recopilar `user_agent`,
+  limpia el dato histórico y Storage impone tamaño, MIME y nombre canónico.
+- La URL firmada del justificante dura 60 segundos.
+- `test:rls` ya no levanta un servidor web innecesario.
+- Creado `docs/07-modelo-seguridad.md` con roles, amenazas, RPC, Storage y
+  diagrama de datos.
+
+### Bloque 2 — Integración Supabase
+
+- CLI 2.111.0 fijada como dependencia de desarrollo.
+- Añadidos configuración local, seed sin secretos y lanzador que obtiene las
+  claves efímeras sin imprimirlas.
+- El workflow reutilizable levanta Docker, aplica migraciones, ejecuta 27
+  flujos reales y detiene los contenedores siempre.
+- En esta máquina el preflight confirma el único bloqueo: Docker no está
+  instalado. No se ha tocado ninguna base alojada.
+
+### Bloque 3 — Internacionalización
+
+- Traducidos todos los estados exigidos de SupportPage y ModelPickerDialog en
+  cinco idiomas; búsqueda por nombre traducido y moneda según locale.
+- El panel adopta la opción B: español con `lang="es"`, restaurado al salir.
+- La regresión de idiomas pasa 11/11 sobre el build.
+- El barrido descubrió más literales públicos históricos; se retira la
+  afirmación de cobertura completa y se registra I18N-001 hasta corregirlos.
+
+### Bloque 4 — Accesibilidad
+
+- Eliminado el segundo `<main>` de `/soporte` y añadido un barrido de una sola
+  región principal sobre 19 rutas públicas.
+- Unificado el aislamiento del fondo en modal genérico, menú móvil, guía y
+  chat; se verifica foco inicial, ciclo completo, Escape y retorno al control
+  de apertura.
+- Eliminado el fundido que degradaba el contraste del texto del selector
+  durante la entrada y traducidos los nombres accesibles del chat.
+- Axe pasa en 14 estados de ruta y en guía, selector, menú y chat, sin reglas
+  desactivadas.
+
+### Bloque 5 — Calidad
+
+- Añadidos Prettier y plugins ESLint compatibles para imports y promesas; JSX
+  a11y no se fuerza sobre ESLint 10 porque su peer actual termina en ESLint 9.
+- La línea base de formato cubre código, pruebas y configuración y excluye
+  generados, docs, catálogos y diccionarios grandes.
+- Separados `check` rápido y `check:full`; CI comprueba formato de forma
+  explícita.
+- Cinco pruebas unitarias nuevas cubren moneda, cuotas y detección de idioma.
+
+### Bloques 6 y 7 — Navegadores y PWA
+
+- Añadidos smoke críticos para Chromium, Firefox, WebKit y Safari móvil:
+  20/20 aprobados sobre build.
+- `test:pwa` cubre manifest, precache, control, exclusión de Supabase/rutas
+  privadas y arranque profundo offline: 9 aprobados y una omisión esperada.
+- La prueba encontró y corrigió el lookup de JS/CSS precacheados desde rutas
+  profundas.
+- Preparado un cierre de sesión real con cuenta ficticia en Supabase local;
+  se descubre, pero no se ejecuta aquí porque Docker no está disponible.
+
+### Bloque 8 — Dependencias, secretos y aplicaciones nativas
+
+- Migrado React Router DOM 6.30.4 a 7.18.2 y reforzado `safeRedirect` frente a
+  barras invertidas. Los 20 smoke multi-navegador siguen aprobando.
+- La última estable cierra los avisos originales, pero npm registra un aviso
+  nuevo para las APIs RSC inestables. La SPA no usa esa superficie; queda
+  seguimiento explícito en SEG-001.
+  **Corrección del 2026-08-06:** aquí se afirmaba que la versión corregida
+  8.3.0 «todavía no está publicada». Era falso: `react-router@8.3.0` salió el
+  2026-07-22. Lo que se queda en 7.18.2 es `react-router-dom`, retirado en la
+  8. Ver [[02-decisiones#D-058]].
+- Revisados ficheros actuales e historial sin encontrar secretos versionados;
+  ampliada la exclusión de credenciales de firma y configuración nativa.
+- El catálogo consolidado contiene 18 accesorios; README queda alineado.
+- `npm run app:sync` correcto e iOS Debug para simulador compilado con Xcode
+  26.6. Android no se recompila porque el sistema no dispone de Java Runtime.
+- La PR #35 activó por primera vez PostgreSQL 17 real y descubrió una
+  diferencia con PGlite: `drop policy if exists` falla si la tabla no existe.
+  La migración base protege esos borrados con `to_regclass`, sin alterar el
+  camino de actualización de una base existente.
+
+## Comprobaciones acumuladas
+
+- TypeScript: correcto.
+- Vitest: 136/136; esquema PostgreSQL/PGlite: 102/102.
+- ESLint: 0 errores y 22 avisos preexistentes.
+- Build demostrativo: correcto; service worker generado.
+- Playwright sobre build: 295 aprobadas, una omisión esperada del caso de
+  service worker exclusivo de desarrollo y 6/6 del panel aislado.
+- RLS: 27 casos descubiertos y 27 omitidos por falta de entorno, no aprobados.
+
+## Archivos afectados hasta ahora
+
+- Segunda migración en `supabase/migrations/`.
+- `chatSession.ts`, `educationalDiscount.ts`, Playwright y workflow.
+- Pruebas de esquema y RLS.
+- Documentación viva y modelo de seguridad.
+
+## Siguiente paso
+
+Publicar la rama y dejar que CI ejecute las 27 pruebas RLS y el cierre de
+sesión PWA contra Supabase local antes de integrar en `main` o desplegar
+Pages.

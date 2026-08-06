@@ -103,9 +103,7 @@ export function StoreCarousel() {
             onClick={() => go(i, i > index ? 1 : -1)}
             aria-label={`Ir a ${s.name}`}
             aria-current={i === index}
-            className={`h-2 rounded-full transition-all ${
-              i === index ? 'w-6 bg-brand' : 'w-2 bg-line hover:bg-muted'
-            }`}
+            className={`h-2 rounded-full transition-all ${i === index ? 'w-6 bg-brand' : 'w-2 bg-line hover:bg-muted'}`}
           />
         ))}
       </div>

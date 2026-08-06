@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, type DbAddress, type DbCustomer } from './supabase'
 
@@ -23,6 +15,24 @@ import { supabase, type DbAddress, type DbCustomer } from './supabase'
 // desactivar "Confirm email" en Supabase (Authentication → Providers →
 // Email). Si está activo, `signUp` devuelve sesión null y el usuario
 // tendría que abrir un correo antes de poder entrar.
+//
+// SESIONES ANÓNIMAS — POR QUÉ SE IGNORAN AQUÍ
+//
+// El chat del visitante abre una sesión anónima con `signInAnonymously()`.
+// Supabase le da a esa sesión el mismo rol PostgreSQL que a una cuenta de
+// verdad: `authenticated`. La única diferencia viaja como un reclamo del JWT,
+// `is_anonymous: true`.
+//
+// Este proveedor trataba cualquier sesión como sesión de cliente. Con eso,
+// abrir el chat bastaba para que se buscara una ficha en `clientes`, no se
+// encontrara, y **se creara sola**: el visitante pasaba a ser cliente sin
+// haberse registrado, y la tienda le enseñaba «Mi cuenta».
+//
+// A partir de aquí una sesión anónima NO es una sesión de cliente. `session`
+// se expone como null mientras lo sea, que es lo que ya interpretan todas las
+// pantallas como «no hay cuenta», y no se toca `clientes` en ningún caso. La
+// base lo impide además por su cuenta; ver
+// `20260806000400_separa_sesiones_anonimas.sql`.
 
 export interface CustomerProfileUpdate {
   nombre?: string | null
@@ -51,8 +61,15 @@ interface CustomerAuthState {
 
 const CustomerAuthContext = createContext<CustomerAuthState | null>(null)
 
+/** true si la sesión existe pero es una sesión anónima del chat. */
+export function esSesionAnonima(session: Session | null): boolean {
+  return session?.user.is_anonymous === true
+}
+
 export function CustomerAuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
+  // La sesión tal y como la devuelve Supabase, anónima incluida. No sale de
+  // este módulo: hacia fuera se publica sólo si es una cuenta permanente.
+  const [sesionCruda, setSesionCruda] = useState<Session | null>(null)
   const [cliente, setCliente] = useState<DbCustomer | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -65,14 +82,14 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return
-      setSession(data.session)
-      if (!data.session) setLoading(false)
+      setSesionCruda(data.session)
+      if (!data.session || esSesionAnonima(data.session)) setLoading(false)
     })
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (!active) return
-      setSession(next)
-      if (!next) {
+      setSesionCruda(next)
+      if (!next || esSesionAnonima(next)) {
         setCliente(null)
         setLoading(false)
       }
@@ -84,19 +101,24 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const anonima = esSesionAnonima(sesionCruda)
+  // Lo que ve el resto de la aplicación. Una sesión anónima es, a todos los
+  // efectos de la tienda, no haber iniciado sesión.
+  const session = anonima ? null : sesionCruda
+
   const userId = session?.user.id ?? null
   const userEmail = session?.user.email ?? null
 
   const loadProfile = useCallback(async () => {
+    // `userId` ya es null en una sesión anónima, porque sale de `session` y no
+    // de `sesionCruda`. La condición se deja escrita igualmente: es la línea
+    // que creaba la ficha sola, y conviene que se lea por qué no puede
+    // ejecutarse sin cuenta permanente.
     if (!supabase || !userId) {
       setCliente(null)
       return
     }
-    const { data, error } = await supabase
-      .from('clientes')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
+    const { data, error } = await supabase.from('clientes').select('*').eq('id', userId).maybeSingle()
 
     if (error) {
       console.error('[customerAuth] no se pudo cargar la ficha', error)
@@ -146,34 +168,109 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? error.message : null }
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string, nombre: string) => {
-    if (!supabase) {
-      return { error: 'Supabase no está configurado.', needsEmailConfirmation: false }
+  // Crea la ficha de `clientes` de una cuenta ya permanente.
+  //
+  // Va aquí y no en un disparador de la base a propósito: la política de alta
+  // exige que los campos del descuento educativo vengan nulos, y así el alta
+  // se ve en el mismo sitio que la valida.
+  const crearFicha = useCallback(async (id: string, email: string, nombre: string) => {
+    const { error } = await supabase!.from('clientes').insert({ id, email, nombre })
+    // 23505 = clave duplicada: la ficha ya existía, no es un problema.
+    if (error && error.code !== '23505') {
+      console.error('[customerAuth] no se pudo crear la ficha', error)
     }
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { nombre } },
-    })
-    if (error) return { error: error.message, needsEmailConfirmation: false }
-
-    // Con "Confirm email" activo, signUp no devuelve sesión: hay que
-    // validar el correo antes de poder entrar.
-    if (!data.session) {
-      return { error: null, needsEmailConfirmation: true }
-    }
-
-    // Con sesión ya activa creamos la ficha aquí para no depender de un
-    // trigger en la base de datos.
-    const { error: insertError } = await supabase
-      .from('clientes')
-      .insert({ id: data.user!.id, email, nombre })
-    if (insertError && insertError.code !== '23505') {
-      // 23505 = clave duplicada: la ficha ya existía, no es un problema.
-      console.error('[customerAuth] no se pudo crear la ficha', insertError)
-    }
-    return { error: null, needsEmailConfirmation: false }
   }, [])
+
+  const signUp = useCallback(
+    async (email: string, password: string, nombre: string) => {
+      if (!supabase) {
+        return { error: 'Supabase no está configurado.', needsEmailConfirmation: false }
+      }
+
+      // DECISIÓN: si el visitante ya tiene sesión anónima del chat, se
+      // CONVIERTE esa cuenta en permanente. No se cierra para registrar una
+      // nueva.
+      //
+      // Se decide aquí y de forma explícita porque `signUp()` con una sesión
+      // anónima abierta no tiene un comportamiento evidente: GoTrue puede
+      // convertir la cuenta o crear otra según su configuración, y de eso
+      // depende si el visitante conserva su chat o lo pierde en silencio.
+      //
+      // Se convierte, y no se reemplaza, porque el esquema está construido
+      // para eso: `vincular_mi_visitante_a_cliente()` enlaza la ficha de
+      // visitante con la de cliente **por el mismo `auth.uid()`**. Cerrar la
+      // sesión anónima daría un uid distinto, dejaría la conversación
+      // huérfana y el visitante perdería el hilo que acababa de escribir con
+      // un agente.
+      //
+      // La conversión es `updateUser({ email, password })` sobre la propia
+      // sesión anónima. Después hace falta `refreshSession()`: `is_anonymous`
+      // viaja dentro del *access token*, y hasta que no se emite uno nuevo la
+      // base sigue viendo la sesión como anónima y rechaza el alta de la ficha.
+      const { data: actual } = await supabase.auth.getSession()
+      if (esSesionAnonima(actual.session)) {
+        // Orden de dos pasos, el que documenta Supabase: PRIMERO el email, y
+        // la contraseña sólo después de que ese email esté verificado. Se
+        // hacía en una sola llamada con los dos campos, que funciona cuando el
+        // proyecto tiene la confirmación desactivada y falla en cuanto no lo
+        // está.
+        //
+        // OJO con el alcance: este orden es correcto en las dos
+        // configuraciones a nivel de API, pero la INTERFAZ sólo sabe terminar
+        // el registro cuando la confirmación está desactivada. Con ella
+        // activada se devuelve `needsEmailConfirmation` sin haber podido fijar
+        // la contraseña, y no hay pantalla donde establecerla al volver del
+        // correo. Por eso Confirm Email debe permanecer desactivado en este
+        // despliegue; ver docs/08-predespliegue-supabase.md.
+        const { error: errorEmail } = await supabase.auth.updateUser({ email, data: { nombre } })
+        if (errorEmail) {
+          return { error: errorEmail.message, needsEmailConfirmation: false }
+        }
+
+        // `is_anonymous` viaja dentro del access token: hasta que no se emite
+        // uno nuevo, la base sigue viendo la sesión como anónima y rechazaría
+        // el alta de la ficha.
+        const { data: renovada, error: errorRefresco } = await supabase.auth.refreshSession()
+        if (errorRefresco) {
+          return { error: errorRefresco.message, needsEmailConfirmation: false }
+        }
+
+        // Quién decide si hace falta confirmar no es una constante nuestra ni
+        // una suposición sobre la configuración del proyecto: es lo que
+        // responde el servidor. Si tras refrescar la sesión sigue siendo
+        // anónima, el email está pendiente de verificación.
+        if (!renovada.session || esSesionAnonima(renovada.session)) {
+          return { error: null, needsEmailConfirmation: true }
+        }
+
+        // Verificado. Ahora sí la contraseña, y sólo entonces la ficha.
+        const { error: errorPassword } = await supabase.auth.updateUser({ password })
+        if (errorPassword) {
+          return { error: errorPassword.message, needsEmailConfirmation: false }
+        }
+
+        await crearFicha(renovada.session.user.id, email, nombre)
+        return { error: null, needsEmailConfirmation: false }
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { nombre } },
+      })
+      if (error) return { error: error.message, needsEmailConfirmation: false }
+
+      // Con "Confirm email" activo, signUp no devuelve sesión: hay que
+      // validar el correo antes de poder entrar.
+      if (!data.session) {
+        return { error: null, needsEmailConfirmation: true }
+      }
+
+      await crearFicha(data.user!.id, email, nombre)
+      return { error: null, needsEmailConfirmation: false }
+    },
+    [crearFicha],
+  )
 
   const signOut = useCallback(async () => {
     if (!supabase) return
@@ -184,17 +281,31 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = useCallback(
     async (patch: CustomerProfileUpdate) => {
       if (!supabase || !userId) return { error: 'No hay sesión iniciada.' }
-      const { data, error } = await supabase
-        .from('clientes')
-        .update(patch)
-        .eq('id', userId)
-        .select('*')
-        .single()
+
+      // Por RPC y no con un `update` directo. El cliente ya no tiene UPDATE
+      // sobre `clientes`: RLS filtra filas pero no columnas, así que poder
+      // editar la fila propia incluía poder ponerse el descuento educativo en
+      // 'aprobado'. La función solo escribe las cuatro columnas de contacto.
+      //
+      // `undefined` significa "no lo toques" y `null` significa "bórralo".
+      // La distinción importa: mandar `undefined` por la red lo convierte en
+      // ausente, y la función lo interpreta con `coalesce` como "sin cambio";
+      // `null` explícito no se puede distinguir así, por eso lo que se quiera
+      // limpiar viaja como cadena vacía y la función la normaliza.
+      const { error } = await supabase.rpc('actualizar_mi_ficha', {
+        p_nombre: patch.nombre === undefined ? null : (patch.nombre ?? ''),
+        p_telefono: patch.telefono === undefined ? null : (patch.telefono ?? ''),
+        p_direccion_envio: patch.direccion_envio === undefined ? null : patch.direccion_envio,
+        p_direccion_facturacion: patch.direccion_facturacion === undefined ? null : patch.direccion_facturacion,
+      })
       if (error) return { error: error.message }
-      setCliente(data as DbCustomer)
+
+      // La función no devuelve la fila, así que se recarga para que la UI
+      // refleje lo que quedó guardado de verdad y no lo que creíamos enviar.
+      await loadProfile()
       return { error: null }
     },
-    [userId],
+    [userId, loadProfile],
   )
 
   const value = useMemo<CustomerAuthState>(
@@ -211,9 +322,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     [session, cliente, loading, signIn, signUp, signOut, updateProfile, loadProfile],
   )
 
-  return (
-    <CustomerAuthContext.Provider value={value}>{children}</CustomerAuthContext.Provider>
-  )
+  return <CustomerAuthContext.Provider value={value}>{children}</CustomerAuthContext.Provider>
 }
 
 export function useCustomerAuth(): CustomerAuthState {

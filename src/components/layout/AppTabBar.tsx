@@ -67,22 +67,12 @@ export function AppTabBar() {
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
           />
-          <Tab
-            to="/carrito"
-            icon="cart"
-            label="Carrito"
-            count={cartCount}
-            activa={esActiva('/carrito')}
-          />
+          <Tab to="/carrito" icon="cart" label="Carrito" count={cartCount} activa={esActiva('/carrito')} />
           <Tab to={cuentaTo} icon="user" label="Cuenta" activa={esActiva(cuentaTo)} />
         </ul>
       </nav>
 
-      <MobileMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        returnFocusRef={menuButtonRef}
-      />
+      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} returnFocusRef={menuButtonRef} />
     </>
   )
 }
@@ -131,11 +121,7 @@ function Tab({
           </span>
         )}
       </span>
-      <span
-        className={`text-[11px] leading-tight ${
-          activa ? 'font-bold text-ink' : 'font-medium text-muted'
-        }`}
-      >
+      <span className={`text-[11px] leading-tight ${activa ? 'font-bold text-ink' : 'font-medium text-muted'}`}>
         {label}
       </span>
     </>
@@ -146,23 +132,11 @@ function Tab({
   return (
     <li className="flex-1">
       {to ? (
-        <Link
-          to={to}
-          aria-current={activa ? 'page' : undefined}
-          aria-label={etiqueta}
-          className={clases}
-        >
+        <Link to={to} aria-current={activa ? 'page' : undefined} aria-label={etiqueta} className={clases}>
           {contenido}
         </Link>
       ) : (
-        <button
-          ref={botonRef}
-          type="button"
-          onClick={onClick}
-          aria-label={etiqueta}
-          className={clases}
-          {...aria}
-        >
+        <button ref={botonRef} type="button" onClick={onClick} aria-label={etiqueta} className={clases} {...aria}>
           {contenido}
         </button>
       )}

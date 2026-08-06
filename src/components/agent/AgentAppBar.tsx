@@ -1,10 +1,5 @@
 import { Icon } from '../ui/Icon'
-import {
-  useAppUpdate,
-  useInstallPrompt,
-  useOnlineStatus,
-  type NotificationPermissionState,
-} from '../../lib/pwa'
+import { useAppUpdate, useInstallPrompt, useOnlineStatus, type NotificationPermissionState } from '../../lib/pwa'
 
 /**
  * Tira de estado de la app instalable, justo bajo la cabecera del panel.
@@ -32,10 +27,7 @@ export function AgentAppBar({
     return (
       <Bar tone="alerta" live>
         <span className="font-semibold">Sin conexión.</span>{' '}
-        <span>
-          El panel sigue abierto, pero no entran mensajes nuevos ni se envían
-          respuestas hasta que vuelva.
-        </span>
+        <span>El panel sigue abierto, pero no entran mensajes nuevos ni se envían respuestas hasta que vuelva.</span>
       </Bar>
     )
   }
@@ -59,8 +51,8 @@ export function AgentAppBar({
     return (
       <Bar tone="marca">
         <span>
-          <span className="font-semibold">Instala el panel como aplicación</span> para
-          tenerlo en el Dock, con el contador de conversaciones sin leer.
+          <span className="font-semibold">Instala el panel como aplicación</span> para tenerlo en el Dock, con el
+          contador de conversaciones sin leer.
         </span>
         <span className="ml-auto flex shrink-0 items-center gap-2">
           {mode === 'prompt' ? (
@@ -124,8 +116,7 @@ export function InstallAppNote() {
       {mode === 'prompt' ? (
         <>
           <p className="mt-1 text-xs text-muted">
-            Instálalo como aplicación y lo abres desde el Dock, con aviso de
-            mensajes nuevos.
+            Instálalo como aplicación y lo abres desde el Dock, con aviso de mensajes nuevos.
           </p>
           <button
             type="button"
@@ -136,9 +127,7 @@ export function InstallAppNote() {
           </button>
         </>
       ) : (
-        <p className="mt-1 text-xs text-muted">
-          Puedes instalarlo como aplicación. {hint}
-        </p>
+        <p className="mt-1 text-xs text-muted">Puedes instalarlo como aplicación. {hint}</p>
       )}
     </div>
   )
@@ -150,15 +139,7 @@ const TONOS = {
   marca: 'bg-brand-050 text-ink border-line',
 } as const
 
-function Bar({
-  tone,
-  live,
-  children,
-}: {
-  tone: keyof typeof TONOS
-  live?: boolean
-  children: React.ReactNode
-}) {
+function Bar({ tone, live, children }: { tone: keyof typeof TONOS; live?: boolean; children: React.ReactNode }) {
   return (
     <div
       {...(live ? { role: 'status' } : {})}

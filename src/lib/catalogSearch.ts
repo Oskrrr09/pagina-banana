@@ -27,7 +27,7 @@ export function normalizeSearchText(text: string): string {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '') // quita tildes
     .replace(/[–—]/g, '-') // guiones largos → guión ASCII
-    .replace(/[^a-z0-9\s\-]/g, ' ') // limpia puntuación (mantiene letras, dígitos, espacio, guion)
+    .replace(/[^a-z0-9\s-]/g, ' ') // limpia puntuación (mantiene letras, dígitos, espacio, guion)
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -138,7 +138,10 @@ export function buildScoreContext(query: string): ScoreContext {
   }
 }
 
-function tokensMatch(text: string, tokens: string[]): {
+function tokensMatch(
+  text: string,
+  tokens: string[],
+): {
   starts: boolean
   allIn: boolean
   someIn: boolean
@@ -267,9 +270,24 @@ export function scoreSearchItem(item: SearchItem, ctx: ScoreContext): number {
 // -----------------------------------------------------------------------------
 
 const KNOWN_TERMS = [
-  'airpods', 'iphone', 'ipad', 'mac', 'macbook', 'apple', 'watch',
-  'auriculares', 'cascos', 'funda', 'cargador', 'cable', 'adaptador', 'correa',
-  'magsafe', 'beats', 'sony', 'bose',
+  'airpods',
+  'iphone',
+  'ipad',
+  'mac',
+  'macbook',
+  'apple',
+  'watch',
+  'auriculares',
+  'cascos',
+  'funda',
+  'cargador',
+  'cable',
+  'adaptador',
+  'correa',
+  'magsafe',
+  'beats',
+  'sony',
+  'bose',
 ]
 
 /**
@@ -328,10 +346,7 @@ const SECTION_PRIORITY_FOR_ACCESSORY: SearchItemKind[] = [
 ]
 
 function sectionRank(kind: SearchItemKind, intent: SearchIntent): number {
-  const table =
-    intent === 'accessory'
-      ? SECTION_PRIORITY_FOR_ACCESSORY
-      : SECTION_PRIORITY_FOR_DEVICE
+  const table = intent === 'accessory' ? SECTION_PRIORITY_FOR_ACCESSORY : SECTION_PRIORITY_FOR_DEVICE
   const idx = table.indexOf(kind)
   return idx === -1 ? table.length : idx
 }

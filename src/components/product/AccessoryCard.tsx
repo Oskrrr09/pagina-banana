@@ -34,9 +34,7 @@ export function AccessoryCard({ accessory }: { accessory: Accessory }) {
           pad={!accessory.imageBg}
           blend={!accessory.imageBg}
         />
-        <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">
-          {cat(accessory.name)}
-        </h3>
+        <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">{cat(accessory.name)}</h3>
       </Link>
 
       <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{cat(accessory.tagline)}</p>
@@ -59,4 +57,3 @@ export function AccessoryCard({ accessory }: { accessory: Accessory }) {
     </div>
   )
 }
-

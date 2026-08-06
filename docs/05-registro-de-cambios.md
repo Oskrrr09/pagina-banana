@@ -1,12 +1,284 @@
 ---
 tipo: cambios
-actualizado: 2026-08-01
+actualizado: 2026-08-06
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-06 — Sesiones anónimas separadas y migración aplicada en producción
+
+- Una sesión anónima del chat deja de valer como cuenta de cliente. Supabase le
+  da el mismo rol PostgreSQL que a una cuenta real, `authenticated`, así que
+  abrir el widget bastaba para quedar dado de alta en `clientes` y poder crear
+  pedidos, reservas y justificantes. Nueva migración
+  `20260806000400_separa_sesiones_anonimas.sql` con `es_usuario_permanente()`,
+  políticas restrictivas y la comprobación dentro de cada RPC de cliente.
+- El DELETE del bucket educativo también la exige. Era el más delicado: la
+  carpeta se llama como el `auth.uid()` y la conversión conserva ese uid, de
+  modo que un token anónimo anterior seguía apuntando a la carpeta de la cuenta
+  ya registrada.
+- El registro sigue el orden documentado de dos pasos —email primero, contraseña
+  sólo tras verificarlo— y decide si hace falta confirmar por lo que responde el
+  servidor, no por una suposición sobre la configuración del proyecto.
+- Segunda pasada de integración con la confirmación de email **activada**, que
+  antes no se ejercitaba nunca.
+- **Despliegue de base de datos.** Respaldo completo fuera del repositorio,
+  CLI enlazada y las cuatro migraciones aplicadas en el proyecto real.
+  `migration list` muestra los cuatro identificadores iguales en Local y Remote;
+  `db push --dry-run` responde `Remote database is up to date`; las cinco
+  comprobaciones SQL de seguridad devuelven `true`.
+- Efecto medido por API pública de sólo lectura: el rol anónimo pasó de leer
+  **36 filas de `visitantes`** a no leer ninguna.
+- Authentication: alta de usuarios activada, enlazado manual activado,
+  confirmación de registro desactivada —y debe seguir así—, inicios anónimos
+  **todavía desactivados**, límite de 30 por hora e IP, CAPTCHA no localizado ni
+  configurado.
+- Pendiente: fusionar la PR #35, publicar, activar los inicios anónimos y hacer
+  pruebas de humo. Hasta entonces el chat de la web pública no funciona, porque
+  el frontend publicado sigue siendo el anterior. Ver [[08-predespliegue-supabase]].
+
+## 2026-08-05 — Permisos de tabla, cierre del chat y aviso de Router
+
+- Nueva migración `20260805000300_permisos_de_tabla.sql`: las tablas ya no
+  nacen sin permisos. Concede el mínimo que refleja cada política a `anon`,
+  `authenticated` y `service_role`; lo que no aparece pasa por un RPC
+  `security definer`. Sin ella, RLS no llegaba a evaluarse y `service_role`
+  —que salta RLS pero no los GRANT— no podía dar de alta un agente.
+- `tests/schema/andamio.ts` deja de concederse permisos sobre `public` antes de
+  aplicar las migraciones. Se concedía lo que iba a medir, así que respondía en
+  verde mientras Supabase local estaba en rojo. Gana el rol `service_role` y
+  `tests/schema/politicas.test.ts` pasa a usarlo en vez de su propia copia.
+- `tests/schema/permisos.test.ts` (nuevo) comprueba el cuadro de permisos tabla
+  por tabla, incluido lo que **no** debe poder hacerse y que `PUBLIC` no recibe
+  nada. Las pruebas de esquema pasan de 125 a 159 unitarias en total.
+- `clienteRegistrado()` de las pruebas RLS comprueba el error del alta. Antes
+  lo ignoraba, así que un fallo del alta reaparecía disfrazado a diecisiete
+  pruebas de distancia.
+- El diálogo del chat se desmonta al cerrar aunque el navegador no entregue
+  `requestAnimationFrame`. Colgaba sólo de `transitionend`; cuando no llegaba,
+  quedaba invisible pero presente como `role="dialog" aria-modal="true"`.
+  Salió como fallo de WebKit y Safari móvil y se reprodujo en Chromium.
+- El pedido de prueba de `tests/rls/politicas.spec.ts` trae `delivery` y
+  `payment_method`, que son NOT NULL sin valor por defecto. El insert nunca
+  podía funcionar; estaba tapado porque el alta de clientes fallaba antes.
+- Cerrar sesión en `/cuenta` lleva a la portada. `signOut()` dejaba la sesión a
+  null con la página aún montada, el guardia disparaba
+  `<Navigate to="/login?redirect=%2Fcuenta">` y ganaba la carrera, así que
+  quien salía aterrizaba en un formulario pidiéndole volver a entrar. Lo
+  destapó la prueba de cierre de sesión PWA, que hasta ahora nunca llegaba a
+  ejecutarse porque el paso de RLS fallaba antes en el mismo trabajo.
+- Comprobado en CI (run 31053972151, todo en verde): Prettier, ESLint,
+  TypeScript, 159 unitarias, build, **27/27 pruebas RLS contra GoTrue,
+  PostgREST y Storage reales** más el cierre de sesión PWA, 296 E2E aprobadas
+  y 1 omitida esperada en Chromium, Firefox, WebKit, móvil y Safari móvil, y 6
+  del panel aislado.
+- `npm audit`: se mantiene React Router 7.18.2 y no se toca ninguna dependencia
+  en esta PR. Los dos avisos `high` son el mismo, contado en `react-router` y
+  en `react-router-dom`, y alcanzan sólo a las APIs RSC inestables, que esta
+  SPA declarativa no usa. Bajar a 7.11.0 no limpia el árbol: cambia el aviso
+  por una redirección abierta. Ver [[02-decisiones#D-058]].
+
+### Corrección del 2026-08-06 — la 8.3.0 sí estaba publicada
+
+- Lo registrado el 2026-08-04 y el 2026-08-05 decía que la versión corregida
+  `8.3.0` «todavía no está publicada». **Era falso.** `react-router@8.3.0`
+  salió el 2026-07-22 y corrige `GHSA-qwww-vcr4-c8h2`. El error vino de
+  consultar `react-router-dom`, que se queda en 7.18.2 porque React Router 8
+  retira ese paquete: el que sigue publicándose es `react-router`.
+- Lo que no cambia: el aviso sólo afecta a las APIs RSC inestables y esta SPA
+  declarativa con `BrowserRouter` no tiene servidor de React Router, acciones
+  RSC ni React Server Components. El camino vulnerable no es aplicable.
+- Lo que sí cambia: el motivo de no actualizar. No es que falte el arreglo, es
+  que React Router 8 exige Node ≥ 22.22.0, React/React DOM ≥ 19.2.7 y retirar
+  `react-router-dom`, y el proyecto usa React 18, Vite 6 y `react-router-dom`.
+  Queda como tarea propia en [[03-roadmap#Migración a React Router 8]].
+- Alcance: sólo documentación. No se modificó `package.json`, `package-lock.json`
+  ni ningún fichero de `src/`.
+
+## 2026-08-04 — React Router 7, secretos y compilación nativa
+
+- Migrado React Router DOM de 6.30.4 a 7.18.2. La navegación declarativa,
+  `basename` y cinco flujos críticos pasan en Chromium, Firefox, WebKit y
+  Safari móvil (20/20).
+- El retorno posterior al login rechaza barras invertidas de forma explícita;
+  siete pruebas cubren destinos válidos, externos y ambiguos.
+- La auditoría actual y del historial no encuentra secretos versionados. Se
+  amplían los ignores para almacenes de firma, perfiles y configuración
+  privada de Google/Android/iOS.
+- `npm audit` deja de reportar los dos avisos moderados de Router 6. Conserva
+  un aviso upstream `high` de las APIs RSC inestables, no utilizadas por esta
+  SPA. (Corregido el 2026-08-06: aquí se afirmaba que la 8.3.0 no estaba
+  publicada; sí lo estaba, desde el 2026-07-22. Ver la corrección fechada más
+  arriba.)
+- Capacitor sincroniza los proyectos actuales e iOS compila para simulador
+  con Xcode 26.6. Android queda sin recompilar en esta máquina por ausencia de
+  Java Runtime; no se sustituye por una afirmación sin comprobar.
+- README alinea scripts, Router 7 y el catálogo consolidado actual de 18
+  accesorios demostrativos.
+- La primera ejecución de CI sobre PostgreSQL 17 detectó que el borrado de
+  políticas heredadas asumía que `mensajes` ya existía. La migración base
+  comprueba ahora la relación antes de retirar esas políticas, por lo que
+  conserva la actualización de una base existente y admite una base vacía.
+
+## 2026-08-04 — Matriz multi-navegador y PWA offline real
+
+- Playwright suma Firefox, WebKit de escritorio y Safari móvil. Cinco flujos
+  críticos cubren inicio/idioma/ruta profunda, carrito/checkout, comparador,
+  chat y login: 20/20 aprobados en los cuatro proyectos locales.
+- `test:pwa` compila y sirve el build sin Supabase remoto. Nueve casos validan
+  manifest, iconos, control, precache, ruta profunda offline y que ni Supabase
+  ni rutas privadas entren en Cache Storage.
+- La prueba offline descubrió que JS/CSS no encontraban el precache desde una
+  ruta profunda; el service worker busca ahora por pathname en su caché
+  versionada.
+- La integración local añade una cuenta ficticia y un cierre de sesión real
+  antes de cortar red. Está descubierta, pero su ejecución local sigue
+  bloqueada por la ausencia de Docker; CI la ejecutará junto a las 27 RLS.
+
+## 2026-08-04 — Contrato reproducible de calidad
+
+- Prettier 3.9.6 establece formato para código, pruebas y configuración; deja
+  fuera de forma explícita generados, documentación, catálogos y diccionarios
+  grandes para evitar un diff ajeno al hardening.
+- ESLint 10 suma reglas compatibles de imports y promesas. Los plugins React y
+  JSX a11y no se fuerzan porque sus versiones actuales solo declaran soporte
+  hasta ESLint 9; axe conserva la cobertura accesible ejecutable.
+- Añadidos `format`, `format:check`, `lint:fix`, `test`, `test:watch`, `check`
+  rápido y `check:full`; CI ejecuta Prettier antes de tipos y lint.
+- Cinco pruebas puras nuevas cubren moneda, cuotas y detección de idioma. La
+  pasada `npm run check` aprueba formato, 0 errores ESLint, tipos, 129/129
+  Vitest y build sin credenciales. La regresión completa aprueba 273 E2E
+  generales, omite el único caso exclusivo de desarrollo al correr contra el
+  build y aprueba 6/6 del panel aislado.
+
+## 2026-08-04 — Landmarks únicos y aislamiento modal común
+
+- `/soporte` elimina el `<main>` anidado; 19 rutas públicas quedan protegidas
+  por una regresión explícita de landmarks.
+- El modal genérico, el menú móvil, la guía y el chat aíslan todo el fondo
+  hasta `#root`, sin retirar atributos `inert` que no les pertenecen, y
+  restauran el foco al control de apertura.
+- El selector ya no reduce el contraste del texto durante su animación y el
+  chat tiene nombre y controles accesibles en los cinco idiomas.
+- Verificación: 19/19 pruebas de accesibilidad sobre build en Chromium, axe
+  sin excepciones, TypeScript, build y 124/124 Vitest correctos.
+
+## 2026-08-04 — Supabase local reproducible en CI
+
+- Fijada la CLI 2.111.0 y añadidos `config.toml`, seed sin credenciales y
+  scripts de start/reset/status/stop.
+- El escenario se crea por GoTrue/PostgREST/Storage en cada ejecución, en vez
+  de insertar usuarios Auth a mano.
+- Nuevo workflow reutilizable de integración local; `ci.yml` lo necesita antes
+  de Pages y deja de depender de secretos `RLS_TEST_*`.
+- Verificación local: JSON/YAML correctos y preflight de integración correcto;
+  la ejecución se detiene con diagnóstico porque Docker no está instalado.
+
+## 2026-08-04 — Estados interactivos i18n y lenguaje del panel
+
+- Soporte y selector de modelos dejan de mezclar español; el filtro y los
+  nombres accesibles usan el nombre de catálogo traducido y los precios el
+  locale activo.
+- El panel interno se mantiene en castellano y fuerza `lang="es"` en sus dos
+  rutas, restaurando el idioma de tienda al salir.
+- Verificación: 11/11 casos de `idiomas.spec.ts` sobre build en Chromium,
+  TypeScript y 124/124 Vitest correctos; ESLint sin errores.
+- La afirmación documental de traducción completa se retira hasta cerrar el
+  resto del barrido registrado en I18N-001.
+
+## 2026-08-04 — Minimización del chat y límites de Storage
+
+- Nueva migración incremental que deja de recopilar `user_agent`, limpia ese
+  único dato histórico y mantiene la firma RPC por compatibilidad.
+- El bucket educativo queda privado, limitado a 5 MB y a PDF/JPEG/PNG; la
+  escritura se restringe al nombre canónico de la carpeta propia.
+- Las URLs firmadas para agentes caducan en 60 segundos.
+- `test:rls` ya no intenta levantar Vite: 27 casos se descubren correctamente
+  y se omiten con motivo explícito cuando faltan credenciales.
+- Verificación del bloque: 124/124 Vitest, incluidas 102 pruebas de esquema;
+  TypeScript, ESLint sin errores y build demostrativo correctos. La integración
+  GoTrue/PostgREST/Storage no se declara aprobada.
+
+## 2026-08-04 — Estado educativo nulo e informe RLS estrictamente JSON
+
+- `revisar_descuento_educativo()` comprueba `p_estado is null` antes del
+  `UPDATE`. Dos regresiones PGlite rechazan `NULL` y `aprobada` y comparan las
+  cuatro columnas de revisión antes y después para demostrar que no hay efectos
+  secundarios. El caso real de Supabase se fortalece sin elevar la suite de 27.
+- El workflow sustituye `npm run test:rls -- --reporter=json` por la invocación
+  directa de Playwright, captura su código real y valida que `rls.json` exista,
+  no esté vacío y sea JSON puro antes del recuento estricto.
+- El verificador suma regresiones para JSON válido, vacío, truncado, inexistente
+  y precedido por el encabezado de npm. La simulación de seis escenarios solo
+  acepta 27 aprobadas con código Playwright 0.
+- Verificación: 122/122 Vitest (100 de esquema), 264 E2E generales sobre build,
+  6/6 E2E del panel, TypeScript y build correctos; ESLint conserva 0 errores y
+  23 avisos anteriores. Las 27 RLS se descubren pero siguen omitidas por falta
+  del Supabase dedicado. `npm audit` mantiene las 2 vulnerabilidades moderadas
+  ya documentadas en SEG-001.
+
+## 2026-08-04 — Cierre de los hallazgos pendientes de la PR #34
+
+- Retirada completa la falsa eliminación de conversaciones: el archivo solo
+  cierra y reabre, y conserva el historial. La UI diferencia agente normal y
+  supervisor, usa «Liberar asignación» para asignaciones ajenas y muestra los
+  errores del servidor como alertas accesibles sin dejar botones bloqueados.
+- `revisar_descuento_educativo()` devuelve `P0002` si el cliente no existe;
+  PGlite comprueba éxito, inexistencia, ausencia de efectos laterales y rechazo
+  de cuentas no agente.
+- La clasificación de funciones y la auditoría compartida usan firmas exactas,
+  roles `EXECUTE` exactos y un `LEFT JOIN` que conserva `PUBLIC`. La misma
+  auditoría pasa en instalación limpia, actualización desde PR #33 y segunda
+  aplicación idempotente sin perder datos ni cambiar el catálogo.
+- El verificador RLS exige exactamente 27 descubiertas y aprobadas, ninguna
+  omitida, fallida o inestable, y código de Playwright cero. Siete pruebas
+  unitarias cubren 27/26/28, omitida, inestable, vacío y salida no cero.
+- La suite RLS mantiene 27 casos, usa marcas únicas por ejecución y refuerza
+  revisión educativa, gestión agente/supervisor y estados de reserva. Se
+  descubrió localmente, pero las 27 siguen omitidas por falta del Supabase
+  dedicado; no se presentan como aprobadas.
+- Verificación desde `npm ci`: 114 Vitest aprobadas (98 de esquema), 264 E2E
+  generales aprobadas con 1 omisión propia del modo desarrollo, y 6 E2E del
+  panel aprobadas. ESLint: 0 errores y 23 avisos conocidos. `npm audit` mantiene
+  las 2 vulnerabilidades moderadas ya registradas en SEG-001.
+
+## 2026-08-04 — La suite RLS se alinea con el esquema final
+
+- Detectado que los 21 casos contra Supabase real seguían usando operaciones
+  legítimas de la API anterior: INSERT directo de mensajes y reservas, y
+  registro de justificantes sin subir antes el objeto. Con el esquema final
+  habrían fallado por probar un flujo obsoleto.
+- Las operaciones legítimas pasan a los RPC finales. La suite crece a 27 casos
+  e incorpora login real de agentes, firma de respuestas, prohibición de
+  autoascenso, cierre/valoración, cola, aislamiento y upsert de Storage.
+- La limpieza borra los visitantes antes que los usuarios de Auth. Como
+  `visitantes.auth_id` usa `ON DELETE SET NULL`, el orden anterior dejaba chats
+  huérfanos en el proyecto de pruebas.
+- Se corrigen las instrucciones que aún mandaban ejecutar `schema.sql` y la
+  carpeta antigua `supabase/migraciones/`; la fuente única es
+  `supabase/migrations/20260802000100_estado_seguro.sql`.
+- Documentación viva actualizada con la arquitectura, CI, aplicaciones y el
+  bloqueo real: no hay proyecto Supabase dedicado ni secretos RLS.
+- Verificación local final: TypeScript limpio; ESLint con 0 errores y 23
+  avisos conocidos; 94 pruebas de esquema + 9 unitarias; build correcto; 264
+  E2E aprobadas y una omitida deliberadamente. Los 27 casos RLS se descubren,
+  pero siguen omitidos explícitamente por falta de infraestructura; por eso no
+  se integran ni despliegan todavía las PR de seguridad.
+
+## 2026-08-02 — Cierre de seguridad de Supabase y CI encadenado
+
+- Sesión anónima verificable para el visitante; se retira la lectura abierta
+  de chats y la autorización basada en UUID de `localStorage`.
+- Conversaciones, mensajes, agentes, clientes, descuentos y reservas escriben
+  mediante RPC acotados. Autor, propietario, fechas y transiciones sensibles
+  los fija el servidor.
+- Una sola migración ejecutable, probada desde cero y sobre el estado anterior
+  mediante PostgreSQL/PGlite.
+- CI unificado: calidad → build → E2E → RLS → Pages. Un push a `main`
+  sin el Supabase de pruebas debe fallar antes del despliegue.
 
 ## 2026-08-01 — La web habla cinco idiomas
 

@@ -45,8 +45,7 @@ export function TranslationNotice() {
       <div className="mx-auto flex max-w-6xl items-start gap-3">
         <Icon name="info" size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-ink/60" />
         <p className="min-w-0 flex-1 text-[13px] leading-snug text-ink">
-          <span className="font-semibold">{t('lang.demoNotice.title')}.</span>{' '}
-          {t('lang.demoNotice.body')}{' '}
+          <span className="font-semibold">{t('lang.demoNotice.title')}.</span> {t('lang.demoNotice.body')}{' '}
           <button
             type="button"
             onClick={() => setIdioma('es')}

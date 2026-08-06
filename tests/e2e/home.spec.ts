@@ -17,6 +17,8 @@ test('enlaces de accesorios llevan al catálogo /accesorios', async ({ page }) =
 test('a 375 px de ancho no hay scroll horizontal @mobile', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await page.goto('./')
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
   expect(overflow).toBeLessThanOrEqual(1)
 })

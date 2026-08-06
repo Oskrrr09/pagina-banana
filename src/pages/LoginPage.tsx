@@ -20,7 +20,7 @@ import { supabaseEnabled } from '../lib/supabase'
  */
 export function safeRedirect(raw: string | null): string {
   if (!raw) return '/cuenta'
-  if (!raw.startsWith('/') || raw.startsWith('//')) return '/cuenta'
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return '/cuenta'
   return raw
 }
 
@@ -42,11 +42,7 @@ export function LoginPage() {
     const { error: signInError } = await signIn(email.trim(), password)
     setSubmitting(false)
     if (signInError) {
-      setError(
-        signInError === 'Invalid login credentials'
-          ? t('auth.badCredentials')
-          : signInError,
-      )
+      setError(signInError === 'Invalid login credentials' ? t('auth.badCredentials') : signInError)
     }
   }
 
@@ -58,16 +54,12 @@ export function LoginPage() {
     <Container className="py-12">
       <div className="mx-auto max-w-md">
         <h1 className="text-2xl font-bold text-ink">{t('auth.signInTitle')}</h1>
-        <p className="mt-2 text-sm text-muted">
-          {t('auth.signInBody')}
-        </p>
+        <p className="mt-2 text-sm text-muted">{t('auth.signInBody')}</p>
 
         {!supabaseEnabled ? (
           <p className="mt-6 rounded-[12px] border border-line bg-neutral p-4 text-sm text-muted">
-            Las cuentas necesitan Supabase configurado. Copia{' '}
-            <code className="font-mono text-xs">.env.example</code> a{' '}
-            <code className="font-mono text-xs">.env.local</code> con las credenciales
-            del proyecto para habilitarlas.
+            Las cuentas necesitan Supabase configurado. Copia <code className="font-mono text-xs">.env.example</code> a{' '}
+            <code className="font-mono text-xs">.env.local</code> con las credenciales del proyecto para habilitarlas.
           </p>
         ) : (
           <>

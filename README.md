@@ -16,7 +16,7 @@ sobre React + Vite + TypeScript y publicada en GitHub Pages.
 | --- | --- |
 | Node.js | 24 (versión utilizada en GitHub Actions) |
 | React / React DOM | 18.3.1 |
-| React Router DOM | 6.30.4 |
+| React Router DOM | 7.18.2 |
 | Motion (`motion/react`) | 11.x |
 | Vite | 6.x |
 | TypeScript | 5.x |
@@ -34,7 +34,14 @@ nvm use                 # opcional, si usas nvm — fija Node 24 según .nvmrc
 npm ci                  # instala dependencias reproducibles
 npm run dev             # http://localhost:5173/pagina-banana/
 npm run build           # comprueba tipos + genera dist/
+npm run check           # formato + lint + tipos + Vitest/esquema + build
+npm run check:full      # check + E2E multi-navegador + panel de agentes
+npm run test:unit       # unitarias y PostgreSQL/PGlite
+npm run test:integration # Supabase local: RLS + cierre de sesión PWA
+npm run test:smoke      # flujos críticos en Chromium, Firefox y WebKit
+npm run test:pwa        # manifest, precache y arranque offline
 npm run test:e2e        # pruebas end-to-end con Playwright
+npm run test:e2e:agent  # permisos y errores del panel con backend controlado
 npm run test:e2e:ui     # modo UI (Playwright test explorer)
 npm run test:e2e:headed # con el navegador visible
 ```
@@ -42,7 +49,7 @@ npm run test:e2e:headed # con el navegador visible
 Antes de ejecutar los tests por primera vez:
 
 ```bash
-npx playwright install chromium
+npx playwright install chromium firefox webkit
 ```
 
 ## Aplicaciones
@@ -64,9 +71,9 @@ npm run app:ios      # build + sync + abre Xcode
 npm run app:android  # build + sync + abre Android Studio
 ```
 
-Los dos últimos necesitan Xcode completo, Android Studio y un JDK. **El
-binario no se ha compilado nunca todavía**; los requisitos, los pasos y lo
-que hace falta para publicar de verdad están en
+Los dos últimos necesitan Xcode completo, Android Studio y un JDK. Los
+binarios se compilaron y ejecutaron en un simulador iOS y un emulador Android
+el 2026-08-01; los requisitos y lo que hace falta para publicar de verdad están en
 [`docs/06-app-nativa.md`](docs/06-app-nativa.md).
 
 ## Catálogo desarrollado
@@ -81,15 +88,18 @@ Cinco familias con datos, imágenes locales y variantes reales:
 | **Apple Watch** | 3 (Ultra 3, Series 11, SE 3) | Tamaño y GPS/Cellular seleccionables (excepto Ultra) |
 | **AirPods** | 2 (Pro 3, Max) | 5 colores de AirPods Max |
 
-**Accesorios** aún no tiene catálogo propio: los cinco tiles de la home
-enlazan a `/buscar?q=<término>` (fundas, magsafe, correas, teclados, audio).
+**Accesorios** reúne 18 modelos demostrativos y fichas propias bajo
+`/accesorios`, con
+fotografías, variantes y compatibilidad estructurada. Sigue siendo contenido
+demostrativo, sin stock ni compra real.
 
 ## Estructura del código
 
 ```
 src/
   data/
-    products.ts         Catálogo central (5 familias, ~20 modelos)
+    products/           Catálogo por familia
+    accessories/        Catálogo de accesorios por categoría
     stores.ts           5 tiendas con coords + mapQuery + horarios reales
     nav.ts              familiesNav, utilityLinks, directLinks
     content.ts          Servicios, FAQ, ventajas
@@ -110,7 +120,9 @@ src/
   pages/                Home, Family, Model, Variant, Search, Compare,
                         Cart, Checkout, Services, PlanRenove, Stores,
                         StoreDetail, Support, Favorites, NotFound
-tests/e2e/              Pruebas Playwright (home, checkout, search)
+tests/e2e/              Pruebas Playwright de interfaz y accesibilidad
+tests/schema/           Instalación, actualización y RLS en PGlite
+tests/rls/              GoTrue/PostgREST/Storage en Supabase dedicado
 docs/                   Documentación viva (00–05 + sesiones)
 public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 ```
@@ -153,7 +165,8 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
   `CheckoutProvider`. Cambiarla en cualquiera de los dos actualiza el estado
   compartido.
 
-Todo esto es demostrativo: no hay backend, ni pagos, ni emails.
+Todo esto es demostrativo: existe un espejo opcional en Supabase cuando hay
+sesión, pero no hay pedidos comerciales, pagos ni emails reales.
 
 ## Favoritos con seguimiento de disponibilidad (`/favoritos`)
 
@@ -332,13 +345,17 @@ sin conexión con un sistema real de gestión de reparaciones:
   `variantPath` para las URLs. Añadir o retirar modelos aparece o desaparece
   automáticamente sin tocar el Header.
 
-## Chat provisional
+## Chat de Bananito
 
-`<ChatBubble />` es solo un aviso ("El chat estará disponible próximamente").
-Se oculta durante el checkout (`/checkout/*`) para no distraer del proceso
-de compra. El panel es accesible: `role="dialog"` + `aria-modal="true"`,
-foco al botón cerrar al abrir, Escape cierra y devuelve foco al botón
-flotante.
+`<ChatBubble />` abre una conversación persistente y en tiempo real con
+Supabase cuando el proyecto está configurado. El visitante no crea una cuenta,
+pero obtiene una sesión anónima firmada; la apertura y los mensajes pasan por
+RPC y RLS limita cada conversación a su propietario. El equipo responde desde
+`/agente`, protegido por una sesión y una fila válida en `agentes`.
+
+Sin credenciales, el widget cae a una respuesta local de demostración en vez
+de romper la tienda. Se oculta durante `/checkout/*`. El diálogo mantiene
+nombre accesible, trampa de foco, Escape y retorno del foco al activador.
 
 ## Persistencia
 
@@ -377,14 +394,13 @@ flotante.
 
 ## CI / CD
 
-- `.github/workflows/deploy.yml` — build + publicación a GitHub Pages en
-  cada push a `main`.
-- `.github/workflows/e2e.yml` — `npm ci` + `npm run build` +
-  `npx playwright install --with-deps chromium` + `npm run test:e2e`
-  en cada push/PR sobre `main`. **Solo se instala Chromium**, así que
-  el proyecto `mobile` está deliberadamente configurado con `Pixel 5`
-  (Chromium) en `playwright.config.ts` para no requerir WebKit. Sube
-  el reporte HTML como artefacto si algo falla.
+`.github/workflows/ci.yml` encadena tipos, ESLint, Vitest/esquema, build,
+Playwright y validación RLS antes de GitHub Pages. Solo publica desde `main`.
+Las pruebas de navegador usan Chromium y Pixel 5; las RLS necesitan un
+Supabase dedicado y bloquean un despliegue de `main` si faltan sus secretos.
+El job RLS invoca Playwright directamente con `--reporter=json`, conserva su
+código de salida y rechaza informes ausentes, vacíos, malformados o con texto
+adicional antes de exigir exactamente 27 pruebas aprobadas.
 
 ## Pruebas Playwright
 
@@ -394,11 +410,12 @@ flotante.
 - `chromium` — todas las pruebas.
 - `mobile` (Pixel 5) — solo las marcadas con `@mobile` o `@all`.
 
-Suites actuales (93 pruebas, medido con `npm run test:e2e` — 91 en
-`chromium` + 2 en `mobile` etiquetadas `@mobile`):
+La ejecución completa del 2026-08-04 sobre el build produjo 264 pruebas
+aprobadas y una omitida porque solo aplica al servidor de desarrollo. El
+conteo debe tomarse siempre de Playwright, no mantenerse a mano en esta lista.
 
-- `tests/e2e/home.spec.ts` — carga de portada, tiles de accesorios que
-  llevan a `/buscar` y ausencia de scroll horizontal a 375 px.
+- `tests/e2e/home.spec.ts` — carga de portada, acceso al catálogo de
+  accesorios y ausencia de scroll horizontal a 375 px.
 - `tests/e2e/checkout.spec.ts` — guardas de `/checkout/2` y `/checkout/3`,
   flujo demostrativo completo (`BC-\d{6}`) con recarga y chat oculto en
   checkout.

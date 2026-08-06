@@ -91,10 +91,7 @@ export function Footer() {
         <div className="hidden grid-cols-4 gap-8 md:grid">
           {blocks.map((block, index) => (
             <section key={block.title} aria-labelledby={`footer-desktop-heading-${index}`}>
-              <h2
-                id={`footer-desktop-heading-${index}`}
-                className="pb-4 text-sm font-bold text-ink"
-              >
+              <h2 id={`footer-desktop-heading-${index}`} className="pb-4 text-sm font-bold text-ink">
                 {t(block.title)}
               </h2>
               <FooterLinks links={block.links} />
@@ -104,9 +101,7 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
           <Logo />
-          <p className="text-xs leading-relaxed text-muted">
-            {t('footer.demoNotice')}
-          </p>
+          <p className="text-xs leading-relaxed text-muted">{t('footer.demoNotice')}</p>
           <div className="flex items-center gap-3 text-muted">
             <button aria-label={t('favStore.aria')} className="text-sm hover:text-ink">
               {t('favStore.current', { tienda: 'Triana' })}
@@ -118,22 +113,13 @@ export function Footer() {
   )
 }
 
-function FooterLinks({
-  links,
-  className = '',
-}: {
-  links: { label: ClaveTexto; to: string }[]
-  className?: string
-}) {
+function FooterLinks({ links, className = '' }: { links: { label: ClaveTexto; to: string }[]; className?: string }) {
   const t = useT()
   return (
     <ul className={`min-w-0 space-y-2 ${className}`}>
       {links.map((link) => (
         <li key={link.label}>
-          <Link
-            to={link.to}
-            className="break-words text-sm text-muted transition-colors hover:text-ink"
-          >
+          <Link to={link.to} className="break-words text-sm text-muted transition-colors hover:text-ink">
             {t(link.label)}
           </Link>
         </li>

@@ -23,9 +23,10 @@ Antes de cambiar código o contenido:
   cambios de funcionamiento, diseño, dependencias ni datos del catálogo.
 - No presentes como reales precios, stock, financiación, horarios, direcciones,
   reseñas, garantías o condiciones todavía marcados como demostrativos.
-- Centraliza el catálogo en `src/data/products.ts`, las tiendas en
-  `src/data/stores.ts` y el resto del contenido estático en
-  `src/data/content.ts`; evita duplicar esos datos en componentes.
+- Centraliza los dispositivos en `src/data/products/`, los accesorios en
+  `src/data/accessories/`, las tiendas en `src/data/stores.ts` y el resto del
+  contenido estático en `src/data/content.ts`; evita duplicar esos datos en
+  componentes.
 - Respeta el `basename` de React Router y `import.meta.env.BASE_URL`: producción
   se publica bajo `/pagina-banana/`, no en la raíz del dominio.
 - Conserva las medidas de accesibilidad existentes: foco visible, nombres
@@ -57,16 +58,22 @@ completas ni conviertas las sesiones en una segunda fuente de verdad.
 
 ## Verificación
 
-La comprobación disponible hoy es:
+La comprobación completa disponible hoy es:
 
 ```bash
 npm ci
-npm run build
+npm run check
+npm run check:full
 ```
 
-No hay scripts de test ni lint configurados. No afirmes que existen o que han
-pasado. Si añades uno en el futuro, documenta el comando aquí y en
-`docs/00-estado-actual.md`.
+`npm run check` es la pasada rápida: Prettier, ESLint, TypeScript, Vitest
+(unitarias y esquema) y build sin credenciales. `check:full` añade Playwright
+contra ese build: suite completa en Chromium, smoke en Firefox/WebKit/Safari
+móvil, recorridos móviles Chromium y el panel aislado. Las 27 pruebas RLS
+reales no forman parte de esos comandos: `npm run test:integration` levanta
+Supabase local, prueba también un cierre de sesión PWA real y exige Docker. No
+presentes esas pruebas como aprobadas cuando el preflight no haya podido
+ejecutarlas.
 
 Antes de terminar:
 

@@ -1,14 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import {
-  supabaseEnabled,
-  type AgentStatus,
-  type DbConversation,
-  type DbCustomer,
-} from '../lib/supabase'
+import { supabaseEnabled, type AgentStatus, type DbAgent, type DbConversation, type DbCustomer } from '../lib/supabase'
 import {
   assignConversation,
-  deleteConversation,
   setConversationState,
   useAgentConversation,
   useAgentInbox,
@@ -18,12 +12,7 @@ import {
   type InboxItem,
 } from '../lib/chatSession'
 import { useAgentAuth } from '../lib/agentAuth'
-import {
-  describeStatus,
-  listPendingRequests,
-  reviewRequest,
-  signedProofUrl,
-} from '../lib/educationalDiscount'
+import { describeStatus, listPendingRequests, reviewRequest, signedProofUrl } from '../lib/educationalDiscount'
 import { useAppBadge, useNotifications } from '../lib/pwa'
 import { useNewMessageAlert, useUnreadConversations } from '../lib/agentUnread'
 import { AgentAppBar } from '../components/agent/AgentAppBar'
@@ -137,10 +126,7 @@ export function AgentPage() {
   return (
     <div className="flex h-screen flex-col bg-neutral">
       <TopBar tab={tab} onTabChange={setTab} sinLeer={badge} />
-      <AgentAppBar
-        notificaciones={permission}
-        onPedirNotificaciones={() => void pedirNotificaciones()}
-      />
+      <AgentAppBar notificaciones={permission} onPedirNotificaciones={() => void pedirNotificaciones()} />
       {tab === 'conversaciones' ? (
         <div className="flex min-h-0 flex-1">
           <InboxColumn
@@ -156,11 +142,7 @@ export function AgentPage() {
               setSelectedId(null)
             }}
           />
-          <ConversationColumn
-            conversationId={selectedId}
-            conversation={selected?.conversation ?? null}
-            onDeleted={() => setSelectedId(null)}
-          />
+          <ConversationColumn conversationId={selectedId} conversation={selected?.conversation ?? null} />
           <VisitorColumn conversationId={selectedId} />
         </div>
       ) : (
@@ -178,15 +160,7 @@ const ESTADOS: { value: AgentStatus; label: string; dot: string }[] = [
   { value: 'ausente', label: 'Ausente', dot: 'bg-ink/40' },
 ]
 
-function TopBar({
-  tab,
-  onTabChange,
-  sinLeer,
-}: {
-  tab: Tab
-  onTabChange: (t: Tab) => void
-  sinLeer: number
-}) {
+function TopBar({ tab, onTabChange, sinLeer }: { tab: Tab; onTabChange: (t: Tab) => void; sinLeer: number }) {
   const { agente, signOut, setEstado } = useAgentAuth()
   const actual = ESTADOS.find((e) => e.value === agente?.estado) ?? ESTADOS[0]
 
@@ -196,11 +170,7 @@ function TopBar({
       style={{ background: BANANA_YELLOW }}
     >
       <Link to="/" className="flex items-center gap-3 text-ink" aria-label="Ir a la web">
-        <img
-          src={`${import.meta.env.BASE_URL}img/logo-dark.svg`}
-          alt="Banana Computer"
-          className="h-6 w-auto"
-        />
+        <img src={`${import.meta.env.BASE_URL}img/logo-dark.svg`} alt="Banana Computer" className="h-6 w-auto" />
         <span className="text-sm font-semibold">Panel de agentes</span>
       </Link>
 
@@ -253,15 +223,7 @@ function TopBar({
   )
 }
 
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
@@ -284,9 +246,8 @@ function NotAnAgentScreen() {
       <div className="max-w-lg space-y-3 rounded-2xl border border-line bg-surface p-6 shadow-sm">
         <h1 className="text-lg font-semibold text-ink">Sin permiso de agente</h1>
         <p className="text-sm text-ink/70">
-          La cuenta <strong>{session?.user.email}</strong> ha iniciado sesión, pero no
-          está dada de alta como agente. El alta se hace a mano desde el panel de
-          Supabase; los pasos están en{' '}
+          La cuenta <strong>{session?.user.email}</strong> ha iniciado sesión, pero no está dada de alta como agente. El
+          alta se hace a mano desde el panel de Supabase; los pasos están en{' '}
           <code className="rounded bg-neutral px-1 text-xs">supabase/schema.sql</code>.
         </p>
         <button
@@ -325,32 +286,18 @@ function InboxColumn({
         <span className="text-xs text-ink/60">{items.length}</span>
       </div>
 
-      <div
-        role="tablist"
-        aria-label="Bandeja de conversaciones"
-        className="flex gap-1 border-b border-line px-3 py-2"
-      >
-        <BandejaTab
-          active={bandeja === 'abierta'}
-          onClick={() => onBandejaChange('abierta')}
-        >
+      <div role="tablist" aria-label="Bandeja de conversaciones" className="flex gap-1 border-b border-line px-3 py-2">
+        <BandejaTab active={bandeja === 'abierta'} onClick={() => onBandejaChange('abierta')}>
           Abiertas
         </BandejaTab>
-        <BandejaTab
-          active={bandeja === 'cerrada'}
-          onClick={() => onBandejaChange('cerrada')}
-        >
+        <BandejaTab active={bandeja === 'cerrada'} onClick={() => onBandejaChange('cerrada')}>
           Archivadas
         </BandejaTab>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {status === 'loading' && (
-          <p className="p-4 text-sm text-ink/60">Cargando…</p>
-        )}
-        {status === 'error' && (
-          <p className="p-4 text-sm text-danger">Error al cargar conversaciones.</p>
-        )}
+        {status === 'loading' && <p className="p-4 text-sm text-ink/60">Cargando…</p>}
+        {status === 'error' && <p className="p-4 text-sm text-danger">Error al cargar conversaciones.</p>}
         {status === 'ready' && items.length === 0 && (
           <p className="p-4 text-sm text-ink/60">
             {bandeja === 'abierta'
@@ -376,20 +323,11 @@ function InboxColumn({
                     className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full"
                     style={{ background: BANANA_BLUE }}
                   >
-                    <img
-                      src={BANANITO_IMG}
-                      alt=""
-                      className="h-7 w-7 object-contain"
-                    />
+                    <img src={BANANITO_IMG} alt="" className="h-7 w-7 object-contain" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p
-                        className={
-                          'truncate text-sm text-ink ' +
-                          (sinLeer ? 'font-bold' : 'font-medium')
-                        }
-                      >
+                      <p className={'truncate text-sm text-ink ' + (sinLeer ? 'font-bold' : 'font-medium')}>
                         {visitorDisplayName(visitor, conversation.visitor_id)}
                       </p>
                       {sinLeer && (
@@ -405,12 +343,7 @@ function InboxColumn({
                         {formatRelative(conversation.ultimo_mensaje_at)}
                       </span>
                     </div>
-                    <p
-                      className={
-                        'mt-0.5 truncate text-xs ' +
-                        (sinLeer ? 'font-semibold text-ink' : 'text-ink/60')
-                      }
-                    >
+                    <p className={'mt-0.5 truncate text-xs ' + (sinLeer ? 'font-semibold text-ink' : 'text-ink/60')}>
                       {lastMessage
                         ? `${lastMessage.autor === 'visitor' ? '' : lastMessage.autor === 'agent' ? 'Tú: ' : 'Bot: '}${lastMessage.texto}`
                         : 'Sin mensajes todavía'}
@@ -454,11 +387,9 @@ function BandejaTab({
 function ConversationColumn({
   conversationId,
   conversation,
-  onDeleted,
 }: {
   conversationId: string | null
   conversation: DbConversation | null
-  onDeleted: () => void
 }) {
   const assignedTo = conversation?.agente_id ?? null
   const estado = conversation?.estado ?? 'abierta'
@@ -466,12 +397,6 @@ function ConversationColumn({
   const { visitor } = useConversationVisitor(conversationId)
   const agentNames = useAgentNames()
   const { agente } = useAgentAuth()
-  const [input, setInput] = useState('')
-  const [assigning, setAssigning] = useState(false)
-  const [closing, setClosing] = useState(false)
-  const [closeDialog, setCloseDialog] = useState(false)
-  const [deleteDialog, setDeleteDialog] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -482,71 +407,25 @@ function ConversationColumn({
 
   // Nombre si lo tenemos (de la cuenta o del formulario de invitado); si
   // no, un identificador corto para poder distinguir conversaciones.
-  const visitorLabel = conversationId
-    ? visitorDisplayName(visitor, conversation?.visitor_id ?? conversationId)
-    : ''
+  const visitorLabel = conversationId ? visitorDisplayName(visitor, conversation?.visitor_id ?? conversationId) : ''
 
   if (!conversationId) {
     return (
       <main className="grid flex-1 place-items-center bg-neutral p-8 text-center">
         <div>
-          <p className="text-sm text-ink/70">
-            Selecciona una conversación de la lista para empezar a responder.
-          </p>
+          <p className="text-sm text-ink/70">Selecciona una conversación de la lista para empezar a responder.</p>
         </div>
       </main>
     )
   }
 
-  const submit = async () => {
-    const trimmed = input.trim()
-    if (!trimmed) return
-    setInput('')
-    await sendMessage(trimmed)
-  }
-
   const mine = assignedTo != null && assignedTo === agente?.id
   const takenByOther = assignedTo != null && assignedTo !== agente?.id
   const cerrada = estado === 'cerrada'
-
-  const toggleAssign = async () => {
-    if (!conversationId || !agente) return
-    setAssigning(true)
-    await assignConversation(conversationId, mine ? null : agente.id)
-    setAssigning(false)
-  }
-
-  // Reabrir es inmediato; cerrar pasa antes por el diálogo que pregunta si
-  // se le pide valoración al cliente.
-  const toggleEstado = async () => {
-    if (!conversationId) return
-    if (!cerrada) {
-      setCloseDialog(true)
-      return
-    }
-    setClosing(true)
-    await setConversationState(conversationId, 'abierta')
-    setClosing(false)
-  }
-
-  const confirmarCierre = async (pedirValoracion: boolean) => {
-    if (!conversationId) return
-    setClosing(true)
-    await setConversationState(conversationId, 'cerrada', { pedirValoracion })
-    setClosing(false)
-    setCloseDialog(false)
-  }
-
-  const confirmarBorrado = async () => {
-    if (!conversationId) return
-    setDeleting(true)
-    const { error } = await deleteConversation(conversationId)
-    setDeleting(false)
-    setDeleteDialog(false)
-    // La suscripción realtime refresca la bandeja; aquí solo soltamos la
-    // selección para no quedarnos apuntando a algo que ya no existe.
-    if (!error) onDeleted()
-  }
+  // Un supervisor puede gestionar estado y asignación de otros, pero no
+  // responder firmando dentro de una conversación ajena. Para responder debe
+  // liberarla y asumirla explícitamente; así se conserva la autoría real.
+  const puedeResponder = !cerrada && !takenByOther
 
   return (
     <main className="flex min-w-0 flex-1 flex-col bg-neutral">
@@ -574,45 +453,11 @@ function ConversationColumn({
             </p>
           )}
           <p className="text-xs text-ink/60">
-            Canal: web ·{' '}
-            {mine
-              ? 'Asignada a ti'
-              : takenByOther
-                ? 'Asignada a otro agente'
-                : 'Sin asignar'}
+            Canal: web · {mine ? 'Asignada a ti' : takenByOther ? 'Asignada a otro agente' : 'Sin asignar'}
             {cerrada && ' · Archivada'}
           </p>
         </div>
-        <div className="ml-auto flex shrink-0 gap-2">
-          <button
-            type="button"
-            onClick={() => void toggleAssign()}
-            disabled={assigning || takenByOther}
-            className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {mine ? 'Soltar' : 'Asignarme'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void toggleEstado()}
-            disabled={closing}
-            className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {cerrada ? 'Reabrir' : 'Cerrar'}
-          </button>
-          {/* Borrar solo desde el archivo: obliga a cerrar antes, así no se
-              elimina por error una conversación viva. */}
-          {cerrada && (
-            <button
-              type="button"
-              onClick={() => setDeleteDialog(true)}
-              disabled={deleting}
-              className="cursor-pointer rounded-full border border-danger px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Eliminar
-            </button>
-          )}
-        </div>
+        <ConversationActions conversationId={conversationId} estado={estado} assignedTo={assignedTo} agent={agente} />
       </header>
 
       {/* Valoración recibida */}
@@ -624,100 +469,22 @@ function ConversationColumn({
               {'★'.repeat(conversation.valoracion_estrellas)}
               {'☆'.repeat(5 - conversation.valoracion_estrellas)}
             </span>{' '}
-            <span className="font-normal text-ink/70">
-              ({conversation.valoracion_estrellas} de 5)
-            </span>
+            <span className="font-normal text-ink/70">({conversation.valoracion_estrellas} de 5)</span>
           </p>
           {conversation.valoracion_observacion && (
-            <p className="mt-1 text-sm text-ink/80">
-              “{conversation.valoracion_observacion}”
-            </p>
+            <p className="mt-1 text-sm text-ink/80">“{conversation.valoracion_observacion}”</p>
           )}
         </div>
       )}
-      {cerrada &&
-        conversation?.valoracion_solicitada &&
-        conversation.valoracion_estrellas == null && (
-          <div className="border-b border-line bg-surface px-6 py-2 text-xs text-ink/60">
-            Valoración pedida al cliente · pendiente de respuesta
-          </div>
-        )}
-
-      {closeDialog && (
-        <ConfirmDialog
-          title="Cerrar conversación"
-          onCancel={() => setCloseDialog(false)}
-          busy={closing}
-        >
-          <p className="text-sm text-ink/80">
-            ¿Quieres pedirle al cliente que valore la atención? Verá un
-            formulario de estrellas la próxima vez que abra el chat.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void confirmarCierre(true)}
-              disabled={closing}
-              className="cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              Cerrar y pedir valoración
-            </button>
-            <button
-              type="button"
-              onClick={() => void confirmarCierre(false)}
-              disabled={closing}
-              className="cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold text-ink hover:bg-black/5 disabled:opacity-50"
-            >
-              Cerrar sin pedirla
-            </button>
-          </div>
-        </ConfirmDialog>
+      {cerrada && conversation?.valoracion_solicitada && conversation.valoracion_estrellas == null && (
+        <div className="border-b border-line bg-surface px-6 py-2 text-xs text-ink/60">
+          Valoración pedida al cliente · pendiente de respuesta
+        </div>
       )}
 
-      {deleteDialog && (
-        <ConfirmDialog
-          title="Eliminar conversación"
-          onCancel={() => setDeleteDialog(false)}
-          busy={deleting}
-        >
-          <p className="text-sm text-ink/80">
-            Se borrarán la conversación y todos sus mensajes.{' '}
-            <strong>Esto no se puede deshacer.</strong>
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void confirmarBorrado()}
-              disabled={deleting}
-              className="cursor-pointer rounded-full bg-danger px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {deleting ? 'Eliminando…' : 'Sí, eliminar'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeleteDialog(false)}
-              disabled={deleting}
-              className="cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold text-ink hover:bg-black/5 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-          </div>
-        </ConfirmDialog>
-      )}
-
-      <div
-        ref={scrollRef}
-        className="flex-1 space-y-3 overflow-y-auto px-6 py-6"
-        style={CHAT_BACKGROUND}
-      >
-        {status === 'loading' && (
-          <p className="text-center text-xs text-ink/60">Cargando historial…</p>
-        )}
-        {status === 'error' && (
-          <p className="text-center text-xs text-danger">
-            No se pudo cargar la conversación.
-          </p>
-        )}
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-6 py-6" style={CHAT_BACKGROUND}>
+        {status === 'loading' && <p className="text-center text-xs text-ink/60">Cargando historial…</p>}
+        {status === 'error' && <p className="text-center text-xs text-danger">No se pudo cargar la conversación.</p>}
         {messages.map((m) => {
           // Aquí manda el punto de vista del AGENTE, al revés que en la
           // burbuja de la web: todo lo que sale de Banana (agente y también
@@ -736,39 +503,26 @@ function ConversationColumn({
               : visitorDisplayName(visitor)
 
           return (
-            <div
-              key={m.id}
-              className={deBanana ? 'flex justify-end' : 'flex items-end gap-2'}
-            >
+            <div key={m.id} className={deBanana ? 'flex justify-end' : 'flex items-end gap-2'}>
               {!deBanana && (
                 <span
                   className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#c9c9cf]"
                   aria-hidden
                 >
-                  <span className="text-[10px] font-bold text-white">
-                    {visitorDisplayName(visitor).charAt(0)}
-                  </span>
+                  <span className="text-[10px] font-bold text-white">{visitorDisplayName(visitor).charAt(0)}</span>
                 </span>
               )}
               <div className={'max-w-[70%] ' + (deBanana ? 'text-right' : '')}>
-                <p className="mb-0.5 px-1 text-[11px] font-medium text-ink/60">
-                  {autorNombre}
-                </p>
+                <p className="mb-0.5 px-1 text-[11px] font-medium text-ink/60">{autorNombre}</p>
                 <div
                   className={
                     'inline-block whitespace-pre-wrap break-words rounded-[16px] px-3.5 py-2 text-left text-sm shadow-sm ' +
-                    (deBanana
-                      ? 'rounded-br-[4px]'
-                      : 'rounded-bl-[4px] bg-surface text-ink') +
+                    (deBanana ? 'rounded-br-[4px]' : 'rounded-bl-[4px] bg-surface text-ink') +
                     // Sobre el azul pastel del bot el texto blanco no se
                     // leería, así que ahí va en tinta.
                     (deBanana ? (isBot ? ' text-ink' : ' text-white') : '')
                   }
-                  style={
-                    deBanana
-                      ? { background: isBot ? BANANA_BLUE_PASTEL : BANANA_BLUE }
-                      : undefined
-                  }
+                  style={deBanana ? { background: isBot ? BANANA_BLUE_PASTEL : BANANA_BLUE } : undefined}
                 >
                   {m.texto}
                 </div>
@@ -780,35 +534,274 @@ function ConversationColumn({
 
       {cerrada ? (
         <div className="border-t border-line bg-surface px-6 py-4 text-sm text-ink/60">
-          Conversación archivada. Reábrela para poder responder; si el visitante
-          vuelve a escribir se le abrirá una conversación nueva.
+          Conversación archivada. Reábrela para poder responder; si el visitante vuelve a escribir se le abrirá una
+          conversación nueva.
         </div>
       ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void submit()
-          }}
-          className="flex items-center gap-2 border-t border-line bg-surface px-6 py-4"
-        >
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Responde al visitante…"
-            aria-label="Responder al visitante"
-            className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim()}
-            className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-            style={{ background: BANANA_BLUE }}
-          >
-            Enviar
-          </button>
-        </form>
+        <AgentMessageComposer canReply={puedeResponder} takenByOther={takenByOther} sendMessage={sendMessage} />
       )}
     </main>
+  )
+}
+
+export function AgentMessageComposer({
+  canReply,
+  takenByOther,
+  sendMessage,
+}: {
+  canReply: boolean
+  takenByOther: boolean
+  sendMessage: (text: string) => Promise<{ error: string | null }>
+}) {
+  const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const submit = async () => {
+    const trimmed = input.trim()
+    if (!trimmed) return
+    setNotice(null)
+    setSending(true)
+    try {
+      const { error } = await sendMessage(trimmed)
+      if (error) {
+        setNotice(error)
+        return
+      }
+      setInput('')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'No se pudo enviar el mensaje.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault()
+        void submit()
+      }}
+      className="flex items-center gap-2 border-t border-line bg-surface px-6 py-4"
+    >
+      <input
+        value={input}
+        onChange={(event) => setInput(event.target.value)}
+        placeholder="Responde al visitante…"
+        aria-label="Responder al visitante"
+        disabled={!canReply || sending}
+        className="flex-1 rounded-full border border-line bg-neutral px-4 py-2.5 text-sm text-ink outline-none focus:border-ink/30"
+      />
+      <button
+        type="submit"
+        disabled={!input.trim() || !canReply || sending}
+        className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+        style={{ background: BANANA_BLUE }}
+      >
+        {sending ? 'Enviando…' : 'Enviar'}
+      </button>
+      {!canReply && takenByOther && (
+        <p className="text-xs text-ink/60">Libera la asignación y asígnatela antes de responder.</p>
+      )}
+      {notice && (
+        <p role="alert" className="text-xs font-medium text-[#b3261e]">
+          {notice}
+        </p>
+      )}
+    </form>
+  )
+}
+
+type ConversationOperation = 'assign' | 'release' | 'close' | 'reopen'
+
+interface ConversationActionOperations {
+  assign: typeof assignConversation
+  changeState: typeof setConversationState
+}
+
+const DEFAULT_CONVERSATION_OPERATIONS: ConversationActionOperations = {
+  assign: assignConversation,
+  changeState: setConversationState,
+}
+
+function readableError(error: unknown): string {
+  return error instanceof Error ? error.message : 'La operación no se pudo completar.'
+}
+
+/**
+ * Acciones observables de una conversación. La autorización sigue en SQL;
+ * aquí se evita ofrecer operaciones que el rol actual no puede completar y se
+ * conserva siempre el error devuelto por el servidor.
+ */
+export function ConversationActions({
+  conversationId,
+  estado,
+  assignedTo,
+  agent,
+  operations = DEFAULT_CONVERSATION_OPERATIONS,
+  onSuccess,
+}: {
+  conversationId: string
+  estado: DbConversation['estado']
+  assignedTo: string | null
+  agent: Pick<DbAgent, 'id' | 'rol'> | null
+  operations?: ConversationActionOperations
+  onSuccess?: (operation: ConversationOperation) => void
+}) {
+  const [assigning, setAssigning] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const [closeDialog, setCloseDialog] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
+
+  const mine = assignedTo != null && assignedTo === agent?.id
+  const takenByOther = assignedTo != null && assignedTo !== agent?.id
+  const esSupervisor = agent?.rol === 'supervisor'
+  const cerrada = estado === 'cerrada'
+  const assignmentOperation: 'assign' | 'release' | null = cerrada
+    ? null
+    : mine || (takenByOther && esSupervisor)
+      ? 'release'
+      : assignedTo == null
+        ? 'assign'
+        : null
+  const assignmentLabel = mine
+    ? 'Soltar'
+    : takenByOther
+      ? esSupervisor
+        ? 'Liberar asignación'
+        : 'Asignada a otro agente'
+      : 'Asignarme'
+  const canChangeState = Boolean(agent && (mine || esSupervisor))
+  const stateDisabledReason = canChangeState
+    ? undefined
+    : takenByOther
+      ? 'Solo el agente asignado o un supervisor puede gestionar esta conversación.'
+      : 'Asígnate la conversación antes de cerrarla.'
+
+  const toggleAssign = async () => {
+    if (!agent || !assignmentOperation) return
+    setAviso(null)
+    setAssigning(true)
+    try {
+      const { error } = await operations.assign(conversationId, assignmentOperation === 'assign' ? agent.id : null)
+      if (error) {
+        setAviso(error)
+        return
+      }
+      onSuccess?.(assignmentOperation)
+    } catch (error) {
+      setAviso(readableError(error))
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  // Reabrir es inmediato; cerrar pasa por el diálogo de valoración.
+  const toggleState = async () => {
+    if (!canChangeState) return
+    setAviso(null)
+    if (!cerrada) {
+      setCloseDialog(true)
+      return
+    }
+    setClosing(true)
+    try {
+      const { error } = await operations.changeState(conversationId, 'abierta')
+      if (error) {
+        setAviso(error)
+        return
+      }
+      onSuccess?.('reopen')
+    } catch (error) {
+      setAviso(readableError(error))
+    } finally {
+      setClosing(false)
+    }
+  }
+
+  const confirmClose = async (requestRating: boolean) => {
+    setAviso(null)
+    setClosing(true)
+    try {
+      const { error } = await operations.changeState(conversationId, 'cerrada', {
+        pedirValoracion: requestRating,
+      })
+      if (error) {
+        setAviso(error)
+        return
+      }
+      setCloseDialog(false)
+      onSuccess?.('close')
+    } catch (error) {
+      setAviso(readableError(error))
+    } finally {
+      setClosing(false)
+    }
+  }
+
+  return (
+    <div className="ml-auto flex shrink-0 flex-wrap justify-end gap-2">
+      {!cerrada && (
+        <button
+          type="button"
+          onClick={() => void toggleAssign()}
+          disabled={assigning || assignmentOperation == null}
+          title={
+            assignmentOperation == null
+              ? 'Solo el agente asignado o un supervisor puede liberar esta asignación.'
+              : undefined
+          }
+          className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {assigning ? 'Guardando…' : assignmentLabel}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => void toggleState()}
+        disabled={closing || !canChangeState}
+        title={stateDisabledReason}
+        className="cursor-pointer rounded-full border border-ink/20 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {closing ? 'Guardando…' : cerrada ? 'Reabrir' : 'Cerrar'}
+      </button>
+      {aviso && !closeDialog && (
+        <p role="alert" className="w-full text-right text-xs font-medium text-[#b3261e]">
+          {aviso}
+        </p>
+      )}
+      {closeDialog && (
+        <ConfirmDialog title="Cerrar conversación" onCancel={() => setCloseDialog(false)} busy={closing}>
+          <p className="text-sm text-ink/80">
+            ¿Quieres pedirle al cliente que valore la atención? Verá un formulario de estrellas la próxima vez que abra
+            el chat.
+          </p>
+          {aviso && (
+            <p role="alert" className="mt-3 text-sm font-medium text-[#b3261e]">
+              {aviso}
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void confirmClose(true)}
+              disabled={closing}
+              className="cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Cerrar y pedir valoración
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmClose(false)}
+              disabled={closing}
+              className="cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold text-ink hover:bg-black/5 disabled:opacity-50"
+            >
+              Cerrar sin pedirla
+            </button>
+          </div>
+        </ConfirmDialog>
+      )}
+    </div>
   )
 }
 
@@ -873,15 +866,9 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
         <h2 className="text-sm font-semibold text-ink">Ficha del visitante</h2>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-4 text-sm">
-        {!conversationId && (
-          <p className="text-ink/60">Selecciona una conversación.</p>
-        )}
-        {conversationId && status === 'loading' && (
-          <p className="text-ink/60">Cargando…</p>
-        )}
-        {conversationId && status === 'error' && (
-          <p className="text-danger">No se pudo cargar la ficha.</p>
-        )}
+        {!conversationId && <p className="text-ink/60">Selecciona una conversación.</p>}
+        {conversationId && status === 'loading' && <p className="text-ink/60">Cargando…</p>}
+        {conversationId && status === 'error' && <p className="text-danger">No se pudo cargar la ficha.</p>}
         {conversationId && status === 'ready' && (
           <>
             <dl className="space-y-3">
@@ -899,17 +886,11 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
               </div>
               <div>
                 <dt className="text-xs text-ink/60">Identificador</dt>
-                <dd className="font-mono text-xs text-ink">
-                  {visitor ? shortId(visitor.id) : '—'}
-                </dd>
+                <dd className="font-mono text-xs text-ink">{visitor ? shortId(visitor.id) : '—'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-ink/60">Nombre</dt>
-                <dd className="text-ink">
-                  {visitor?.nombre?.trim()
-                    ? visitorDisplayName(visitor)
-                    : 'No facilitado'}
-                </dd>
+                <dd className="text-ink">{visitor?.nombre?.trim() ? visitorDisplayName(visitor) : 'No facilitado'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-ink/60">Teléfono</dt>
@@ -952,8 +933,7 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
                   {otherConversations.map((c) => (
                     <li key={c.id} className="text-xs text-ink/70">
                       <span className="font-mono">{shortId(c.id)}</span> ·{' '}
-                      {formatRelative(c.ultimo_mensaje_at ?? c.created_at)} ·{' '}
-                      {c.estado}
+                      {formatRelative(c.ultimo_mensaje_at ?? c.created_at)} · {c.estado}
                     </li>
                   ))}
                 </ul>
@@ -962,8 +942,7 @@ function VisitorColumn({ conversationId }: { conversationId: string | null }) {
 
             {!visitor?.cliente_id && (
               <p className="mt-6 text-xs text-ink/50">
-                Este visitante escribió sin iniciar sesión, así que solo sabemos
-                lo que él mismo haya contado.
+                Este visitante escribió sin iniciar sesión, así que solo sabemos lo que él mismo haya contado.
               </p>
             )}
           </>
@@ -995,10 +974,7 @@ function EducationalDiscountsPanel() {
     void load()
   }, [load])
 
-  const decide = async (
-    cliente: DbCustomer,
-    estado: 'aprobado' | 'rechazado',
-  ) => {
+  const decide = async (cliente: DbCustomer, estado: 'aprobado' | 'rechazado') => {
     setBusyId(cliente.id)
     const { error } = await reviewRequest(cliente.id, estado, notes[cliente.id])
     setBusyId(null)
@@ -1019,14 +995,12 @@ function EducationalDiscountsPanel() {
       <div className="mx-auto max-w-3xl">
         <h2 className="text-lg font-bold text-ink">Descuentos educativos</h2>
         <p className="mt-1 text-sm text-ink/70">
-          Solicitudes pendientes de revisar. La validación es manual: abre el
-          justificante, comprueba que corresponde y decide.
+          Solicitudes pendientes de revisar. La validación es manual: abre el justificante, comprueba que corresponde y
+          decide.
         </p>
 
         {status === 'loading' && <p className="mt-6 text-sm text-ink/60">Cargando…</p>}
-        {status === 'error' && (
-          <p className="mt-6 text-sm text-danger">No se pudieron cargar las solicitudes.</p>
-        )}
+        {status === 'error' && <p className="mt-6 text-sm text-danger">No se pudieron cargar las solicitudes.</p>}
         {status === 'ready' && requests.length === 0 && (
           <p className="mt-6 rounded-[12px] border border-line bg-surface p-4 text-sm text-ink/60">
             No hay solicitudes pendientes.
@@ -1035,15 +1009,10 @@ function EducationalDiscountsPanel() {
 
         <ul className="mt-6 space-y-4">
           {requests.map((cliente) => (
-            <li
-              key={cliente.id}
-              className="rounded-[16px] border border-line bg-surface p-4 shadow-sm"
-            >
+            <li key={cliente.id} className="rounded-[16px] border border-line bg-surface p-4 shadow-sm">
               <div className="flex flex-wrap items-start gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-ink">
-                    {cliente.nombre || 'Sin nombre'}
-                  </p>
+                  <p className="font-semibold text-ink">{cliente.nombre || 'Sin nombre'}</p>
                   <p className="break-words text-sm text-ink/70">{cliente.email}</p>
                   <p className="mt-1 text-xs text-ink/60">
                     Subido {formatRelative(cliente.descuento_educativo_subido_at)}
@@ -1066,9 +1035,7 @@ function EducationalDiscountsPanel() {
                 </span>
                 <input
                   value={notes[cliente.id] ?? ''}
-                  onChange={(e) =>
-                    setNotes((prev) => ({ ...prev, [cliente.id]: e.target.value }))
-                  }
+                  onChange={(e) => setNotes((prev) => ({ ...prev, [cliente.id]: e.target.value }))}
                   className="field"
                   placeholder="Ej.: el documento no muestra el curso académico."
                 />
@@ -1110,11 +1077,10 @@ function SupabaseMissingScreen() {
         <h1 className="text-lg font-semibold text-ink">Panel de agentes</h1>
         <p className="text-sm text-ink/70">
           Este panel requiere Supabase configurado. Añade las variables
-          <code className="mx-1 rounded bg-neutral px-1 text-xs">VITE_SUPABASE_URL</code>
-          y
+          <code className="mx-1 rounded bg-neutral px-1 text-xs">VITE_SUPABASE_URL</code>y
           <code className="mx-1 rounded bg-neutral px-1 text-xs">VITE_SUPABASE_ANON_KEY</code>
-          en un archivo <code className="rounded bg-neutral px-1 text-xs">.env.local</code>
-          y reinicia el servidor de desarrollo.
+          en un archivo <code className="rounded bg-neutral px-1 text-xs">.env.local</code>y reinicia el servidor de
+          desarrollo.
         </p>
         <p className="text-sm text-ink/70">
           El script SQL para crear las tablas está en

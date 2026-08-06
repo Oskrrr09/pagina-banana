@@ -25,11 +25,7 @@ import { euro, monthlyQuote } from '../lib/format'
 //   (sessionStorage) para no perderlos al navegar hacia atrás.
 // Claves, no texto: esto vive fuera del componente y la traducción se aplica
 // al pintar cada paso.
-const STEPS: ClaveTexto[] = [
-  'checkout.step.delivery',
-  'checkout.step.payment',
-  'checkout.step.confirmation',
-]
+const STEPS: ClaveTexto[] = ['checkout.step.delivery', 'checkout.step.payment', 'checkout.step.confirmation']
 
 export function CheckoutPage() {
   const t = useT()
@@ -39,14 +35,7 @@ export function CheckoutPage() {
   const current = (parsedStep === 1 || parsedStep === 2 || parsedStep === 3 ? parsedStep : 1) as 1 | 2 | 3
   const navigate = useNavigate()
 
-  const {
-    cart,
-    cartSubtotal,
-    cartInsuranceTotal,
-    clearCart,
-    setLineInsurance,
-    insurancePrice,
-  } = useStore()
+  const { cart, cartSubtotal, cartInsuranceTotal, clearCart, setLineInsurance, insurancePrice } = useStore()
   const { delivery, setDelivery, form, setForm, step1Valid, validateStep1 } = useCheckoutState()
   const { session: customerSession, cliente } = useCustomerAuth()
 
@@ -59,9 +48,7 @@ export function CheckoutPage() {
   const [pay, setPay] = useState<'tarjeta' | 'bizum' | 'financiacion'>('tarjeta')
   const [months, setMonths] = useState(24)
   const [processing, setProcessing] = useState(false)
-  const [confirmedOrder, setConfirmedOrder] = useState<DemoOrder | null>(() =>
-    demoOrderRepository.getLast(),
-  )
+  const [confirmedOrder, setConfirmedOrder] = useState<DemoOrder | null>(() => demoOrderRepository.getLast())
 
   // Todos los hooks se llaman ANTES de cualquier return condicional para
   // garantizar el mismo orden entre renders (Reglas de los Hooks). Las
@@ -229,8 +216,18 @@ export function CheckoutPage() {
             <div>
               <h1 className="text-xl font-bold text-ink">{t('checkout.deliveryOrPickup')}</h1>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                <ModeButton active={delivery === 'envio'} onClick={() => setDelivery('envio')} icon="truck" label={t('checkout.homeDelivery')} />
-                <ModeButton active={delivery === 'recogida'} onClick={() => setDelivery('recogida')} icon="store" label={t('checkout.storePickup')} />
+                <ModeButton
+                  active={delivery === 'envio'}
+                  onClick={() => setDelivery('envio')}
+                  icon="truck"
+                  label={t('checkout.homeDelivery')}
+                />
+                <ModeButton
+                  active={delivery === 'recogida'}
+                  onClick={() => setDelivery('recogida')}
+                  icon="store"
+                  label={t('checkout.storePickup')}
+                />
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -262,11 +259,7 @@ export function CheckoutPage() {
                       />
                     </Field>
                     <Field label={t('checkout.island')} full>
-                      <select
-                        value={form.isla}
-                        onChange={(e) => setForm({ isla: e.target.value })}
-                        className="field"
-                      >
+                      <select value={form.isla} onChange={(e) => setForm({ isla: e.target.value })} className="field">
                         {ISLAS.map((isla) => (
                           <option key={isla}>{isla}</option>
                         ))}
@@ -275,11 +268,7 @@ export function CheckoutPage() {
                   </>
                 ) : (
                   <Field label="Tienda de recogida" error={errors.tienda} full>
-                    <select
-                      value={form.tienda}
-                      onChange={(e) => setForm({ tienda: e.target.value })}
-                      className="field"
-                    >
+                    <select value={form.tienda} onChange={(e) => setForm({ tienda: e.target.value })} className="field">
                       {stores.map((store) => (
                         <option key={store.slug} value={store.slug}>
                           {store.name} — {store.island}
@@ -313,7 +302,9 @@ export function CheckoutPage() {
               {pay === 'financiacion' && (
                 <div className="mt-4 rounded-[12px] border border-line bg-neutral p-4">
                   <p className="text-sm font-semibold text-ink">{t('checkout.instalmentSimulator')}</p>
-                  <p className="mb-3 text-xs text-muted">Condición demostrativa — pendiente de validación con Banana Computer.</p>
+                  <p className="mb-3 text-xs text-muted">
+                    Condición demostrativa — pendiente de validación con Banana Computer.
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {[12, 24, 36].map((m) => (
                       <Chip key={m} selected={months === m} onClick={() => setMonths(m)}>
@@ -352,7 +343,8 @@ export function CheckoutPage() {
                         <span>
                           <span className="block font-semibold">Seguro para {line.name}</span>
                           <span className="block text-xs text-muted">
-                            {line.capacity} · {nombreColor(line.color)} · +{euro(insurancePrice)}/mes* por unidad
+                            {line.capacity} · {nombreColor(line.color)} · +{euro(insurancePrice)}
+                            /mes* por unidad
                           </span>
                         </span>
                       </label>
@@ -401,8 +393,8 @@ export function CheckoutPage() {
                   <p className="mt-1 text-muted">
                     {customerSession ? (
                       <>
-                        Las unidades reservadas se sirven por orden de reserva cuando
-                        lleguen. Puedes consultar tu posición en{' '}
+                        Las unidades reservadas se sirven por orden de reserva cuando lleguen. Puedes consultar tu
+                        posición en{' '}
                         <Link to="/cuenta" className="font-semibold text-ink underline">
                           Mi cuenta
                         </Link>
@@ -410,8 +402,7 @@ export function CheckoutPage() {
                       </>
                     ) : (
                       <>
-                        Al no haber sesión iniciada, esta reserva no se ha guardado en
-                        ninguna cuenta.{' '}
+                        Al no haber sesión iniciada, esta reserva no se ha guardado en ninguna cuenta.{' '}
                         <Link to="/login" className="font-semibold text-ink underline">
                           Inicia sesión
                         </Link>{' '}
@@ -425,10 +416,21 @@ export function CheckoutPage() {
               <div className="mt-6 rounded-[12px] bg-neutral p-5 text-sm text-muted">
                 <p className="font-semibold text-ink">{t('checkout.orderData')}</p>
                 <ul className="mt-2 space-y-1">
-                  <li><span className="font-medium text-ink">{t('checkout.field.date')}</span> {new Date(confirmedOrder.createdAt).toLocaleString('es-ES', { timeZone: 'Atlantic/Canary' })}</li>
-                  <li><span className="font-medium text-ink">{t('checkout.field.delivery')}</span> {confirmedOrder.delivery === 'envio' ? t('checkout.homeDelivery') : t('checkout.storePickup')}</li>
+                  <li>
+                    <span className="font-medium text-ink">{t('checkout.field.date')}</span>{' '}
+                    {new Date(confirmedOrder.createdAt).toLocaleString('es-ES', {
+                      timeZone: 'Atlantic/Canary',
+                    })}
+                  </li>
+                  <li>
+                    <span className="font-medium text-ink">{t('checkout.field.delivery')}</span>{' '}
+                    {confirmedOrder.delivery === 'envio' ? t('checkout.homeDelivery') : t('checkout.storePickup')}
+                  </li>
                   {confirmedOrder.delivery === 'envio' && confirmedOrder.customer.direccion && (
-                    <li><span className="font-medium text-ink">{t('checkout.field.address')}</span> {confirmedOrder.customer.direccion} ({confirmedOrder.customer.isla})</li>
+                    <li>
+                      <span className="font-medium text-ink">{t('checkout.field.address')}</span>{' '}
+                      {confirmedOrder.customer.direccion} ({confirmedOrder.customer.isla})
+                    </li>
                   )}
                   {confirmedOrder.delivery === 'recogida' && (
                     <li>
@@ -438,16 +440,23 @@ export function CheckoutPage() {
                   )}
                   <li>
                     <span className="font-medium text-ink">{t('checkout.field.payment')}</span>{' '}
-                    {confirmedOrder.paymentMethod === 'tarjeta' ? t('checkout.card') : confirmedOrder.paymentMethod === 'bizum' ? 'Bizum' : t('checkout.financingMonths', { meses: confirmedOrder.financingMonths ?? 0 })}
-                    {' '}<span className="italic">(demostrativo)</span>
+                    {confirmedOrder.paymentMethod === 'tarjeta'
+                      ? t('checkout.card')
+                      : confirmedOrder.paymentMethod === 'bizum'
+                        ? 'Bizum'
+                        : t('checkout.financingMonths', {
+                            meses: confirmedOrder.financingMonths ?? 0,
+                          })}{' '}
+                    <span className="italic">(demostrativo)</span>
                   </li>
                   <li>
-                    <span className="font-medium text-ink">{t('checkout.field.status')}</span> demo · pendiente de validación
+                    <span className="font-medium text-ink">{t('checkout.field.status')}</span> demo · pendiente de
+                    validación
                   </li>
                 </ul>
                 <p className="mt-3 text-xs">
-                  No se ha enviado ningún email real ni se ha realizado ningún cargo. Este resumen queda
-                  en tu navegador durante esta sesión.
+                  No se ha enviado ningún email real ni se ha realizado ningún cargo. Este resumen queda en tu navegador
+                  durante esta sesión.
                 </p>
               </div>
 
@@ -495,21 +504,12 @@ export function CheckoutPage() {
             <ul className="mt-4 space-y-3">
               {summaryLines.map((line) => {
                 const isAccessory = line.kind === 'accessory'
-                const src = isAccessory
-                  ? line.image
-                  : productImage(line.modelSlug, line.color)
-                const altText = isAccessory
-                  ? line.name
-                  : `${line.name} ${line.color}`
+                const src = isAccessory ? line.image : productImage(line.modelSlug, line.color)
+                const altText = isAccessory ? line.name : `${line.name} ${line.color}`
                 return (
                   <li key={line.id} className="flex gap-3">
                     <div className="w-14 shrink-0">
-                      <ProductImage
-                        src={src}
-                        alt={altText}
-                        ratio="1 / 1"
-                        blend={isAccessory}
-                      />
+                      <ProductImage src={src} alt={altText} ratio="1 / 1" blend={isAccessory} />
                     </div>
                     <div className="text-sm">
                       <p className="font-medium text-ink">
@@ -517,7 +517,8 @@ export function CheckoutPage() {
                         {!isAccessory && line.capacity ? ` ${line.capacity}` : ''}
                       </p>
                       <p className="text-muted">
-                        {isAccessory ? t('checkout.appleAccessory') : nombreColor(line.color)} · {t('checkout.units', { n: line.qty })}
+                        {isAccessory ? t('checkout.appleAccessory') : nombreColor(line.color)} ·{' '}
+                        {t('checkout.units', { n: line.qty })}
                       </p>
                       <p className="font-semibold text-ink">{euro(line.price * line.qty)}</p>
                       {line.insured && (
@@ -574,7 +575,17 @@ export function CheckoutPage() {
   )
 }
 
-function ModeButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: string; label: string }) {
+function ModeButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: string
+  label: string
+}) {
   return (
     <button
       onClick={onClick}

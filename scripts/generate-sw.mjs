@@ -89,11 +89,15 @@ function cacheable(response) {
 
 // Assets con hash en el nombre: si están, no cambian nunca. Cache primero.
 async function cacheFirst(request) {
-  const cached = await caches.match(request)
+  const cache = await caches.open(CACHE)
+  // Las entradas del precache se crean desde rutas /base/assets/.... Al
+  // pedirlas después desde un documento profundo, algunos motores conservan
+  // metadatos distintos en el Request del módulo. Resolver por pathname en
+  // la caché versionada evita que una diferencia irrelevante fuerce red.
+  const cached = await cache.match(new URL(request.url).pathname, { ignoreSearch: true })
   if (cached) return cached
   const response = await fetch(request)
   if (cacheable(response)) {
-    const cache = await caches.open(CACHE)
     void cache.put(request, response.clone())
   }
   return response

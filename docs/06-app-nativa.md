@@ -1,6 +1,6 @@
 ---
 tipo: guia
-actualizado: 2026-08-01
+actualizado: 2026-08-04
 ---
 
 # Aplicación nativa de la tienda (iOS y Android)
@@ -69,6 +69,13 @@ basta instalarla en un dispositivo o un simulador, como se explica más abajo.
 **iOS: compilado, instalado y ejecutado** (2026-08-01), con Xcode 26.6 y el
 SDK de iOS 26.5. Arranca en un simulador de iPhone 17 Pro y se ve
 correctamente.
+
+**Revalidación del código actual (2026-08-04):** `npm run app:sync` genera el
+build con base `/` y sincroniza Android e iOS. La compilación Debug de iOS para
+simulador termina en `BUILD SUCCEEDED` con Xcode 26.6 y sin firma. Android no
+se recompiló en esta pasada porque el sistema no encuentra un Java Runtime;
+el APK y el recorrido de emulador descritos arriba siguen siendo la última
+verificación Android completa.
 
 **Ambas con interfaz propia de app**: barra de navegación inferior, sin pie
 de página, y el chat dentro de "Contacta con nosotros" en el menú

@@ -1,0 +1,169 @@
+name: CI
+
+# Un solo workflow encadenado, en lugar de dos independientes.
+#
+# Antes había `e2e.yml` y `deploy.yml` corriendo en paralelo sobre el mismo
+# push. `deploy.yml` no dependía de nada, así que **la web se publicaba aunque
+# las pruebas estuvieran en rojo**: el despliegue terminaba en 51 segundos y
+# las pruebas tardaban casi siete minutos, de modo que lo normal era publicar
+# antes de saber si funcionaba.
+#
+# Además cada uno compilaba por su cuenta. Ahora se compila una vez y el
+# artefacto viaja entre trabajos.
+#
+#   calidad → build → e2e → deploy
+#
+# `deploy` sólo existe en push a main; en un pull request la cadena termina
+# en `e2e`.
+
+on:
+  push:
+    branches: [main]
+  # Cualquier rama destino, no solo `main`.
+  #
+  # Con `branches: [main]` una PR encadenada —una que va contra otra rama de
+  # trabajo porque depende de ella— no dispara nada: se queda sin comprobar
+  # justo cuando más falta hace, que es antes de acumularse sobre la anterior.
+  pull_request:
+  workflow_dispatch:
+
+# Permisos mínimos en global. Solo `deploy` recibe los de Pages: dárselos a
+# todos significaría que un paso comprometido en `calidad` o en `e2e` —que
+# ejecutan dependencias de terceros— podría publicar.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Lo barato primero: en menos de un minuto corta un fallo de tipos, de lint
+  # o de una función pura, sin gastar el build ni los navegadores.
+  calidad:
+    name: Tipos, lint y pruebas unitarias
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Prettier
+        run: npm run format:check
+      - name: TypeScript
+        run: npm run typecheck
+      - name: ESLint
+        run: npm run lint
+      # Incluye el arnés de esquema: instala las migraciones en un PostgreSQL
+      # real (PGlite, sin Docker) y comprueba políticas, firmas y permisos.
+      # Corre aquí, en la fase barata, porque tarda menos de un segundo y corta
+      # un esquema roto antes de gastar build ni navegadores.
+      - name: Pruebas unitarias y de esquema
+        run: npm run test:unit
+
+  build:
+    name: Compilar
+    needs: calidad
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Credenciales de Supabase (chat de Bananito y panel /agente).
+      # Si no están definidas, la web se despliega en modo demostración.
+      # DOS artefactos distintos, y la diferencia importa.
+      #
+      # Vite incrusta las variables VITE_ en el JavaScript durante el build:
+      # no son configuración de tiempo de ejecución. Servir el bundle de
+      # producción en las pruebas y vaciar las variables del proceso que lo
+      # sirve no cambia nada — las credenciales ya están dentro del .js, y las
+      # pruebas escribirían en el Supabase de la demostración.
+      - name: Compilar para publicar
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      # El de pruebas se compila aparte, con las variables explícitamente
+      # vacías, para que el chat quede en modo demostración de verdad.
+      - name: Compilar para pruebas
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_ANON_KEY: ''
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-test
+          path: dist
+          retention-days: 1
+
+  e2e:
+    name: Pruebas E2E
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Sin recompilar: se reutiliza el artefacto del trabajo anterior. Lo
+      # necesitan las comprobaciones que inspeccionan el bundle publicado.
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-test
+          path: dist
+      - name: Instalar navegadores de Playwright
+        run: npx playwright install --with-deps chromium firefox webkit
+      # Las pruebas corren SIEMPRE en modo demostración, con las variables de
+      # Supabase vacías. Nunca tocan el proyecto real.
+      # Contra el artefacto compilado, no contra el servidor de desarrollo:
+      # es lo que se va a publicar, con su base path y sus assets reales.
+      - name: Ejecutar pruebas
+        env:
+          E2E_CONTRA_BUILD: '1'
+        run: npx playwright test --project=chromium --project=firefox --project=webkit --project=mobile --project=mobile-webkit
+      - name: Probar permisos y errores del panel de agentes
+        run: npm run test:e2e:agent
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  # Reutiliza el workflow aislado: levanta Supabase local con Docker, aplica
+  # migraciones y ejecuta GoTrue, PostgREST y Storage sin secretos remotos.
+  rls:
+    name: Integración Supabase local
+    needs: calidad
+    uses: ./.github/workflows/supabase-integration.yml
+
+  deploy:
+    name: Publicar en GitHub Pages
+    # Sin E2E ni integración Supabase local en verde no se publica.
+    needs: [e2e, rls]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

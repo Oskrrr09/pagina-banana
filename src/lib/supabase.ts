@@ -15,8 +15,7 @@ const url = import.meta.env.VITE_SUPABASE_URL
 const anon = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Cliente de la tienda: chat del visitante y sesión del CLIENTE.
-export const supabase: SupabaseClient | null =
-  url && anon ? createClient(url, anon) : null
+export const supabase: SupabaseClient | null = url && anon ? createClient(url, anon) : null
 
 // Cliente del panel /agente: sesión del AGENTE.
 //

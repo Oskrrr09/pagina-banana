@@ -39,10 +39,7 @@ export function describeStatus(estado: EducationalDiscountStatus | null): string
  * Sube el justificante del cliente autenticado y deja la solicitud
  * pendiente de revisión. Sustituye a cualquier archivo anterior.
  */
-export async function uploadEducationalProof(
-  userId: string,
-  file: File,
-): Promise<{ error: string | null }> {
+export async function uploadEducationalProof(userId: string, file: File): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase no está configurado.' }
 
   if (!ACCEPTED_MIME.includes(file.type)) {
@@ -62,19 +59,28 @@ export async function uploadEducationalProof(
     .upload(path, file, { upsert: true, contentType: file.type })
   if (uploadError) return { error: uploadError.message }
 
-  const { error: updateError } = await supabase
-    .from('clientes')
-    .update({
-      descuento_educativo_archivo: path,
-      descuento_educativo_estado: 'pendiente',
-      descuento_educativo_subido_at: new Date().toISOString(),
-      // Limpiamos la revisión anterior: vuelve a la cola desde cero.
-      descuento_educativo_nota: null,
-      descuento_educativo_revisado_at: null,
-      descuento_educativo_revisado_por: null,
-    })
-    .eq('id', userId)
-  if (updateError) return { error: updateError.message }
+  // Por RPC: el cliente ya no tiene UPDATE sobre `clientes`, porque tenerlo
+  // le permitía ponerse el descuento en 'aprobado'. La función comprueba
+  // además que la ruta esté dentro de su propia carpeta y deja la solicitud
+  // en 'pendiente'; aprobar o rechazar sigue siendo del agente.
+  const { error: registroError } = await supabase.rpc('registrar_mi_justificante', {
+    p_ruta: path,
+  })
+
+  if (registroError) {
+    // El archivo ya está subido pero la solicitud no consta. Sin esta
+    // limpieza queda un justificante huérfano en el bucket: nadie lo va a
+    // revisar y el cliente no puede borrarlo.
+    const { error: limpiezaError } = await supabase.storage.from(EDUCATIONAL_DISCOUNT_BUCKET).remove([path])
+    if (limpiezaError) {
+      console.error(
+        '[educationalDiscount] el registro falló y además no se pudo borrar el ' +
+          `archivo subido en «${path}». Queda huérfano en el bucket.`,
+        limpiezaError,
+      )
+    }
+    return { error: registroError.message }
+  }
 
   return { error: null }
 }
@@ -100,9 +106,7 @@ export async function listPendingRequests(): Promise<{
  */
 export async function signedProofUrl(path: string): Promise<string | null> {
   if (!supabaseAgent) return null
-  const { data, error } = await supabaseAgent.storage
-    .from(EDUCATIONAL_DISCOUNT_BUCKET)
-    .createSignedUrl(path, 60 * 5)
+  const { data, error } = await supabaseAgent.storage.from(EDUCATIONAL_DISCOUNT_BUCKET).createSignedUrl(path, 60)
   if (error) {
     console.error('[educationalDiscount] no se pudo firmar la URL', error)
     return null

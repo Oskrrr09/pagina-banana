@@ -97,7 +97,10 @@ export function BentoShowcase() {
         </Cell>
 
         {/* Financiación (acento amarillo) */}
-        <Cell to="/servicios#financiacion" className="w-[calc(100vw-2.5rem)] shrink-0 snap-center bg-banana text-ink sm:w-auto">
+        <Cell
+          to="/servicios#financiacion"
+          className="w-[calc(100vw-2.5rem)] shrink-0 snap-center bg-banana text-ink sm:w-auto"
+        >
           <span className="grid h-11 w-11 place-items-center rounded-full bg-black/10">
             <Icon name="credit-card" />
           </span>

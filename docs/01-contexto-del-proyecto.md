@@ -1,159 +1,143 @@
 ---
 tipo: contexto
-actualizado: 2026-07-26
+actualizado: 2026-08-04
 ---
 
 # Contexto del proyecto
 
-## Propósito observado
+## Propósito
 
-El repositorio implementa la “Fase 2” de un prototipo navegable para una nueva
-web de Banana Computer. Su objetivo actual es demostrar arquitectura,
-navegación, contenido y flujos de compra; no operar una tienda real.
+Banana Computer es un prototipo navegable de tienda Apple orientado a
+Canarias. Sirve para demostrar arquitectura, contenido, navegación, compra,
+atención y aplicaciones; no opera una tienda real.
 
-La interfaz está en español y orientada a Canarias. El propio producto etiqueta
-precios, stock, reseñas y condiciones no validadas para evitar confundir la
-demostración con información comercial definitiva.
+Precios, stock, financiación, pedidos, reservas, reseñas, descuentos y demás
+condiciones comerciales siguen siendo datos demostrativos. Las cuentas de
+cliente y agente también son ficticias.
 
-## Arquitectura
+## Arquitectura ejecutable
 
 ```text
-index.html
-└── src/main.tsx
-    ├── BrowserRouter (basename = import.meta.env.BASE_URL)
-    ├── StoreProvider
-    └── App
-        ├── Layout
-        │   ├── Header / navegación
-        │   ├── páginas comerciales
-        │   └── Footer
-        ├── CheckoutLayout
-            ├── cabecera simplificada
-            └── CheckoutPage
-        └── ChatBubble (acceso global; chat aún no implementado)
+src/main.tsx
+├── BrowserRouter (basename = import.meta.env.BASE_URL)
+├── proveedores de idioma, autenticación, tienda y checkout
+└── App
+    ├── Layout de la tienda web / shell propio de la app nativa
+    ├── CheckoutLayout
+    ├── AgentAppScope + panel /agente
+    └── ChatBubble
+
+src/data/                 catálogo, accesorios, tiendas y contenido
+src/lib/                  estado, Supabase, auth, reservas, PWA e i18n
+src/components/           UI, layouts, producto, buscador y panel
+src/pages/                pantallas asociadas a rutas
+supabase/migrations/      fuente ejecutable única del esquema
+tests/schema/             PostgreSQL/PGlite: instalación, migración y RLS
+tests/rls/                GoTrue, PostgREST y Storage contra Supabase dedicado
+tests/e2e/                recorridos de navegador y accesibilidad
 ```
 
-- `src/pages/`: pantallas asociadas a las rutas.
-- `src/components/layout/`: estructura global y navegación responsive.
-- `src/components/ui/`: componentes reutilizables y accesibles.
-- `src/components/product/`: tarjetas, imágenes, financiación y stock.
-- `src/components/home/`: composiciones específicas de la portada.
-- `src/data/`: catálogo, navegación, tiendas, textos y tipos.
-- `src/lib/store.tsx`: estado y persistencia local.
-- `src/index.css`: Tailwind v4, tokens, estilos base y accesibilidad.
-- `public/`: fallback SPA, iconos, logotipos, campañas e imágenes de producto.
+El catálogo de dispositivos se divide por familia en `src/data/products/` y
+los accesorios en `src/data/accessories/`. Las tiendas viven en
+`src/data/stores.ts`; el contenido general, en `src/data/content.ts`.
 
-## Rutas implementadas
+## Superficies del producto
+
+- **Tienda web:** portada, cinco familias de dispositivos, accesorios,
+  buscador, comparador, favoritos, carrito, checkout demostrativo, servicios,
+  Plan Renove, tiendas, soporte y recomendador determinista.
+- **Cuenta de cliente:** registro, acceso, perfil, direcciones, pedidos
+  demostrativos, reservas y descuento educativo.
+- **Chat de Bananito:** Supabase Realtime con sesión anónima verificable;
+  fallback local cuando no existen credenciales.
+- **Panel de agentes:** autenticación separada, bandeja, asignación,
+  conversación, ficha del visitante y revisión de descuentos. Se distribuye
+  como PWA con service worker, badge y notificaciones.
+- **App nativa de tienda:** mismo código empaquetado con Capacitor, shell propio
+  y proyectos iOS/Android versionados. Ambos binarios se han compilado y
+  ejecutado en simulador o emulador; publicarlos exige autorización y cuentas
+  comerciales de Banana.
+
+## Rutas principales
 
 | Ruta | Responsabilidad |
 | --- | --- |
-| `/` | Inicio |
-| `/:family` | Catálogo de familia |
-| `/:family/:model` | Configurador/listado de colores y capacidades |
-| `/:family/:model/:variant` | Ficha de variante |
-| `/buscar` | Búsqueda |
-| `/comparar` | Comparador |
-| `/favoritos` | Favoritos |
-| `/carrito` | Carrito |
-| `/checkout/:step` | Checkout simulado, pasos 1 a 3 |
-| `/servicios` | Servicios |
-| `/plan-renove` | Plan Renove |
-| `/tiendas` | Listado de tiendas |
-| `/tiendas/:slug` | Ficha de tienda |
-| `/soporte` | Centro de soporte |
-| `*` | 404 |
+| `/` | Portada |
+| `/:family`, `/:family/:model`, `/:family/:model/:variant` | Catálogo y ficha |
+| `/accesorios`, `/accesorios/:slug` | Catálogo y ficha de accesorios |
+| `/buscar`, `/comparar`, `/elige-tu-apple` | Descubrimiento y decisión |
+| `/favoritos`, `/carrito`, `/checkout/:step` | Compra demostrativa |
+| `/login`, `/registro`, `/cuenta` | Cuenta de cliente |
+| `/servicios`, `/plan-renove`, `/soporte`, `/servicio-tecnico` | Servicios y ayuda |
+| `/tiendas`, `/tiendas/:slug` | Directorio de tiendas |
+| `/agente/login`, `/agente` | Acceso y panel de agentes |
 
-React Router puntúa las rutas estáticas por encima de las dinámicas aunque las
-dinámicas estén declaradas primero.
+Las rutas se sirven bajo `/pagina-banana/` en GitHub Pages. React Router usa
+`import.meta.env.BASE_URL`; el build de Capacitor usa base `/`.
 
-## Modelo de datos
+## Persistencia y backend
 
-`src/data/products.ts` construye un catálogo estático tipado:
-
-- 6 familias visibles.
-- 5 familias con catálogo.
-- 18 modelos en total.
-- Cada modelo define familia, slug, nombre, texto, precio inicial, financiación,
-  colores, capacidades, disponibilidad, especificaciones y destacados.
-
-`src/data/stores.ts` define cinco tiendas en Gran Canaria y Tenerife. Sus
-direcciones y horarios se contrastaron con las fichas oficiales de Banana
-Computer el 2026-07-26 y cada registro conserva su URL de origen. La interfaz
-no afirma que una tienda esté abierta en tiempo real y avisa de posibles
-variaciones en festivos.
-
-La composición actual de la familia Mac se contrastó el 2026-07-26 con los
-listados públicos de [Banana Computer](https://tienda.bananacomputer.com/productos/)
-y [K-tuin](https://www.k-tuin.com/comprar-un-mac). Las imágenes se almacenan
-localmente; precios, financiación y disponibilidad continúan tratados como
-datos demostrativos y no se sincronizan con esas fuentes.
-
-`src/data/content.ts` contiene servicios, ventajas, FAQ, soporte y Plan Renove.
-La portada no incluye reseñas hasta disponer de opiniones verificadas.
-
-No se realiza ninguna petición HTTP para obtener datos de negocio. Las únicas
-conexiones declaradas por la página son la carga de Manrope e Inter desde Google
-Fonts.
-
-## Estado de cliente
-
-`StoreProvider` expone carrito, favoritos y comparador. Los tres se inicializan
-desde `localStorage` y se vuelven a serializar al cambiar:
-
-- El carrito agrupa por identificador de familia/modelo/color/capacidad.
-- Cada línea del carrito puede incluir `insured`; el coste se calcula por unidad
-  y ficha, carrito y checkout comparten ese estado mediante `banana:cart`.
-- Los favoritos guardan identificadores de modelo o de variante.
-- El comparador admite un máximo de tres elementos y reinicia la selección al
-  cambiar de familia.
-
-Las familias iPhone y Mac enlazan cada modelo directamente a su variante
-inicial. La ruta intermedia `/:family/:model` se conserva para accesos profundos
-y permite elegir color y capacidad antes de abrir la ficha.
-
-En la ficha, “Comprar” añade la variante y abre el primer paso del checkout;
-“Añadir al carrito” la guarda y permite continuar navegando. El seguro elegido
-se adjunta exclusivamente a esa variante.
-
-No hay migración ni validación del esquema almacenado.
-
-## Diseño y accesibilidad presentes
-
-- Paleta amarilla Banana, tinta casi negra y superficies neutras.
-- Manrope para display e Inter para cuerpo.
-- Tailwind CSS v4 con tokens en `@theme`.
-- Motion para modales, menús, acordeones, carrusel, reveals y cambios de
-  variante.
-- Foco visible, enlace “Saltar al contenido”, áreas táctiles amplias,
-  disponibilidad expresada con texto y color, y tratamiento global de
-  `prefers-reduced-motion`.
-- El menú móvil funciona como diálogo modal con trampa de foco, cierre mediante
-  Escape, devolución del foco y bloqueo temporal del scroll.
-- El footer usa acordeones cerrados inicialmente en móvil y columnas estáticas
-  desde 768 px.
-- Imágenes raster locales para producto/campaña y placeholders explícitos en
-  experiencias todavía simuladas. Las fotografías Mac procedentes de Apple
-  Newsroom conservan su fuente en `public/img/products/SOURCES.md`.
-- Los tokens oscuros se activan únicamente mediante
-  `@media (prefers-color-scheme: dark)`. La página sigue al dispositivo en
-  directo, sin selector, proveedor React ni preferencia visual en
+- Carrito, favoritos, comparador, avisos y tienda favorita utilizan
   `localStorage`.
-- El carrusel de tiendas y el mega-menú reservan altura fija para que el cambio
-  de tienda o familia no provoque saltos de diseño.
+- Checkout y pedido confirmado utilizan `sessionStorage` cuando se navega como
+  invitado.
+- Con sesión, perfiles, pedidos, reservas, chat y justificantes se reflejan en
+  Supabase.
+- Cliente y agente usan instancias de Supabase separadas para que sus sesiones
+  puedan convivir en el mismo navegador.
+- La clave anónima es pública por diseño. La autorización depende de JWT, RLS y
+  RPC; ninguna clave `service_role` puede entrar en variables `VITE_*` ni en el
+  bundle.
 
-## Construcción y despliegue
+La fuente SQL única es `supabase/migrations/`; sus archivos se aplican en orden.
+`supabase/schema.sql` es solo un puntero para impedir que vuelva a aplicarse un
+estado obsoleto.
 
-- Desarrollo: `npm run dev`.
-- Producción: `npm run build` (`tsc -b && vite build`).
-- Vista previa: `npm run preview`.
-- Base de producción: `/pagina-banana/`.
-- Despliegue: GitHub Actions a GitHub Pages desde `main`.
-- `public/404.html` codifica rutas profundas y `index.html` las restaura para
-  soportar una SPA en GitHub Pages.
+## Calidad y despliegue
+
+La comprobación completa es:
+
+```bash
+npm ci
+npm run check
+npm run check:full
+```
+
+`check` incluye Prettier, ESLint, tipos, Vitest, instalación y actualización
+del esquema sobre PostgreSQL/PGlite y build sin credenciales. `check:full`
+añade Playwright contra el artefacto: cobertura completa Chromium, smoke
+Firefox/WebKit/Safari móvil, móvil Chromium y panel aislado.
+
+Las pruebas de `tests/rls/` son aparte: `npm run test:integration` necesita
+Docker y levanta un Supabase local efímero para comprobar GoTrue, PostgREST,
+Storage y cierre de sesión PWA offline reales. Un preflight bloqueado no
+cuenta como verificación aprobada.
+
+GitHub Actions encadena calidad → build → E2E → RLS → Pages. Solo un
+push a `main` publica, y el despliegue debe fallar si no existen las
+credenciales del proyecto RLS dedicado.
+
+## Diseño y accesibilidad
+
+- Modo claro fijo, Tailwind CSS v4 y Motion.
+- Foco visible, nombres accesibles, controles táctiles, texto además de color,
+  trampa de foco en diálogos y `prefers-reduced-motion`.
+- Suelo de 16 px en campos táctiles para evitar el zoom automático de iOS.
+- Suite axe sin excepciones globales sobre las rutas principales.
+- Web en castellano, inglés, alemán, francés e italiano; la app nativa se
+  mantiene en castellano. Las traducciones no españolas son demostrativas.
+
+## Límites actuales
+
+No existen pago, inventario, financiación, emails, newsletter, notificaciones
+de reservas/descuentos ni datos comerciales reales. Tampoco se ha validado la
+migración de seguridad contra un Supabase dedicado: ese es el bloqueo para
+integrar y desplegar la rama de cierre de seguridad.
 
 ## Documentos relacionados
 
 - Estado verificable: [[00-estado-actual]]
-- Decisiones constatadas: [[02-decisiones]]
-- Próximos pasos: [[03-roadmap]]
+- Decisiones: [[02-decisiones]]
+- Roadmap: [[03-roadmap]]
 - Riesgos y defectos: [[04-problemas-pendientes]]
+- Guía de app nativa: [[06-app-nativa]]

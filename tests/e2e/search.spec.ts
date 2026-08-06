@@ -158,7 +158,9 @@ test('Header escritorio: escribir muestra grupos, no todo el catálogo', async (
   expect(options).toBeLessThanOrEqual(20)
 })
 
-test('Header escritorio: flecha abajo + Enter abre la primera sugerencia (destino de la sugerencia)', async ({ page }) => {
+test('Header escritorio: flecha abajo + Enter abre la primera sugerencia (destino de la sugerencia)', async ({
+  page,
+}) => {
   await openDesktopSearch(page)
   const input = page.locator('[data-testid="header-search-input"]:visible')
   await input.fill('AirPods')
@@ -199,7 +201,9 @@ test('Header móvil: overlay usa mismo motor y no genera scroll de fondo @mobile
   await input.fill('AirPods')
   await expect(page.getByRole('listbox', { name: /Sugerencias/ })).toBeVisible()
   // El body no debe generar scroll horizontal.
-  const overflowX = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  const overflowX = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
   expect(overflowX).toBeLessThanOrEqual(1)
 })
 
@@ -207,17 +211,13 @@ test('Header móvil: overlay usa mismo motor y no genera scroll de fondo @mobile
 
 test('axe: /buscar?q=AirPods sin violaciones críticas', async ({ page }) => {
   await search(page, 'AirPods')
-  const result = await new AxeBuilder({ page })
-    .exclude('[aria-hidden="true"]')
-    .analyze()
+  const result = await new AxeBuilder({ page }).exclude('[aria-hidden="true"]').analyze()
   expect(result.violations).toEqual([])
 })
 
 test('axe: /buscar sin resultados sin violaciones críticas', async ({ page }) => {
   await search(page, 'zxqwvbn')
-  const result = await new AxeBuilder({ page })
-    .exclude('[aria-hidden="true"]')
-    .analyze()
+  const result = await new AxeBuilder({ page }).exclude('[aria-hidden="true"]').analyze()
   expect(result.violations).toEqual([])
 })
 
@@ -290,7 +290,12 @@ test('"Ver todos los resultados" abre /buscar?q=AirPods', async ({ page }) => {
   await input.fill('AirPods')
   await page.getByRole('button', { name: /Ver todos los resultados/ }).click()
   await expect(page).toHaveURL(/\/buscar\?q=AirPods$/)
-  await expect(page.locator('h2').filter({ hasText: /Dispositivos Apple|Coincidencia principal/ }).first()).toBeVisible()
+  await expect(
+    page
+      .locator('h2')
+      .filter({ hasText: /Dispositivos Apple|Coincidencia principal/ })
+      .first(),
+  ).toBeVisible()
 })
 
 test('Enter en móvil abre /buscar y cierra el overlay @mobile', async ({ page }) => {
@@ -320,7 +325,9 @@ test('Móvil con Flecha abajo + Enter abre la sugerencia activa, no /buscar @mob
   await expect(page.locator('[data-testid="header-search-input"]:visible')).toHaveCount(0)
 })
 
-test('Sin selección: input no tiene aria-activedescendant; tras ArrowDown, sí; tras cambiar consulta, no', async ({ page }) => {
+test('Sin selección: input no tiene aria-activedescendant; tras ArrowDown, sí; tras cambiar consulta, no', async ({
+  page,
+}) => {
   await openDesktopSearch(page)
   const input = page.locator('[data-testid="header-search-input"]:visible')
   await input.fill('AirPods')

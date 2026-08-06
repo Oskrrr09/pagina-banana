@@ -7,9 +7,7 @@ async function addIphoneToFavoritesAndPickStore(page: Page) {
   // Añadir favorito desde el catálogo de iPhone.
   await page.goto('./iphone')
   await page.getByRole('button', { name: 'Añadir iPhone 17 Pro a favoritos' }).click()
-  await expect(
-    page.getByRole('button', { name: 'Quitar iPhone 17 Pro de favoritos' }),
-  ).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Quitar iPhone 17 Pro de favoritos' })).toBeVisible()
 
   // Elegir tienda favorita desde el bottom sheet (se abre en la primera visita).
   const promptDialog = page.getByRole('dialog', { name: /¿Cuál es tu tienda Banana habitual\?/ })
@@ -32,9 +30,7 @@ test('activar seguimiento genera notificación al simular llegada + campana con 
 
   // Simular llegada crea una notificación demostrativa.
   await page.getByRole('button', { name: /Simular llegada/ }).click()
-  await expect(
-    page.getByText(/Simulación: iPhone 17 Pro figura como disponible/),
-  ).toBeVisible()
+  await expect(page.getByText(/Simulación: iPhone 17 Pro figura como disponible/)).toBeVisible()
 
   // Campana muestra el contador de no leídos.
   await expect(page.getByRole('button', { name: /Avisos \(1 sin leer\)/ })).toBeVisible()
@@ -62,9 +58,7 @@ test('quitar favorito con seguimiento activo también desactiva el aviso (sin hu
   const orphan = await page.evaluate(() => {
     return {
       alerts: JSON.parse(localStorage.getItem('banana:favorite-alerts') || '[]'),
-      notifications: JSON.parse(
-        localStorage.getItem('banana:favorite-notifications') || '[]',
-      ),
+      notifications: JSON.parse(localStorage.getItem('banana:favorite-notifications') || '[]'),
     }
   })
   expect(orphan.alerts).toEqual([])

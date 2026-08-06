@@ -5,25 +5,13 @@ import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ButtonLink } from '../components/ui/Button'
 import { AccessoryCard } from '../components/product/AccessoryCard'
-import {
-  ACCESSORY_CATEGORIES,
-  appleAccessories,
-  type Accessory,
-  type AccessoryCategory,
-} from '../data/accessories'
+import { ACCESSORY_CATEGORIES, appleAccessories, type Accessory, type AccessoryCategory } from '../data/accessories'
 
 // Página general de accesorios oficiales Apple (§4.5). Filtra por
 // categoría y por familia de dispositivo compatible. Todos los precios
 // son demostrativos; la disponibilidad debe validarse en tienda.
 
-type CompatibilityFilter =
-  | 'todas'
-  | 'iphone'
-  | 'ipad'
-  | 'mac'
-  | 'apple-watch'
-  | 'airpods'
-  | 'airtag'
+type CompatibilityFilter = 'todas' | 'iphone' | 'ipad' | 'mac' | 'apple-watch' | 'airpods' | 'airtag'
 
 // El `label` de «todas» es el único que se traduce: el resto son nombres de
 // producto. Se resuelve al pintar, no aquí, porque aquí no hay contexto de
@@ -50,12 +38,8 @@ export function AccessoriesPage() {
   return (
     <Container className="py-10">
       <header className="max-w-3xl">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
-          {t('accessories.kicker')}
-        </p>
-        <h1 className="mt-1 text-3xl font-extrabold text-ink sm:text-4xl">
-          {t('accessories.title')}
-        </h1>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">{t('accessories.kicker')}</p>
+        <h1 className="mt-1 text-3xl font-extrabold text-ink sm:text-4xl">{t('accessories.title')}</h1>
         <p className="mt-2 text-muted">{conNegritas(t('accessories.intro'))}</p>
       </header>
 
@@ -77,9 +61,7 @@ export function AccessoriesPage() {
           legend={t('accessories.compatibility')}
           value={compat}
           onChange={(v) => setCompat(v as CompatibilityFilter)}
-          options={COMPAT_OPTIONS.map((o) =>
-            o.slug === 'todas' ? { ...o, label: t('accessories.all') } : o,
-          )}
+          options={COMPAT_OPTIONS.map((o) => (o.slug === 'todas' ? { ...o, label: t('accessories.all') } : o))}
         />
         {dirty && (
           <button
@@ -102,12 +84,8 @@ export function AccessoriesPage() {
         </h2>
         {results.length === 0 ? (
           <div className="rounded-[12px] border border-dashed border-line py-16 text-center">
-            <p className="text-lg font-semibold text-ink">
-              {t('accessories.emptyTitle')}
-            </p>
-            <p className="mt-2 text-muted">
-              {t('accessories.emptyBody')}
-            </p>
+            <p className="text-lg font-semibold text-ink">{t('accessories.emptyTitle')}</p>
+            <p className="mt-2 text-muted">{t('accessories.emptyBody')}</p>
             <button
               type="button"
               onClick={() => {
@@ -130,12 +108,8 @@ export function AccessoriesPage() {
 
       {/* CTA */}
       <section className="mt-12 rounded-[16px] border border-line bg-neutral p-6">
-        <h2 className="text-lg font-bold text-ink">
-          {t('accessories.ctaTitle')}
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          {t('accessories.ctaBody')}
-        </p>
+        <h2 className="text-lg font-bold text-ink">{t('accessories.ctaTitle')}</h2>
+        <p className="mt-1 text-sm text-muted">{t('accessories.ctaBody')}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <ButtonLink to="/tiendas" variant="secondary">
             {t('accessories.ctaStores')} <Icon name="chevron-right" size={14} aria-hidden="true" />
@@ -149,11 +123,7 @@ export function AccessoriesPage() {
   )
 }
 
-function filter(
-  items: Accessory[],
-  category: AccessoryCategory | 'todas',
-  compat: CompatibilityFilter,
-): Accessory[] {
+function filter(items: Accessory[], category: AccessoryCategory | 'todas', compat: CompatibilityFilter): Accessory[] {
   return items.filter((a) => {
     if (category !== 'todas' && a.category !== category) return false
     if (compat !== 'todas') {
@@ -179,9 +149,7 @@ function FilterGroup<T extends string>({
 }) {
   return (
     <fieldset>
-      <legend className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">
-        {legend}
-      </legend>
+      <legend className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">{legend}</legend>
       <div role="radiogroup" aria-label={legend} className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const active = value === opt.slug
@@ -193,9 +161,7 @@ function FilterGroup<T extends string>({
               aria-checked={active}
               onClick={() => onChange(opt.slug)}
               className={`inline-flex min-h-[44px] items-center rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                active
-                  ? 'border-ink bg-ink text-surface'
-                  : 'border-line bg-surface text-ink hover:border-ink/30'
+                active ? 'border-ink bg-ink text-surface' : 'border-line bg-surface text-ink hover:border-ink/30'
               }`}
             >
               {opt.label}

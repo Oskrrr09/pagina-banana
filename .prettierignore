@@ -1,0 +1,37 @@
+# Dependencias, builds y resultados generados
+node_modules/
+dist/
+dist-app/
+playwright-report/
+test-results/
+coverage/
+*.tsbuildinfo
+
+# Plataformas y configuración local
+android/
+ios/
+.obsidian/
+.agents/
+.claude/
+audit-private/
+
+# Assets y documentos no mantenidos por Prettier
+public/
+docs/
+AGENTS.md
+README.md
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.pdf
+
+# Catálogos y diccionarios históricos grandes: se migrarán de forma acotada
+# cuando se editen, evitando un diff masivo ajeno a este hardening.
+src/data/
+src/i18n/*.ts
+
+# SQL lo valida el arnés de esquema, no Prettier.
+supabase/migrations/
+supabase/seed.sql

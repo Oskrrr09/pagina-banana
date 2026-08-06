@@ -62,7 +62,9 @@ export function Header() {
     if (!searchOpen) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
+    return () => {
+      document.body.style.overflow = prev
+    }
   }, [searchOpen])
 
   function openMega(slug: string) {
@@ -119,138 +121,148 @@ export function Header() {
             scrolled ? 'shadow-[0_6px_20px_-8px_rgba(0,0,0,0.18)]' : ''
           }`}
         >
-        <div
-          // Sin `max-w-7xl`: la barra usa todo el ancho de la ventana, igual
-          // que hace la de arriba con "Elegir tienda". Con el contenido
-          // limitado a 1280px y centrado, en una pantalla ancha el selector
-          // de idioma quedaba al borde del CONTENEDOR y dejaba una franja
-          // amarilla vacía a su derecha.
-          className="banana-header-bar relative flex h-16 w-full items-center py-0 pl-6 pr-4 sm:pl-10 sm:pr-6 lg:pl-[52px] lg:pr-8"
-        >
-          <Logo />
+          <div
+            // Sin `max-w-7xl`: la barra usa todo el ancho de la ventana, igual
+            // que hace la de arriba con "Elegir tienda". Con el contenido
+            // limitado a 1280px y centrado, en una pantalla ancha el selector
+            // de idioma quedaba al borde del CONTENEDOR y dejaba una franja
+            // amarilla vacía a su derecha.
+            className="banana-header-bar relative flex h-16 w-full items-center py-0 pl-6 pr-4 sm:pl-10 sm:pr-6 lg:pl-[52px] lg:pr-8"
+          >
+            <Logo />
 
-          {/* Escritorio: menú centrado respecto a la ventana, compartiendo eje
+            {/* Escritorio: menú centrado respecto a la ventana, compartiendo eje
               con los enlaces de la barra utilitaria de arriba.
               Los enlaces van algo menos holgados que el resto de la cabecera
               para que a 1280px —el ancho al que aparece este menú, y el de un
               portátil corriente— siga quedando aire con los accesos de la
               derecha. Ver UI-001. */}
-          <nav
-            className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 xl:flex"
-            aria-label="Principal"
-          >
-            {familiesNav.map((fam) => (
-              <div key={fam.slug} onMouseEnter={() => openMega(fam.slug)} onMouseLeave={scheduleClose}>
+            <nav
+              className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 xl:flex"
+              aria-label="Principal"
+            >
+              {familiesNav.map((fam) => (
+                <div key={fam.slug} onMouseEnter={() => openMega(fam.slug)} onMouseLeave={scheduleClose}>
+                  <Link
+                    to={fam.demo ? '/iphone' : `/${fam.slug}`}
+                    className={`rounded-full px-2 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 2xl:px-3 ${
+                      activeFamily === fam.slug ? 'bg-black/5 font-semibold' : ''
+                    }`}
+                    onFocus={() => openMega(fam.slug)}
+                  >
+                    {cat(fam.name)}
+                  </Link>
+                </div>
+              ))}
+              {directLinks.map((l) => (
                 <Link
-                  to={fam.demo ? '/iphone' : `/${fam.slug}`}
-                  className={`rounded-full px-2 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 2xl:px-3 ${
-                    activeFamily === fam.slug ? 'bg-black/5 font-semibold' : ''
-                  }`}
-                  onFocus={() => openMega(fam.slug)}
+                  key={l.to}
+                  to={l.to}
+                  className="rounded-full px-2 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 2xl:px-3"
                 >
-                  {cat(fam.name)}
+                  {t(l.label)}
                 </Link>
-              </div>
-            ))}
-            {directLinks.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                className="rounded-full px-2 py-2 text-sm font-medium text-ink transition-colors hover:bg-black/5 2xl:px-3"
-              >
-                {t(l.label)}
-              </Link>
-            ))}
-          </nav>
+              ))}
+            </nav>
 
-          {/* Accesos permanentes */}
-          <div className="ml-auto flex items-center">
-            {/* Los accesos van pegados como un bloque.
+            {/* Accesos permanentes */}
+            <div className="ml-auto flex items-center">
+              {/* Los accesos van pegados como un bloque.
                 Los botones miden 40px con un dibujo de 24 dentro, así que con
                 `gap-0` aún quedaban 20px de aire entre iconos. `-space-x-2`
                 los solapa lo justo para dejar 4px, que es lo que se ve como
                 "juntos". La única separación de este grupo es la del selector
                 de idioma. */}
-            <div className="flex items-center -space-x-2">
-            {/* Escritorio: lupa, favoritos, comparador, cuenta */}
-            <button
-              ref={desktopSearchButtonRef}
-              onClick={() => setSearchOpen((v) => !v)}
-              aria-label={t('header.search')}
-              aria-expanded={searchOpen}
-              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
-            >
-              <Icon name="search" />
-            </button>
-            <IconBadge to="/favoritos" icon="heart" label={t('header.favorites')} count={favorites.length} desktopOnly />
-            <IconBadge to="/comparar" icon="compare" label={t('header.compare')} count={compare.length} desktopOnly />
-            <NotificationsBell />
-            <Link
-              to={customerSession ? '/cuenta' : '/login'}
-              aria-label={customerSession ? t('header.account') : t('header.signIn')}
-              className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
-            >
-              <Icon name="user" />
-            </Link>
+              <div className="flex items-center -space-x-2">
+                {/* Escritorio: lupa, favoritos, comparador, cuenta */}
+                <button
+                  ref={desktopSearchButtonRef}
+                  onClick={() => setSearchOpen((v) => !v)}
+                  aria-label={t('header.search')}
+                  aria-expanded={searchOpen}
+                  className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
+                >
+                  <Icon name="search" />
+                </button>
+                <IconBadge
+                  to="/favoritos"
+                  icon="heart"
+                  label={t('header.favorites')}
+                  count={favorites.length}
+                  desktopOnly
+                />
+                <IconBadge
+                  to="/comparar"
+                  icon="compare"
+                  label={t('header.compare')}
+                  count={compare.length}
+                  desktopOnly
+                />
+                <NotificationsBell />
+                <Link
+                  to={customerSession ? '/cuenta' : '/login'}
+                  aria-label={customerSession ? t('header.account') : t('header.signIn')}
+                  className="hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
+                >
+                  <Icon name="user" />
+                </Link>
 
-            {/* Móvil: lupa (antes del carrito) */}
-            <button
-              ref={mobileSearchButtonRef}
-              onClick={() => setSearchOpen((v) => !v)}
-              aria-label={t('header.search')}
-              aria-expanded={searchOpen}
-              className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:hidden"
-            >
-              <Icon name="search" />
-            </button>
+                {/* Móvil: lupa (antes del carrito) */}
+                <button
+                  ref={mobileSearchButtonRef}
+                  onClick={() => setSearchOpen((v) => !v)}
+                  aria-label={t('header.search')}
+                  aria-expanded={searchOpen}
+                  className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:hidden"
+                >
+                  <Icon name="search" />
+                </button>
 
-            {/* Carrito. En la app nativa no se repite aquí: vive en la barra
+                {/* Carrito. En la app nativa no se repite aquí: vive en la barra
                 inferior, y tener el mismo destino dos veces en pantalla
                 confunde más que ayuda. */}
-            {!isNativeApp && (
-              <IconBadge to="/carrito" icon="cart" label={t('header.cart')} count={cartCount} />
-            )}
-            </div>
+                {!isNativeApp && <IconBadge to="/carrito" icon="cart" label={t('header.cart')} count={cartCount} />}
+              </div>
 
-            {/* Selector de idioma — pegado al borde derecho y claramente
+              {/* Selector de idioma — pegado al borde derecho y claramente
                 separado del bloque de accesos, con una línea a media altura y
                 el mismo aire a cada lado de ella. */}
-            <span aria-hidden="true" className="mx-4 hidden h-5 w-px bg-ink/15 xl:block" />
-            <LanguagePicker />
+              <span aria-hidden="true" className="mx-4 hidden h-5 w-px bg-ink/15 xl:block" />
+              <LanguagePicker />
 
-            {/* Móvil: botón de menú */}
-            <button
-              ref={mobileMenuButtonRef}
-              onClick={() => setMobileOpen(true)}
-              aria-label={t('header.openMenu')}
-              aria-expanded={mobileOpen}
-              aria-controls="mobile-navigation-dialog"
-              className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:hidden"
-            >
-              <Icon name="menu" size={24} />
-            </button>
+              {/* Móvil: botón de menú */}
+              <button
+                ref={mobileMenuButtonRef}
+                onClick={() => setMobileOpen(true)}
+                aria-label={t('header.openMenu')}
+                aria-expanded={mobileOpen}
+                aria-controls="mobile-navigation-dialog"
+                className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:hidden"
+              >
+                <Icon name="menu" size={24} />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Barra de búsqueda desplegable (solo escritorio xl+) — usa el
+          {/* Barra de búsqueda desplegable (solo escritorio xl+) — usa el
              mismo motor que /buscar y renderiza autocompletado agrupado con
              navegación por teclado. */}
-        {searchOpen && (
-          <div className="hidden border-t border-black/10 bg-surface xl:block">
-            <HeaderSearch
-              mode="desktop"
-              onClose={() => setSearchOpen(false)}
-              restoreFocusTo={desktopSearchButtonRef}
-            />
-          </div>
-        )}
+          {searchOpen && (
+            <div className="hidden border-t border-black/10 bg-surface xl:block">
+              <HeaderSearch
+                mode="desktop"
+                onClose={() => setSearchOpen(false)}
+                restoreFocusTo={desktopSearchButtonRef}
+              />
+            </div>
+          )}
 
-        {/* Mega-menú */}
-        {family && (
-          <div onMouseEnter={() => openMega(family.slug)} onMouseLeave={scheduleClose}>
-            <MegaMenu family={family} onNavigate={() => setActiveFamily(null)} />
-          </div>
-        )}
+          {/* Mega-menú */}
+          {family && (
+            <div onMouseEnter={() => openMega(family.slug)} onMouseLeave={scheduleClose}>
+              <MegaMenu family={family} onNavigate={() => setActiveFamily(null)} />
+            </div>
+          )}
         </div>
       </header>
 
@@ -263,11 +275,7 @@ export function Header() {
           aria-modal="true"
           className="fixed inset-0 z-[85] flex flex-col bg-surface xl:hidden"
         >
-          <HeaderSearch
-            mode="mobile"
-            onClose={() => setSearchOpen(false)}
-            restoreFocusTo={mobileSearchButtonRef}
-          />
+          <HeaderSearch mode="mobile" onClose={() => setSearchOpen(false)} restoreFocusTo={mobileSearchButtonRef} />
         </div>
       )}
 
@@ -329,10 +337,7 @@ function FavoriteStoreMenu() {
     }
     function onClickOutside(event: MouseEvent) {
       if (!menuRef.current || !buttonRef.current) return
-      if (
-        !menuRef.current.contains(event.target as Node) &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
+      if (!menuRef.current.contains(event.target as Node) && !buttonRef.current.contains(event.target as Node)) {
         setOpen(false)
       }
     }
@@ -352,11 +357,7 @@ function FavoriteStoreMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={
-          favoriteStore
-            ? `Mi tienda: ${favoriteStore.name}. Cambiar o quitar.`
-            : t('header.chooseStore')
-        }
+        aria-label={favoriteStore ? `Mi tienda: ${favoriteStore.name}. Cambiar o quitar.` : t('header.chooseStore')}
         className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-medium text-white transition-colors hover:bg-white/15"
       >
         <Icon name="star" size={14} aria-hidden="true" />
@@ -390,11 +391,7 @@ function FavoriteStoreMenu() {
                       active ? 'bg-brand-050 font-semibold' : ''
                     }`}
                   >
-                    <Icon
-                      name={active ? 'star' : 'store'}
-                      size={14}
-                      aria-hidden="true"
-                    />
+                    <Icon name={active ? 'star' : 'store'} size={14} aria-hidden="true" />
                     <span>
                       {store.name}
                       <span className="ml-1 text-xs text-muted">{store.island}</span>
@@ -436,7 +433,7 @@ function NotificationsBell() {
     if (!open) return
     const rafId = window.requestAnimationFrame(() => panelRef.current?.focus())
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         event.preventDefault()
         setOpen(false)
         btnRef.current?.focus()
@@ -444,19 +441,16 @@ function NotificationsBell() {
     }
     function onClick(event: MouseEvent) {
       if (!panelRef.current || !btnRef.current) return
-      if (
-        !panelRef.current.contains(event.target as Node) &&
-        !btnRef.current.contains(event.target as Node)
-      ) {
+      if (!panelRef.current.contains(event.target as Node) && !btnRef.current.contains(event.target as Node)) {
         setOpen(false)
       }
     }
-    document.addEventListener("keydown", onKey)
-    document.addEventListener("mousedown", onClick)
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onClick)
     return () => {
       window.cancelAnimationFrame(rafId)
-      document.removeEventListener("keydown", onKey)
-      document.removeEventListener("mousedown", onClick)
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onClick)
     }
   }, [open])
 
@@ -468,7 +462,7 @@ function NotificationsBell() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={unreadCount > 0 ? `Avisos (${unreadCount} sin leer)` : "Avisos"}
+        aria-label={unreadCount > 0 ? `Avisos (${unreadCount} sin leer)` : 'Avisos'}
         className="relative hidden h-10 w-10 place-items-center rounded-full text-ink hover:bg-black/5 xl:grid"
       >
         <Icon name="info" />
@@ -502,15 +496,16 @@ function NotificationsBell() {
             )}
           </div>
           {notifications.length === 0 ? (
-            <p className="px-1 py-3 text-sm text-muted">
-              No tienes avisos por ahora. Actívalos desde /favoritos.
-            </p>
+            <p className="px-1 py-3 text-sm text-muted">No tienes avisos por ahora. Actívalos desde /favoritos.</p>
           ) : (
             <ul className="max-h-80 overflow-y-auto">
               {notifications.map((n) => (
-                <li key={n.id} className={`rounded-[8px] p-2 text-sm ${n.read ? "text-muted" : "bg-brand-050 text-ink"}`}>
+                <li
+                  key={n.id}
+                  className={`rounded-[8px] p-2 text-sm ${n.read ? 'text-muted' : 'bg-brand-050 text-ink'}`}
+                >
                   <p className="font-semibold">{n.message}</p>
-                  <p className="mt-1 text-[11px] text-muted">{new Date(n.createdAt).toLocaleString("es-ES")}</p>
+                  <p className="mt-1 text-[11px] text-muted">{new Date(n.createdAt).toLocaleString('es-ES')}</p>
                   {!n.read && (
                     <button
                       type="button"

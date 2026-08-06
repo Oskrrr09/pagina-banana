@@ -32,28 +32,44 @@ export function isReservationLine(line: CartLine): boolean {
  * Una fila por unidad: cada unidad ocupa su propio puesto en la cola.
  */
 export async function createReservationsFromCart(
-  clienteId: string,
+  // El identificador del cliente ya no se recibe: lo deduce el servidor de la
+  // sesión. Se mantiene el parámetro para no cambiar las llamadas, pero se
+  // ignora a propósito — aceptarlo era ofrecerle al servidor la respuesta a la
+  // pregunta que tiene que comprobar.
+  _clienteId: string,
   cart: CartLine[],
 ): Promise<{ created: DbReservation[]; error: string | null }> {
   if (!supabase) return { created: [], error: 'Supabase no está configurado.' }
 
-  const rows = cart
-    .filter(isReservationLine)
-    .flatMap((line) =>
-      Array.from({ length: line.qty }, () => ({
-        cliente_id: clienteId,
-        family: line.family,
-        model_slug: line.modelSlug,
-        variant_label: [line.color, line.capacity].filter(Boolean).join(' · '),
-        model_name: line.name,
-        price: line.price,
-      })),
-    )
+  // Una línea por producto, con las unidades dentro. El desglose a una fila
+  // por unidad lo hace el servidor.
+  //
+  // Ni `cliente_id`, ni `estado`, ni `pagado_at` viajan desde aquí: el INSERT
+  // directo dejaba enviar un `pagado_at` retrasado y **colarse en la lista de
+  // espera** por delante de quien llevaba semanas.
+  const lineas = cart.filter(isReservationLine).map((line) => ({
+    family: line.family,
+    model_slug: line.modelSlug,
+    model_name: line.name,
+    variant_label: [line.color, line.capacity].filter(Boolean).join(' · '),
+    price: line.price,
+    unidades: line.qty,
+  }))
 
-  if (rows.length === 0) return { created: [], error: null }
+  if (lineas.length === 0) return { created: [], error: null }
 
-  const { data, error } = await supabase.from('reservas').insert(rows).select('*')
+  const { data: ids, error } = await supabase.rpc('crear_mis_reservas', {
+    p_lineas: lineas,
+  })
   if (error) return { created: [], error: error.message }
+
+  // El RPC devuelve solo los identificadores; las filas se leen después, que
+  // además confirma que quedaron como el servidor decidió y no como pedimos.
+  const { data, error: errorLectura } = await supabase
+    .from('reservas')
+    .select('*')
+    .in('id', (ids ?? []) as string[])
+  if (errorLectura) return { created: [], error: errorLectura.message }
   return { created: (data ?? []) as DbReservation[], error: null }
 }
 
@@ -74,10 +90,7 @@ export async function listMyReservations(
   const items = await Promise.all(
     reservations.map(async (reservation) => ({
       reservation,
-      position:
-        reservation.estado === 'en-espera'
-          ? await queuePosition(reservation.id)
-          : null,
+      position: reservation.estado === 'en-espera' ? await queuePosition(reservation.id) : null,
     })),
   )
   return { items, error: null }
@@ -95,14 +108,15 @@ async function queuePosition(reservationId: string): Promise<number | null> {
   return typeof data === 'number' ? data : null
 }
 
-export async function cancelReservation(
-  reservationId: string,
-): Promise<{ error: string | null }> {
+export async function cancelReservation(reservationId: string): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase no está configurado.' }
-  const { error } = await supabase
-    .from('reservas')
-    .update({ estado: 'cancelada' })
-    .eq('id', reservationId)
+  // Por RPC: el UPDATE directo dejaba cambiar cualquier columna de la reserva
+  // —precio, producto, o `pagado_at`, que es lo que fija el puesto en la lista
+  // de espera—. La función solo toca el estado, y solo si la reserva es tuya y
+  // sigue en espera.
+  const { error } = await supabase.rpc('cancelar_mi_reserva', {
+    p_reserva_id: reservationId,
+  })
   return { error: error ? error.message : null }
 }
 

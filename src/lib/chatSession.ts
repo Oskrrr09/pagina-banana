@@ -24,14 +24,19 @@ import {
 //                    de canned replies del componente)
 // ============================================================================
 
-const VISITOR_STORAGE_KEY = 'bananito:visitor_id'
 const CONVERSATION_STORAGE_KEY = 'bananito:conversation_id'
 // Nombre y email de quien escribe sin cuenta. Se guardan para no volver a
 // pedírselos en cada visita desde el mismo navegador.
 const GUEST_STORAGE_KEY = 'bananito:guest'
 
-const WELCOME_TEXT =
-  '¡Hola! Soy Bananito 🍌 el asistente de Banana Computer. Puedo ayudarte con productos, accesorios, comparar modelos, tiendas o precios. ¿En qué te ayudo?'
+// La bienvenida ya no vive aquí ni se guarda en la base.
+//
+// Antes la insertaba este módulo con `autor: 'bot'`, lo que obligaba a que las
+// políticas dejaran a un anónimo escribir como bot. Y además la fijaba en
+// castellano para siempre en una base que sirve a cinco idiomas.
+//
+// Ahora la pinta `ChatBubble` con la clave `chat.welcome` en el idioma activo,
+// y no se persiste: nadie tiene que revisar un saludo automático.
 
 type Status = 'loading' | 'ready' | 'demo' | 'error'
 
@@ -54,10 +59,7 @@ export interface ChatSession {
     valoracionSolicitada: boolean
     valoracionEnviada: boolean
   }
-  enviarValoracion: (
-    estrellas: number,
-    observacion: string,
-  ) => Promise<{ error: string | null }>
+  enviarValoracion: (estrellas: number, observacion: string) => Promise<{ error: string | null }>
   /**
    * Abre una conversación nueva dejando atrás la cerrada, sin recargar la
    * página. El historial anterior sigue en la base de datos.
@@ -121,101 +123,96 @@ function readGuest(): GuestIdentity | null {
   }
 }
 
-// Asegura que existe un visitante en Supabase para este navegador. Devuelve
-// el UUID. La primera vez inserta la fila; después reutiliza el guardado.
-//
-// Si el visitante tiene cuenta, se le pega la identidad a la fila. Se hace
-// también sobre filas ya existentes: alguien puede haber usado el chat como
-// anónimo y registrarse después, y a partir de ese momento el agente debe
-// verle identificado.
-async function ensureVisitor(
-  identity: VisitorIdentity | null,
-  guest: GuestIdentity | null,
-): Promise<string> {
+/**
+ * Asegura que hay sesión de Supabase antes de tocar el chat.
+ *
+ * Es la pieza que sostiene toda la seguridad del chat. Antes el visitante se
+ * identificaba con un UUID guardado en `localStorage`, que es un dato que él
+ * mismo puede editar desde la consola del navegador: servía para recordar la
+ * conversación, pero no autorizaba nada. Las políticas de Supabase tenían que
+ * abrirse a `anon` en canal, y eso dejaba los datos de todos al alcance de
+ * cualquiera.
+ *
+ * Ahora se pide una sesión anónima real. El `auth.uid()` va firmado en el JWT
+ * y es lo único de lo que cuelgan las políticas.
+ *
+ * Si ya hay sesión no se toca: puede ser la de un cliente con cuenta, y en ese
+ * caso su chat queda ligado a su cuenta, que es lo deseable.
+ *
+ * Devuelve false cuando el proyecto no tiene activados los inicios de sesión
+ * anónimos (Authentication → Providers → Anonymous sign-ins). En ese caso el
+ * chat cae a modo demostración en vez de romperse.
+ */
+async function asegurarSesion(): Promise<boolean> {
+  if (!supabase) return false
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (session) return true
+
+  const { error } = await supabase.auth.signInAnonymously()
+  if (error) {
+    console.warn(
+      '[chatSession] no se pudo crear sesión anónima; el chat queda en modo ' +
+        'demostración. Comprueba que los inicios de sesión anónimos están ' +
+        'activados en Supabase.',
+      error,
+    )
+    return false
+  }
+  return true
+}
+
+/**
+ * Abre (o recupera) la conversación del visitante autenticado.
+ *
+ * Toda la apertura ocurre dentro de `abrir_conversacion()` en el servidor:
+ * crea la ficha si hace falta, la conversación, y el mensaje de bienvenida.
+ *
+ * La bienvenida importa más de lo que parece: la firma el bot, y antes la
+ * insertaba este mismo código con `autor: 'bot'`. Eso obligaba a que las
+ * políticas dejaran a un anónimo escribir como bot — y quien puede escribir
+ * como bot puede suplantarlo en la conversación de cualquiera. Ahora el
+ * visitante solo puede escribir con `autor: 'visitor'`.
+ */
+async function abrirConversacion(identity: VisitorIdentity | null, guest: GuestIdentity | null): Promise<string> {
   if (!supabase) throw new Error('Supabase no configurado')
 
   // La cuenta manda sobre los datos escritos a mano como invitado.
-  const identityFields = identity
-    ? {
-        cliente_id: identity.clienteId,
-        nombre: identity.nombre,
-        email: identity.email,
-        telefono: identity.telefono,
-      }
-    : guest
-      ? { nombre: guest.nombre, email: guest.email }
-      : {}
+  const nombre = identity?.nombre ?? guest?.nombre ?? null
+  const email = identity?.email ?? guest?.email ?? null
+  const telefono = identity?.telefono ?? null
 
-  const stored = readStored(VISITOR_STORAGE_KEY)
-  if (stored) {
-    if (identity || guest) {
-      const { error } = await supabase
-        .from('visitantes')
-        .update(identityFields)
-        .eq('id', stored)
-      if (error) console.error('[chatSession] no se pudo identificar al visitante', error)
-    }
-    return stored
-  }
-
-  const { data, error } = await supabase
-    .from('visitantes')
-    .insert({ user_agent: navigator.userAgent, ...identityFields })
-    .select('id')
-    .single()
+  const { data, error } = await supabase.rpc('abrir_conversacion', {
+    p_nombre: nombre,
+    p_email: email,
+    p_telefono: telefono,
+    // La firma conserva este parámetro por compatibilidad, pero la migración
+    // de privacidad lo ignora y limpia cualquier valor histórico.
+    p_user_agent: null,
+  })
   if (error) throw error
-  writeStored(VISITOR_STORAGE_KEY, data.id)
-  return data.id
-}
 
-// Asegura que existe una conversación abierta para el visitante. Reutiliza la
-// guardada si sigue abierta; si no, busca la más reciente abierta o crea una.
-async function ensureConversation(visitorId: string): Promise<string> {
-  if (!supabase) throw new Error('Supabase no configurado')
-  const stored = readStored(CONVERSATION_STORAGE_KEY)
-  if (stored) {
-    const { data } = await supabase
-      .from('conversaciones')
-      .select('id, estado, visitor_id')
-      .eq('id', stored)
-      .maybeSingle()
-    if (data && data.estado === 'abierta' && data.visitor_id === visitorId) {
-      return data.id
+  // Si además tiene cuenta, se enlaza la ficha con el cliente para que el
+  // agente le vea identificado.
+  //
+  // Sin parámetros a propósito: la versión anterior mandaba el `cliente_id`
+  // desde aquí, y eso permitía escribir el UUID de otra persona y hacer que su
+  // conversación apareciera a nombre de ella. La función lo deduce de la
+  // sesión y solo vincula si esa misma sesión tiene ficha de cliente.
+  if (identity?.clienteId) {
+    const { error: errorEnlace } = await supabase.rpc('vincular_mi_visitante_a_cliente')
+    if (errorEnlace) {
+      console.error('[chatSession] no se pudo enlazar la ficha con la cuenta', errorEnlace)
     }
   }
-  const { data: existing } = await supabase
-    .from('conversaciones')
-    .select('id')
-    .eq('visitor_id', visitorId)
-    .eq('estado', 'abierta')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (existing) {
-    writeStored(CONVERSATION_STORAGE_KEY, existing.id)
-    return existing.id
-  }
-  const { data: created, error } = await supabase
-    .from('conversaciones')
-    .insert({ visitor_id: visitorId })
-    .select('id')
-    .single()
-  if (error) throw error
-  writeStored(CONVERSATION_STORAGE_KEY, created.id)
-  // Mensaje de bienvenida como primer mensaje del bot en la conversación.
-  await supabase
-    .from('mensajes')
-    .insert({ conversacion_id: created.id, autor: 'bot', texto: WELCOME_TEXT })
-  return created.id
+
+  writeStored(CONVERSATION_STORAGE_KEY, data as string)
+  return data as string
 }
 
-export function useVisitorChatSession(
-  active: boolean,
-  identity: VisitorIdentity | null = null,
-): ChatSession {
-  const [status, setStatus] = useState<Status>(
-    supabaseEnabled ? 'loading' : 'demo',
-  )
+export function useVisitorChatSession(active: boolean, identity: VisitorIdentity | null = null): ChatSession {
+  const [status, setStatus] = useState<Status>(supabaseEnabled ? 'loading' : 'demo')
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<DbMessage[]>([])
   const [guest, setGuest] = useState<GuestIdentity | null>(() => readGuest())
@@ -234,6 +231,42 @@ export function useVisitorChatSession(
     setMessages((prev) => [...prev, m])
   }, [])
 
+  // Cambio de sesión con el chat abierto.
+  //
+  // El escenario: alguien escribe por el chat como anónimo y luego inicia
+  // sesión con su cuenta. El `auth.uid()` cambia, así que la conversación
+  // anterior ya no le pertenece a la sesión nueva: las políticas rechazarían
+  // cualquier lectura o escritura sobre ella, y el widget se quedaría
+  // intentándolo en bucle contra una conversación que ya no es suya.
+  //
+  // Se resuelve empezando de cero: se sueltan las suscripciones, se limpia lo
+  // cargado y se abre una conversación de la sesión nueva. El historial
+  // anónimo NO se arrastra — copiarlo exigiría demostrar que las dos sesiones
+  // son de la misma persona, y lo único que las relacionaría es que comparten
+  // navegador, que no demuestra nada.
+  const uidRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!supabaseEnabled || !supabase) return
+    const { data } = supabase.auth.onAuthStateChange((_evento, sesion) => {
+      const nuevo = sesion?.user.id ?? null
+      if (uidRef.current === null) {
+        uidRef.current = nuevo
+        return
+      }
+      if (uidRef.current === nuevo) return
+
+      uidRef.current = nuevo
+      setConversationId(null)
+      setConversation(null)
+      setMessages([])
+      seenIdsRef.current = new Set()
+      // Vuelve a 'loading': el efecto de inicialización se dispara solo al ver
+      // que ya no hay conversación, y abrirá la de la sesión nueva.
+      setStatus('loading')
+    })
+    return () => data.subscription.unsubscribe()
+  }, [])
+
   // Inicialización: se ejecuta cuando el chat se activa por primera vez.
   useEffect(() => {
     if (!supabaseEnabled || !supabase) return
@@ -243,8 +276,16 @@ export function useVisitorChatSession(
     let cancelled = false
     ;(async () => {
       try {
-        const visitorId = await ensureVisitor(identity, guest)
-        const convId = await ensureConversation(visitorId)
+        // Sin sesión no hay identidad verificable y las políticas nuevas
+        // rechazarían todo. Se cae a demostración, que es un estado que el
+        // widget ya sabe pintar.
+        const haySesion = await asegurarSesion()
+        if (cancelled) return
+        if (!haySesion) {
+          setStatus('demo')
+          return
+        }
+        const convId = await abrirConversacion(identity, guest)
         if (cancelled) return
         const { data, error } = await supabase!
           .from('mensajes')
@@ -258,11 +299,7 @@ export function useVisitorChatSession(
         setConversationId(convId)
 
         // Estado de cierre/valoración de esta conversación.
-        const { data: conv } = await supabase!
-          .from('conversaciones')
-          .select('*')
-          .eq('id', convId)
-          .maybeSingle()
+        const { data: conv } = await supabase!.from('conversaciones').select('*').eq('id', convId).maybeSingle()
         if (!cancelled && conv) setConversation(conv as DbConversation)
 
         setStatus('ready')
@@ -283,22 +320,26 @@ export function useVisitorChatSession(
   const clienteId = identity?.clienteId ?? null
   useEffect(() => {
     if (!supabase || !clienteId) return
-    const visitorId = readStored(VISITOR_STORAGE_KEY)
-    if (!visitorId) return
-    void supabase
-      .from('visitantes')
-      .update({
-        cliente_id: clienteId,
-        nombre: identity?.nombre ?? null,
-        email: identity?.email ?? null,
-        telefono: identity?.telefono ?? null,
+    void (async () => {
+      // Ni un `update` directo ni el `cliente_id` por parámetro: los datos de
+      // contacto van por la función de apertura —que es idempotente y
+      // reutiliza la conversación abierta— y el enlace con la cuenta por la
+      // suya, que deduce el cliente de la sesión.
+      const { error: errorDatos } = await supabase!.rpc('abrir_conversacion', {
+        p_nombre: identity?.nombre ?? null,
+        p_email: identity?.email ?? null,
+        p_telefono: identity?.telefono ?? null,
+        p_user_agent: null,
       })
-      .eq('id', visitorId)
-      .then(({ error }) => {
-        if (error) {
-          console.error('[chatSession] no se pudo identificar al visitante', error)
-        }
-      })
+      if (errorDatos) {
+        console.error('[chatSession] no se pudieron actualizar los datos', errorDatos)
+        return
+      }
+      const { error } = await supabase!.rpc('vincular_mi_visitante_a_cliente')
+      if (error) {
+        console.error('[chatSession] no se pudo enlazar la ficha con la cuenta', error)
+      }
+    })()
   }, [clienteId, identity?.nombre, identity?.email, identity?.telefono])
 
   // Suscripción realtime a los mensajes de esta conversación.
@@ -351,13 +392,25 @@ export function useVisitorChatSession(
   const sendMessage = useCallback(
     async (texto: string) => {
       if (!supabase || !conversationId) return
+
+      // Por RPC. El insert directo dejaba que el navegador pusiera el
+      // `created_at`, y el disparador de actividad ordena la bandeja por él:
+      // con una fecha futura la conversación se quedaba clavada arriba.
+      const { data: nuevoId, error: errorEnvio } = await supabase.rpc('enviar_mensaje_visitante', {
+        p_conversacion_id: conversationId,
+        p_texto: texto,
+      })
+      if (errorEnvio) {
+        console.error('[chatSession] send error', errorEnvio)
+        return
+      }
       const { data, error } = await supabase
         .from('mensajes')
-        .insert({ conversacion_id: conversationId, autor: 'visitor', texto })
         .select('*')
+        .eq('id', nuevoId as string)
         .single()
       if (error) {
-        console.error('[chatSession] send error', error)
+        console.error('[chatSession] no se pudo releer el mensaje', error)
         return
       }
       appendMessage(data as DbMessage)
@@ -380,12 +433,12 @@ export function useVisitorChatSession(
   const enviarValoracion = useCallback(
     async (estrellas: number, observacion: string) => {
       if (!supabase || !conversationId) return { error: 'No hay conversación.' }
-      const visitorId = readStored(VISITOR_STORAGE_KEY)
-      if (!visitorId) return { error: 'No se pudo identificar la conversación.' }
 
+      // Ya no se manda el id del visitante: la función deduce de quién es la
+      // conversación a partir de la sesión. Mandarlo era ofrecerle al servidor
+      // la respuesta a la pregunta que tenía que comprobar.
       const { error } = await supabase.rpc('enviar_valoracion', {
         p_conversacion_id: conversationId,
-        p_visitor_id: visitorId,
         p_estrellas: estrellas,
         p_observacion: observacion,
       })
@@ -487,9 +540,7 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
   items: InboxItem[]
   status: Status
 } {
-  const [status, setStatus] = useState<Status>(
-    supabaseEnabled ? 'loading' : 'demo',
-  )
+  const [status, setStatus] = useState<Status>(supabaseEnabled ? 'loading' : 'demo')
   const [items, setItems] = useState<InboxItem[]>([])
 
   const reload = useCallback(async () => {
@@ -515,11 +566,7 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
 
     if (ids.length > 0) {
       const [{ data: msgs }, { data: visitantes }] = await Promise.all([
-        supabaseAgent
-          .from('mensajes')
-          .select('*')
-          .in('conversacion_id', ids)
-          .order('created_at', { ascending: false }),
+        supabaseAgent.from('mensajes').select('*').in('conversacion_id', ids).order('created_at', { ascending: false }),
         supabaseAgent.from('visitantes').select('*').in('id', visitorIds),
       ])
 
@@ -555,30 +602,18 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
     if (!supabaseAgent) return
     const channel = supabaseAgent
       .channel('agent-inbox')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'mensajes' },
-        () => {
-          void reload()
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'conversaciones' },
-        () => {
-          void reload()
-        },
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mensajes' }, () => {
+        void reload()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones' }, () => {
+        void reload()
+      })
       // Un visitante que ya existía puede identificarse después (al dar sus
       // datos o al iniciar sesión). Sin esto, la bandeja seguiría enseñando
       // "Visitante ab12cd34" hasta el siguiente mensaje.
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'visitantes' },
-        () => {
-          void reload()
-        },
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'visitantes' }, () => {
+        void reload()
+      })
       .subscribe()
     return () => {
       supabaseAgent!.removeChannel(channel)
@@ -590,12 +625,10 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
 
 export function useAgentConversation(conversationId: string | null): {
   messages: DbMessage[]
-  sendMessage: (texto: string) => Promise<void>
+  sendMessage: (texto: string) => Promise<{ error: string | null }>
   status: Status
 } {
-  const [status, setStatus] = useState<Status>(
-    supabaseEnabled ? (conversationId ? 'loading' : 'ready') : 'demo',
-  )
+  const [status, setStatus] = useState<Status>(supabaseEnabled ? (conversationId ? 'loading' : 'ready') : 'demo')
   const [messages, setMessages] = useState<DbMessage[]>([])
   const seenIdsRef = useRef<Set<string>>(new Set())
 
@@ -660,23 +693,38 @@ export function useAgentConversation(conversationId: string | null): {
 
   const sendMessage = useCallback(
     async (texto: string) => {
-      if (!supabaseAgent || !conversationId) return
-      const { data: auth } = await supabaseAgent.auth.getUser()
-      const { data, error } = await supabaseAgent
-        .from('mensajes')
-        .insert({
-          conversacion_id: conversationId,
-          autor: 'agent',
-          texto,
-          agente_id: auth.user?.id ?? null,
-        })
-        .select('*')
-        .single()
-      if (error) {
-        console.error('[agentConversation] send error', error)
-        return
+      if (!supabaseAgent || !conversationId) {
+        return { error: 'No hay una conversación disponible para responder.' }
       }
-      appendMessage(data as DbMessage)
+
+      try {
+        // Por RPC. El insert directo mandaba `agente_id` desde aquí, y quien
+        // manda su propia firma puede mandar la de otro —o dejarla vacía—. El
+        // servidor lo saca de la sesión.
+        const { data: nuevoId, error: errorEnvio } = await supabaseAgent.rpc('responder_como_agente', {
+          p_conversacion_id: conversationId,
+          p_texto: texto,
+        })
+        if (errorEnvio) {
+          console.error('[agentConversation] send error', errorEnvio)
+          return { error: errorEnvio.message }
+        }
+        const { data, error } = await supabaseAgent
+          .from('mensajes')
+          .select('*')
+          .eq('id', nuevoId as string)
+          .single()
+        if (error) {
+          console.error('[agentConversation] no se pudo releer el mensaje', error)
+          return { error: error.message }
+        }
+        appendMessage(data as DbMessage)
+        return { error: null }
+      } catch (error) {
+        const mensaje = error instanceof Error ? error.message : 'No se pudo enviar el mensaje.'
+        console.error('[agentConversation] unexpected send error', error)
+        return { error: mensaje }
+      }
     },
     [conversationId, appendMessage],
   )
@@ -696,43 +744,20 @@ export async function setConversationState(
 ): Promise<{ error: string | null }> {
   if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
 
-  const patch: Record<string, unknown> = { estado }
-  if (estado === 'cerrada') {
-    patch.cerrada_at = new Date().toISOString()
-    patch.valoracion_solicitada = opciones.pedirValoracion === true
-  } else {
-    // Al reabrir se retira la petición pendiente: si el agente vuelve a
-    // cerrar, decidirá otra vez. Una valoración ya enviada no se toca.
-    patch.cerrada_at = null
-    patch.valoracion_solicitada = false
-  }
-
-  const { error } = await supabaseAgent
-    .from('conversaciones')
-    .update(patch)
-    .eq('id', conversationId)
+  // Por RPC. El `update` alcanzaba la fila entera: se podía cambiar el
+  // `visitor_id` —y con él de quién es la conversación— o escribir las
+  // estrellas que había puesto el visitante.
+  const { error } =
+    estado === 'cerrada'
+      ? await supabaseAgent.rpc('cerrar_conversacion', {
+          p_conversacion_id: conversationId,
+          p_solicitar_valoracion: opciones.pedirValoracion === true,
+        })
+      : await supabaseAgent.rpc('reabrir_conversacion', {
+          p_conversacion_id: conversationId,
+        })
   if (error) {
     console.error('[setConversationState] error', error)
-    return { error: error.message }
-  }
-  return { error: null }
-}
-
-/**
- * Borrado definitivo de una conversación y sus mensajes (cascada en la
- * clave foránea). No hay papelera: quien llame a esto debe haber
- * confirmado antes con el agente.
- */
-export async function deleteConversation(
-  conversationId: string,
-): Promise<{ error: string | null }> {
-  if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
-  const { error } = await supabaseAgent
-    .from('conversaciones')
-    .delete()
-    .eq('id', conversationId)
-  if (error) {
-    console.error('[deleteConversation] error', error)
     return { error: error.message }
   }
   return { error: null }
@@ -747,10 +772,17 @@ export async function assignConversation(
   agentId: string | null,
 ): Promise<{ error: string | null }> {
   if (!supabaseAgent) return { error: 'Supabase no está configurado.' }
-  const { error } = await supabaseAgent
-    .from('conversaciones')
-    .update({ agente_id: agentId })
-    .eq('id', conversationId)
+
+  // El identificador ya no viaja: asignarse es siempre a uno mismo. Antes se
+  // mandaba el `agente_id` desde aquí, así que se podía atribuir una
+  // conversación a un compañero cualquiera.
+  const { error } = agentId
+    ? await supabaseAgent.rpc('asignarme_conversacion', {
+        p_conversacion_id: conversationId,
+      })
+    : await supabaseAgent.rpc('liberar_mi_conversacion', {
+        p_conversacion_id: conversationId,
+      })
   if (error) {
     console.error('[assignConversation] error', error)
     return { error: error.message }
@@ -773,11 +805,7 @@ export function useAgentNames(): Record<string, string> {
       .select('id, nombre')
       .then(({ data, error }) => {
         if (!active || error || !data) return
-        setNames(
-          Object.fromEntries(
-            (data as { id: string; nombre: string }[]).map((a) => [a.id, a.nombre]),
-          ),
-        )
+        setNames(Object.fromEntries((data as { id: string; nombre: string }[]).map((a) => [a.id, a.nombre])))
       })
     return () => {
       active = false
@@ -822,11 +850,7 @@ export function useConversationVisitor(conversationId: string | null): {
       }
 
       const [{ data: v }, { data: otras }] = await Promise.all([
-        supabaseAgent!
-          .from('visitantes')
-          .select('*')
-          .eq('id', conv.visitor_id)
-          .maybeSingle(),
+        supabaseAgent!.from('visitantes').select('*').eq('id', conv.visitor_id).maybeSingle(),
         supabaseAgent!
           .from('conversaciones')
           .select('*')

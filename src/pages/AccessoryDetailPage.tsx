@@ -40,10 +40,7 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
       id: cartId,
       modelSlug: accessory.slug,
       family: 'accesorios',
-      name:
-        accessory.variants.length > 1
-          ? `${cat(accessory.name)} · ${cat(variant.label)}`
-          : cat(accessory.name),
+      name: accessory.variants.length > 1 ? `${cat(accessory.name)} · ${cat(variant.label)}` : cat(accessory.name),
       color: '',
       capacity: '',
       price,
@@ -80,7 +77,10 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
           <div className="overflow-hidden rounded-[16px] border border-line">
             <AccessoryImage
               src={variant.image}
-              alt={t('accessory.variantAlt', { nombre: cat(accessory.name), variante: cat(variant.label) })}
+              alt={t('accessory.variantAlt', {
+                nombre: cat(accessory.name),
+                variante: cat(variant.label),
+              })}
               size="hero"
               presentation={accessory.imagePresentation}
               imageBg={accessory.imageBg}
@@ -90,11 +90,7 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
             />
           </div>
           {accessory.variants.length > 1 && (
-            <div
-              role="radiogroup"
-              aria-label={t('accessory.variants')}
-              className="mt-4 flex flex-wrap gap-2"
-            >
+            <div role="radiogroup" aria-label={t('accessory.variants')} className="mt-4 flex flex-wrap gap-2">
               {accessory.variants.map((v, i) => {
                 const active = i === activeVariant
                 return (
@@ -105,9 +101,7 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
                     aria-checked={active}
                     onClick={() => setActiveVariant(i)}
                     className={`inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium ${
-                      active
-                        ? 'border-ink bg-ink text-surface'
-                        : 'border-line bg-surface text-ink hover:border-ink/30'
+                      active ? 'border-ink bg-ink text-surface' : 'border-line bg-surface text-ink hover:border-ink/30'
                     }`}
                   >
                     {v.swatch && (
@@ -127,9 +121,7 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
 
         {/* Info */}
         <section aria-labelledby="accessory-title">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
-            {t('accessory.kicker')}
-          </p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">{t('accessory.kicker')}</p>
           <h1 id="accessory-title" className="mt-1 text-3xl font-extrabold text-ink sm:text-4xl">
             {cat(accessory.name)}
           </h1>
@@ -147,9 +139,7 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
           </div>
           <p className="mt-2 text-xs text-muted">{cat(accessory.availabilityLabel)}</p>
 
-          <p className="mt-5 text-[15px] leading-relaxed text-ink">
-            {cat(accessory.description)}
-          </p>
+          <p className="mt-5 text-[15px] leading-relaxed text-ink">{cat(accessory.description)}</p>
 
           {accessory.highlights.length > 0 && (
             <ul className="mt-4 space-y-1 text-sm text-ink">
@@ -193,9 +183,7 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
         <dl className="mt-4 grid gap-y-2 gap-x-8 sm:grid-cols-2">
           {accessory.specs.map((s) => (
             <div key={s.label} className="border-b border-line py-2">
-              <dt className="text-xs font-semibold uppercase tracking-widest text-muted">
-                {cat(s.label)}
-              </dt>
+              <dt className="text-xs font-semibold uppercase tracking-widest text-muted">{cat(s.label)}</dt>
               <dd className="text-sm text-ink">{cat(s.value)}</dd>
             </div>
           ))}
@@ -285,9 +273,7 @@ function AccessoryDetail({ accessory }: { accessory: Accessory }) {
 function RelatedAccessories({ current }: { current: Accessory }) {
   const t = useT()
   const cat = useCatalogo()
-  const others = appleAccessories.filter(
-    (a) => a.slug !== current.slug && a.category === current.category,
-  )
+  const others = appleAccessories.filter((a) => a.slug !== current.slug && a.category === current.category)
   if (others.length === 0) return null
   return (
     <section aria-labelledby="related" className="mt-12">
@@ -313,12 +299,8 @@ function RelatedAccessories({ current }: { current: Accessory }) {
                 />
               </div>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-ink">
-                  {cat(a.name)}
-                </span>
-                {a.price != null && (
-                  <span className="text-xs text-muted">{euro(a.price)}</span>
-                )}
+                <span className="block truncate text-sm font-semibold text-ink">{cat(a.name)}</span>
+                {a.price != null && <span className="text-xs text-muted">{euro(a.price)}</span>}
               </span>
             </Link>
           </li>

@@ -43,10 +43,7 @@ export function FavoritesPage() {
   } = useFavoriteAlerts()
 
   const favModels = useMemo<Model[]>(
-    () =>
-      allModels.filter((m) =>
-        favorites.some((f) => f.startsWith(`${m.family}/${m.slug}`)),
-      ),
+    () => allModels.filter((m) => favorites.some((f) => f.startsWith(`${m.family}/${m.slug}`))),
     [favorites],
   )
 
@@ -56,9 +53,7 @@ export function FavoritesPage() {
     <Container className="py-10">
       <header>
         <h1 className="text-3xl font-extrabold text-ink">Favoritos</h1>
-        <p className="mt-1 text-muted">
-          {t('favorites.intro')}
-        </p>
+        <p className="mt-1 text-muted">{t('favorites.intro')}</p>
       </header>
 
       {favModels.length === 0 ? (
@@ -112,9 +107,7 @@ export function FavoritesPage() {
               <h2 id="fav-alerts" className="text-xl font-bold text-ink">
                 Mis avisos
               </h2>
-              <p className="mt-1 text-sm text-muted">
-                Simulación demostrativa — nada de correos ni datos personales.
-              </p>
+              <p className="mt-1 text-sm text-muted">Simulación demostrativa — nada de correos ni datos personales.</p>
               <ul className="mt-4 space-y-3">
                 {trackedAlerts.map((alert) => {
                   const model = allModels.find((m) => `${m.family}/${m.slug}` === alert.productId)
@@ -163,8 +156,8 @@ export function FavoritesPage() {
                 })}
               </ul>
               <p className="mt-3 text-xs text-muted">
-                Simulación: no representa stock real. En una versión conectada al inventario y al
-                sistema de comunicaciones, este aviso también podría enviarse por email.
+                Simulación: no representa stock real. En una versión conectada al inventario y al sistema de
+                comunicaciones, este aviso también podría enviarse por email.
               </p>
             </section>
           )}
@@ -286,9 +279,7 @@ function FavoriteCard({
       <div className="mt-3 rounded-[10px] border border-line bg-neutral p-3">
         {following && activeStore ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-semibold text-ink">
-              Siguiendo disponibilidad en {activeStore.name}
-            </p>
+            <p className="text-xs font-semibold text-ink">Siguiendo disponibilidad en {activeStore.name}</p>
             <button
               type="button"
               onClick={onDisable}
@@ -298,11 +289,7 @@ function FavoriteCard({
             </button>
           </div>
         ) : (
-          <FollowControls
-            productId={productId}
-            favoriteStoreSlug={favoriteStoreSlug}
-            onFollow={onFollow}
-          />
+          <FollowControls productId={productId} favoriteStoreSlug={favoriteStoreSlug} onFollow={onFollow} />
         )}
       </div>
     </li>
@@ -322,9 +309,7 @@ function FollowControls({
   return (
     <details className="text-xs text-ink">
       <summary className="cursor-pointer font-semibold text-ink">Seguir disponibilidad</summary>
-      <p className="mt-2 text-muted">
-        {t('favorites.chooseStoreNote')}
-      </p>
+      <p className="mt-2 text-muted">{t('favorites.chooseStoreNote')}</p>
       <ul className="mt-2 space-y-1">
         {stores.map((store) => {
           const isFav = store.slug === favoriteStoreSlug
@@ -354,13 +339,7 @@ function FollowControls({
   )
 }
 
-function StoreSelectInline({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (next: string) => void
-}) {
+function StoreSelectInline({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   return (
     <label className="text-xs text-muted">
       <span className="sr-only">Cambiar tienda</span>

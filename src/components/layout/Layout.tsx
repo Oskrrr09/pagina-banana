@@ -57,11 +57,7 @@ export function Layout() {
         // al tirar hacia abajo estando arriba del todo el contenido se
         // separaba de la barra de búsqueda y dejaba ver una franja del fondo
         // entre el amarillo de la barra y el de los filtros.
-        className={
-          isNativeApp
-            ? 'min-h-0 flex-1 overflow-y-auto overscroll-none outline-none'
-            : 'flex-1 outline-none'
-        }
+        className={isNativeApp ? 'min-h-0 flex-1 overflow-y-auto overscroll-none outline-none' : 'flex-1 outline-none'}
       >
         {/* Dentro del contenedor que se desplaza, para que se escondan bajo
             la barra de búsqueda al bajar. */}

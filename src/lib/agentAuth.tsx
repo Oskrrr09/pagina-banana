@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabaseAgent, type AgentStatus, type DbAgent } from './supabase'
 
@@ -117,10 +109,10 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       // Optimista: el selector responde al instante y se revierte si falla.
       const anterior = agente.estado
       setAgente({ ...agente, estado })
-      const { error } = await supabaseAgent
-        .from('agentes')
-        .update({ estado })
-        .eq('id', agente.id)
+      // Por RPC. El `update` directo alcanzaba toda la fila, y `rol` está en
+      // esa fila: un agente podía ascenderse a supervisor. La función solo
+      // toca el estado y el nombre.
+      const { error } = await supabaseAgent.rpc('cambiar_mi_estado', { p_estado: estado })
       if (error) {
         console.error('[agentAuth] no se pudo cambiar el estado', error)
         setAgente((prev) => (prev ? { ...prev, estado: anterior } : prev))

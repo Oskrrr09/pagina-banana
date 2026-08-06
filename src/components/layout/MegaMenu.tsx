@@ -15,7 +15,12 @@ const panel = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.24, ease: [0.22, 1, 0.36, 1], staggerChildren: 0.035, delayChildren: 0.04 },
+    transition: {
+      duration: 0.24,
+      ease: [0.22, 1, 0.36, 1],
+      staggerChildren: 0.035,
+      delayChildren: 0.04,
+    },
   },
 }
 const item = {

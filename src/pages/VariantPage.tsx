@@ -26,11 +26,11 @@ const TABS = ['Características', 'Comparar', 'Plan Renove', 'Garantía', 'Acces
 // el castellano se queda como identificador y la traducción se aplica solo al
 // pintarlos.
 const TAB_LABEL: Record<(typeof TABS)[number], ClaveTexto> = {
-  'Características': 'product.features',
-  'Comparar': 'compare.title',
+  Características: 'product.features',
+  Comparar: 'compare.title',
   'Plan Renove': 'product.tradeIn',
-  'Garantía': 'product.warranty',
-  'Accesorios': 'product.tab.accessories',
+  Garantía: 'product.warranty',
+  Accesorios: 'product.tab.accessories',
   FAQ: 'product.tab.faq',
 }
 
@@ -58,8 +58,7 @@ export function VariantPage() {
   const { addToCart, cart, insurancePrice, removeFromCart, setQty, toggleFavorite, isFavorite } = useStore()
   const { session: customerSession } = useCustomerAuth()
 
-  const initialColor =
-    model?.colors.find((candidate) => variant?.endsWith(`-${candidate.color}`)) ?? model?.colors[0]
+  const initialColor = model?.colors.find((candidate) => variant?.endsWith(`-${candidate.color}`)) ?? model?.colors[0]
   const initialCapacityToken =
     initialColor && variant?.endsWith(`-${initialColor.color}`)
       ? variant.slice(0, -(initialColor.color.length + 1))
@@ -77,7 +76,10 @@ export function VariantPage() {
     const seen = new Set<string>()
     return color.capacities.reduce<string[]>((acc, cap) => {
       const s = getSize(cap.capacity)
-      if (s && !seen.has(s)) { seen.add(s); acc.push(s) }
+      if (s && !seen.has(s)) {
+        seen.add(s)
+        acc.push(s)
+      }
       return acc
     }, [])
   }, [color])
@@ -93,9 +95,10 @@ export function VariantPage() {
   const activeSize = getSize(capacity) ?? sizes[0] ?? null
 
   // Capacidades filtradas por el tamaño activo.
-  const visibleCapacities = hasSizeSelector && activeSize
-    ? color?.capacities.filter((c) => getSize(c.capacity) === activeSize) ?? []
-    : color?.capacities ?? []
+  const visibleCapacities =
+    hasSizeSelector && activeSize
+      ? (color?.capacities.filter((c) => getSize(c.capacity) === activeSize) ?? [])
+      : (color?.capacities ?? [])
 
   // Etiqueta de capacidad que se muestra al usuario (sin el prefijo de tamaño).
   const stripSizePrefix = (cap: string) => cap.replace(/^\d{2}(?:"|\s?mm) · /, '')
@@ -245,7 +248,8 @@ export function VariantPage() {
         <div ref={buyBoxRef}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <h1 className="text-3xl font-extrabold text-ink">
-              {model.name}{hasSizeSelector && activeSize ? ` ${activeSize}` : ''}
+              {model.name}
+              {hasSizeSelector && activeSize ? ` ${activeSize}` : ''}
             </h1>
             <FavoriteToggle
               favId={`${model.family}/${model.slug}`}
@@ -259,7 +263,8 @@ export function VariantPage() {
             <span className="text-3xl font-bold text-ink">{euro(current.price, intl)}</span>
             {current.previousPrice && (
               <span className="pb-1 text-ink">
-                {euro(current.previousPrice, intl)} · {t('product.save', { importe: euro(current.previousPrice - current.price, intl) })}
+                {euro(current.previousPrice, intl)} ·{' '}
+                {t('product.save', { importe: euro(current.previousPrice - current.price, intl) })}
               </span>
             )}
           </div>
@@ -269,7 +274,9 @@ export function VariantPage() {
 
           {/* Selector de color */}
           <div className="mt-6">
-            <p className="mb-2 text-sm font-semibold text-ink">{t('product.colorLabel', { color: nombreColor(color.name) })}</p>
+            <p className="mb-2 text-sm font-semibold text-ink">
+              {t('product.colorLabel', { color: nombreColor(color.name) })}
+            </p>
             <div className="flex flex-wrap gap-2">
               {model.colors.map((c) => (
                 <Chip
@@ -367,22 +374,16 @@ export function VariantPage() {
             {needsReservation ? (
               <div className="rounded-[12px] border border-line bg-neutral p-4">
                 <p className="text-sm font-semibold text-ink">
-                  {soldOut
-                    ? t('product.soldOutNote')
-                    : t('product.backorderNote')}
+                  {soldOut ? t('product.soldOutNote') : t('product.backorderNote')}
                 </p>
                 <p className="mt-1 text-sm text-muted">
-                  Puedes reservarla: entras en la lista de espera y se sirve por
-                  orden de reserva cuando lleguen unidades.
+                  Puedes reservarla: entras en la lista de espera y se sirve por orden de reserva cuando lleguen
+                  unidades.
                 </p>
                 <Button className="mt-3 w-full" onClick={reserve}>
                   Reservar
                 </Button>
-                {!customerSession && (
-                  <p className="mt-2 text-xs text-muted">
-                    Necesitas iniciar sesión para reservar.
-                  </p>
-                )}
+                {!customerSession && <p className="mt-2 text-xs text-muted">Necesitas iniciar sesión para reservar.</p>}
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -488,9 +489,7 @@ export function VariantPage() {
             {tab === 'Plan Renove' && (
               <div>
                 <p className="text-ink">{t('product.tradeInNote')}</p>
-                <p className="mt-2 text-sm text-muted">
-                  La tasación es siempre presencial y orientativa online.
-                </p>
+                <p className="mt-2 text-sm text-muted">La tasación es siempre presencial y orientativa online.</p>
                 <Button variant="secondary" className="mt-4" onClick={() => navigate('/plan-renove')}>
                   Ver Plan Renove
                 </Button>
@@ -537,7 +536,9 @@ export function VariantPage() {
               <div>
                 <p className="text-lg font-bold leading-none text-ink">{euro(current.price, intl)}</p>
                 {current.previousPrice && (
-                  <p className="text-xs text-ink">{t('product.before', { precio: euro(current.previousPrice, intl) })}</p>
+                  <p className="text-xs text-ink">
+                    {t('product.before', { precio: euro(current.previousPrice, intl) })}
+                  </p>
                 )}
               </div>
               {needsReservation ? (
@@ -650,12 +651,7 @@ function FavoriteToggle({
       aria-label={isFavorite ? `Quitar ${name} de favoritos` : `Añadir ${name} a favoritos`}
       className="mt-1 inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-danger hover:text-danger"
     >
-      <Icon
-        name="heart"
-        size={16}
-        className={isFavorite ? 'fill-danger text-danger' : ''}
-        aria-hidden="true"
-      />
+      <Icon name="heart" size={16} className={isFavorite ? 'fill-danger text-danger' : ''} aria-hidden="true" />
       {isFavorite ? t('product.inFavorites') : t('favorites.add')}
     </button>
   )
@@ -666,13 +662,7 @@ function FavoriteToggle({
 // familia. Enlaza a la ficha del accesorio; el usuario decide desde
 // ahí. NO añade al carrito directamente aquí para mantener el flujo
 // consistente con ProductCard.
-function VariantAccessorySuggestions({
-  family,
-  modelSlug,
-}: {
-  family: string
-  modelSlug: string
-}) {
+function VariantAccessorySuggestions({ family, modelSlug }: { family: string; modelSlug: string }) {
   const { t, intl } = useIdioma()
   const cat = useCatalogo()
   const items = getAccessoriesForModel(`${family}/${modelSlug}`).slice(0, 4)
@@ -683,10 +673,7 @@ function VariantAccessorySuggestions({
         <h2 id="variant-cross-sell" className="text-xl font-bold text-ink">
           {t('product.crossSell')}
         </h2>
-        <Link
-          to="/accesorios"
-          className="text-sm font-semibold text-ink underline-offset-2 hover:underline"
-        >
+        <Link to="/accesorios" className="text-sm font-semibold text-ink underline-offset-2 hover:underline">
           {t('common.allAccessories')}
         </Link>
       </div>
@@ -697,9 +684,7 @@ function VariantAccessorySuggestions({
               to={accessoryPath(a.slug)}
               className="flex h-full flex-col overflow-hidden rounded-[12px] border border-line bg-surface hover:border-ink/30"
             >
-              <div
-                className="flex aspect-square w-full items-center justify-center overflow-hidden bg-neutral"
-              >
+              <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-neutral">
                 <img
                   src={a.image}
                   alt={cat(a.name)}

@@ -44,10 +44,9 @@ test.describe('Servicio Técnico Autorizado en /servicio-tecnico', () => {
   test('banner "Sin cita previa" visible con texto exacto', async ({ page }) => {
     await expect(page.getByText('No necesitas cita previa').first()).toBeVisible()
     await expect(
-      page.getByText(
-        'No necesitas cita previa. Puedes acudir directamente durante el horario de apertura.',
-        { exact: false },
-      ),
+      page.getByText('No necesitas cita previa. Puedes acudir directamente durante el horario de apertura.', {
+        exact: false,
+      }),
     ).toBeVisible()
   })
 
@@ -58,9 +57,7 @@ test.describe('Servicio Técnico Autorizado en /servicio-tecnico', () => {
     })
     await expect(section).toBeVisible()
     await expect(page.getByText('Realiza una copia de seguridad', { exact: false })).toBeVisible()
-    await expect(
-      page.getByText('Desactiva la función “Buscar”', { exact: false }),
-    ).toBeVisible()
+    await expect(page.getByText('Desactiva la función “Buscar”', { exact: false })).toBeVisible()
     await expect(
       page.getByText('Desactiva la Protección del dispositivo en caso de robo', { exact: false }),
     ).toBeVisible()
@@ -68,10 +65,9 @@ test.describe('Servicio Técnico Autorizado en /servicio-tecnico', () => {
 
   test('se explica que se puede dejar el dispositivo en cualquier tienda Banana', async ({ page }) => {
     await expect(
-      page.getByText(
-        'También puedes dejar el dispositivo en el resto de tiendas Banana',
-        { exact: false },
-      ),
+      page.getByText('También puedes dejar el dispositivo en el resto de tiendas Banana', {
+        exact: false,
+      }),
     ).toBeVisible()
   })
 
@@ -86,27 +82,17 @@ test.describe('Servicio Técnico Autorizado en /servicio-tecnico', () => {
   test('dispositivo fuera de garantía: 35 €, descuento si acepta, no reembolsable si rechaza', async ({ page }) => {
     const fuera = page.locator('section#servicio-tecnico').getByText(/coste de/)
     await expect(fuera.first()).toContainText('35 €')
-    await expect(
-      page.getByText('esos 35 € se descontarán del precio final', { exact: false }),
-    ).toBeVisible()
-    await expect(
-      page.getByText('el importe de 35 € no será reembolsable', { exact: false }),
-    ).toBeVisible()
+    await expect(page.getByText('esos 35 € se descontarán del precio final', { exact: false })).toBeVisible()
+    await expect(page.getByText('el importe de 35 € no será reembolsable', { exact: false })).toBeVisible()
   })
 
   test('plazos orientativos: mínimo 3 días de traslado, aclaración y diagnóstico/reparación', async ({ page }) => {
-    await expect(
-      page.getByText(
-        'el traslado suele tardar un mínimo de',
-        { exact: false },
-      ),
-    ).toBeVisible()
+    await expect(page.getByText('el traslado suele tardar un mínimo de', { exact: false })).toBeVisible()
     await expect(page.getByText(/3 días/).first()).toBeVisible()
     await expect(
-      page.getByText(
-        'Los 3 días corresponden únicamente al traslado orientativo al servicio técnico',
-        { exact: false },
-      ),
+      page.getByText('Los 3 días corresponden únicamente al traslado orientativo al servicio técnico', {
+        exact: false,
+      }),
     ).toBeVisible()
     await expect(page.getByText(/diagnosticar el equipo/)).toBeVisible()
     await expect(page.getByText(/tiempo de reparación/)).toBeVisible()
@@ -152,9 +138,7 @@ test.describe('Plan Renove — solo en tienda física, sin nombre del partner', 
     ]) {
       await expect(page.getByRole('heading', { level: 3, name: step })).toBeVisible()
     }
-    await expect(
-      page.getByText('no han sido abiertos ni reparados', { exact: false }),
-    ).toBeVisible()
+    await expect(page.getByText('no han sido abiertos ni reparados', { exact: false })).toBeVisible()
   })
 
   test('no se menciona al partner externo por su nombre', async ({ page }) => {
@@ -163,16 +147,12 @@ test.describe('Plan Renove — solo en tienda física, sin nombre del partner', 
   })
 
   test('se indica que el Renove solo se completa en tienda', async ({ page }) => {
-    await expect(
-      page.getByText('El Plan Renove solo se completa en tienda física', { exact: false }),
-    ).toBeVisible()
+    await expect(page.getByText('El Plan Renove solo se completa en tienda física', { exact: false })).toBeVisible()
     await expect(page.getByText(/el paso por tienda es indispensable/i)).toBeVisible()
   })
 
   test('se advierte que la valoración puede cambiar de un día para otro', async ({ page }) => {
-    await expect(
-      page.getByText('La valoración puede cambiar de un día para otro', { exact: false }),
-    ).toBeVisible()
+    await expect(page.getByText('La valoración puede cambiar de un día para otro', { exact: false })).toBeVisible()
   })
 
   test('para traspaso de datos se pide un mínimo de 2 horas antes del cierre', async ({ page }) => {

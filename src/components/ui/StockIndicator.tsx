@@ -6,9 +6,21 @@ import { useT, type ClaveTexto } from '../../lib/i18n'
 // El texto es imprescindible aquí, así que también tiene que estar traducido:
 // un turista alemán no debe adivinar la disponibilidad por el color.
 const config: Record<Availability, { label: ClaveTexto; cls: string; icon: string }> = {
-  disponible: { label: 'availability.inStock', cls: 'text-available bg-available-050 border-available/30', icon: 'check' },
-  'bajo-pedido': { label: 'availability.backorder', cls: 'text-backorder bg-backorder-050 border-backorder/40', icon: 'clock' },
-  agotado: { label: 'availability.soldOut', cls: 'text-soldout bg-neutral border-line', icon: 'info' },
+  disponible: {
+    label: 'availability.inStock',
+    cls: 'text-available bg-available-050 border-available/30',
+    icon: 'check',
+  },
+  'bajo-pedido': {
+    label: 'availability.backorder',
+    cls: 'text-backorder bg-backorder-050 border-backorder/40',
+    icon: 'clock',
+  },
+  agotado: {
+    label: 'availability.soldOut',
+    cls: 'text-soldout bg-neutral border-line',
+    icon: 'info',
+  },
 }
 
 export function StockIndicator({

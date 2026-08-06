@@ -16,11 +16,11 @@
 
 import {
   allModels,
+  families,
   getFamilyModels,
   getModel,
 } from './products'
 import type { Model, Family } from './types'
-import { families } from './products'
 
 import {
   appleAccessories,

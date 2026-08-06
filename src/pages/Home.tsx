@@ -37,12 +37,7 @@ export function Home() {
       <section className="border-y border-line bg-neutral">
         <Container className="py-6">
           <ul className="grid grid-cols-2 gap-6 md:grid-cols-4">
-            {[
-              claim('tiendasCanarias'),
-              claim('envio24'),
-              claim('financiacion0'),
-              claim('soporteOficial'),
-            ].map((c) => (
+            {[claim('tiendasCanarias'), claim('envio24'), claim('financiacion0'), claim('soporteOficial')].map((c) => (
               <li key={c.id} className="flex items-center gap-3">
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-banana text-ink">
                   <Icon name={c.icon ?? 'info'} size={20} />
@@ -94,11 +89,7 @@ export function Home() {
           {families.map((fam) => {
             const cover = modelsByFamily[fam.slug]?.[0]?.colors[0].image
             const developed = Boolean(modelsByFamily[fam.slug])
-            const to = developed
-              ? `/${fam.slug}`
-              : fam.slug === 'accesorios'
-                ? '/accesorios'
-                : '/iphone'
+            const to = developed ? `/${fam.slug}` : fam.slug === 'accesorios' ? '/accesorios' : '/iphone'
             return (
               <StaggerItem key={fam.slug} className="w-44 shrink-0 snap-start sm:w-auto">
                 <Link
@@ -121,7 +112,9 @@ export function Home() {
                     )}
                   </div>
                   <div className="flex flex-1 flex-col p-4 text-center">
-                    <p className="font-display text-base font-bold text-ink">{fam.nameKey ? t(fam.nameKey) : fam.name}</p>
+                    <p className="font-display text-base font-bold text-ink">
+                      {fam.nameKey ? t(fam.nameKey) : fam.name}
+                    </p>
                     <p className="mt-0.5 text-xs text-muted">{fam.taglineKey ? t(fam.taglineKey) : fam.tagline}</p>
                     <p className="mt-2 text-sm font-semibold text-ink">
                       {developed ? t('common.from', { precio: euro(fam.fromPrice, intl) }) : t('common.comingSoon')}
@@ -149,7 +142,11 @@ export function Home() {
       {/* 05 — Ofertas · Rincón del chollo */}
       {offers.length > 0 && (
         <Section>
-          <SectionHeader eyebrow={t('home.section.dealsEyebrow')} title={t('home.section.dealsTitle')} desc={t('home.section.dealsDesc')} />
+          <SectionHeader
+            eyebrow={t('home.section.dealsEyebrow')}
+            title={t('home.section.dealsTitle')}
+            desc={t('home.section.dealsDesc')}
+          />
           <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {offers.map((m) => (
               <StaggerItem key={m.slug}>
@@ -164,9 +161,7 @@ export function Home() {
       <section className="banana-surface bg-banana text-ink">
         <Container className="grid items-center gap-8 py-12 md:grid-cols-2 md:py-16">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-ink/70">
-              {t('home.tradeIn.eyebrow')}
-            </p>
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-ink/70">{t('home.tradeIn.eyebrow')}</p>
             <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-4xl">
               {t('home.tradeIn.title')}
             </h2>
@@ -206,17 +201,48 @@ export function Home() {
 
       {/* 07 — Complementa tu Apple (categorías de accesorios) */}
       <Section>
-        <SectionHeader eyebrow={t('home.section.accessoriesEyebrow')} title={t('home.section.accessoriesTitle')} desc={t('home.section.accessoriesDesc')} />
-        <MobileScroller
-          desktopClass="sm:grid sm:grid-cols-3 sm:gap-4 lg:grid-cols-5"
-          itemClass="w-[65vw] sm:w-auto"
-        >
+        <SectionHeader
+          eyebrow={t('home.section.accessoriesEyebrow')}
+          title={t('home.section.accessoriesTitle')}
+          desc={t('home.section.accessoriesDesc')}
+        />
+        <MobileScroller desktopClass="sm:grid sm:grid-cols-3 sm:gap-4 lg:grid-cols-5" itemClass="w-[65vw] sm:w-auto">
           {[
-            { label: 'Fundas iPhone', icon: 'shield', bg: '#dbeaf9', ring: '#7fb5e6', to: '/accesorios' },
-            { label: 'Carga y MagSafe', icon: 'credit-card', bg: '#fff4c9', ring: '#ffd76b', to: '/accesorios' },
-            { label: 'Correas Watch', icon: 'refresh', bg: '#ffe0e7', ring: '#f0a3b8', to: '/accesorios' },
-            { label: 'Teclados y ratones', icon: 'compare', bg: '#e6dff8', ring: '#a992e0', to: '/accesorios' },
-            { label: 'Audio y sonido', icon: 'chat', bg: '#dbf1e5', ring: '#7fc9a2', to: '/buscar?q=audio' },
+            {
+              label: 'Fundas iPhone',
+              icon: 'shield',
+              bg: '#dbeaf9',
+              ring: '#7fb5e6',
+              to: '/accesorios',
+            },
+            {
+              label: 'Carga y MagSafe',
+              icon: 'credit-card',
+              bg: '#fff4c9',
+              ring: '#ffd76b',
+              to: '/accesorios',
+            },
+            {
+              label: 'Correas Watch',
+              icon: 'refresh',
+              bg: '#ffe0e7',
+              ring: '#f0a3b8',
+              to: '/accesorios',
+            },
+            {
+              label: 'Teclados y ratones',
+              icon: 'compare',
+              bg: '#e6dff8',
+              ring: '#a992e0',
+              to: '/accesorios',
+            },
+            {
+              label: 'Audio y sonido',
+              icon: 'chat',
+              bg: '#dbf1e5',
+              ring: '#7fc9a2',
+              to: '/buscar?q=audio',
+            },
           ].map((cat) => (
             <Link
               key={cat.label}
@@ -240,11 +266,12 @@ export function Home() {
 
       {/* 08 — Servicios Banana (4 tiles coloridos) */}
       <Section alt>
-        <SectionHeader eyebrow={t('home.section.servicesEyebrow')} title={t('home.section.servicesTitle')} desc={t('home.section.servicesDesc')} />
-        <MobileScroller
-          desktopClass="sm:grid sm:grid-cols-2 sm:gap-5 lg:grid-cols-4"
-          itemClass="w-[80vw] sm:w-auto"
-        >
+        <SectionHeader
+          eyebrow={t('home.section.servicesEyebrow')}
+          title={t('home.section.servicesTitle')}
+          desc={t('home.section.servicesDesc')}
+        />
+        <MobileScroller desktopClass="sm:grid sm:grid-cols-2 sm:gap-5 lg:grid-cols-4" itemClass="w-[80vw] sm:w-auto">
           <button
             type="button"
             onClick={() => setFinanceOpen(true)}
@@ -311,7 +338,11 @@ export function Home() {
 
       {/* 09 — Testimonios (contenido demostrativo) */}
       <Section>
-        <SectionHeader eyebrow={t('home.section.reviewsEyebrow')} title={t('home.section.reviewsTitle')} desc={t('home.section.reviewsDesc')} />
+        <SectionHeader
+          eyebrow={t('home.section.reviewsEyebrow')}
+          title={t('home.section.reviewsTitle')}
+          desc={t('home.section.reviewsDesc')}
+        />
         <MobileScroller
           desktopClass="sm:grid sm:grid-cols-2 sm:gap-5 md:grid-cols-3"
           itemClass="w-[calc(100vw-2.5rem)] sm:w-auto"
@@ -342,7 +373,10 @@ export function Home() {
               hue: '#dbf1e5',
             },
           ].map((resena) => (
-            <div key={resena.name} className="flex h-full flex-col rounded-[20px] border border-line bg-surface p-6 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]">
+            <div
+              key={resena.name}
+              className="flex h-full flex-col rounded-[20px] border border-line bg-surface p-6 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
+            >
               <div className="flex items-center gap-3">
                 <span
                   className="grid h-12 w-12 shrink-0 place-items-center rounded-full font-display text-lg font-extrabold text-ink"
@@ -352,7 +386,9 @@ export function Home() {
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-ink">{resena.name}</p>
-                  <p className="truncate text-xs text-muted">{resena.city} · {resena.product}</p>
+                  <p className="truncate text-xs text-muted">
+                    {resena.city} · {resena.product}
+                  </p>
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-0.5 text-banana">
@@ -361,7 +397,9 @@ export function Home() {
                 ))}
               </div>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-ink/85">"{resena.text}"</p>
-              <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">{t('home.review.demo')}</p>
+              <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                {t('home.review.demo')}
+              </p>
             </div>
           ))}
         </MobileScroller>
@@ -370,7 +408,11 @@ export function Home() {
       {/* 09 — Tiendas físicas (carrusel) */}
       <Section>
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <SectionHeader eyebrow={t('home.section.storesEyebrow')} title={t('home.section.storesTitle')} className="mb-0" />
+          <SectionHeader
+            eyebrow={t('home.section.storesEyebrow')}
+            title={t('home.section.storesTitle')}
+            className="mb-0"
+          />
           <ButtonLink to="/tiendas" variant="tertiary">
             {t('home.allStores')} <Icon name="arrow-right" size={16} />
           </ButtonLink>
@@ -411,9 +453,7 @@ export function Home() {
               {t('home.newsletter.submit')}
             </button>
           </form>
-          <p className="mt-3 text-xs text-ink/80">
-            {t('home.newsletter.demo')}
-          </p>
+          <p className="mt-3 text-xs text-ink/80">{t('home.newsletter.demo')}</p>
         </Reveal>
       </Section>
 

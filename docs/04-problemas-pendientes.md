@@ -1,12 +1,13 @@
 ---
 tipo: problemas
-actualizado: 2026-08-01
+actualizado: 2026-08-06
 ---
 
 # Problemas pendientes
 
 Todos los elementos siguientes se observaron directamente en el estado auditado
-del repositorio. No se corrigen en la preparación documental.
+del repositorio. Los cerrados conservan la evidencia histórica; los abiertos
+forman el backlog verificable.
 
 ## WEB-001 — La URL de variante ignora el basename
 
@@ -117,7 +118,7 @@ del repositorio. No se corrigen en la preparación documental.
   `disclaimer`. La franja de confianza y otros bloques leen desde ahí; el
   home muestra un aviso discreto de que las condiciones son demostrativas.
 
-## CHAT-001 — Chat flotante visible en el checkout
+## CHAT-UI-001 — Chat flotante visible en el checkout
 
 - Estado: cerrado el 2026-07-28.
 - Evidencia: `<ChatBubble />` se renderizaba dentro de `/checkout/*`.
@@ -131,12 +132,15 @@ del repositorio. No se corrigen en la preparación documental.
 - Estado: abierto hasta decidir alcance.
 - Impacto: esperado en un prototipo, pero debe seguir señalizado.
 - Evidencia:
-  - Cuenta, idioma y tienda favorita no tienen acción.
-  - Newsletter impide el envío.
-  - Chat provisional (aviso "próximamente"), formulario, accesos rápidos de
-    soporte y "Cómo llegar" siguen sin conectarse a un backend real.
-  - Cupones no se aplican.
-  - Avisos de reposición usan `alert`.
+  - Newsletter y formulario de soporte impiden el envío; no existe proveedor
+    de correo ni sistema de tickets.
+  - Pago, financiación, envío y cupones siguen siendo simulaciones claramente
+    etiquetadas; no llaman a servicios comerciales reales.
+  - Los avisos de reposición son locales y demostrativos, no suscripciones
+    persistentes de una cuenta.
+  - El chat sí usa Supabase cuando está configurado, pero cae a una respuesta
+    local de demostración si no lo está y aún no envía el aviso por email de
+    CHAT-002.
 - Evolución 2026-07-28: la confirmación de checkout ya genera un pedido en
   `demoOrderRepository` con ID/fecha/productos, sobrevive a recargas dentro
   de la sesión y no se crea al abrir la URL. Sigue sin ser un pedido real:
@@ -144,15 +148,12 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## QA-001 — Suite E2E con Playwright + accesibilidad axe
 
-- Estado: ampliado el 2026-07-29. Pendiente completar cobertura del
-  detalle de tienda.
-- Evidencia: 64 pruebas en `tests/e2e/` (62 en `chromium` + 2 en
-  `mobile` etiquetadas `@mobile`), distribuidas en `home.spec.ts`,
-  `checkout.spec.ts`, `checkout-flow.spec.ts`, `chat.spec.ts`,
-  `product.spec.ts`, `favorites-compare.spec.ts`, `search.spec.ts`,
-  `audit-ux.spec.ts` (mejoras post-auditoría),
-  `device-preparation-guide.spec.ts` (guía interactiva) y
-  `accessibility.spec.ts` (axe-core sobre 8 rutas + la guía).
+- Estado: **cerrado como infraestructura y en ampliación continua**. La
+  ejecución completa del 2026-08-04 produjo 264 aprobadas y una omitida
+  deliberadamente porque solo aplica al servidor de desarrollo.
+- Evidencia: 22 especificaciones en `tests/e2e/` cubren escritorio y móvil,
+  catálogo, cuentas, app nativa, asistente, checkout, comparación, búsqueda,
+  PWA, i18n, secretos y accesibilidad.
 - `color-contrast` y `region` se ejecutan **sin excepciones
   globales** desde 2026-07-29.
 - Cobertura:
@@ -181,10 +182,10 @@ del repositorio. No se corrigen en la preparación documental.
     pasar sin botón.
   - Sincronización del buscador con la URL y destinos reales de los
     tiles de accesorios.
-- CI: `.github/workflows/e2e.yml` ejecuta `npm ci`, `npm run build`,
-  `npx playwright install --with-deps chromium` y `npm run test:e2e`
-  en cada push/PR sobre `main`, con el proyecto móvil corriendo sobre
-  Chromium (`Pixel 5`) para no requerir WebKit.
+- CI: `.github/workflows/ci.yml` encadena calidad, build y Playwright en cada
+  push/PR sobre `main`. La suite completa corre en Chromium; cinco flujos
+  críticos corren en Firefox, WebKit de escritorio y Safari móvil, y el
+  proyecto Pixel 5 conserva los recorridos móviles específicos.
 - Cobertura axe ampliada el 2026-07-30 al detalle de tienda
   (`/tiendas/castillo`, representativa de `/tiendas/:slug`). No queda
   pendiente ninguna ruta principal sin comprobación axe.
@@ -200,40 +201,47 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## SEG-001 — Avisos de seguridad en React Router
 
-- Estado: **abierto**. Reverificado el 2026-07-29 con el lockfile
-  actual (`npm ci` + `npm audit` + `npm audit --omit=dev` + `npm ls`).
-- Impacto: moderado según `npm audit`.
-- Evidencia (2026-07-29): `npm ls react-router react-router-dom` →
-  `react-router-dom@6.30.4 → react-router@6.30.4`. `npm audit` reporta
-  **2 vulnerabilidades moderadas** con **"No fix available"** dentro
-  de la línea 6.x:
+- Estado: **mitigado; seguimiento upstream abierto**. Revisado el 2026-08-04
+  con `npm audit`, `npm audit --omit=dev`, `npm ls` y la suite de navegador.
+- Resuelto: `react-router-dom@7.18.2 → react-router@7.18.2` cierra los dos
+  avisos de la línea 6.30.4 que motivaron este punto:
   - `GHSA-wrjc-x8rr-h8h6`: React Router — Open redirect via backslash
     en `<Link>` y `useNavigate` (bypass de CVE-2025-68470).
   - `GHSA-337j-9hxr-rhxg`: React Router — Arbitrary Constructor
     Injection via `deserializeErrors()` en la hidratación SSR.
-- Matiz: este prototipo es una SPA sin SSR, por lo que
-  `deserializeErrors` no se ejecuta; el aviso de open redirect vía
-  `<Link>` sí aplica en teoría, pero la URL de destino se compone en
-  cliente a partir de datos del propio catálogo (no se pasa input de
-  usuario a `<Link to>` en ninguna ruta).
-- Corrección disponible: **no** dentro de 6.x. La corrección oficial
-  requiere migrar a **React Router 7** (mayor, con `data routers` y
-  cambios de API). Esta migración queda fuera del alcance de la
-  presente PR y se evaluará por separado.
-- Acción tomada en esta PR: se mantiene `react-router-dom@6.30.4`
-  intacto. No se ha ejecutado `npm audit fix` ni `--force`.
+- Defensa adicional: `safeRedirect` rechaza ahora cualquier barra invertida,
+  además de protocolos y rutas `//`; siete casos unitarios fijan el contrato.
+- Compatibilidad: se conserva `BrowserRouter basename={import.meta.env.BASE_URL}`.
+  Veinte smoke tests pasan en Chromium, Firefox, WebKit y Safari móvil e
+  incluyen inicio, cambio de idioma y navegación profunda.
+- Riesgo residual upstream: el registro de npm publicó
+  `GHSA-qwww-vcr4-c8h2` para el procesamiento de acciones del modo RSC entre
+  7.12.0 y `<8.3.0`. El aviso sólo alcanza a las **APIs RSC inestables**. Esta
+  aplicación es una SPA declarativa con `BrowserRouter`: no tiene servidor de
+  React Router, ni acciones RSC, ni React Server Components, ni loaders ni
+  actions. El camino vulnerable no es aplicable. npm agrega igualmente el aviso
+  a `react-router-dom` y lo muestra como dos entradas `high`.
+- Corregido el 2026-08-06: este documento afirmaba que la 8.3.0 «aún no está
+  publicada». **Es falso.** `react-router@8.3.0` salió el 2026-07-22 y es la
+  versión corregida. El error vino de mirar `react-router-dom`, que se queda en
+  7.18.2 porque React Router 8 retira ese paquete.
+- No se actualiza aquí: React Router 8 exige Node ≥ 22.22.0 y React/React DOM
+  ≥ 19.2.7, y retira `react-router-dom`. El proyecto usa React 18, Vite 6 e
+  importa desde `react-router-dom`. Es una migración con su propia suite, no un
+  salto de versión; queda registrada en
+  [[03-roadmap#Migración a React Router 8]].
+- Bajar a 7.11.0 sigue descartado: reabre múltiples XSS, redirects y DoS ya
+  corregidos. Se mantiene la última 7.x estable hasta la migración.
 
 ## CI-001 — Actions fuerza Node 24 por obsolescencia de Node 20
 
-- Estado: **resuelto en código el 2026-07-29**, pendiente de
-  validación del workflow de la PR.
+- Estado: **cerrado**. Los workflows actuales se han ejecutado con Node 24.
 - Cambio aplicado: `node-version: 20` → `node-version: 24` en
-  `.github/workflows/e2e.yml` y `.github/workflows/deploy.yml`.
+  el workflow unificado `.github/workflows/ci.yml`.
   Añadido `.nvmrc` con `24` en la raíz para que el entorno local
   con nvm coincida con CI.
-- Verificación final: se marcará cerrado en cuanto los workflows
-  E2E y Pages de esta PR terminen en verde utilizando Node 24
-  explícito (sin el aviso de deprecación).
+- Verificación: el workflow unificado de CI y Pages usa Node 24 de forma
+  explícita y `.nvmrc` mantiene el entorno local alineado.
 
 ## ARTEFACTOS-001 — `tsconfig.tsbuildinfo` versionado
 
@@ -320,24 +328,17 @@ del repositorio. No se corrigen en la preparación documental.
   ```
 - Workaround temporal: `npm install --cache /tmp/npm-cache-osk ...`.
 
-## CHAT-001 — `/agente` accesible por URL sin autenticación
+## CHAT-SEC-001 — Acceso anónimo incondicional a los datos del chat
 
-- Estado: **cerrado el 2026-07-31**. `/agente` exige ahora sesión de
-  Supabase y que la cuenta esté dada de alta en la tabla `agentes`
-  (`src/pages/AgentPage.tsx` + `src/lib/agentAuth.tsx`). Responder como
-  agente, asignarse conversaciones y revisar descuentos requieren
-  `auth.uid()` presente en `agentes`, comprobado en la RLS. El
-  `Disallow` de `robots.txt` se mantiene.
-- **Queda abierto un resto**: la LECTURA de `visitantes`,
-  `conversaciones` y `mensajes` sigue permitida al rol `anon`, porque el
-  widget de chat del visitante no tiene login y la necesita. Es decir,
-  quien conozca la URL del proyecto Supabase y la anon key (que viaja en
-  el bundle, como es normal) podría leer conversaciones aunque ya no
-  pueda responder como agente. Se cierra cuando el visitante tenga
-  también cuenta; hasta entonces sigue siendo un prototipo con datos
-  ficticios. Ver [[02-decisiones#D-027 — Fase 2 con cuentas ficticias]].
+- Estado en código: **cerrado el 2026-08-02**. `/agente` ya exigía una
+  cuenta dada de alta, pero todavía quedaba lectura `anon` incondicional.
+  La migración final da al visitante una sesión anónima firmada y relaciona
+  sus filas con `auth.uid()`; ya no existe `using (true)` ni escritura directa
+  en conversaciones o mensajes.
+- Estado desplegado: **pendiente**. La migración no se ha aplicado y las PR
+  #33/#34 siguen fuera de `main`. Ver SEC-RLS-001.
 
-## CHAT-001-HIST — Estado anterior de CHAT-001 (Fase 1)
+## CHAT-SEC-001-HIST — Estado anterior de CHAT-SEC-001 (Fase 1)
 
 - Estado: histórico, resuelto. Se conserva para no perder el contexto.
 - Impacto: medio en producción (`https://luis-lop-nas.github.io/pagina-banana/agente`).
@@ -444,21 +445,157 @@ del repositorio. No se corrigen en la preparación documental.
   autenticado. Aplicarlo **antes** de desplegar esta versión dejaría el
   panel de agentes sin poder responder.
 
-## CUENTAS-002 — Sin pruebas E2E del flujo autenticado
+## SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente
 
-- Estado: abierto, asumido por ahora.
-- Evidencia: `tests/e2e/accounts.spec.ts` cubre el cableado (rutas,
-  redirecciones, CTA de reserva, que `/cuenta` no filtra datos sin
-  sesión) y pasa **con y sin** credenciales de Supabase, que es el
-  requisito para que CI siga en verde. Lo que no cubre es el camino
-  autenticado: registro, login, reserva de punta a punta, revisión de
-  descuentos.
-- Motivo: el workflow `e2e.yml` no tiene los secretos de Supabase, así
-  que en CI `supabaseEnabled` es false y no hay backend contra el que
-  probar.
-- Opciones cuando interese cerrarlo: añadir los secretos al workflow y
-  usar un proyecto Supabase de pruebas aparte del de la demo, o levantar
-  Supabase local con Docker en CI.
+- Estado: **cerrado en código el 2026-08-06**. Detectado en revisión antes de
+  desplegar, no en producción: el esquema nuevo todavía no está aplicado.
+- Causa: `signInAnonymously()` no crea un rol aparte. Supabase da a la sesión
+  anónima el mismo rol PostgreSQL que a una cuenta permanente, `authenticated`,
+  y la distingue sólo por el reclamo `is_anonymous` del JWT. Ninguna política ni
+  RPC lo miraba.
+- Alcance: con sólo abrir el widget del chat, un visitante quedaba dado de alta
+  en `clientes` —`CustomerAuthProvider` creaba la ficha sola al no encontrarla—
+  y la tienda le mostraba «Mi cuenta». Además podía crear pedidos, crear y
+  cancelar reservas, subir un justificante educativo y pedir su revisión.
+- Resolución: `public.es_usuario_permanente()`, políticas restrictivas en
+  `clientes`, `pedidos` y `reservas`, condición incorporada en las políticas del
+  bucket educativo y comprobación dentro de cada RPC de cliente. En el
+  frontend, una sesión anónima se publica como «sin sesión». Ver
+  [[02-decisiones#D-059]] y [[02-decisiones#D-060]].
+- Regresión: 18 casos en `tests/schema/anonimos.test.ts`, seis en
+  `tests/rls/politicas.spec.ts` con sesiones anónimas reales de GoTrue y
+  `tests/integration/chat-anonimo.spec.ts` con la aplicación completa.
+- **Ampliación del 2026-08-06 — el DELETE de Storage.** La política
+  `cliente borra su justificante` se había quedado sin la comprobación de
+  permanencia. Importaba más de lo que parece: la carpeta del bucket se llama
+  como el `auth.uid()` y la conversión a cuenta permanente **conserva ese uid**,
+  así que un token anónimo emitido antes de convertir seguía siendo válido y
+  apuntaba a la carpeta de la cuenta ya registrada. Bastaba con guardarlo para
+  borrar después el justificante que esa cuenta subiera. Corregido y cubierto
+  por cuatro casos, incluido el del token anterior a la conversión.
+- Limitación abierta: con Confirm Email activado, la conversión deja la cuenta
+  verificada pero **sin contraseña** hasta que el visitante vuelva por el
+  enlace. La ficha se crea al regresar; poner la contraseña necesitaría una
+  pantalla de «terminar registro» que no existe. Con la confirmación
+  desactivada —como está hoy la demostración, según
+  `GET /auth/v1/settings`— no aplica.
+- Nota de despliegue: esto adelanta a la lista de pasos previos. La migración
+  `20260806000400_separa_sesiones_anonimas.sql` debe aplicarse **antes o a la
+  vez** que se activen los inicios de sesión anónimos en la demostración. La
+  lista completa de ajustes remotos por verificar está en
+  [[08-predespliegue-supabase]].
+
+## SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla
+
+- Estado: **cerrado y verificado el 2026-08-05**. CI informa 27/27 en el
+  trabajo `Integración Supabase local`.
+- Evidencia: reproducción sobre PostgreSQL real (PGlite) imitando el proyecto
+  de Supabase —roles creados, sin conceder nada a mano— tras aplicar las
+  migraciones:
+  `authenticated → insert en public.clientes: permission denied for table clientes`,
+  `service_role → insert en public.agentes: permission denied for table agentes`,
+  y las siete tablas sin un solo permiso concedido.
+- Causa: las migraciones se apoyaban en las *default privileges* de Supabase,
+  que las fijó otro rol antes y no alcanzan a las tablas que ellas crean. RLS
+  filtra filas después del permiso de tabla, así que ninguna política llegaba a
+  evaluarse. `service_role` salta RLS pero no los GRANT.
+- Por qué no se vio antes: el síntoma engañaba. Las pruebas negativas seguían
+  pasando —un permiso denegado también es un error—, así que sólo caían los
+  recorridos legítimos: 10 aprobadas y 17 fallidas. Y `tests/schema/andamio.ts`
+  se concedía los permisos a sí mismo antes de aplicar las migraciones, con lo
+  que el arnés de esquema respondía en verde.
+- Resolución: `supabase/migrations/20260805000300_permisos_de_tabla.sql`
+  concede el mínimo que refleja cada política; el andamio deja de conceder nada
+  sobre `public`; `tests/schema/permisos.test.ts` vigila el cuadro completo,
+  incluido lo que no debe poder hacerse. Ver [[02-decisiones#D-056]] y
+  [[02-decisiones#D-057]].
+- Además, `clienteRegistrado()` en `tests/rls/politicas.spec.ts` insertaba la
+  ficha sin mirar el error: el fallo se tragaba allí y reaparecía disfrazado en
+  cada prueba que la necesita. Ahora se comprueba donde ocurre.
+- Verificado: la primera ejecución con la migración pasó de 10/27 a 26/27. El
+  caso restante, «un cliente no puede leer los pedidos de otro», resultó ser un
+  defecto distinto que el fallo anterior tapaba: el pedido de prueba no traía
+  `delivery` ni `payment_method`, que son NOT NULL sin valor por defecto, y
+  tampoco se miraba el error del insert. Corregido, CI informa 27/27.
+
+## QA-CHAT-003 — El diálogo del chat no se desmontaba al cerrar
+
+- Estado: **cerrado el 2026-08-05**.
+- Evidencia: dos fallos en CI, WebKit y Safari móvil, en «chat abre, recibe
+  foco y cierra con Escape». Al cerrar, el panel quedaba con `opacity-0` y
+  `pointer-events-none` pero seguía en el DOM anunciándose como
+  `role="dialog" aria-modal="true"`.
+- Causa: el desmontaje colgaba sólo de `onTransitionEnd`. Si el navegador no
+  entrega el `requestAnimationFrame` que activa la clase visible —ventana
+  ocluida o *throttled*, lo normal en CI—, al cerrar no hay cambio de estilo,
+  ni transición, ni evento. No es un fallo de WebKit: reproducido en Chromium
+  anulando `requestAnimationFrame`.
+- Resolución: un temporizador de la misma duración que la animación garantiza
+  el desmontaje; `transitionend` sólo lo adelanta cuando llega.
+- Regresión: `tests/e2e/chat.spec.ts` provoca la causa y exige que el diálogo
+  salga del DOM, no que se vuelva transparente.
+
+## SEC-RLS-001 — Falta validar y desplegar la migración segura
+
+- Estado: **migración aplicada en producción el 2026-08-06**. Queda publicar el
+  frontend y activar los inicios de sesión anónimos; ver
+  [[08-predespliegue-supabase]].
+- Aplicado y verificado el 2026-08-06: respaldo completo fuera del repositorio
+  —roles, esquema, datos, evidencia del historial previo, personalizaciones de
+  `auth`/`storage` y archivos físicos del bucket—, CLI enlazada, las cuatro
+  migraciones aplicadas, `migration list` con los cuatro identificadores iguales
+  en Local y Remote, `db push --dry-run` respondiendo `Remote database is up to
+  date`, y las cinco comprobaciones SQL de seguridad en `true`.
+- Comprobado el 2026-08-05 en el trabajo `Integración Supabase local`: GoTrue,
+  PostgREST y Storage reales, **27/27 aprobadas**, más el cierre de sesión PWA.
+  Llegar ahí exigió conceder los permisos de tabla que faltaban; ver
+  [[04-problemas-pendientes#SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla]].
+- Ya comprobado además: las pruebas de esquema sobre PostgreSQL/PGlite cubren
+  instalación desde cero, actualización desde el estado desplegado, RLS, RPC
+  y permisos, dentro de las 159 pruebas Vitest del proyecto.
+- La auditoría clasifica cada función por firma exacta, detecta `PUBLIC` aunque
+  `aclexplode` lo represente como `grantee = 0`, y se repite tras instalación,
+  actualización e idempotencia. El verificador CI exige exactamente 27 casos.
+- El job genera `rls.json` ejecutando Playwright directamente, conserva su
+  código de salida y rechaza un archivo ausente, vacío, malformado o precedido
+  por texto de `npm run`. La simulación local confirma que solo 27 aprobadas
+  con código 0 producen salida cero.
+- `revisar_descuento_educativo()` rechaza `NULL` y estados textuales no
+  permitidos antes del `UPDATE`; PGlite comprueba que estado, nota, fecha y
+  revisor no cambian tras ambos errores.
+- Hecho el 2026-08-05: los 27 casos de `tests/rls/politicas.spec.ts` se
+  ejecutan contra GoTrue, PostgREST y Storage reales en Supabase local. El
+  arnés se actualizó el 2026-08-04 porque la versión anterior seguía usando
+  INSERT directos que el esquema final ya no permite y no limpiaba los chats
+  huérfanos creados durante la prueba.
+- Infraestructura versionada el 2026-08-04: CLI 2.111.0, configuración local,
+  seed sin credenciales, lanzador de pruebas y workflow reutilizable. CI ya no
+  depende de `RLS_TEST_*` ni puede caer sobre la demostración.
+- Bloqueo local **levantado el 2026-08-06**: Docker Desktop ya está instalado en
+  esta máquina y se usó para los respaldos de Supabase, así que la suite puede
+  ejecutarse aquí. Las cifras registradas siguen siendo las de CI, porque la
+  suite local completa no se volvió a ejecutar en esa sesión.
+- Regla: nunca ejecutar esta suite contra la demostración. Crea y borra
+  usuarios, objetos y filas a propósito.
+- Cierre restante: fusionar la PR #35, esperar el despliegue de GitHub Pages,
+  activar Anonymous sign-ins y hacer pruebas de humo. Hasta que el frontend
+  nuevo esté publicado, el chat de la web pública no funciona: la base ya
+  rechaza las escrituras directas del frontend anterior.
+
+## QA-CUENTA-001 — Cerrar sesión devolvía al login en vez de a la portada
+
+- Estado: **cerrado el 2026-08-05**.
+- Evidencia: `tests/integration/pwa-auth.spec.ts` esperaba `/pagina-banana/`
+  tras pulsar «Cerrar sesión» y recibía `/login?redirect=%2Fcuenta`.
+- Causa: `signOut()` dejaba `session` a null mientras `/cuenta` seguía montada,
+  así que el guardia de la propia página disparaba
+  `<Navigate to="/login?redirect=%2Fcuenta">` y ganaba la carrera al
+  `navigate('/')` posterior. Quien acababa de cerrar sesión aterrizaba en un
+  formulario pidiéndole volver a entrar en la cuenta que acababa de dejar.
+- Resolución: se sale de la página antes de cerrar la sesión, con `replace`
+  para que el botón Atrás tampoco devuelva a `/cuenta`.
+- Por qué no se había visto: esta prueba nunca llegaba a ejecutarse. Vive en el
+  mismo trabajo que las RLS y el paso anterior fallaba antes.
 
 ## CUENTAS-003 — Favoritos y tienda favorita siguen fuera de la cuenta
 
@@ -533,7 +670,7 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## PWA-001 — El service worker no lo cubren las pruebas E2E
 
-- Estado: detectado el 2026-07-31, asumido.
+- Estado: **cerrado el 2026-08-02 y reforzado el 2026-08-04**.
 - Impacto: bajo.
 - Evidencia: la suite corre contra el dev server de Vite, y ahí el
   service worker no se registra a propósito (`src/lib/pwa.ts` comprueba
@@ -542,15 +679,19 @@ del repositorio. No se corrigen en la preparación documental.
   desarrollo **no** haya ningún registro —regresión deliberada, por lo
   ocurrido en [[04-problemas-pendientes#QA-002 — Las pruebas E2E escribían en el Supabase real]]—
   pero no el precache ni el arranque sin conexión.
-- Verificación que sí se hizo, a mano y contra un build servido: el
-  service worker toma el control, deja una sola caché con 10 ficheros en
-  precache, y con la red cortada una ruta profunda (`/iphone`) sigue
-  cargando la web y no el error del navegador.
-- Riesgo: una regresión en las estrategias de caché no la detectaría el
-  CI.
-- Resolución posible: un proyecto de Playwright aparte que sirva `dist/`
-  con `vite preview` en vez del dev server. No se hace ahora para no
-  duplicar el arranque de la suite por una superficie pequeña.
+- Resolución: `npm run test:pwa` compila sin backend, sirve `dist` con
+  `vite preview` y comprueba de forma automática control, manifest, iconos,
+  precache, arranque de `/agente/login` sin red y exclusión de Supabase y
+  rutas privadas de Cache Storage. La prueba contraria se conserva y se omite
+  contra build porque solo tiene sentido en desarrollo.
+- Hallazgo de la nueva prueba: el HTML offline cargaba, pero JS/CSS intentaban
+  ir a red desde una ruta profunda. `cacheFirst` resuelve ahora la entrada por
+  pathname dentro de la caché versionada. Verificación local: 9 aprobadas y la
+  prueba exclusiva de desarrollo omitida con motivo explícito.
+- Cierre de sesión real: `tests/integration/pwa-auth.spec.ts` crea una cuenta
+  ficticia en Supabase local, cierra sesión, corta red y exige que email y
+  perfil no reaparezcan. Está integrada después de las 27 RLS; en esta máquina
+  se descubre correctamente pero no se ha ejecutado por falta de Docker.
 
 ## QA-003 — La trampa de foco de la guía escapaba con Shift+Tab
 
@@ -624,7 +765,7 @@ del repositorio. No se corrigen en la preparación documental.
 
 ## A11Y-004 — `/soporte` tiene dos `<main>` anidados
 
-- Estado: detectado el 2026-08-01, sin resolver.
+- Estado: **cerrado en código el 2026-08-04; pendiente de despliegue**.
 - Impacto: bajo, pero es HTML inválido.
 - Evidencia: `SupportPage` monta su propio `<main>` dentro del `<main
   id="contenido">` de `Layout`. Se vio al intentar seleccionar `main` desde
@@ -633,5 +774,54 @@ del repositorio. No se corrigen en la preparación documental.
   La suite de axe no lo detecta porque `landmark-no-duplicate-main` es una
   regla de buenas prácticas, no de WCAG, y la suite solo ejecuta las
   etiquetas `wcag2a`, `wcag2aa` y `wcag21a`.
-- Resolución: quitar el `<main>` de la página y dejar solo el del layout.
-  Conviene revisar si alguna otra página hace lo mismo.
+- Resolución: `SupportPage` deja el único `<main>` al layout. Una regresión
+  recorre 19 rutas públicas, exige exactamente una región principal y activa
+  de forma explícita `landmark-no-duplicate-main`.
+- Cierre relacionado: `Modal`, `MobileMenu`, la guía de preparación y el chat
+  comparten aislamiento de fondo hasta `#root`; conservan cualquier `inert`
+  previo y restauran foco, scroll y teclado al cerrar. El modal deja de fundir
+  su contenido para no degradar temporalmente el contraste durante la entrada.
+- Verificación: 19/19 casos de `accessibility.spec.ts` sobre build en Chromium,
+  sin reglas axe desactivadas; TypeScript, build y 124/124 Vitest correctos.
+
+## I18N-001 — La cobertura pública no estaba completa
+
+- Estado: **en corrección desde el 2026-08-04**.
+- Hallazgos cerrados: `/soporte` ya traduce búsqueda, CTAs y estado vacío; el
+  selector de modelos traduce título, ayuda, búsqueda, vacío, badges, nombres
+  accesibles y precio, y filtra por el nombre traducido visible.
+- Panel: decisión explícita de mantenerlo en español con `lang="es"` por ruta.
+- Regresión: 11 pruebas de idioma en Chromium, incluido el recorrido
+  interactivo por los cinco idiomas y la restauración del idioma al salir del
+  panel.
+- Pendiente real: el barrido estático aún localiza literales públicos en
+  `DevicePreparationGuide`, `ChatBubble` fuera de sus nombres accesibles,
+  `SearchPage`, `ProfilePage`,
+  `CartPage`, `CheckoutPage`, el comparador base y varios nombres accesibles
+  genéricos. Hasta cerrarlos y recorrer todos los estados no se vuelve a usar
+  la frase «traducción completa».
+
+## SEG-CHAT-002 — El chat recopilaba un user-agent sin finalidad
+
+- Estado: **cerrado en código el 2026-08-04; pendiente de despliegue**.
+- Evidencia histórica: `chatSession.ts` enviaba `navigator.userAgent` y
+  `abrir_conversacion()` lo persistía en cada ficha de visitante, aunque ni la
+  tienda ni el panel lo mostraban o utilizaban.
+- Resolución: el navegador envía `NULL`; la firma RPC queda compatible pero
+  ignora el parámetro, y la segunda migración limpia los valores históricos.
+- Regresión: `tests/schema/politicas.test.ts` llama deliberadamente con
+  `jsdom` y exige que `user_agent` permanezca nulo.
+
+## SEG-STORAGE-001 — Los límites del justificante solo vivían en React
+
+- Estado: **cerrado en código el 2026-08-04; integración real pendiente**.
+- Evidencia histórica: el frontend limitaba MIME y tamaño, pero quien llamase
+  directamente a Storage con la anon key no dependía de esa validación.
+- Resolución: el bucket impone 5 MB y la lista PDF/JPEG/PNG; las políticas de
+  escritura exigen el nombre canónico dentro de la carpeta propia. Las URLs
+  firmadas pasan de cinco minutos a un minuto.
+- Regresión local: instalación y políticas pasan en PostgreSQL/PGlite.
+  Regresión de integración: el caso Storage de `tests/rls/politicas.spec.ts`
+  intenta además subir `text/plain` y una ruta anidada.
+- Pendiente: ejecutar el caso contra Supabase local o dedicado. Sigue dentro
+  del bloqueo general SEC-RLS-001.

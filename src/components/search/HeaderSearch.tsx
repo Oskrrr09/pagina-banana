@@ -43,7 +43,12 @@ function flattenResults(results: SearchResults): FlatEntry[] {
   const out: FlatEntry[] = []
   let index = 0
   if (results.exactMatch) {
-    out.push({ section: 'Coincidencia principal', item: results.exactMatch, index: index++, isExact: true })
+    out.push({
+      section: 'Coincidencia principal',
+      item: results.exactMatch,
+      index: index++,
+      isExact: true,
+    })
   }
   const sections: [string, SearchItem[]][] = [
     ['Dispositivos Apple', results.appleDevices],
@@ -175,9 +180,7 @@ export function HeaderSearch({ mode, onClose, restoreFocusTo }: HeaderSearchProp
       {/* Barra de input + botones auxiliares */}
       <div
         className={
-          isMobile
-            ? 'flex h-16 shrink-0 items-center gap-2 border-b border-line px-4'
-            : 'px-5 py-3 sm:px-6 lg:px-8'
+          isMobile ? 'flex h-16 shrink-0 items-center gap-2 border-b border-line px-4' : 'px-5 py-3 sm:px-6 lg:px-8'
         }
       >
         {isMobile && (
@@ -231,11 +234,7 @@ export function HeaderSearch({ mode, onClose, restoreFocusTo }: HeaderSearchProp
 
       {/* Panel de resultados */}
       <div
-        className={
-          isMobile
-            ? 'flex-1 overflow-y-auto px-4 py-4'
-            : 'mx-auto w-full max-w-6xl px-5 pb-4 sm:px-6 lg:px-8'
-        }
+        className={isMobile ? 'flex-1 overflow-y-auto px-4 py-4' : 'mx-auto w-full max-w-6xl px-5 pb-4 sm:px-6 lg:px-8'}
       >
         {q.trim().length < 2 ? (
           <QuickLinks onNavigate={closeAndRestore} />
@@ -323,12 +322,7 @@ function SuggestionsList({
           </button>
         </p>
       )}
-      <ul
-        id={listboxId}
-        role="listbox"
-        aria-label="Sugerencias de búsqueda"
-        className="space-y-4"
-      >
+      <ul id={listboxId} role="listbox" aria-label="Sugerencias de búsqueda" className="space-y-4">
         {Array.from(bySection.entries()).map(([section, items]) => (
           <li key={section} role="presentation">
             <p className="mb-1 text-xs font-bold uppercase tracking-widest text-muted">{section}</p>
@@ -352,8 +346,7 @@ function SuggestionsList({
           onClick={onSeeAll}
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink underline-offset-2 hover:underline"
         >
-          Ver todos los resultados para «{query.trim()}»{' '}
-          <Icon name="chevron-right" size={14} />
+          Ver todos los resultados para «{query.trim()}» <Icon name="chevron-right" size={14} />
         </button>
       </div>
     </>

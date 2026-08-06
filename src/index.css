@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* ============================================================
    Sistema visual — Banana Computer (apartado 5 de la Fase 2)
@@ -42,8 +42,8 @@
   --color-danger-050: #fdeaea;
 
   /* 5.2 Tipografía */
-  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
   /* 5.3 Radios */
   --radius-field: 8px;
@@ -130,8 +130,10 @@ html[data-app-shell] .app-safe-area {
   --color-line: rgb(0 0 0 / 0.16);
 }
 
-
-h1, h2, h3, .font-display {
+h1,
+h2,
+h3,
+.font-display {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
 }
@@ -180,7 +182,9 @@ h1, h2, h3, .font-display {
   font-size: 16px;
   color: var(--color-ink);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .field:focus {
   border-color: var(--color-brand);
@@ -197,12 +201,6 @@ h1, h2, h3, .font-display {
   }
 }
 .skeleton {
-  background: linear-gradient(
-      90deg,
-      var(--color-line) 25%,
-      #eeeef0 50%,
-      var(--color-line) 75%
-    )
-    0 0 / 200% 100%;
+  background: linear-gradient(90deg, var(--color-line) 25%, #eeeef0 50%, var(--color-line) 75%) 0 0 / 200% 100%;
   animation: shimmer 1.5s infinite linear;
 }

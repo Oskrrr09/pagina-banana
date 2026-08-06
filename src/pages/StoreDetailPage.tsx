@@ -22,6 +22,11 @@ export function StoreDetailPage() {
   const { slug } = useParams()
   const store = getStore(slug ?? '')
   const [product, setProduct] = useState('')
+  // Ojo: este `useState` estaba más abajo, después del `return` de tienda no
+  // encontrada. Al navegar de una tienda que existe a una que no, React veía
+  // un hook menos y se quejaba. Es la misma clase de fallo que HOOKS-001: los
+  // hooks van todos antes de cualquier retorno condicional.
+  const [zoom, setZoom] = useState(17)
 
   if (!store) return <NotFound />
 
@@ -31,7 +36,6 @@ export function StoreDetailPage() {
   const services = [...UNIVERSAL_SERVICES, ...store.services]
   // Búsqueda por nombre real ("Banana Safari", "Banana Mesa y López"…) para
   // que Google Maps resuelva la ubicación exacta del local.
-  const [zoom, setZoom] = useState(17)
   const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(store.mapQuery)}&z=${zoom}&output=embed`
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.mapQuery)}`
 
@@ -128,7 +132,11 @@ export function StoreDetailPage() {
                   <tr key={h.day} className={`border-b border-line ${isToday ? 'font-semibold text-ink' : 'text-ink'}`}>
                     <td className="py-2">
                       {h.day}
-                      {isToday && <span className="ml-2 rounded-full bg-banana px-2 py-0.5 text-[11px] font-bold text-ink">Hoy</span>}
+                      {isToday && (
+                        <span className="ml-2 rounded-full bg-banana px-2 py-0.5 text-[11px] font-bold text-ink">
+                          Hoy
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 text-right text-muted">{h.time}</td>
                   </tr>
@@ -155,12 +163,7 @@ export function StoreDetailPage() {
           <label htmlFor="stock-product" className="mb-1.5 block text-sm text-muted">
             {t('stores.chooseProduct')}
           </label>
-          <select
-            id="stock-product"
-            value={product}
-            onChange={(e) => setProduct(e.target.value)}
-            className="field"
-          >
+          <select id="stock-product" value={product} onChange={(e) => setProduct(e.target.value)} className="field">
             <option value="">Selecciona un producto…</option>
             {allModels.map((m) => (
               <option key={`${m.family}/${m.slug}`} value={m.name}>

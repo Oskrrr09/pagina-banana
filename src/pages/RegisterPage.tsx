@@ -65,27 +65,19 @@ export function RegisterPage() {
     <Container className="py-12">
       <div className="mx-auto max-w-md">
         <h1 className="text-2xl font-bold text-ink">{t('account.signUp')}</h1>
-        <p className="mt-2 text-sm text-muted">
-          {t('account.signUpIntro')}
-        </p>
+        <p className="mt-2 text-sm text-muted">{t('account.signUpIntro')}</p>
 
         {!supabaseEnabled ? (
           <p className="mt-6 rounded-[12px] border border-line bg-neutral p-4 text-sm text-muted">
-            Las cuentas necesitan Supabase configurado. Copia{' '}
-            <code className="font-mono text-xs">.env.example</code> a{' '}
-            <code className="font-mono text-xs">.env.local</code> con las credenciales
-            del proyecto para habilitarlas.
+            Las cuentas necesitan Supabase configurado. Copia <code className="font-mono text-xs">.env.example</code> a{' '}
+            <code className="font-mono text-xs">.env.local</code> con las credenciales del proyecto para habilitarlas.
           </p>
         ) : needsConfirmation ? (
-          <div
-            role="status"
-            className="mt-6 rounded-[12px] border border-line bg-neutral p-4 text-sm text-ink"
-          >
+          <div role="status" className="mt-6 rounded-[12px] border border-line bg-neutral p-4 text-sm text-ink">
             <p className="font-semibold">{t('auth.checkEmail')}</p>
             <p className="mt-1 text-muted">
-              {t('auth.confirmSent')}{' '}
-              <strong className="text-ink">{email}</strong>. Ábrelo para activar la
-              cuenta y luego vuelve a{' '}
+              {t('auth.confirmSent')} <strong className="text-ink">{email}</strong>. Ábrelo para activar la cuenta y
+              luego vuelve a{' '}
               <Link to="/login" className="font-semibold text-ink underline">
                 iniciar sesión
               </Link>
