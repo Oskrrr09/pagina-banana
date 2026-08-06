@@ -67,6 +67,8 @@ Solo después de acordar alcance:
 - [ ] Añadir presupuesto o división de bundle: el JavaScript principal supera
       actualmente el umbral de 500 kB sin comprimir de Vite.
 - [ ] **Migración a React Router 8** — ver el apartado dedicado más abajo.
+- [ ] **Registro con Confirm Email activado** — ver 5.2.
+- [ ] **Estabilizar `search.spec.ts:342`** — ver 5.3.
 
 ## 5.1 Migración a React Router 8
 
@@ -101,6 +103,53 @@ los cinco motores de Playwright— antes de integrar.
 
 Ver [[02-decisiones#D-058]] y
 [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
+
+## 5.2 Registro con Confirm Email activado
+
+Tarea propia, registrada el 2026-08-06. **No** entra en la PR #35.
+
+Hoy el registro sólo se puede terminar con Confirm Email **desactivado**, que es
+como está la demostración. Con la confirmación activada el backend hace lo
+correcto —el email primero, la contraseña sólo tras verificarlo, y ninguna ficha
+de cliente mientras la sesión siga siendo anónima—, pero el navegador se queda a
+medias: `signUp()` devuelve `needsEmailConfirmation` antes de haber podido fijar
+la contraseña, `RegisterPage` dice «revisa tu correo y luego inicia sesión», y no
+hay contraseña con la que iniciar sesión ni pantalla donde establecerla.
+
+Lo que haría falta:
+
+- **Ruta de retorno** desde el enlace del correo, con su entrada en
+  `additional_redirect_urls`.
+- **Estado de registro pendiente** que sobreviva a la salida del navegador y
+  permita reconocer, al volver, que esa cuenta está verificada pero sin
+  contraseña.
+- **Establecimiento de la contraseña después de verificar el email**, en una
+  pantalla de «terminar registro», y sólo entonces crear la ficha de cliente y
+  vincular el chat.
+- Pruebas de ese recorrido en el navegador, no sólo del procedimiento de
+  backend: los cinco casos de `tests/confirmacion/conversion.spec.ts` cubren la
+  API y la seguridad, no la interfaz.
+
+Hasta que exista, `docs/08-predespliegue-supabase.md` marca Confirm Email como
+«debe permanecer desactivado».
+
+## 5.3 Estabilizar `search.spec.ts:342`
+
+Tarea propia, registrada el 2026-08-06.
+
+«Escape con selección cierra, restaura foco y no navega» falla de vez en cuando
+en el primer intento y pasa en el reintento. En el run 31084026968 salió como
+inestable: el localizador del botón de búsqueda se resolvió catorce veces sin
+que la interacción llegara a producirse.
+
+Es anterior a los cambios de la PR #35 y no oculta ningún fallo real, pero un
+test inestable deja de dar información: cuando falle de verdad, nadie lo va a
+creer.
+
+Cómo **no** se arregla: subiendo los reintentos ni relajando las expectativas.
+Eso lo esconde. Hay que encontrar la condición de carrera —lo más probable, que
+la prueba interactúe antes de que el overlay del buscador haya terminado su
+transición— y esperar por el estado real en vez de por el elemento.
 
 ## 6. Ideas surgidas de la auditoría UX de la web oficial (2026-07-28)
 

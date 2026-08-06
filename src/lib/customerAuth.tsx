@@ -213,7 +213,15 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         // la contraseña sólo después de que ese email esté verificado. Se
         // hacía en una sola llamada con los dos campos, que funciona cuando el
         // proyecto tiene la confirmación desactivada y falla en cuanto no lo
-        // está. El orden correcto sirve para las dos configuraciones.
+        // está.
+        //
+        // OJO con el alcance: este orden es correcto en las dos
+        // configuraciones a nivel de API, pero la INTERFAZ sólo sabe terminar
+        // el registro cuando la confirmación está desactivada. Con ella
+        // activada se devuelve `needsEmailConfirmation` sin haber podido fijar
+        // la contraseña, y no hay pantalla donde establecerla al volver del
+        // correo. Por eso Confirm Email debe permanecer desactivado en este
+        // despliegue; ver docs/08-predespliegue-supabase.md.
         const { error: errorEmail } = await supabase.auth.updateUser({ email, data: { nombre } })
         if (errorEmail) {
           return { error: errorEmail.message, needsEmailConfirmation: false }

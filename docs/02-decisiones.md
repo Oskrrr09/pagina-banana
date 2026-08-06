@@ -994,7 +994,9 @@ No atribuye motivaciones que el repositorio no documenta.
   cuando el proyecto tiene la confirmación de email desactivada y falla en
   cuanto no lo está: Supabase no acepta la contraseña hasta que el email esté
   verificado. Ahora se sigue el orden documentado —primero el email, la
-  contraseña sólo después—, que sirve para las dos configuraciones.
+  contraseña sólo después—, que es correcto en las dos configuraciones **a
+  nivel de API**. Que la interfaz sepa terminar el registro es otra cosa, y con
+  Confirm Email activado no sabe: ver la limitación de más abajo.
 - Y quién decide si hace falta confirmar **no es una suposición nuestra**: es lo
   que responde el servidor. Si tras `refreshSession()` la sesión sigue siendo
   anónima, el email está pendiente y se devuelve `needsEmailConfirmation` sin
@@ -1003,11 +1005,18 @@ No atribuye motivaciones que el repositorio no documenta.
 - Se conserva el camino rápido —conversión completa en una visita— porque es lo
   que ocurre cuando la confirmación está desactivada, pero como **consecuencia**
   de lo que responde el servidor, no como una rama aparte.
-- Limitación conocida: con la confirmación activada, la cuenta queda verificada
-  pero **sin contraseña** hasta que el visitante vuelva. La ficha se crea al
-  regresar; poner la contraseña necesitaría una pantalla de «terminar
-  registro» que todavía no existe. Anotado en
-  [[04-problemas-pendientes#SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente]].
+- **Limitación, y es bloqueante para activar Confirm Email**: con la
+  confirmación activada el recorrido no se puede terminar desde el navegador.
+  `signUp()` añade el email y devuelve `needsEmailConfirmation` antes de haber
+  podido fijar la contraseña; `RegisterPage` dice «revisa tu correo y luego
+  inicia sesión», pero no hay contraseña con la que iniciar sesión ni pantalla
+  donde establecerla al volver. La cuenta queda verificada y sin contraseña.
+  Por eso **Confirm Email debe permanecer desactivado en este despliegue**.
+- Alcance de las pruebas: `tests/confirmacion/conversion.spec.ts` valida el
+  procedimiento de backend y las garantías de seguridad, no el recorrido
+  completo en el navegador. Soportarlo entero es tarea aparte; ver
+  [[03-roadmap#5.2 Registro con Confirm Email activado]] y
+  [[08-predespliegue-supabase]].
 - Evidencia: el caso «convertir la sesión anónima en cuenta permanente habilita
   los recorridos de cliente» de `tests/rls/politicas.spec.ts` (confirmación
   desactivada) y la suite `tests/confirmacion/conversion.spec.ts` con la

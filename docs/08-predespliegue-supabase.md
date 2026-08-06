@@ -41,15 +41,34 @@ y dejar constancia de lo que devuelvan.
   funciona en el Supabase local sin él, pero eso no autoriza a suponer nada del
   proyecto remoto: hay que mirarlo.
 
-### 3. Confirm Email
+### 3. Confirm Email — debe permanecer DESACTIVADO
 
 - **Dónde**: Authentication → Sign In / Providers → Email.
 - **Estado observado el 2026-08-05**: `mailer_autoconfirm: true`, del mismo
-  endpoint, lo que significa que la confirmación está **desactivada**.
-- La aplicación ya no depende de ello: el registro sigue el orden documentado
+  endpoint, lo que significa que la confirmación está **desactivada**. Para
+  este despliegue **tiene que seguir así**.
+- Qué sí está resuelto: el backend. El registro sigue el orden documentado
   —primero el email, la contraseña sólo cuando el email está verificado— y
   decide si hace falta confirmar por lo que **responde el servidor**, no por una
-  suposición. Las dos configuraciones están cubiertas por pruebas.
+  suposición. Nunca se crea una ficha de cliente antes de que `is_anonymous` sea
+  false.
+- Qué **no** está resuelto: el recorrido en el navegador. Con Confirm Email
+  activado, `signUp()` añade el email, devuelve `needsEmailConfirmation` **antes
+  de poder establecer la contraseña**, y `RegisterPage` muestra «revisa tu correo
+  y luego inicia sesión». Pero la contraseña nunca llegó a fijarse, así que al
+  volver **no hay forma de iniciar sesión ni pantalla donde terminar el
+  registro**. El visitante se queda con una cuenta verificada y sin contraseña.
+- Por tanto: **el modo con Confirm Email activado no está soportado de extremo a
+  extremo por la interfaz.** Activarlo dejaría el registro sin salida.
+- Alcance de `tests/confirmacion/conversion.spec.ts`: sus cinco casos validan el
+  **procedimiento de backend y las garantías de seguridad** —orden de los dos
+  pasos, verificación por el buzón local, refresco del token, email ocupado,
+  contraseña rechazada, token no válido o ya consumido, refresco fallido y la
+  ausencia de ficha mientras la sesión sea anónima—. **No** recorren la interfaz
+  ni demuestran que el registro pueda completarse desde el navegador con la
+  confirmación activada.
+- Soportarlo es una tarea aparte; ver
+  [[03-roadmap#5.2 Registro con Confirm Email activado]].
 
 ### 4. CAPTCHA / Cloudflare Turnstile
 
@@ -110,24 +129,41 @@ supabase db dump --linked --schema supabase_migrations --data-only --use-copy \
 supabase db diff --linked --schema auth,storage > respaldo/06-auth-storage-personalizado.sql
 ```
 
-### Configuración del bucket
+### Validar los volcados antes de confiar en ellos
 
-Se lee de `storage.buckets`, que es donde vive de verdad. **No** de
-`/rest/v1/buckets`: ese camino depende de que PostgREST exponga el esquema
-`storage`, que en este proyecto no lo hace —`config.toml` sólo publica `public`
-y `graphql_public`—, así que devolvería un 404 que se confundiría con «no hay
-bucket».
+`--dry-run` imprime el `pg_dump` que se ejecutaría, sin ejecutarlo. Los cuatro
+volcados de arriba —y en especial los dos de `supabase_migrations`, que son los
+que deciden qué considera aplicado la CLI— hay que pasarlos primero por ahí,
+**después de enlazar el proyecto y antes de darlos por buenos**:
 
 ```sh
-# Por SQL, que es la fuente:
-supabase db dump --linked --data-only --schema storage --table buckets \
-  -f respaldo/07-bucket-config.sql
+supabase db dump --linked --schema supabase_migrations --dry-run
+supabase db dump --linked --schema supabase_migrations --data-only --use-copy --dry-run
+```
 
-# O por la API oficial de Storage, con la clave de servicio y sin imprimirla:
+Un fichero generado sin comprobar el comando no es una copia restaurable: es un
+fichero.
+
+### Configuración del bucket
+
+El método principal es la **API oficial de Storage**. La respuesta se guarda en
+un fichero, y la clave viaja en la cabecera sin imprimirse:
+
+```sh
 curl -s -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
   "$SUPABASE_URL/storage/v1/bucket/descuentos-educativos" \
   > respaldo/07-bucket-config.json
 ```
+
+**No** se usa `/rest/v1/buckets`: ese camino depende de que PostgREST exponga el
+esquema `storage`, que en este proyecto no lo hace —`config.toml` sólo publica
+`public` y `graphql_public`—, así que devolvería un 404 que se confundiría con
+«no hay bucket».
+
+Tampoco vale volcar sólo esa tabla con `db dump`: **la CLI no admite `--table`**
+(comprobado con `supabase db dump --help` en la 2.111.0; lo que existe es
+`--exclude`). Si se quiere además la copia por SQL, es el volcado del esquema
+`storage` completo, no una tabla suelta.
 
 ### Los archivos del bucket
 
@@ -139,13 +175,20 @@ apuntando a archivos que ya no existen.
 ```sh
 # Copia aparte de los ficheros físicos del bucket privado.
 mkdir -p respaldo/objetos
-supabase storage cp --linked -r ss:///descuentos-educativos respaldo/objetos/
+supabase storage cp --experimental --linked --recursive \
+  ss:///descuentos-educativos respaldo/objetos/
 ```
 
-Si esa subcomando no estuviera disponible en la versión de CLI fijada, la
-alternativa es descargar cada objeto con la API de Storage a partir de la lista
-de `storage.objects`. Lo que no vale es dar por copiado el bucket porque el
-volcado SQL mencione sus filas.
+Sintaxis confirmada con `supabase storage cp --help` en la CLI 2.111.0, la que
+fija el proyecto: la forma es `supabase storage cp [flags] <src> <dst>`, el
+origen remoto se escribe con el esquema `ss:///<bucket>/<ruta>`, `--recursive`
+(o `-r`) existe, y `--experimental` es una opción global que este subcomando
+exige. El ejemplo de descarga que imprime la propia ayuda es
+`supabase storage cp -r ss:///bucket/docs .`, es decir, remoto primero y destino
+local después.
+
+Lo que no vale es dar por copiado el bucket porque el volcado SQL mencione sus
+filas.
 
 ### Estado de Anonymous Sign-ins
 
