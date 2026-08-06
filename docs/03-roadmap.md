@@ -69,6 +69,7 @@ Solo después de acordar alcance:
 - [ ] **Migración a React Router 8** — ver el apartado dedicado más abajo.
 - [ ] **Registro con Confirm Email activado** — ver 5.2.
 - [ ] **Estabilizar `search.spec.ts:342`** — ver 5.3.
+- [ ] **Reiniciar preferencias en cierres de sesión externos** — ver 5.4.
 
 ## 5.1 Migración a React Router 8
 
@@ -150,6 +151,29 @@ Cómo **no** se arregla: subiendo los reintentos ni relajando las expectativas.
 Eso lo esconde. Hay que encontrar la condición de carrera —lo más probable, que
 la prueba interactúe antes de que el overlay del buscador haya terminado su
 transición— y esperar por el estado real en vez de por el elemento.
+
+## 5.4 Reiniciar preferencias en cierres de sesión externos
+
+Tarea propia, registrada el 2026-08-06. Riesgo residual de SEG-PREF-001.
+
+Las preferencias de cuenta se reinician cuando el cierre de sesión nace en la
+propia pestaña. Falta el cierre que viene de fuera: **otra pestaña** del mismo
+navegador, o una **sesión invalidada en el servidor**. En esos casos la sesión
+termina y la tienda favorita, los seguimientos y las notificaciones siguen en
+`localStorage` hasta el siguiente cierre explícito.
+
+Por qué no se resolvió con `onAuthStateChange` en la misma corrección:
+
+- supabase-js emite `SIGNED_OUT` **antes** de que se resuelva `signOut()`, así
+  que emitir el aviso también desde el escuchador lo dispararía dos veces por
+  cierre.
+- El chat abre sesiones anónimas con el **mismo** cliente de Supabase. Reiniciar
+  ante cualquier `SIGNED_OUT` borraría las preferencias de una cuenta cuando lo
+  que caduca es la sesión anónima del visitante.
+
+Lo que haría falta: recordar si la sesión que termina era permanente y emitir el
+aviso una sola vez, viniera de donde viniera el cierre. Con pruebas de las dos
+procedencias y del caso anónimo.
 
 ## 6. Ideas surgidas de la auditoría UX de la web oficial (2026-07-28)
 

@@ -445,6 +445,63 @@ forman el backlog verificable.
   autenticado. Aplicarlo **antes** de desplegar esta versión dejaría el
   panel de agentes sin poder responder.
 
+## SEG-PREF-001 — Las preferencias de cuenta sobrevivían al cierre de sesión
+
+- Estado: **cerrado en código el 2026-08-06** (rama
+  `fix/clear-user-preferences-on-signout`, PR aparte).
+- Impacto: privacidad. En un navegador compartido —una tienda, una casa, un
+  ordenador de trabajo—, quien entrara después de que otra persona cerrara
+  sesión seguía viendo su tienda habitual, los productos que estaba siguiendo y
+  sus notificaciones, con el contador incluido.
+- Evidencia: las cuatro preferencias se guardaban en claves generales de
+  `localStorage`, sin separar por usuario, y `signOut()` no las tocaba:
+  `banana:favorite-store`, `banana:favorite-store-prompt`,
+  `banana:favorite-alerts` y `banana:favorite-notifications`.
+- Causa: son datos **de la cuenta** guardados como si fueran **del
+  dispositivo**. El cierre de sesión sólo se ocupaba de Supabase y de su propio
+  estado.
+- Resolución: aviso interno tipado `src/lib/accountSession.ts`. `signOut()` lo
+  emite después de cerrar en Supabase, y cada proveedor se suscribe y se
+  reinicia solo. Los proveedores siguen siendo dueños de su estado: nadie
+  escribe en el de otro.
+- Detalle que no era evidente: borrar las claves no bastaba. Los proveedores
+  guardan el estado **en memoria**, así que sin reiniciarlo la interfaz habría
+  seguido enseñando los datos hasta recargar. Y al revés: reiniciar el estado
+  tampoco bastaba, porque el efecto de persistencia de `favoriteAlerts`
+  reescribía `"[]"` y la clave reaparecía. Ahora una lista vacía borra la clave.
+- Lo que **no** se toca: el carrito, el idioma, la sesión y la conversación
+  anónima del chat, y ninguna otra preferencia general.
+- Segunda corrección, misma rama: `signOut()` **ignoraba el `{ error }`** que
+  devuelve Supabase, así que las preferencias podían borrarse aunque el cierre
+  hubiera fallado y la cuenta siguiera abierta. Ahora la limpieza va dentro del
+  callback de éxito de `cerrarSesionCliente()`, `signOut()` devuelve
+  `{ error }`, y `/cuenta` espera esa confirmación **antes** de navegar: si
+  falla, se queda en la página y lo dice con un `role="alert"` en vez de
+  aparentar que la sesión se cerró.
+- Regresión: 5 casos unitarios del aviso interno, 6 del cableado de
+  `cerrarSesionCliente()` —incluido «Supabase falla → no se limpia ni se emite
+  aviso»— y 10 en `tests/e2e-prefs/`: 6 con los proveedores reales montados en
+  un navegador real y 4 con el `ProfilePage` de producción y el contexto de
+  sesión inyectado, que cubren el botón bloqueado durante el cierre, el aviso
+  `role="alert"` cuando falla, la navegación a la portada cuando se confirma y
+  el reemplazo del historial. Contraprueba: revertida cada mitad, fallan
+  exactamente los casos que la cubren.
+- Verificado en CI: run `31128555965` sobre `a3aa23e`, verde entero — 193
+  unitarias y de esquema, 36 RLS más 2 de integración y 5 de confirmación, 296
+  E2E aprobadas y 1 omitida en cinco motores, 6 del panel aislado y 10 del banco
+  de pruebas de preferencias y `/cuenta`. `Publicar en GitHub Pages` figura
+  omitido porque el workflow se lanzó a mano y la publicación sólo ocurre al
+  fusionar en `main`.
+- **Riesgo residual abierto**: el reinicio sólo ocurre en el cierre de sesión
+  originado en esta pestaña. Un cierre desde **otra pestaña** o una **sesión
+  invalidada en el servidor** dejan las preferencias en `localStorage` hasta el
+  siguiente cierre explícito. No se cubre desde `onAuthStateChange` porque
+  supabase-js emite `SIGNED_OUT` antes de que se resuelva `signOut()` —el aviso
+  saldría dos veces por cierre— y porque el chat abre sesiones anónimas con el
+  mismo cliente: habría que distinguir qué sesión termina para no borrar las
+  preferencias de una cuenta cuando lo que caduca es la sesión del visitante.
+  Queda como tarea aparte.
+
 ## SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente
 
 - Estado: **cerrado en código el 2026-08-06**. Detectado en revisión antes de

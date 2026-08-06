@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getInventoryState, setInventoryOverride, type InventoryState } from '../data/demoStoreInventory'
+import { alCerrarSesionCliente } from './accountSession'
 
 // Estado global de seguimiento de disponibilidad + notificaciones internas.
 // Persistencia:
@@ -41,6 +42,12 @@ interface FavoriteAlertsState {
   markRead: (notificationId: string) => void
   markAllRead: () => void
   getAlertForProduct: (productId: string) => FavoriteAlert | null
+  /**
+   * Vacía seguimientos y notificaciones y borra sus dos claves. Se usa al
+   * cerrar sesión: lo que una cuenta seguía no puede quedar a la vista de quien
+   * use el navegador después.
+   */
+  reset: () => void
 }
 
 const FavoriteAlertsContext = createContext<FavoriteAlertsState | null>(null)
@@ -55,10 +62,21 @@ function readJSON<T>(key: string, fallback: T): T {
     return fallback
   }
 }
-function writeJSON<T>(key: string, value: T) {
+/**
+ * Guarda la lista, o **borra la clave** cuando se queda vacía.
+ *
+ * Antes escribía siempre, así que una lista vacía dejaba un `"[]"` en
+ * `localStorage`. Da igual para leer —`readJSON` cae al mismo valor por
+ * defecto—, pero al cerrar sesión importa: reiniciar el estado habría vuelto a
+ * escribir `"[]"` y la clave seguiría ahí. Ausente y vacía significan lo mismo;
+ * que el almacenamiento lo refleje evita tener que acordarse de borrarlas
+ * aparte.
+ */
+function writeList<T>(key: string, value: T[]) {
   try {
     if (typeof window === 'undefined') return
-    window.localStorage.setItem(key, JSON.stringify(value))
+    if (value.length === 0) window.localStorage.removeItem(key)
+    else window.localStorage.setItem(key, JSON.stringify(value))
   } catch {
     /* almacenamiento no disponible */
   }
@@ -71,10 +89,10 @@ export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AlertNotification[]>(() => readJSON(NOTIFICATIONS_KEY, []))
 
   useEffect(() => {
-    writeJSON(ALERTS_KEY, alerts)
+    writeList(ALERTS_KEY, alerts)
   }, [alerts])
   useEffect(() => {
-    writeJSON(NOTIFICATIONS_KEY, notifications)
+    writeList(NOTIFICATIONS_KEY, notifications)
   }, [notifications])
 
   const setAlert = useCallback((productId: string, storeSlug: string) => {
@@ -136,6 +154,15 @@ export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
     [alerts],
   )
 
+  // Sólo toca su propio estado; de borrar las claves se encargan los efectos
+  // de persistencia, que ya hacen `removeItem` con la lista vacía.
+  const reset = useCallback(() => {
+    setAlerts([])
+    setNotifications([])
+  }, [])
+
+  useEffect(() => alCerrarSesionCliente(reset), [reset])
+
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications])
 
   const value: FavoriteAlertsState = {
@@ -149,6 +176,7 @@ export function FavoriteAlertsProvider({ children }: { children: ReactNode }) {
     markRead,
     markAllRead,
     getAlertForProduct,
+    reset,
   }
 
   return <FavoriteAlertsContext.Provider value={value}>{children}</FavoriteAlertsContext.Provider>

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { getStore, stores } from '../data/stores'
 import type { Store } from '../data/types'
+import { alCerrarSesionCliente } from './accountSession'
 
 // Estado global de la "tienda favorita" del usuario. Persistencia:
 //   - banana:favorite-store         → slug de tienda (string).
@@ -19,6 +20,12 @@ interface StorePreferenceState {
   setFavorite: (slug: string) => void
   clearFavorite: () => void
   dismissPrompt: () => void
+  /**
+   * Deja la preferencia como en un navegador recién estrenado y borra sus dos
+   * claves. Se usa al cerrar sesión: la tienda favorita es de la cuenta, no del
+   * dispositivo, y quien entre después no debe verla.
+   */
+  reset: () => void
 }
 
 const StorePreferenceContext = createContext<StorePreferenceState | null>(null)
@@ -71,6 +78,17 @@ export function StorePreferenceProvider({ children }: { children: ReactNode }) {
     setPromptDismissed(true)
   }, [])
 
+  // Sólo toca su propio estado. Los efectos de arriba se encargan de que las
+  // dos claves desaparezcan de `localStorage`, porque `writeString` con `null`
+  // hace `removeItem`. No hace falta borrarlas aquí a mano, y hacerlo dejaría
+  // dos sitios que tendrían que estar de acuerdo para siempre.
+  const reset = useCallback(() => {
+    setFavoriteSlugState(null)
+    setPromptDismissed(false)
+  }, [])
+
+  useEffect(() => alCerrarSesionCliente(reset), [reset])
+
   const value: StorePreferenceState = {
     favoriteSlug,
     favoriteStore: favoriteSlug ? (getStore(favoriteSlug) ?? null) : null,
@@ -78,6 +96,7 @@ export function StorePreferenceProvider({ children }: { children: ReactNode }) {
     setFavorite,
     clearFavorite,
     dismissPrompt,
+    reset,
   }
 
   return <StorePreferenceContext.Provider value={value}>{children}</StorePreferenceContext.Provider>

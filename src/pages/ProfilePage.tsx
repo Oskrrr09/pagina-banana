@@ -44,6 +44,8 @@ export function ProfilePage() {
   const { session, cliente, loading, signOut } = useCustomerAuth()
   const navigate = useNavigate()
   const [apartado, setApartado] = useState<Apartado>('datos')
+  const [cerrandoSesion, setCerrandoSesion] = useState(false)
+  const [errorCierre, setErrorCierre] = useState<string | null>(null)
 
   if (!supabaseEnabled) {
     return (
@@ -65,8 +67,22 @@ export function ProfilePage() {
     )
   }
 
-  if (!session) {
+  // Mientras se cierra la sesión no se dispara el guardia. Al confirmarse el
+  // cierre, `session` pasa a null con esta página todavía montada, y sin esta
+  // excepción el guardia ganaría la carrera y mandaría a `/login` a quien
+  // acaba de salir. Se navega a la portada en cuanto Supabase lo confirma.
+  if (!session && !cerrandoSesion) {
     return <Navigate to="/login?redirect=%2Fcuenta" replace />
+  }
+
+  if (!session) {
+    // Sólo se llega aquí con `cerrandoSesion` en true: Supabase ya confirmó el
+    // cierre y falta un instante para navegar a la portada.
+    return (
+      <Container className="py-20 text-center">
+        <p className="text-muted">Cerrando sesión…</p>
+      </Container>
+    )
   }
 
   return (
@@ -78,22 +94,34 @@ export function ProfilePage() {
         </div>
         <Button
           variant="secondary"
+          disabled={cerrandoSesion}
           onClick={async () => {
-            // Se sale de la página ANTES de cerrar la sesión. Al revés,
-            // `signOut()` deja `session` a null mientras esta página sigue
-            // montada: el guardia de arriba dispara
-            // <Navigate to="/login?redirect=%2Fcuenta"> y gana la carrera, así
-            // que quien acaba de cerrar sesión aterriza en un formulario que
-            // le pide volver a entrar en la cuenta que acaba de dejar.
+            // Se espera a que Supabase confirme el cierre ANTES de navegar.
+            // Antes se navegaba primero: si el cierre fallaba, la persona
+            // acababa en la portada con la sesión abierta, convencida de haber
+            // salido. El guardia de arriba está suspendido mientras tanto.
             //
-            // `replace` además evita que el botón Atrás devuelva a /cuenta.
+            // `replace` evita que el botón Atrás devuelva a /cuenta.
+            setErrorCierre(null)
+            setCerrandoSesion(true)
+            const { error } = await signOut()
+            if (error) {
+              setCerrandoSesion(false)
+              setErrorCierre(error)
+              return
+            }
             navigate('/', { replace: true })
-            await signOut()
           }}
         >
-          Cerrar sesión
+          {cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar sesión'}
         </Button>
       </div>
+
+      {errorCierre && (
+        <p role="alert" className="mt-4 rounded-[12px] border border-line bg-neutral px-4 py-3 text-sm text-ink">
+          No se ha podido cerrar la sesión: {errorCierre}. Sigues dentro de tu cuenta; inténtalo de nuevo.
+        </p>
+      )}
 
       <div className="mt-4 rounded-[12px] border border-line bg-neutral px-4 py-2 text-xs text-muted">
         <strong className="text-ink">Cuenta de demostración.</strong> Los pedidos, reservas y descuentos de esta página
