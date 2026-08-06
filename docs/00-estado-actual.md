@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-05
+actualizado: 2026-08-06
 ---
 
 # Estado actual
@@ -12,7 +12,7 @@ actualizado: 2026-08-05
 > tiempo real con Supabase + panel de agentes** (Fase 1 desplegada el
 > 2026-07-30). No hay integración comercial real ni motor de pago.
 
-## Auditoría de seguridad en curso (2026-08-02 a 2026-08-05)
+## Auditoría de seguridad en curso (2026-08-02 a 2026-08-06)
 
 Las PR [#33](https://github.com/luis-lop-nas/pagina-banana/pull/33) y
 [#34](https://github.com/luis-lop-nas/pagina-banana/pull/34) cierran la lectura
@@ -39,15 +39,23 @@ porque se concedía esos permisos a sí mismo. Corregido y vigilado por
 `tests/schema/permisos.test.ts`; ver
 [[04-problemas-pendientes#SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla]].
 
-La CLI, configuración y workflow de Supabase
-local ya están versionados y no usan secretos remotos. Las **27 pruebas contra
-GoTrue, PostgREST y Storage reales pasan 27/27 en CI desde el 2026-08-05**,
-junto con el cierre de sesión PWA. Esta máquina sigue sin Docker y no puede
-ejecutarlas. Con eso, la PR #35 queda en verde completo; lo que falta para
-publicar es el despliegue en sí: activar Anonymous sign-ins en la demostración
-y aplicar las **cuatro** migraciones, la de permisos y la de sesiones
-anónimas incluidas. Ver
-[[04-problemas-pendientes#SEC-RLS-001 — Falta validar y desplegar la migración segura]].
+La CLI, configuración y workflow de Supabase local ya están versionados y no
+usan secretos remotos. Las pruebas contra GoTrue, PostgREST y Storage reales
+pasan en CI desde el 2026-08-05, junto con el cierre de sesión PWA y la
+conversión de sesión anónima con confirmación de email.
+
+**El 2026-08-06 las cuatro migraciones se aplicaron en el proyecto real.**
+`supabase migration list` muestra los cuatro identificadores iguales en Local y
+Remote, y `db push --dry-run` responde `Remote database is up to date`. Una
+comprobación por API pública de sólo lectura confirma el efecto: el rol anónimo
+pasó de leer **36 filas de `visitantes`** —con nombre, email y teléfono— a no
+leer ninguna.
+
+Queda publicar el frontend. Hasta que la PR #35 se fusione, GitHub Pages sirve
+el frontend anterior, que escribe directamente en las tablas y ya no puede: **el
+chat de la web pública no funciona ahora mismo**. El resto de la tienda sí,
+porque no depende de Supabase. El detalle y el orden restante están en
+[[08-predespliegue-supabase]].
 
 ## Fase 2 — cuentas, reservas y panel con auth (2026-07-31)
 

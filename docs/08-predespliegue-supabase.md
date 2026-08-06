@@ -5,149 +5,172 @@ actualizado: 2026-08-06
 
 # Predespliegue de Supabase
 
-Lo que hay que dejar resuelto **antes** de aplicar las migraciones y publicar el
-frontend. Nada de esto se ha ejecutado todavía: el repositorio no está enlazado
-a ningún proyecto remoto y no se ha tocado el Dashboard.
+Estado del despliegue de la migración de seguridad al proyecto de la
+demostración. **Las cuatro migraciones ya están aplicadas en producción**
+(2026-08-06); lo que queda es publicar el frontend y activar los inicios de
+sesión anónimos, en ese orden.
 
-> [!warning] Ninguna de las opciones de esta página se ha comprobado en el
-> Dashboard ni por la Management API, salvo donde se indique la evidencia. No
-> se declara ninguna activa.
+> [!warning] Situación actual: base nueva, frontend viejo
+> La base ya tiene el esquema seguro, pero GitHub Pages sigue sirviendo el
+> frontend anterior, que escribe directamente en las tablas. Ese frontend ya no
+> puede hacerlo, así que **el chat de la web pública no funciona ahora mismo**.
+> Se arregla fusionando la PR #35 y dejando que se publique. Mientras tanto la
+> tienda —catálogo, carrito, comparador, checkout demostrativo— sigue
+> funcionando con normalidad, porque no depende de Supabase.
 
-## Configuración remota — bloqueante
+## 1. Pasos completados
 
-Seis ajustes que deciden si el despliegue funciona o abre un agujero. Hay que
-verificarlos uno a uno en el Dashboard del proyecto, o por la Management API,
-y dejar constancia de lo que devuelvan.
+Verificado el 2026-08-06.
 
-### 1. Allow anonymous sign-ins
+### Respaldo
 
-- **Dónde**: Authentication → Sign In / Providers → Anonymous Sign-Ins.
-- **Estado observado el 2026-08-05**: `external.anonymous_users: false`, leído
-  del endpoint público de sólo lectura `GET /auth/v1/settings`. Es la única
-  evidencia que tenemos y dice que está **desactivado**.
-- **Orden que importa**: activarlo **después o a la vez** que se aplique
-  `20260806000400_separa_sesiones_anonimas.sql`. Al revés se abre exactamente
-  el agujero que esa migración cierra — una sesión anónima valdría como cuenta
-  de cliente.
-- Si se deja desactivado, el chat no se rompe: `asegurarSesion()` cae a modo
-  demostración con un aviso en consola.
+- Copia completa hecha **fuera del repositorio**: roles, esquema, datos,
+  evidencia del historial previo, cambios personalizados de `auth` y `storage`
+  y **los archivos físicos del bucket**.
+- El repositorio quedó limpio: los respaldos **no** están versionados en Git.
 
-### 2. Allow manual linking
+### Entorno
 
-- **Dónde**: Authentication → Sign In / Providers → (ajustes generales).
-- **Estado**: sin verificar.
-- Lo exige la documentación de Supabase para asociar una identidad a una cuenta
-  existente. La conversión que usa la aplicación —`updateUser({ email })`—
-  funciona en el Supabase local sin él, pero eso no autoriza a suponer nada del
-  proyecto remoto: hay que mirarlo.
+- Docker Desktop instalado y en marcha, que es lo que faltaba para poder
+  ejecutar la CLI contra contenedores y las suites de integración.
+- CLI de Supabase enlazada al proyecto remoto.
 
-### 3. Confirm Email — debe permanecer DESACTIVADO
+### Migraciones
 
-- **Dónde**: Authentication → Sign In / Providers → Email.
-- **Estado observado el 2026-08-05**: `mailer_autoconfirm: true`, del mismo
-  endpoint, lo que significa que la confirmación está **desactivada**. Para
-  este despliegue **tiene que seguir así**.
-- Qué sí está resuelto: el backend. El registro sigue el orden documentado
-  —primero el email, la contraseña sólo cuando el email está verificado— y
-  decide si hace falta confirmar por lo que **responde el servidor**, no por una
-  suposición. Nunca se crea una ficha de cliente antes de que `is_anonymous` sea
-  false.
-- Qué **no** está resuelto: el recorrido en el navegador. Con Confirm Email
-  activado, `signUp()` añade el email, devuelve `needsEmailConfirmation` **antes
-  de poder establecer la contraseña**, y `RegisterPage` muestra «revisa tu correo
-  y luego inicia sesión». Pero la contraseña nunca llegó a fijarse, así que al
-  volver **no hay forma de iniciar sesión ni pantalla donde terminar el
-  registro**. El visitante se queda con una cuenta verificada y sin contraseña.
-- Por tanto: **el modo con Confirm Email activado no está soportado de extremo a
-  extremo por la interfaz.** Activarlo dejaría el registro sin salida.
-- Alcance de `tests/confirmacion/conversion.spec.ts`: sus cinco casos validan el
-  **procedimiento de backend y las garantías de seguridad** —orden de los dos
-  pasos, verificación por el buzón local, refresco del token, email ocupado,
-  contraseña rechazada, token no válido o ya consumido, refresco fallido y la
-  ausencia de ficha mientras la sesión sea anónima—. **No** recorren la interfaz
-  ni demuestran que el registro pueda completarse desde el navegador con la
-  confirmación activada.
-- Soportarlo es una tarea aparte; ver
+- Las **cuatro** migraciones aplicadas correctamente:
+  1. `20260802000100_estado_seguro.sql`
+  2. `20260804000200_minimiza_chat_y_limita_storage.sql`
+  3. `20260805000300_permisos_de_tabla.sql`
+  4. `20260806000400_separa_sesiones_anonimas.sql`
+- `supabase migration list` muestra los **cuatro identificadores iguales en
+  Local y en Remote**.
+- `supabase db push --dry-run` responde `Remote database is up to date`.
+
+### Verificación en producción
+
+- Políticas RLS, funciones y condiciones de seguridad comprobadas contra el
+  proyecto real.
+- Las **cinco comprobaciones SQL** de seguridad devolvieron `true`. El texto
+  exacto de las consultas queda en la sesión de quien las ejecutó; aquí se
+  registra el resultado, no su contenido.
+- Comprobación independiente por API pública de sólo lectura, el 2026-08-06:
+  el rol anónimo ya **no lee ninguna fila** de `visitantes`, `conversaciones`,
+  `mensajes` ni `clientes`. Antes de migrar leía **36 filas de `visitantes`**
+  con nombre, email y teléfono. La exposición que motivó todo este trabajo está
+  cerrada.
+
+### Authentication
+
+| Ajuste                        | Estado verificado                |
+| ----------------------------- | -------------------------------- |
+| Allow new users to sign up    | **activado**                     |
+| Allow manual linking          | **activado**                     |
+| Confirm sign up               | **desactivado**, y debe seguir así |
+| Allow anonymous sign-ins      | **todavía desactivado**          |
+| Límite de anonymous sign-ins  | **30 por hora e IP**             |
+| CAPTCHA / Turnstile           | **no localizado / no configurado** |
+
+### CI
+
+- Los secretos `SUPABASE_URL` y `SUPABASE_ANON_KEY` existen en GitHub Actions.
+- El CI de la rama está en verde.
+
+## 2. Pasos pendientes
+
+### Publicar el frontend
+
+Es lo único que separa a la web pública de volver a tener chat. Sale de fusionar
+la PR #35: el flujo de CI publica en GitHub Pages al llegar a `main`.
+
+### Activar Allow anonymous sign-ins
+
+- Sigue **desactivado**, y así debe quedarse hasta que el frontend nuevo esté
+  publicado.
+- El orden ya no es peligroso por el lado de la base —la migración que separa
+  las sesiones anónimas está aplicada—, pero activarlo antes de publicar no
+  sirve de nada: el frontend viejo no sabe usar sesiones anónimas.
+- Mientras siga desactivado, el chat del frontend nuevo **no se rompe**: cae a
+  modo demostración con un aviso en consola.
+
+### CAPTCHA — no activar todavía
+
+- **No se ha localizado ni configurado.** No se declara activo.
+- Activarlo **no es un interruptor**: el frontend tendría que enviar el token
+  del captcha en `signInAnonymously()`, y **hoy no lo hace**. Encenderlo sin esa
+  implementación dejaría el chat sin poder abrir sesión.
+- El límite de 30 por hora e IP ya está puesto y cubre el abuso más obvio
+  mientras tanto.
+
+### Confirm sign up — debe permanecer desactivado
+
+- El backend hace lo correcto en las dos configuraciones —el email primero, la
+  contraseña sólo tras verificarlo, y ninguna ficha de cliente mientras la
+  sesión siga siendo anónima—, pero **la interfaz no sabe terminar el registro**
+  con la confirmación activada: `signUp()` devuelve `needsEmailConfirmation`
+  antes de poder fijar la contraseña, `RegisterPage` manda a iniciar sesión, y
+  no hay contraseña con la que hacerlo ni pantalla donde establecerla al volver
+  del correo.
+- Los cinco casos de `tests/confirmacion/conversion.spec.ts` validan el
+  **procedimiento de backend y la seguridad**, no el recorrido en el navegador.
+- Soportarlo entero es tarea aparte:
   [[03-roadmap#5.2 Registro con Confirm Email activado]].
 
-### 4. CAPTCHA / Cloudflare Turnstile
+### Limpieza de cuentas anónimas antiguas
 
-- **Dónde**: Authentication → Attack Protection.
-- **Estado**: sin verificar.
-- Con los inicios anónimos activados, cualquiera puede crear usuarios sin
-  límite desde el navegador. Es la protección que Supabase recomienda
-  precisamente para ese caso. Si se activa, el frontend tendrá que enviar el
-  token del captcha en `signInAnonymously()`, que **hoy no hace**: es trabajo
-  adicional, no un interruptor.
+- Sigue **sin procedimiento**. Supabase no las borra solo.
+- Cuidado con el orden: `visitantes.auth_id` es `ON DELETE SET NULL`, así que
+  borrar el usuario de Auth **no** se lleva su ficha de visitante, la deja
+  huérfana. Hay que borrar primero por `auth_id` y después el usuario, que es lo
+  que hace el `afterAll` de `tests/rls/politicas.spec.ts`.
 
-### 5. Límite de creación de usuarios anónimos
+### Pruebas de humo en producción
 
-- **Dónde**: Authentication → Rate Limits → «Anonymous users».
-- **Estado**: sin verificar.
-- Cada visitante que abre el chat crea un usuario en `auth.users`. Sin límite,
-  una tarde de tráfico normal —o un guion— llena la tabla.
+Tras publicar: chat, `/cuenta`, reserva, justificante educativo y panel
+`/agente`.
 
-### 6. Limpieza de cuentas anónimas antiguas
+## 3. Orden restante
 
-- **Estado**: no existe procedimiento. **Pendiente de decidir.**
-- Supabase no borra las cuentas anónimas solo. Hace falta una tarea periódica
-  que elimine las que no se hayan convertido y no tengan actividad reciente.
-- Cuidado con el orden al borrarlas: `visitantes.auth_id` es
-  `ON DELETE SET NULL`, así que borrar el usuario de Auth **no** se lleva su
-  ficha de visitante, la deja huérfana. Hay que borrar primero por `auth_id` y
-  después el usuario, que es justo lo que hace el `afterAll` de
-  `tests/rls/politicas.spec.ts`.
+1. Revisar este commit documental.
+2. Comprobar que el CI está en verde.
+3. Sacar la PR #35 de borrador.
+4. Fusionar a `main`.
+5. Esperar a que termine el despliegue de GitHub Pages.
+6. Activar **Allow anonymous sign-ins**.
+7. Pruebas de humo en producción.
 
-## Copia de seguridad — comandos preparados, NO ejecutados
+Los pasos 3 a 7 son decisiones y acciones del responsable del proyecto.
 
-Cinco piezas, cada una en su fichero. Se hacen **antes** de aplicar nada.
+## Comandos de referencia
+
+Se conservan por si hiciera falta repetir el respaldo o revisar el estado.
+Sintaxis comprobada con `--help` en la CLI 2.111.0.
 
 ```sh
-mkdir -p respaldo
-
-# 1. Roles.
+# Respaldo, cada pieza en su fichero.
 supabase db dump --linked --role-only -f respaldo/01-roles.sql
-
-# 2. Esquema público.
-supabase db dump --linked -f respaldo/02-esquema-publico.sql
-
-# 3. Datos públicos. `--use-copy` es mucho más rápido de restaurar que un
-#    fichero lleno de INSERT, y no se atraganta con el jsonb de direcciones.
+supabase db dump --linked             -f respaldo/02-esquema-publico.sql
 supabase db dump --linked --data-only --use-copy -f respaldo/03-datos-publicos.sql
-
-# 4. Historial de migraciones, esquema y datos por separado. Es lo que decide
-#    qué considera aplicado la CLI, y sin él una restauración deja la base
-#    desincronizada con `supabase/migrations/`.
 supabase db dump --linked --schema supabase_migrations -f respaldo/04-historial-esquema.sql
 supabase db dump --linked --schema supabase_migrations --data-only --use-copy \
   -f respaldo/05-historial-datos.sql
 
-# 5. Lo PERSONALIZADO de auth y storage, no su contenido estándar.
-#    `db dump` de esos esquemas devolvería el esquema entero que gestiona
-#    Supabase, que ni se restaura ni interesa. `db diff` devuelve sólo lo que
-#    este proyecto ha cambiado encima, que es lo que hay que conservar.
+# Lo PERSONALIZADO de auth y storage, no el esquema estándar que gestiona
+# Supabase: `db dump` devolvería este último, que ni se restaura ni interesa.
 supabase db diff --linked --schema auth,storage > respaldo/06-auth-storage-personalizado.sql
+
+# Estado del despliegue.
+supabase migration list
+supabase db push --dry-run
 ```
 
-### Validar los volcados antes de confiar en ellos
-
-`--dry-run` imprime el `pg_dump` que se ejecutaría, sin ejecutarlo. Los cuatro
-volcados de arriba —y en especial los dos de `supabase_migrations`, que son los
-que deciden qué considera aplicado la CLI— hay que pasarlos primero por ahí,
-**después de enlazar el proyecto y antes de darlos por buenos**:
-
-```sh
-supabase db dump --linked --schema supabase_migrations --dry-run
-supabase db dump --linked --schema supabase_migrations --data-only --use-copy --dry-run
-```
-
-Un fichero generado sin comprobar el comando no es una copia restaurable: es un
-fichero.
+`--dry-run` imprime el `pg_dump` que se ejecutaría sin ejecutarlo; conviene
+pasar por ahí los volcados de `supabase_migrations` antes de confiar en ellos
+como copia restaurable.
 
 ### Configuración del bucket
 
-El método principal es la **API oficial de Storage**. La respuesta se guarda en
-un fichero, y la clave viaja en la cabecera sin imprimirse:
+Método principal, la API oficial de Storage. La clave viaja en la cabecera y no
+se imprime:
 
 ```sh
 curl -s -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
@@ -155,65 +178,26 @@ curl -s -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
   > respaldo/07-bucket-config.json
 ```
 
-**No** se usa `/rest/v1/buckets`: ese camino depende de que PostgREST exponga el
-esquema `storage`, que en este proyecto no lo hace —`config.toml` sólo publica
-`public` y `graphql_public`—, así que devolvería un 404 que se confundiría con
-«no hay bucket».
-
-Tampoco vale volcar sólo esa tabla con `db dump`: **la CLI no admite `--table`**
-(comprobado con `supabase db dump --help` en la 2.111.0; lo que existe es
-`--exclude`). Si se quiere además la copia por SQL, es el volcado del esquema
-`storage` completo, no una tabla suelta.
+No se usa `/rest/v1/buckets`: depende de que PostgREST exponga el esquema
+`storage`, y este proyecto sólo publica `public` y `graphql_public`. Tampoco
+vale `db dump --table`, que **no existe** en la CLI; lo que hay es `--exclude`.
 
 ### Los archivos del bucket
 
 El volcado de PostgreSQL guarda **los metadatos de los objetos, no los
-objetos**. `storage.objects` es un índice: los bytes de cada justificante viven
-en el almacenamiento de Storage. Restaurar sólo la base dejaría filas
-apuntando a archivos que ya no existen.
+objetos**: `storage.objects` es un índice y los bytes viven en Storage.
 
 ```sh
-# Copia aparte de los ficheros físicos del bucket privado.
 mkdir -p respaldo/objetos
 supabase storage cp --experimental --linked --recursive \
   ss:///descuentos-educativos respaldo/objetos/
 ```
 
-Sintaxis confirmada con `supabase storage cp --help` en la CLI 2.111.0, la que
-fija el proyecto: la forma es `supabase storage cp [flags] <src> <dst>`, el
-origen remoto se escribe con el esquema `ss:///<bucket>/<ruta>`, `--recursive`
-(o `-r`) existe, y `--experimental` es una opción global que este subcomando
-exige. El ejemplo de descarga que imprime la propia ayuda es
-`supabase storage cp -r ss:///bucket/docs .`, es decir, remoto primero y destino
-local después.
+Forma confirmada con `supabase storage cp --help`: `[flags] <src> <dst>`, origen
+remoto con el esquema `ss:///<bucket>/<ruta>`, `--recursive` disponible y
+`--experimental` exigido por el subcomando.
 
-Lo que no vale es dar por copiado el bucket porque el volcado SQL mencione sus
-filas.
-
-### Estado de Anonymous Sign-ins
-
-```sh
-curl -s -H "apikey: $SUPABASE_ANON_KEY" "$SUPABASE_URL/auth/v1/settings" \
-  > respaldo/08-auth-settings.json
-```
-
-Es de sólo lectura y no crea nada. Guarda el estado de partida de los
-proveedores, incluido `external.anonymous_users`, para poder comparar después.
-
-## Orden de despliegue
-
-1. Verificar los seis ajustes de arriba y anotar lo que devuelva el Dashboard.
-2. Hacer la copia completa y **comprobarla**, archivos del bucket incluidos.
-3. `supabase login` y `supabase link --project-ref <ref>`.
-4. `supabase migration list` — comparar con las cuatro migraciones versionadas.
-5. `supabase db push --dry-run`; si pide `migration repair`, resolverlo antes.
-6. Ventana de mantenimiento corta, avisando de que el chat quedará parado.
-7. `supabase db push` — las cuatro, en orden.
-8. Activar Anonymous Sign-ins (y CAPTCHA y límite, si se decide activarlos).
-9. Publicar el frontend inmediatamente después.
-10. Verificar contra la URL pública: chat, `/cuenta`, reserva, justificante y
-    panel `/agente`.
-11. Comprobar que el rol anónimo ya **no** lee `visitantes`.
-
-Ver [[04-problemas-pendientes#SEC-RLS-001 — Falta validar y desplegar la migración segura]]
-y [[04-problemas-pendientes#SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente]].
+Ver
+[[04-problemas-pendientes#SEC-RLS-001 — Falta validar y desplegar la migración segura]]
+y
+[[04-problemas-pendientes#SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente]].

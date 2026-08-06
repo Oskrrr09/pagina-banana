@@ -1,12 +1,44 @@
 ---
 tipo: cambios
-actualizado: 2026-08-05
+actualizado: 2026-08-06
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-06 — Sesiones anónimas separadas y migración aplicada en producción
+
+- Una sesión anónima del chat deja de valer como cuenta de cliente. Supabase le
+  da el mismo rol PostgreSQL que a una cuenta real, `authenticated`, así que
+  abrir el widget bastaba para quedar dado de alta en `clientes` y poder crear
+  pedidos, reservas y justificantes. Nueva migración
+  `20260806000400_separa_sesiones_anonimas.sql` con `es_usuario_permanente()`,
+  políticas restrictivas y la comprobación dentro de cada RPC de cliente.
+- El DELETE del bucket educativo también la exige. Era el más delicado: la
+  carpeta se llama como el `auth.uid()` y la conversión conserva ese uid, de
+  modo que un token anónimo anterior seguía apuntando a la carpeta de la cuenta
+  ya registrada.
+- El registro sigue el orden documentado de dos pasos —email primero, contraseña
+  sólo tras verificarlo— y decide si hace falta confirmar por lo que responde el
+  servidor, no por una suposición sobre la configuración del proyecto.
+- Segunda pasada de integración con la confirmación de email **activada**, que
+  antes no se ejercitaba nunca.
+- **Despliegue de base de datos.** Respaldo completo fuera del repositorio,
+  CLI enlazada y las cuatro migraciones aplicadas en el proyecto real.
+  `migration list` muestra los cuatro identificadores iguales en Local y Remote;
+  `db push --dry-run` responde `Remote database is up to date`; las cinco
+  comprobaciones SQL de seguridad devuelven `true`.
+- Efecto medido por API pública de sólo lectura: el rol anónimo pasó de leer
+  **36 filas de `visitantes`** a no leer ninguna.
+- Authentication: alta de usuarios activada, enlazado manual activado,
+  confirmación de registro desactivada —y debe seguir así—, inicios anónimos
+  **todavía desactivados**, límite de 30 por hora e IP, CAPTCHA no localizado ni
+  configurado.
+- Pendiente: fusionar la PR #35, publicar, activar los inicios anónimos y hacer
+  pruebas de humo. Hasta entonces el chat de la web pública no funciona, porque
+  el frontend publicado sigue siendo el anterior. Ver [[08-predespliegue-supabase]].
 
 ## 2026-08-05 — Permisos de tabla, cierre del chat y aviso de Router
 

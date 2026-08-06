@@ -1,6 +1,6 @@
 ---
 tipo: problemas
-actualizado: 2026-08-04
+actualizado: 2026-08-06
 ---
 
 # Problemas pendientes
@@ -537,8 +537,15 @@ forman el backlog verificable.
 
 ## SEC-RLS-001 — Falta validar y desplegar la migración segura
 
-- Estado: **las 27 pruebas ya pasan en CI (2026-08-05)**. Queda el despliegue,
-  que sigue siendo responsabilidad de una sesión con acceso a la demostración.
+- Estado: **migración aplicada en producción el 2026-08-06**. Queda publicar el
+  frontend y activar los inicios de sesión anónimos; ver
+  [[08-predespliegue-supabase]].
+- Aplicado y verificado el 2026-08-06: respaldo completo fuera del repositorio
+  —roles, esquema, datos, evidencia del historial previo, personalizaciones de
+  `auth`/`storage` y archivos físicos del bucket—, CLI enlazada, las cuatro
+  migraciones aplicadas, `migration list` con los cuatro identificadores iguales
+  en Local y Remote, `db push --dry-run` respondiendo `Remote database is up to
+  date`, y las cinco comprobaciones SQL de seguridad en `true`.
 - Comprobado el 2026-08-05 en el trabajo `Integración Supabase local`: GoTrue,
   PostgREST y Storage reales, **27/27 aprobadas**, más el cierre de sesión PWA.
   Llegar ahí exigió conceder los permisos de tabla que faltaban; ver
@@ -568,9 +575,10 @@ forman el backlog verificable.
   ejecutarse aquí. La ejecuta CI, que es donde se obtuvo el 27/27.
 - Regla: nunca ejecutar esta suite contra la demostración. Crea y borra
   usuarios, objetos y filas a propósito.
-- Cierre restante: activar Anonymous sign-ins en la demostración, aplicar las
-  **tres** migraciones —la de permisos incluida, sin ella la web queda sin
-  acceso a sus propias tablas—, desplegar `main` y verificar web + chat.
+- Cierre restante: fusionar la PR #35, esperar el despliegue de GitHub Pages,
+  activar Anonymous sign-ins y hacer pruebas de humo. Hasta que el frontend
+  nuevo esté publicado, el chat de la web pública no funciona: la base ya
+  rechaza las escrituras directas del frontend anterior.
 
 ## QA-CUENTA-001 — Cerrar sesión devolvía al login en vez de a la portada
 

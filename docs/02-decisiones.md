@@ -1,6 +1,6 @@
 ---
 tipo: decisiones
-actualizado: 2026-07-31
+actualizado: 2026-08-06
 ---
 
 # Decisiones
@@ -1023,6 +1023,33 @@ No atribuye motivaciones que el repositorio no documenta.
   confirmación **activada**, que recorre los siete pasos documentados leyendo el
   enlace del buzón local, más email ocupado, contraseña rechazada, token no
   válido o ya consumido y refresco fallido.
+
+## D-061 — La base se migra antes que el frontend, y los anónimos al final
+
+- Fecha: 2026-08-06.
+- Estado: vigente, en ejecución.
+- Decisión: el despliegue va en tres tiempos: **primero las migraciones**,
+  después el frontend, y **los inicios de sesión anónimos al final**.
+- Motivo del primer tiempo: la base estaba exponiendo 36 fichas de visitante
+  —nombre, email y teléfono— a cualquiera con la clave publicable, que viaja en
+  el bundle por diseño. Esperar a tener el frontend listo para cerrar eso habría
+  alargado la exposición sin ganar nada.
+- Coste aceptado a cambio: entre la migración y la publicación del frontend, el
+  chat de la web pública **no funciona**. El frontend anterior escribe
+  directamente en las tablas y el esquema nuevo lo rechaza. Es una degradación
+  conocida, acotada y reversible publicando; el resto de la tienda no depende de
+  Supabase y sigue igual.
+- Motivo del tercer tiempo: activar los anónimos antes de publicar no aporta
+  nada —el frontend viejo no sabe usarlos— y el nuevo, si los encuentra
+  desactivados, cae a modo demostración sin romperse. Se activan cuando hay
+  frontend que los aproveche.
+- Lo que ya no condiciona el orden: la migración `20260806000400` está aplicada,
+  así que activar los anónimos ya no puede abrir el agujero de que una sesión
+  anónima valga como cuenta de cliente.
+- Evidencia: `supabase migration list` con los cuatro identificadores iguales en
+  Local y Remote, `db push --dry-run` con `Remote database is up to date`, las
+  cinco comprobaciones SQL en `true`, y la lectura pública que pasó de 36 filas
+  a cero. Detalle en [[08-predespliegue-supabase]].
 
 ## Cómo añadir una decisión
 
