@@ -445,6 +445,30 @@ forman el backlog verificable.
   autenticado. Aplicarlo **antes** de desplegar esta versión dejaría el
   panel de agentes sin poder responder.
 
+## SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente
+
+- Estado: **cerrado en código el 2026-08-06**. Detectado en revisión antes de
+  desplegar, no en producción: el esquema nuevo todavía no está aplicado.
+- Causa: `signInAnonymously()` no crea un rol aparte. Supabase da a la sesión
+  anónima el mismo rol PostgreSQL que a una cuenta permanente, `authenticated`,
+  y la distingue sólo por el reclamo `is_anonymous` del JWT. Ninguna política ni
+  RPC lo miraba.
+- Alcance: con sólo abrir el widget del chat, un visitante quedaba dado de alta
+  en `clientes` —`CustomerAuthProvider` creaba la ficha sola al no encontrarla—
+  y la tienda le mostraba «Mi cuenta». Además podía crear pedidos, crear y
+  cancelar reservas, subir un justificante educativo y pedir su revisión.
+- Resolución: `public.es_usuario_permanente()`, políticas restrictivas en
+  `clientes`, `pedidos` y `reservas`, condición incorporada en las políticas del
+  bucket educativo y comprobación dentro de cada RPC de cliente. En el
+  frontend, una sesión anónima se publica como «sin sesión». Ver
+  [[02-decisiones#D-059]] y [[02-decisiones#D-060]].
+- Regresión: 18 casos en `tests/schema/anonimos.test.ts`, seis en
+  `tests/rls/politicas.spec.ts` con sesiones anónimas reales de GoTrue y
+  `tests/integration/chat-anonimo.spec.ts` con la aplicación completa.
+- Nota de despliegue: esto adelanta a la lista de pasos previos. La migración
+  `20260806000400_separa_sesiones_anonimas.sql` debe aplicarse **antes o a la
+  vez** que se activen los inicios de sesión anónimos en la demostración.
+
 ## SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla
 
 - Estado: **cerrado y verificado el 2026-08-05**. CI informa 27/27 en el

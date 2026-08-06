@@ -937,6 +937,65 @@ No atribuye motivaciones que el repositorio no documenta.
 - Seguimiento: [[03-roadmap#Migración a React Router 8]] y
   [[04-problemas-pendientes#SEG-001 — Avisos de seguridad en React Router]].
 
+## D-059 — Una sesión anónima del chat no es una sesión de cliente
+
+- Fecha: 2026-08-06.
+- Estado: vigente.
+- Contexto: `signInAnonymously()` no crea un rol aparte. Supabase le da a la
+  sesión anónima el **mismo** rol PostgreSQL que a una cuenta de verdad,
+  `authenticated`, y la única diferencia es el reclamo `is_anonymous: true` del
+  JWT. Toda política escrita `to authenticated` alcanzaba por tanto también a
+  quien sólo había abierto el widget del chat.
+- Decisión: la permanencia de la cuenta es una condición explícita, escrita en
+  la base y en el frontend. `public.es_usuario_permanente()` la resuelve leyendo
+  el reclamo, y `CustomerAuthProvider` publica `session = null` mientras la
+  sesión sea anónima.
+- Dónde y por qué de cada forma:
+  - **Políticas RESTRICTIVAS** en `clientes`, `pedidos` y `reservas`. Las
+    políticas normales son permisivas y se combinan con OR: añadir la condición
+    sólo a las existentes dejaría que una política nueva volviera a conceder el
+    acceso por su cuenta. Una restrictiva se combina con AND sobre todas.
+  - **Condición incorporada** en las políticas del bucket educativo. Una
+    restrictiva sobre `storage.objects` alcanzaría a todos los buckets del
+    proyecto, incluidos los que no son de esta aplicación.
+  - **Comprobación dentro de cada RPC** de cliente. Son `security definer`: se
+    ejecutan con los permisos de su propietario y RLS no los filtra.
+- El chat sigue siendo anónimo a propósito: `abrir_conversacion()`,
+  `enviar_mensaje_visitante()` y `enviar_valoracion()` no llevan la condición.
+- Evidencia: `tests/schema/anonimos.test.ts` (PostgreSQL real, 18 casos, uno de
+  ellos añade una política permisiva abierta y comprueba que la restrictiva
+  sigue cortando), seis casos de `tests/rls/politicas.spec.ts` con sesiones
+  anónimas de GoTrue y `tests/integration/chat-anonimo.spec.ts` con la
+  aplicación entera montada.
+
+## D-060 — El registro convierte la sesión anónima, no la reemplaza
+
+- Fecha: 2026-08-06.
+- Estado: vigente.
+- Decisión: cuando el visitante ya tiene sesión anónima del chat y se registra,
+  `signUp()` **convierte esa misma cuenta** en permanente mediante
+  `updateUser({ email, password })` seguido de `refreshSession()`. No se cierra
+  la sesión anónima para crear otra.
+- Motivo: `vincular_mi_visitante_a_cliente()` enlaza la ficha de visitante con
+  la de cliente **por el mismo `auth.uid()`**. Cerrar la sesión anónima daría un
+  uid distinto, dejaría la conversación huérfana y el visitante perdería el hilo
+  que acababa de escribir con un agente. El esquema está construido para la
+  conversión; la alternativa obligaría a reescribirlo o a aceptar esa pérdida.
+- Por qué se decide de forma explícita y no se deja a `signUp()`: con una sesión
+  anónima abierta, el comportamiento de `signUp()` depende de la configuración
+  de GoTrue —puede convertir la cuenta o crear otra—, y de eso depende si el
+  visitante conserva su chat. Un detalle así no puede quedar implícito.
+- Detalle que costó encontrar: `is_anonymous` viaja **dentro del access token**.
+  Sin `refreshSession()` después de convertir, la base sigue viendo la sesión
+  como anónima y rechaza el alta de la ficha, aunque en `auth.users` ya sea
+  permanente.
+- Con "Confirm email" activo la conversión no termina hasta que se valida el
+  correo: `signUp()` devuelve `needsEmailConfirmation` y no crea la ficha, que
+  la base rechazaría.
+- Evidencia: el caso «convertir la sesión anónima en cuenta permanente habilita
+  los recorridos de cliente» de `tests/rls/politicas.spec.ts`, contra GoTrue
+  real.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

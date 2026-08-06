@@ -45,7 +45,8 @@ GoTrue, PostgREST y Storage reales pasan 27/27 en CI desde el 2026-08-05**,
 junto con el cierre de sesión PWA. Esta máquina sigue sin Docker y no puede
 ejecutarlas. Con eso, la PR #35 queda en verde completo; lo que falta para
 publicar es el despliegue en sí: activar Anonymous sign-ins en la demostración
-y aplicar las **tres** migraciones, la de permisos incluida. Ver
+y aplicar las **cuatro** migraciones, la de permisos y la de sesiones
+anónimas incluidas. Ver
 [[04-problemas-pendientes#SEC-RLS-001 — Falta validar y desplegar la migración segura]].
 
 ## Fase 2 — cuentas, reservas y panel con auth (2026-07-31)

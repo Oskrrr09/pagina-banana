@@ -121,6 +121,10 @@ hasta él.
 ## Siguiente paso
 
 La PR #35 tiene el CI completamente en verde. Lo que queda no es de código: en
-la demostración hay que activar Anonymous sign-ins y aplicar las **tres**
-migraciones —sin la de permisos la web se queda sin acceso a sus propias
+la demostración hay que activar Anonymous sign-ins y aplicar las migraciones
+versionadas —sin la de permisos la web se queda sin acceso a sus propias
 tablas—, y después verificar web y chat contra la URL pública.
+
+**Actualización del 2026-08-06:** antes de eso hay que cerrar el hallazgo de
+sesiones anónimas; ver
+[[04-problemas-pendientes#SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente]].
