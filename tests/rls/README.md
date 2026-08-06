@@ -88,7 +88,7 @@ en el proyecto, pero esta máquina no tiene Docker. `npm run test:integration`
 falla antes de consultar Supabase con un diagnóstico explícito. La suite no
 cae nunca sobre la demostración como alternativa silenciosa.
 
-La suite tiene actualmente **27 casos** y ya usa la API final: RPC de chat,
+La suite tiene actualmente **33 casos** —27 más los seis que separan la sesión anónima del chat de una cuenta de cliente permanente— y ya usa la API final: RPC de chat,
 agentes y reservas, GoTrue real y operaciones reales de Storage. La versión
 anterior tenía 21 casos, pero varios seguían insertando directamente en
 `mensajes` y `reservas`, permisos que el esquema final retiró; por eso no era

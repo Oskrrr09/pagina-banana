@@ -42,7 +42,10 @@ if (!url || !anon || !service) {
   process.exit(1)
 }
 
-console.log(`Ejecutando 27 pruebas RLS contra Supabase local (${url}).`)
+// El número no se escribe a mano: se contaba «27» en un literal y quedó
+// obsoleto en cuanto la suite creció. Playwright informa del total real al
+// terminar; aquí basta con decir contra qué se ejecuta.
+console.log(`Ejecutando las pruebas RLS contra Supabase local (${url}).`)
 const tests = spawnSync(npx, ['playwright', 'test', '--project=rls'], {
   stdio: 'inherit',
   env: {
@@ -75,6 +78,11 @@ const pwaAuth = spawnSync(npx, ['playwright', 'test', '--project=pwa-auth'], {
   env: {
     ...publicEnv,
     E2E_CONTRA_BUILD: '1',
+    // La clave de servicio la necesita la prueba que comprueba que abrir el
+    // chat no crea ficha de cliente: la fila hay que buscarla saltándose RLS,
+    // porque desde la sesión anónima no se vería aunque existiera. No entra en
+    // el bundle: se pasa al proceso de pruebas, no a Vite.
+    RLS_TEST_SERVICE_KEY: service,
   },
 })
 

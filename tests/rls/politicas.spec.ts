@@ -838,3 +838,142 @@ test('la posición de reserva usa el orden real y no expone colas ajenas', async
   // que una refactorización convierta sin querer esta prueba en una sola fila.
   expect(primera).not.toBe(segunda)
 })
+
+// ---- Sesión anónima frente a cuenta permanente -----------------------------
+//
+// `signInAnonymously()` no crea un rol aparte: Supabase le da a la sesión
+// anónima el mismo rol PostgreSQL que a una cuenta de verdad, `authenticated`.
+// La diferencia es un reclamo del JWT, `is_anonymous: true`. Sin mirarlo, toda
+// política escrita `to authenticated` alcanzaba también a quien solo había
+// abierto el chat.
+//
+// Aquí las sesiones anónimas son de GoTrue de verdad, no un JWT simulado.
+
+test('un visitante anónimo usa el chat pero no aparece en clientes', async () => {
+  const ana = await visitanteAnonimo()
+
+  const { data: conv, error: errorApertura } = await ana.db.rpc('abrir_conversacion', {
+    p_nombre: 'Ana Anónima',
+  })
+  expect(errorApertura, 'el chat debe funcionar con sesión anónima').toBeNull()
+  expect(conv).toBeTruthy()
+
+  const { error: errorEnvio } = await ana.db.rpc('enviar_mensaje_visitante', {
+    p_conversacion_id: conv,
+    p_texto: 'Escribo sin registrarme',
+  })
+  expect(errorEnvio, 'mandar su propio mensaje debe funcionar').toBeNull()
+
+  const { data: leidos } = await ana.db.from('mensajes').select('texto').eq('conversacion_id', conv)
+  expect(leidos, 'debe ver su mensaje').toHaveLength(1)
+
+  // Lo que motiva todo esto: abrir el chat no puede convertirte en cliente.
+  const admin = clienteServicio()
+  const { data: ficha } = await admin.from('clientes').select('id').eq('id', ana.uid)
+  expect(ficha ?? [], 'abrir el chat no debe crear ficha de cliente').toEqual([])
+})
+
+test('un visitante anónimo no puede crear su ficha de cliente', async () => {
+  const ana = await visitanteAnonimo()
+
+  const { error } = await ana.db.from('clientes').insert({ id: ana.uid, email: `${marca('anon')}@ejemplo.test` })
+  expect(error, 'el alta de ficha exige cuenta permanente').not.toBeNull()
+
+  const admin = clienteServicio()
+  const { data } = await admin.from('clientes').select('id').eq('id', ana.uid)
+  expect(data ?? []).toEqual([])
+})
+
+test('un visitante anónimo no puede crear pedidos ni reservas', async () => {
+  const ana = await visitanteAnonimo()
+
+  const { error: errorPedido } = await ana.db.from('pedidos').insert({
+    id: `BC-${marca('anon-pedido')}`,
+    cliente_id: ana.uid,
+    delivery: 'envio',
+    payment_method: 'tarjeta',
+  })
+  expect(errorPedido, 'un anónimo no crea pedidos').not.toBeNull()
+
+  const { error: errorReserva } = await ana.db.rpc('crear_mis_reservas', {
+    p_lineas: [
+      {
+        family: 'iphone',
+        model_slug: '17-pro',
+        model_name: 'iPhone 17 Pro',
+        variant_label: '256 GB Plata',
+        price: 1329,
+        unidades: 1,
+      },
+    ],
+  })
+  expect(errorReserva?.message, 'un anónimo no crea reservas').toMatch(/cuenta registrada/i)
+})
+
+test('un visitante anónimo no puede tocar el descuento educativo', async () => {
+  const ana = await visitanteAnonimo()
+  const ruta = `${ana.uid}/justificante.pdf`
+
+  const { error: errorSubida } = await ana.db.storage
+    .from('descuentos-educativos')
+    .upload(ruta, new Blob(['no debería subir'], { type: 'application/pdf' }), {
+      contentType: 'application/pdf',
+    })
+  expect(errorSubida, 'Storage debe rechazar la subida de un anónimo').not.toBeNull()
+
+  const { error: errorRegistro } = await ana.db.rpc('registrar_mi_justificante', { p_ruta: ruta })
+  expect(errorRegistro?.message).toMatch(/cuenta registrada/i)
+
+  const { error: errorVinculo } = await ana.db.rpc('vincular_mi_visitante_a_cliente')
+  expect(errorVinculo?.message).toMatch(/cuenta registrada/i)
+})
+
+test('un visitante anónimo no alcanza las operaciones de agente', async () => {
+  const ana = await visitanteAnonimo()
+  const { data: conv } = await ana.db.rpc('abrir_conversacion', { p_nombre: 'Ana' })
+
+  for (const [rpc, args] of [
+    ['asignarme_conversacion', { p_conversacion_id: conv }],
+    ['cerrar_conversacion', { p_conversacion_id: conv, p_pedir_valoracion: false }],
+    ['responder_como_agente', { p_conversacion_id: conv, p_texto: 'no soy agente' }],
+    ['cambiar_mi_estado', { p_estado: 'disponible' }],
+  ] as const) {
+    const { error } = await ana.db.rpc(rpc, args as Record<string, unknown>)
+    expect(error, `un anónimo no puede llamar a ${rpc}`).not.toBeNull()
+  }
+
+  const { data: agentes } = await ana.db.from('agentes').select('id')
+  expect(agentes ?? [], 'un anónimo no ve la plantilla de agentes').toEqual([])
+})
+
+test('convertir la sesión anónima en cuenta permanente habilita los recorridos de cliente', async () => {
+  // Es la decisión que toma `CustomerAuthProvider.signUp()`: cuando ya hay
+  // sesión anónima del chat, se CONVIERTE esa cuenta en vez de cerrarla, para
+  // que el visitante conserve su conversación —`vincular_mi_visitante_a_cliente()`
+  // enlaza por el mismo `auth.uid()`—.
+  const ana = await visitanteAnonimo()
+  await ana.db.rpc('abrir_conversacion', { p_nombre: 'Ana Convertida' })
+
+  const email = `${marca('conversion')}@ejemplo.test`
+  const { error: errorConversion } = await ana.db.auth.updateUser({
+    email,
+    password: 'prueba-rls-1234',
+  })
+  expect(errorConversion, 'la conversión de anónimo a permanente debe funcionar').toBeNull()
+
+  // `is_anonymous` viaja en el access token: hasta que no se emite uno nuevo,
+  // la base sigue viendo la sesión como anónima.
+  const { data: renovada, error: errorRefresco } = await ana.db.auth.refreshSession()
+  expect(errorRefresco).toBeNull()
+  expect(renovada.session?.user.is_anonymous, 'tras refrescar ya no es anónima').toBe(false)
+
+  const { error: errorFicha } = await ana.db.from('clientes').insert({ id: ana.uid, email })
+  expect(errorFicha, 'la cuenta convertida ya puede crear su ficha').toBeNull()
+  creados.push({ tabla: 'clientes', id: ana.uid })
+
+  const { error: errorVinculo } = await ana.db.rpc('vincular_mi_visitante_a_cliente')
+  expect(errorVinculo, 'y conserva su chat').toBeNull()
+
+  const { data: visitante } = await ana.db.from('visitantes').select('cliente_id').eq('auth_id', ana.uid).single()
+  expect(visitante!.cliente_id, 'la conversación queda enlazada con la cuenta').toBe(ana.uid)
+})
