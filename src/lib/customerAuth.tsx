@@ -35,6 +35,29 @@ import { notificarCierreSesionCliente } from './accountSession'
 // base lo impide además por su cuenta; ver
 // `20260806000400_separa_sesiones_anonimas.sql`.
 
+/**
+ * Cierra la sesión y **sólo si Supabase lo confirma** ejecuta la limpieza.
+ *
+ * Está extraída y con las dependencias inyectadas para poder probarla sin
+ * navegador ni Supabase. La alternativa era reproducir la lógica en un fixture,
+ * que es justo lo que no puede hacerse: entonces la prueba comprobaría la copia
+ * y no lo que se ejecuta en producción.
+ *
+ * El orden importa. `supabase.auth.signOut()` devuelve `{ error }` y ese
+ * resultado se ignoraba: las preferencias se borraban aunque el cierre hubiera
+ * fallado y la cuenta siguiera abierta. Alguien se iba creyendo que había
+ * salido, con la sesión viva.
+ */
+export async function cerrarSesionCliente(
+  cerrarEnSupabase: () => Promise<{ error: { message: string } | null }>,
+  alCerrarseDeVerdad: () => void,
+): Promise<{ error: string | null }> {
+  const { error } = await cerrarEnSupabase()
+  if (error) return { error: error.message }
+  alCerrarseDeVerdad()
+  return { error: null }
+}
+
 export interface CustomerProfileUpdate {
   nombre?: string | null
   telefono?: string | null
@@ -54,7 +77,8 @@ interface CustomerAuthState {
     password: string,
     nombre: string,
   ) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>
-  signOut: () => Promise<void>
+  /** Devuelve el error de Supabase si el cierre falló, o null si salió bien. */
+  signOut: () => Promise<{ error: string | null }>
   updateProfile: (patch: CustomerProfileUpdate) => Promise<{ error: string | null }>
   /** Recarga la ficha desde Supabase (tras subir un justificante, por ejemplo). */
   refresh: () => Promise<void>
@@ -87,6 +111,23 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       if (!data.session || esSesionAnonima(data.session)) setLoading(false)
     })
 
+    // RIESGO RESIDUAL CONOCIDO: aquí NO se reinician las preferencias.
+    //
+    // El aviso lo emite `signOut()` cuando Supabase confirma el cierre. Este
+    // escuchador también se entera —recibe SIGNED_OUT—, pero emitirlo desde los
+    // dos sitios lo dispararía dos veces por cada cierre: supabase-js emite el
+    // evento ANTES de que se resuelva la promesa de `signOut()`.
+    //
+    // Lo que queda sin cubrir es el cierre que NO nace aquí: otra pestaña, o
+    // una sesión invalidada en el servidor. En esos casos la sesión termina y
+    // las preferencias de cuenta siguen en `localStorage` hasta el siguiente
+    // cierre explícito.
+    //
+    // No se resuelve moviendo el aviso a este escuchador sin más: el chat abre
+    // sesiones anónimas con el MISMO cliente de Supabase, así que habría que
+    // distinguir qué sesión termina para no borrar las preferencias de una
+    // cuenta cuando lo que caduca es la sesión anónima del visitante. Ver
+    // docs/04-problemas-pendientes.md, SEG-PREF-001.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (!active) return
       setSesionCruda(next)
@@ -274,19 +315,23 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   )
 
   const signOut = useCallback(async () => {
-    if (!supabase) return
-    await supabase.auth.signOut()
-    setCliente(null)
-    // La tienda favorita, los seguimientos de disponibilidad y sus
-    // notificaciones son de la CUENTA, no del dispositivo, pero se guardaban en
-    // claves generales de `localStorage`. Al cerrar sesión se quedaban ahí, así
-    // que la siguiente persona que usara el mismo navegador seguía viendo la
-    // tienda habitual y los avisos de quien acababa de salir.
-    //
-    // El aviso va después de `supabase.auth.signOut()` y no antes: si el cierre
-    // fallara, no tendría sentido haber borrado ya las preferencias de una
-    // sesión que sigue abierta.
-    notificarCierreSesionCliente()
+    if (!supabase) return { error: null }
+    return cerrarSesionCliente(
+      () => supabase!.auth.signOut(),
+      () => {
+        setCliente(null)
+        // La tienda favorita, los seguimientos de disponibilidad y sus
+        // notificaciones son de la CUENTA, no del dispositivo, pero se guardan
+        // en claves generales de `localStorage`. Sin esto se quedaban ahí, y la
+        // siguiente persona que usara el mismo navegador seguía viendo la
+        // tienda habitual y los avisos de quien acababa de salir.
+        //
+        // Va dentro del callback de éxito: si Supabase devuelve error, la
+        // sesión sigue abierta y borrar sus preferencias sería mentir sobre lo
+        // que ha pasado.
+        notificarCierreSesionCliente()
+      },
+    )
   }, [])
 
   const updateProfile = useCallback(

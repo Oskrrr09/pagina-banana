@@ -21,7 +21,13 @@ autores, diffs y marcas de tiempo.
   reiniciar el estado tampoco —el efecto de persistencia reescribía `"[]"`—.
   Ahora una lista vacía borra su clave.
 - Intactos el carrito, el idioma y la conversación anónima del chat.
-- Regresión: 5 casos unitarios y 6 con los proveedores reales en navegador.
+- `signOut()` ignoraba el `{ error }` de Supabase: podía borrar las preferencias
+  con la sesión todavía abierta. Ahora devuelve el error, la limpieza sólo corre
+  si el cierre se confirmó, y `/cuenta` espera esa confirmación antes de navegar
+  en vez de aparentar que se cerró.
+- Regresión: 11 casos unitarios y 6 con los proveedores reales en navegador.
+- Riesgo residual anotado: los cierres nacidos en otra pestaña o por
+  invalidación de la sesión no reinician las preferencias todavía.
 - Ver [[02-decisiones#D-062]] y
   [[04-problemas-pendientes#SEG-PREF-001 — Las preferencias de cuenta sobrevivían al cierre de sesión]].
 

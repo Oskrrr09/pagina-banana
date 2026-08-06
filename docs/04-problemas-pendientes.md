@@ -471,10 +471,27 @@ forman el backlog verificable.
   reescribía `"[]"` y la clave reaparecía. Ahora una lista vacía borra la clave.
 - Lo que **no** se toca: el carrito, el idioma, la sesión y la conversación
   anónima del chat, y ninguna otra preferencia general.
-- Regresión: 5 casos unitarios del aviso interno y 6 en `tests/e2e-prefs/`, con
-  los proveedores reales montados en un navegador real. Cuatro de esos seis
-  fallan si se revierte el cableado; los otros dos vigilan que el uso normal
-  siga igual.
+- Segunda corrección, misma rama: `signOut()` **ignoraba el `{ error }`** que
+  devuelve Supabase, así que las preferencias podían borrarse aunque el cierre
+  hubiera fallado y la cuenta siguiera abierta. Ahora la limpieza va dentro del
+  callback de éxito de `cerrarSesionCliente()`, `signOut()` devuelve
+  `{ error }`, y `/cuenta` espera esa confirmación **antes** de navegar: si
+  falla, se queda en la página y lo dice con un `role="alert"` en vez de
+  aparentar que la sesión se cerró.
+- Regresión: 5 casos unitarios del aviso interno, 6 del cableado de
+  `cerrarSesionCliente()` —incluido «Supabase falla → no se limpia ni se emite
+  aviso»— y 6 en `tests/e2e-prefs/` con los proveedores reales montados en un
+  navegador real. Cuatro de esos últimos fallan si se revierte el cableado; los
+  otros dos vigilan que el uso normal siga igual.
+- **Riesgo residual abierto**: el reinicio sólo ocurre en el cierre de sesión
+  originado en esta pestaña. Un cierre desde **otra pestaña** o una **sesión
+  invalidada en el servidor** dejan las preferencias en `localStorage` hasta el
+  siguiente cierre explícito. No se cubre desde `onAuthStateChange` porque
+  supabase-js emite `SIGNED_OUT` antes de que se resuelva `signOut()` —el aviso
+  saldría dos veces por cierre— y porque el chat abre sesiones anónimas con el
+  mismo cliente: habría que distinguir qué sesión termina para no borrar las
+  preferencias de una cuenta cuando lo que caduca es la sesión del visitante.
+  Queda como tarea aparte.
 
 ## SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente
 

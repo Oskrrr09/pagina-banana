@@ -49,16 +49,40 @@ y se reinicia solo. Cada proveedor sigue siendo dueño de su estado.
 Descartado `window.location.reload()`: esconde el problema y tira por delante el
 estado de toda la aplicación.
 
+## Segunda pasada: el error de Supabase se ignoraba
+
+Revisando el cambio apareció algo peor que lo original: `signOut()` no miraba el
+`{ error }` que devuelve `supabase.auth.signOut()`. Las preferencias podían
+borrarse con la sesión **todavía abierta**, y `/cuenta` navegaba a la portada
+antes de saber si el cierre había funcionado: quien fallara al salir se iba
+convencido de haber salido.
+
+Se corrige extrayendo `cerrarSesionCliente()`, con las dependencias inyectadas
+para poder probarla sin navegador ni Supabase y sin duplicar la lógica en un
+fixture. La limpieza va dentro de su callback de éxito. `signOut()` devuelve
+`{ error }` y `/cuenta` lo gestiona: si falla se queda en la página y lo dice
+con un `role="alert"`.
+
+Eso obligó a rehacer el guardia de la página, que mandaba a `/login` en cuanto
+la sesión pasaba a null. Ahora queda suspendido mientras dura el cierre.
+
 ## Decisiones tomadas
 
 - [[02-decisiones#D-062]]: reinicio por aviso interno, concreto y no genérico,
   con cada escucha en su propio `try` para que un `localStorage` no disponible
   no pueda dejar el cierre de sesión a medias.
+- El aviso se emite **sólo** desde `signOut()`, no desde `onAuthStateChange`:
+  supabase-js emite `SIGNED_OUT` antes de resolver la promesa, así que hacerlo
+  en los dos sitios lo dispararía dos veces. Los cierres externos quedan como
+  riesgo residual documentado —[[03-roadmap#5.4 Reiniciar preferencias en cierres de sesión externos]]—
+  y no se resuelven ahí sin distinguir antes la sesión anónima del chat, que
+  comparte cliente de Supabase.
 
 ## Comprobaciones
 
 - Prettier, TypeScript y ESLint: sin incidencias.
-- Vitest: **187 aprobadas**, con los 5 casos nuevos del aviso interno.
+- Vitest: **193 aprobadas**, con los 5 casos del aviso interno y los 6 del
+  cableado de `cerrarSesionCliente()`.
 - `npm run build:test`: correcto.
 - `npm run test:e2e:prefs`: **6 aprobadas** con los proveedores reales montados
   en un navegador real y su `localStorage`.
@@ -70,8 +94,9 @@ estado de toda la aplicación.
 
 - `src/lib/accountSession.ts` (nuevo)
 - `src/lib/customerAuth.tsx`, `src/lib/storePreference.tsx`,
-  `src/lib/favoriteAlerts.tsx`
-- `tests/unit/account-session.test.ts` (nuevo)
+  `src/lib/favoriteAlerts.tsx`, `src/pages/ProfilePage.tsx`
+- `tests/unit/account-session.test.ts` y `tests/unit/cerrar-sesion.test.ts`
+  (nuevos)
 - `tests/e2e-prefs/` (nuevo: fixture y suite)
 - `playwright.prefs.config.ts` (nuevo), `package.json`,
   `.github/workflows/ci.yml`
