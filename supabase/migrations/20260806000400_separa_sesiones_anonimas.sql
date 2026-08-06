@@ -183,10 +183,21 @@ begin
       using errcode = '42501';
   end if;
 
+  -- `case` y no `coalesce(nullif(...))`: hay que distinguir «no lo toques»
+  -- (null) de «bórralo» (cadena vacía). Con `nullif` las dos cosas se
+  -- confundirían y el cliente no podría vaciar su teléfono.
   update public.clientes
-     set nombre   = coalesce(nullif(p_nombre, ''), nombre),
-         telefono = coalesce(nullif(p_telefono, ''), telefono),
-         direccion_envio = coalesce(p_direccion_envio, direccion_envio),
+     set nombre = case
+                    when p_nombre is null then nombre   -- no se toca
+                    when p_nombre = ''    then null     -- se limpia
+                    else p_nombre
+                  end,
+         telefono = case
+                      when p_telefono is null then telefono
+                      when p_telefono = ''    then null
+                      else p_telefono
+                    end,
+         direccion_envio       = coalesce(p_direccion_envio, direccion_envio),
          direccion_facturacion = coalesce(p_direccion_facturacion, direccion_facturacion)
    where id = v_uid;
   if not found then
@@ -215,15 +226,17 @@ begin
       using errcode = '42501';
   end if;
 
+  -- Sólo 'en-espera'. Una reserva ya 'disponible' significa que la unidad ha
+  -- llegado y está apartada: sacarla de ahí es cosa del agente, por
+  -- cambiar_estado_reserva(). Ampliarlo aquí cambiaría el comportamiento sin
+  -- que nadie lo hubiera pedido.
   update public.reservas
      set estado = 'cancelada'
-   where id = p_reserva_id
-     and cliente_id = v_uid
-     and estado in ('en-espera', 'disponible');
+   where id = p_reserva_id and cliente_id = v_uid and estado = 'en-espera';
   get diagnostics v_afectadas = row_count;
 
   if v_afectadas = 0 then
-    raise exception 'La reserva no existe, no es tuya o ya no se puede cancelar'
+    raise exception 'No hay ninguna reserva tuya en espera con ese identificador'
       using errcode = '42501';
   end if;
 end;
@@ -300,7 +313,13 @@ begin
     raise exception 'Esta sesión no tiene ficha de cliente' using errcode = '42501';
   end if;
 
+  -- `visitantes_protege_columnas` rechaza cualquier cambio de `cliente_id` que
+  -- no venga de aquí, y lo reconoce por este ajuste. Sin las dos líneas, esta
+  -- misma función se queda fuera y la vinculación legítima falla con
+  -- «cliente_id solo se asigna por vincular_mi_visitante_a_cliente()».
+  perform set_config('app.vinculando_cliente', 'on', true);
   update public.visitantes set cliente_id = v_uid where auth_id = v_uid;
+  perform set_config('app.vinculando_cliente', 'off', true);
 end;
 $$;
 revoke all on function public.vincular_mi_visitante_a_cliente() from public;

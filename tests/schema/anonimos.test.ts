@@ -276,3 +276,86 @@ describe('la política restrictiva no depende de las permisivas', () => {
     }
   })
 })
+
+describe('los RPC que esta migración reescribe conservan su comportamiento', () => {
+  // Redefinir una función con `create or replace` obliga a repetir el cuerpo
+  // entero, y al repetirlo se pierden detalles. Pasó con las tres: la
+  // vinculación se quedó sin el `set_config` que el disparador de columnas
+  // reconoce, el borrado por cadena vacía se convirtió en «no lo toques» y la
+  // cancelación se amplió a reservas ya disponibles. Estas pruebas fijan lo que
+  // no debe cambiar.
+
+  it('actualizar_mi_ficha distingue no tocar de borrar', async () => {
+    await como(PERMANENTE, { anonimo: false }, `select public.actualizar_mi_ficha('Con Teléfono', '600111222')`)
+    const telefono = async () => {
+      const { rows } = await db.query<{ telefono: string | null }>(
+        'select telefono from public.clientes where id = $1',
+        [PERMANENTE],
+      )
+      return rows[0].telefono
+    }
+    expect(await telefono()).toBe('600111222')
+
+    // null = no lo toques.
+    await como(PERMANENTE, { anonimo: false }, `select public.actualizar_mi_ficha('Otro Nombre', null)`)
+    expect(await telefono(), 'null no debe borrar el teléfono').toBe('600111222')
+
+    // Cadena vacía = bórralo. Es de lo que depende el formulario de la cuenta
+    // para poder vaciar un campo.
+    await como(PERMANENTE, { anonimo: false }, `select public.actualizar_mi_ficha(null, '')`)
+    expect(await telefono(), 'la cadena vacía debe limpiar el teléfono').toBeNull()
+  })
+
+  it('cancelar_mi_reserva sólo alcanza a las reservas en espera', async () => {
+    const { rows } = await como<{ crear_mis_reservas: string }>(
+      PERMANENTE,
+      { anonimo: false },
+      `select public.crear_mis_reservas($1::jsonb)`,
+      [
+        JSON.stringify([
+          {
+            family: 'ipad',
+            model_slug: 'air',
+            model_name: 'iPad Air',
+            variant_label: '128 GB Azul',
+            price: 699,
+            unidades: 1,
+          },
+        ]),
+      ],
+    )
+    const id = rows[0].crear_mis_reservas
+
+    // La unidad llega y el agente la marca disponible: ya está apartada.
+    await db.query(`update public.reservas set estado = 'disponible' where id = $1`, [id])
+
+    const { error } = await como(PERMANENTE, { anonimo: false }, `select public.cancelar_mi_reserva($1::uuid)`, [id])
+    expect(error, 'una reserva disponible no la cancela el cliente').toMatch(/en espera/i)
+
+    const { rows: despues } = await db.query<{ estado: string }>('select estado from public.reservas where id = $1', [
+      id,
+    ])
+    expect(despues[0].estado).toBe('disponible')
+  })
+
+  it('vincular_mi_visitante_a_cliente supera el disparador de columnas', async () => {
+    // La ficha de visitante se crea por el camino real, `abrir_conversacion()`:
+    // no hay INSERT directo sobre `visitantes` para nadie, y el disparador de
+    // columnas exige además que `auth_id` sea el de la sesión.
+    const { error: errorApertura } = await como(
+      PERMANENTE,
+      { anonimo: false },
+      `select public.abrir_conversacion('Permanente')`,
+    )
+    expect(errorApertura).toBeNull()
+
+    const { error } = await como(PERMANENTE, { anonimo: false }, 'select public.vincular_mi_visitante_a_cliente()')
+    expect(error, 'la vinculación legítima debe funcionar').toBeNull()
+
+    const { rows } = await db.query<{ cliente_id: string }>(
+      'select cliente_id from public.visitantes where auth_id = $1',
+      [PERMANENTE],
+    )
+    expect(rows[0].cliente_id).toBe(PERMANENTE)
+  })
+})
