@@ -989,12 +989,31 @@ No atribuye motivaciones que el repositorio no documenta.
   Sin `refreshSession()` después de convertir, la base sigue viendo la sesión
   como anónima y rechaza el alta de la ficha, aunque en `auth.users` ya sea
   permanente.
-- Con "Confirm email" activo la conversión no termina hasta que se valida el
-  correo: `signUp()` devuelve `needsEmailConfirmation` y no crea la ficha, que
-  la base rechazaría.
+- **Corrección del 2026-08-06 — el orden de los dos pasos.** La primera versión
+  hacía `updateUser({ email, password })` en una sola llamada. Eso funciona
+  cuando el proyecto tiene la confirmación de email desactivada y falla en
+  cuanto no lo está: Supabase no acepta la contraseña hasta que el email esté
+  verificado. Ahora se sigue el orden documentado —primero el email, la
+  contraseña sólo después—, que sirve para las dos configuraciones.
+- Y quién decide si hace falta confirmar **no es una suposición nuestra**: es lo
+  que responde el servidor. Si tras `refreshSession()` la sesión sigue siendo
+  anónima, el email está pendiente y se devuelve `needsEmailConfirmation` sin
+  crear la ficha. No se lee ningún ajuste de configuración ni se codifica un
+  camino según el entorno.
+- Se conserva el camino rápido —conversión completa en una visita— porque es lo
+  que ocurre cuando la confirmación está desactivada, pero como **consecuencia**
+  de lo que responde el servidor, no como una rama aparte.
+- Limitación conocida: con la confirmación activada, la cuenta queda verificada
+  pero **sin contraseña** hasta que el visitante vuelva. La ficha se crea al
+  regresar; poner la contraseña necesitaría una pantalla de «terminar
+  registro» que todavía no existe. Anotado en
+  [[04-problemas-pendientes#SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente]].
 - Evidencia: el caso «convertir la sesión anónima en cuenta permanente habilita
-  los recorridos de cliente» de `tests/rls/politicas.spec.ts`, contra GoTrue
-  real.
+  los recorridos de cliente» de `tests/rls/politicas.spec.ts` (confirmación
+  desactivada) y la suite `tests/confirmacion/conversion.spec.ts` con la
+  confirmación **activada**, que recorre los siete pasos documentados leyendo el
+  enlace del buzón local, más email ocupado, contraseña rechazada, token no
+  válido o ya consumido y refresco fallido.
 
 ## Cómo añadir una decisión
 

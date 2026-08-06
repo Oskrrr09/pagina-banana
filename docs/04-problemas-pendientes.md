@@ -465,9 +465,25 @@ forman el backlog verificable.
 - Regresión: 18 casos en `tests/schema/anonimos.test.ts`, seis en
   `tests/rls/politicas.spec.ts` con sesiones anónimas reales de GoTrue y
   `tests/integration/chat-anonimo.spec.ts` con la aplicación completa.
+- **Ampliación del 2026-08-06 — el DELETE de Storage.** La política
+  `cliente borra su justificante` se había quedado sin la comprobación de
+  permanencia. Importaba más de lo que parece: la carpeta del bucket se llama
+  como el `auth.uid()` y la conversión a cuenta permanente **conserva ese uid**,
+  así que un token anónimo emitido antes de convertir seguía siendo válido y
+  apuntaba a la carpeta de la cuenta ya registrada. Bastaba con guardarlo para
+  borrar después el justificante que esa cuenta subiera. Corregido y cubierto
+  por cuatro casos, incluido el del token anterior a la conversión.
+- Limitación abierta: con Confirm Email activado, la conversión deja la cuenta
+  verificada pero **sin contraseña** hasta que el visitante vuelva por el
+  enlace. La ficha se crea al regresar; poner la contraseña necesitaría una
+  pantalla de «terminar registro» que no existe. Con la confirmación
+  desactivada —como está hoy la demostración, según
+  `GET /auth/v1/settings`— no aplica.
 - Nota de despliegue: esto adelanta a la lista de pasos previos. La migración
   `20260806000400_separa_sesiones_anonimas.sql` debe aplicarse **antes o a la
-  vez** que se activen los inicios de sesión anónimos en la demostración.
+  vez** que se activen los inicios de sesión anónimos en la demostración. La
+  lista completa de ajustes remotos por verificar está en
+  [[08-predespliegue-supabase]].
 
 ## SEG-GRANT-001 — Las migraciones no concedían ningún permiso de tabla
 
