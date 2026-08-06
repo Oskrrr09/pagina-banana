@@ -84,7 +84,20 @@ interface CustomerAuthState {
   refresh: () => Promise<void>
 }
 
-const CustomerAuthContext = createContext<CustomerAuthState | null>(null)
+/**
+ * Se exporta para poder inyectar una sesión falsa en las pruebas de pantalla.
+ *
+ * `ProfilePage` cambió de forma —espera la confirmación de Supabase antes de
+ * navegar y avisa si el cierre falla— y eso hay que probarlo sobre el
+ * componente de verdad. Montar el proveedor real exigiría un Supabase real y
+ * una cuenta real, así que la prueba envuelve la página con este contexto y
+ * decide qué devuelve `signOut()`.
+ *
+ * En la aplicación se sigue usando siempre a través de `CustomerAuthProvider`.
+ */
+export const CustomerAuthContext = createContext<CustomerAuthState | null>(null)
+
+export type { CustomerAuthState }
 
 /** true si la sesión existe pero es una sesión anónima del chat. */
 export function esSesionAnonima(session: Session | null): boolean {

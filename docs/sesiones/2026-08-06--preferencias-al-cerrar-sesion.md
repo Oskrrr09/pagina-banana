@@ -84,11 +84,14 @@ la sesión pasaba a null. Ahora queda suspendido mientras dura el cierre.
 - Vitest: **193 aprobadas**, con los 5 casos del aviso interno y los 6 del
   cableado de `cerrarSesionCliente()`.
 - `npm run build:test`: correcto.
-- `npm run test:e2e:prefs`: **6 aprobadas** con los proveedores reales montados
-  en un navegador real y su `localStorage`.
+- `npm run test:e2e:prefs`: **10 aprobadas** — 6 con los proveedores reales
+  montados en un navegador real y su `localStorage`, y 4 con el `ProfilePage`
+  de producción y el contexto de sesión inyectado.
 - E2E existentes de favoritos, avisos y cuentas: **18 aprobadas**.
-- Contraprueba: revertido el cableado, **4 de los 6 casos nuevos fallan** y los
-  2 que cubren el uso normal siguen pasando. Las pruebas cazan el fallo.
+- Contraprueba doble: revertido el cableado de los proveedores, **4 de los 6**
+  casos de preferencias fallan y los 2 del uso normal siguen pasando;
+  restaurada la `ProfilePage` anterior, **fallan las 4** de la pantalla. Las
+  pruebas cazan los dos fallos.
 
 ## Archivos afectados
 
@@ -97,7 +100,8 @@ la sesión pasaba a null. Ahora queda suspendido mientras dura el cierre.
   `src/lib/favoriteAlerts.tsx`, `src/pages/ProfilePage.tsx`
 - `tests/unit/account-session.test.ts` y `tests/unit/cerrar-sesion.test.ts`
   (nuevos)
-- `tests/e2e-prefs/` (nuevo: fixture y suite)
+- `tests/e2e-prefs/` (nuevo: dos fixtures y dos suites, preferencias y
+  `/cuenta`)
 - `playwright.prefs.config.ts` (nuevo), `package.json`,
   `.github/workflows/ci.yml`
 

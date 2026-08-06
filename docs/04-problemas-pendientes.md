@@ -480,9 +480,12 @@ forman el backlog verificable.
   aparentar que la sesión se cerró.
 - Regresión: 5 casos unitarios del aviso interno, 6 del cableado de
   `cerrarSesionCliente()` —incluido «Supabase falla → no se limpia ni se emite
-  aviso»— y 6 en `tests/e2e-prefs/` con los proveedores reales montados en un
-  navegador real. Cuatro de esos últimos fallan si se revierte el cableado; los
-  otros dos vigilan que el uso normal siga igual.
+  aviso»— y 10 en `tests/e2e-prefs/`: 6 con los proveedores reales montados en
+  un navegador real y 4 con el `ProfilePage` de producción y el contexto de
+  sesión inyectado, que cubren el botón bloqueado durante el cierre, el aviso
+  `role="alert"` cuando falla, la navegación a la portada cuando se confirma y
+  el reemplazo del historial. Contraprueba: revertida cada mitad, fallan
+  exactamente los casos que la cubren.
 - **Riesgo residual abierto**: el reinicio sólo ocurre en el cierre de sesión
   originado en esta pestaña. Un cierre desde **otra pestaña** o una **sesión
   invalidada en el servidor** dejan las preferencias en `localStorage` hasta el
