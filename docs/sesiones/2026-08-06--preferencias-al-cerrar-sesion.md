@@ -93,6 +93,30 @@ la sesión pasaba a null. Ahora queda suspendido mientras dura el cierre.
   restaurada la `ProfilePage` anterior, **fallan las 4** de la pantalla. Las
   pruebas cazan los dos fallos.
 
+### CI en verde — run `31128555965` sobre `a3aa23e`
+
+| Trabajo | Resultado |
+| --- | --- |
+| Tipos, lint y pruebas unitarias | 193 aprobadas (11 ficheros) · 48s |
+| Compilar | correcto · 43s |
+| Integración Supabase local | 36 RLS + 2 integración + 5 confirmación · 4m25s |
+| Pruebas E2E, cinco motores | 296 aprobadas, 1 omitida · 6m09s |
+| Panel de agentes aislado | 6 aprobadas |
+| Reinicio de preferencias al cerrar sesión | 10 aprobadas |
+
+`Publicar en GitHub Pages` figura **omitido, y es lo correcto**: el workflow se
+lanzó a mano y la publicación sólo ocurre al fusionar en `main`.
+
+Las 10 del banco de pruebas aislado pasaron en CI, no sólo en local. Y la E2E
+que en la rama anterior salió inestable —`search.spec.ts:342`— pasó aquí a la
+primera.
+
+Los **cuatro intentos anteriores no llegaron a ejecutar ni un paso**: GitHub no
+asignaba máquina («the job was not acquired by Runner of type hosted»). No era
+del cambio, sino de los runners alojados: la misma revisión pasó entera después
+sin tocar una línea. Queda anotado porque un CI en rojo no siempre habla del
+código.
+
 ## Archivos afectados
 
 - `src/lib/accountSession.ts` (nuevo)
@@ -107,4 +131,5 @@ la sesión pasaba a null. Ahora queda suspendido mientras dura el cierre.
 
 ## Siguiente paso
 
-La PR queda **en borrador**, sin fusionar. Pendiente de revisión.
+PR #36 sobre `a3aa23e`, marcada como lista para revisión con el CI en verde.
+**Sin fusionar**: la integración es decisión de Oscar.

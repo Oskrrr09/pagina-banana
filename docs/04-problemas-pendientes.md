@@ -486,6 +486,12 @@ forman el backlog verificable.
   `role="alert"` cuando falla, la navegación a la portada cuando se confirma y
   el reemplazo del historial. Contraprueba: revertida cada mitad, fallan
   exactamente los casos que la cubren.
+- Verificado en CI: run `31128555965` sobre `a3aa23e`, verde entero — 193
+  unitarias y de esquema, 36 RLS más 2 de integración y 5 de confirmación, 296
+  E2E aprobadas y 1 omitida en cinco motores, 6 del panel aislado y 10 del banco
+  de pruebas de preferencias y `/cuenta`. `Publicar en GitHub Pages` figura
+  omitido porque el workflow se lanzó a mano y la publicación sólo ocurre al
+  fusionar en `main`.
 - **Riesgo residual abierto**: el reinicio sólo ocurre en el cierre de sesión
   originado en esta pestaña. Un cierre desde **otra pestaña** o una **sesión
   invalidada en el servidor** dejan las preferencias en `localStorage` hasta el

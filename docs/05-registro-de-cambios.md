@@ -28,6 +28,10 @@ autores, diffs y marcas de tiempo.
 - Regresión: 11 casos unitarios y 6 con los proveedores reales en navegador.
 - Riesgo residual anotado: los cierres nacidos en otra pestaña o por
   invalidación de la sesión no reinician las preferencias todavía.
+- CI verde en el run `31128555965`: 193 unitarias y de esquema, 36 RLS más 2 de
+  integración y 5 de confirmación, 296 E2E aprobadas y 1 omitida en cinco
+  motores, 6 del panel aislado y 10 del banco de pruebas de preferencias y
+  `/cuenta`.
 - Ver [[02-decisiones#D-062]] y
   [[04-problemas-pendientes#SEG-PREF-001 — Las preferencias de cuenta sobrevivían al cierre de sesión]].
 
