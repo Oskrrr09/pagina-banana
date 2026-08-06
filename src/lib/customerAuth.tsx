@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, type DbAddress, type DbCustomer } from './supabase'
+import { notificarCierreSesionCliente } from './accountSession'
 
 // Sesión del CLIENTE de la tienda — Fase 2.
 //
@@ -276,6 +277,16 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return
     await supabase.auth.signOut()
     setCliente(null)
+    // La tienda favorita, los seguimientos de disponibilidad y sus
+    // notificaciones son de la CUENTA, no del dispositivo, pero se guardaban en
+    // claves generales de `localStorage`. Al cerrar sesión se quedaban ahí, así
+    // que la siguiente persona que usara el mismo navegador seguía viendo la
+    // tienda habitual y los avisos de quien acababa de salir.
+    //
+    // El aviso va después de `supabase.auth.signOut()` y no antes: si el cierre
+    // fallara, no tendría sentido haber borrado ya las preferencias de una
+    // sesión que sigue abierta.
+    notificarCierreSesionCliente()
   }, [])
 
   const updateProfile = useCallback(

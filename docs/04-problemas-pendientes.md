@@ -445,6 +445,37 @@ forman el backlog verificable.
   autenticado. Aplicarlo **antes** de desplegar esta versión dejaría el
   panel de agentes sin poder responder.
 
+## SEG-PREF-001 — Las preferencias de cuenta sobrevivían al cierre de sesión
+
+- Estado: **cerrado en código el 2026-08-06** (rama
+  `fix/clear-user-preferences-on-signout`, PR aparte).
+- Impacto: privacidad. En un navegador compartido —una tienda, una casa, un
+  ordenador de trabajo—, quien entrara después de que otra persona cerrara
+  sesión seguía viendo su tienda habitual, los productos que estaba siguiendo y
+  sus notificaciones, con el contador incluido.
+- Evidencia: las cuatro preferencias se guardaban en claves generales de
+  `localStorage`, sin separar por usuario, y `signOut()` no las tocaba:
+  `banana:favorite-store`, `banana:favorite-store-prompt`,
+  `banana:favorite-alerts` y `banana:favorite-notifications`.
+- Causa: son datos **de la cuenta** guardados como si fueran **del
+  dispositivo**. El cierre de sesión sólo se ocupaba de Supabase y de su propio
+  estado.
+- Resolución: aviso interno tipado `src/lib/accountSession.ts`. `signOut()` lo
+  emite después de cerrar en Supabase, y cada proveedor se suscribe y se
+  reinicia solo. Los proveedores siguen siendo dueños de su estado: nadie
+  escribe en el de otro.
+- Detalle que no era evidente: borrar las claves no bastaba. Los proveedores
+  guardan el estado **en memoria**, así que sin reiniciarlo la interfaz habría
+  seguido enseñando los datos hasta recargar. Y al revés: reiniciar el estado
+  tampoco bastaba, porque el efecto de persistencia de `favoriteAlerts`
+  reescribía `"[]"` y la clave reaparecía. Ahora una lista vacía borra la clave.
+- Lo que **no** se toca: el carrito, el idioma, la sesión y la conversación
+  anónima del chat, y ninguna otra preferencia general.
+- Regresión: 5 casos unitarios del aviso interno y 6 en `tests/e2e-prefs/`, con
+  los proveedores reales montados en un navegador real. Cuatro de esos seis
+  fallan si se revierte el cableado; los otros dos vigilan que el uso normal
+  siga igual.
+
 ## SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente
 
 - Estado: **cerrado en código el 2026-08-06**. Detectado en revisión antes de

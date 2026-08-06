@@ -8,6 +8,23 @@ actualizado: 2026-08-06
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-06 — Las preferencias de cuenta no sobreviven al cierre de sesión
+
+- Tienda favorita, seguimientos de disponibilidad y notificaciones se guardaban
+  en claves generales de `localStorage` y `signOut()` no las tocaba: en un
+  navegador compartido, quien entrara después seguía viendo la tienda habitual,
+  los seguimientos y los avisos de quien acababa de salir, contador incluido.
+- Nuevo aviso interno tipado `src/lib/accountSession.ts`. `signOut()` lo emite
+  y cada proveedor se reinicia solo, sin que nadie escriba en el estado de otro
+  y sin recargar la página.
+- Borrar las claves no bastaba —los proveedores guardan estado en memoria— y
+  reiniciar el estado tampoco —el efecto de persistencia reescribía `"[]"`—.
+  Ahora una lista vacía borra su clave.
+- Intactos el carrito, el idioma y la conversación anónima del chat.
+- Regresión: 5 casos unitarios y 6 con los proveedores reales en navegador.
+- Ver [[02-decisiones#D-062]] y
+  [[04-problemas-pendientes#SEG-PREF-001 — Las preferencias de cuenta sobrevivían al cierre de sesión]].
+
 ## 2026-08-06 — Sesiones anónimas separadas y migración aplicada en producción
 
 - Una sesión anónima del chat deja de valer como cuenta de cliente. Supabase le

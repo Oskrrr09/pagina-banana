@@ -1051,6 +1051,30 @@ No atribuye motivaciones que el repositorio no documenta.
   cinco comprobaciones SQL en `true`, y la lectura pública que pasó de 36 filas
   a cero. Detalle en [[08-predespliegue-supabase]].
 
+## D-062 — Las preferencias de cuenta se reinician con un aviso interno
+
+- Fecha: 2026-08-06.
+- Estado: vigente.
+- Decisión: al cerrar sesión una cuenta de cliente, `signOut()` emite el aviso
+  de `src/lib/accountSession.ts` y cada proveedor de preferencias se reinicia
+  solo. No se manipula el estado de un proveedor desde fuera.
+- Por qué un aviso y no una llamada directa: `StorePreferenceProvider` y
+  `FavoriteAlertsProvider` están **por debajo** de `CustomerAuthProvider` en el
+  árbol (`src/main.tsx`), así que desde el proveedor de sesión no se pueden usar
+  sus hooks. Reordenarlos sólo para esto arrastraría al Header, al checkout y al
+  panel de agentes, que dependen del orden actual.
+- El aviso es concreto —«se ha cerrado la sesión de un cliente»— y no un `reset`
+  genérico: un nombre genérico invita a colgar de él cosas que no tienen que
+  ver, y acabaría borrando el carrito o el idioma.
+- Cada escucha se ejecuta en su propio `try`. Si `localStorage` no está
+  disponible, el resto de reinicios se hacen igual y quien cerró sesión sale de
+  verdad. Descartado `window.location.reload()`: esconde el problema en vez de
+  resolverlo y tira por delante el estado de toda la aplicación.
+- Consecuencia añadida: en `favoriteAlerts` una lista vacía ahora **borra** su
+  clave en vez de escribir `"[]"`. Ausente y vacía significan lo mismo al leer,
+  y que el almacenamiento lo refleje evita tener que borrarlas por separado.
+- Evidencia: `tests/unit/account-session.test.ts` y `tests/e2e-prefs/`.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y
