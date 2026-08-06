@@ -83,10 +83,14 @@ Lo que ese arnés **no** cubre, y por lo que estas siguen haciendo falta:
 
 ## Estado actual en esta máquina
 
-**No se han ejecutado contra servicios reales.** La CLI 2.111.0 ya está fijada
-en el proyecto, pero esta máquina no tiene Docker. `npm run test:integration`
-falla antes de consultar Supabase con un diagnóstico explícito. La suite no
-cae nunca sobre la demostración como alternativa silenciosa.
+**Docker Desktop ya está instalado** (2026-08-06) y se usó para los respaldos de
+Supabase, así que `npm run test:integration` puede ejecutarse aquí. Las cifras
+que se registran en la documentación siguen siendo **las de CI**, porque la
+suite local completa no se ha vuelto a ejecutar desde entonces.
+
+Si Docker no estuviera disponible, `npm run test:integration` falla antes de
+consultar Supabase con un diagnóstico explícito. La suite no cae nunca sobre la
+demostración como alternativa silenciosa.
 
 La suite tiene actualmente **33 casos** —27 más los seis que separan la sesión anónima del chat de una cuenta de cliente permanente— y ya usa la API final: RPC de chat,
 agentes y reservas, GoTrue real y operaciones reales de Storage. La versión

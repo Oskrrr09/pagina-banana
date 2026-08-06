@@ -128,3 +128,8 @@ tablas—, y después verificar web y chat contra la URL pública.
 **Actualización del 2026-08-06:** antes de eso hay que cerrar el hallazgo de
 sesiones anónimas; ver
 [[04-problemas-pendientes#SEG-ANON-001 — Una sesión anónima del chat valía como cuenta de cliente]].
+
+Y lo que esta nota dice sobre Docker ya no vale: **se instaló Docker Desktop el
+2026-08-06** y se usó para los respaldos de Supabase. La afirmación de arriba
+—que la máquina no lo tenía— describe cómo estaban las cosas el 2026-08-05 y se
+conserva por eso, no porque siga siendo cierta.

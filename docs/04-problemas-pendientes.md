@@ -571,8 +571,10 @@ forman el backlog verificable.
 - Infraestructura versionada el 2026-08-04: CLI 2.111.0, configuración local,
   seed sin credenciales, lanzador de pruebas y workflow reutilizable. CI ya no
   depende de `RLS_TEST_*` ni puede caer sobre la demostración.
-- Bloqueo local: esta máquina sigue sin Docker, así que la suite no puede
-  ejecutarse aquí. La ejecuta CI, que es donde se obtuvo el 27/27.
+- Bloqueo local **levantado el 2026-08-06**: Docker Desktop ya está instalado en
+  esta máquina y se usó para los respaldos de Supabase, así que la suite puede
+  ejecutarse aquí. Las cifras registradas siguen siendo las de CI, porque la
+  suite local completa no se volvió a ejecutar en esa sesión.
 - Regla: nunca ejecutar esta suite contra la demostración. Crea y borra
   usuarios, objetos y filas a propósito.
 - Cierre restante: fusionar la PR #35, esperar el despliegue de GitHub Pages,
