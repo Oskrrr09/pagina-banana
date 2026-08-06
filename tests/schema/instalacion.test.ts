@@ -143,11 +143,18 @@ describe('garantías individuales de la auditoría compartida', () => {
   })
 
   it('los disparadores y auxiliares internos no se llaman desde la API', async () => {
+    // La excepción no se escribe con el nombre de una función concreta.
+    // Estaba fijada a `es_agente()`, y al aparecer una segunda auxiliar con el
+    // mismo motivo legítimo —`es_usuario_permanente()`, que también la invocan
+    // las políticas y por eso necesita EXECUTE— habría que volver a tocar la
+    // prueba. Se compara contra lo DECLARADO en `FUNCIONES`: una auxiliar sin
+    // ejecutores declarados no puede tenerlos de verdad. Los roles exactos de
+    // las que sí los declaran los verifica `auditarCatalogo`.
     const catalogo = await catalogarFunciones(db)
     const internosExpuestos = catalogo.filter(
       (funcion) =>
         ['trigger', 'auxiliar'].includes(funcion.clasificacion!.categoria) &&
-        funcion.firma !== 'es_agente()' &&
+        funcion.clasificacion!.ejecuta.length === 0 &&
         funcion.ejecuta.length > 0,
     )
     expect(internosExpuestos).toEqual([])

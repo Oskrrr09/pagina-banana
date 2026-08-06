@@ -129,6 +129,10 @@ export const FUNCIONES: Record<string, Clasificacion> = {
   // permisos de quien consulta, así que `authenticated` necesita EXECUTE.
   'es_agente()': { categoria: 'auxiliar', ejecuta: ['authenticated'], securityDefiner: true },
   'es_supervisor()': { categoria: 'auxiliar', ejecuta: [], securityDefiner: true },
+  // Igual que `es_agente`: la invocan las políticas de `clientes`, `pedidos`,
+  // `reservas` y del bucket educativo, que se evalúan con los permisos de quien
+  // consulta. Distingue una sesión anónima del chat de una cuenta permanente.
+  'es_usuario_permanente()': { categoria: 'auxiliar', ejecuta: ['authenticated'], securityDefiner: true },
 
   // ---- Disparadores -------------------------------------------------------
   'touch_conversation_on_message()': { categoria: 'trigger', ejecuta: [], securityDefiner: true },

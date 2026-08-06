@@ -27,6 +27,15 @@ export const ANDAMIO_SUPABASE = `
   create or replace function auth.uid() returns uuid language sql stable as $$
     select nullif(current_setting('request.jwt.claims', true)::json ->> 'sub', '')::uuid;
   $$;
+  -- Copiada de Supabase con su misma forma. La necesita
+  -- public.es_usuario_permanente(), que decide si la sesión es anónima leyendo
+  -- el reclamo is_anonymous del JWT.
+  create or replace function auth.jwt() returns jsonb language sql stable as $$
+    select coalesce(
+      nullif(current_setting('request.jwt.claim', true), ''),
+      nullif(current_setting('request.jwt.claims', true), '')
+    )::jsonb;
+  $$;
   create table if not exists storage.buckets (
     id text primary key,
     name text,
