@@ -122,6 +122,7 @@ create policy "cliente lee su ficha"
 drop policy if exists "cliente sube su justificante"      on storage.objects;
 drop policy if exists "cliente sustituye su justificante" on storage.objects;
 drop policy if exists "cliente lee su justificante"       on storage.objects;
+drop policy if exists "cliente borra su justificante"     on storage.objects;
 
 create policy "cliente sube su justificante"
   on storage.objects for insert to authenticated
@@ -146,6 +147,26 @@ create policy "cliente sustituye su justificante"
 
 create policy "cliente lee su justificante"
   on storage.objects for select to authenticated
+  using (
+    bucket_id = 'descuentos-educativos'
+    and public.es_usuario_permanente()
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- El DELETE se había quedado fuera, y era el más delicado de los cuatro.
+--
+-- La carpeta se llama como el `auth.uid()`, y la conversión de una sesión
+-- anónima a cuenta permanente **conserva ese mismo uid**. Un token anónimo
+-- emitido ANTES de convertir sigue siendo válido hasta que caduca, así que
+-- apuntaba a la carpeta de la cuenta ya permanente: bastaba con guardarlo para
+-- poder borrar después el justificante que esa cuenta subiera. También bastaba
+-- para borrar cualquier objeto que `service_role` hubiera dejado en esa
+-- carpeta.
+--
+-- Comprobar la permanencia lo cierra: el token viejo lleva `is_anonymous: true`
+-- dentro y no hay forma de quitárselo sin emitir uno nuevo.
+create policy "cliente borra su justificante"
+  on storage.objects for delete to authenticated
   using (
     bucket_id = 'descuentos-educativos'
     and public.es_usuario_permanente()

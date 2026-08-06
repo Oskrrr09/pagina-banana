@@ -977,3 +977,123 @@ test('convertir la sesión anónima en cuenta permanente habilita los recorridos
   const { data: visitante } = await ana.db.from('visitantes').select('cliente_id').eq('auth_id', ana.uid).single()
   expect(visitante!.cliente_id, 'la conversación queda enlazada con la cuenta').toBe(ana.uid)
 })
+
+// ---- Borrado en Storage ----------------------------------------------------
+//
+// El DELETE del bucket educativo es la operación más delicada de las cuatro:
+// la carpeta se llama como el `auth.uid()`, y la conversión de anónimo a
+// permanente **conserva ese uid**. Un token anónimo emitido antes de convertir
+// sigue siendo válido hasta que caduca y apunta a la misma carpeta.
+
+/** Cliente que usa un token concreto tal cual, sin refrescarlo. */
+function clienteConToken(accessToken: string): SupabaseClient {
+  return createClient(URL!, ANON!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  })
+}
+
+test('una sesión anónima no puede borrar un objeto de su propia carpeta', async () => {
+  const ana = await visitanteAnonimo()
+  const ruta = `${ana.uid}/justificante.pdf`
+
+  // El objeto lo coloca service_role: el anónimo no puede subirlo, pero eso no
+  // debe ser lo único que le impida borrarlo.
+  const admin = clienteServicio()
+  const { error: errorPrevio } = await admin.storage
+    .from('descuentos-educativos')
+    .upload(ruta, new Blob(['puesto por servicio'], { type: 'application/pdf' }), {
+      contentType: 'application/pdf',
+      upsert: true,
+    })
+  expect(errorPrevio, 'el escenario debe poder prepararse').toBeNull()
+  objetos.push(ruta)
+
+  const { data: borrados } = await ana.db.storage.from('descuentos-educativos').remove([ruta])
+  expect(borrados ?? [], 'un anónimo no debe borrar nada').toEqual([])
+
+  const { data: sigue } = await admin.storage.from('descuentos-educativos').list(ana.uid)
+  expect(
+    (sigue ?? []).map((o) => o.name),
+    'el objeto debe seguir ahí',
+  ).toContain('justificante.pdf')
+})
+
+test('una cuenta permanente borra su justificante pero no el de otra', async () => {
+  const uno = await clienteRegistrado('borra-propio')
+  const dos = await clienteRegistrado('borra-ajeno')
+
+  const rutaUno = `${uno.uid}/justificante.pdf`
+  const { error: errorSubida } = await uno.db.storage
+    .from('descuentos-educativos')
+    .upload(rutaUno, new Blob(['justificante de uno'], { type: 'application/pdf' }), {
+      contentType: 'application/pdf',
+      upsert: true,
+    })
+  expect(errorSubida, 'una cuenta permanente sí sube').toBeNull()
+  objetos.push(rutaUno)
+
+  // Dos no puede borrar el de Uno.
+  const { data: ajeno } = await dos.db.storage.from('descuentos-educativos').remove([rutaUno])
+  expect(ajeno ?? [], 'no se borra el justificante de otra cuenta').toEqual([])
+
+  const admin = clienteServicio()
+  const { data: intacto } = await admin.storage.from('descuentos-educativos').list(uno.uid)
+  expect((intacto ?? []).map((o) => o.name)).toContain('justificante.pdf')
+
+  // Uno sí borra el suyo: el recorrido legítimo se conserva.
+  const { data: propio, error: errorPropio } = await uno.db.storage.from('descuentos-educativos').remove([rutaUno])
+  expect(errorPropio).toBeNull()
+  expect(
+    (propio ?? []).map((o) => o.name),
+    'la cuenta permanente borra el suyo',
+  ).toContain(rutaUno)
+
+  const { data: vacio } = await admin.storage.from('descuentos-educativos').list(uno.uid)
+  expect((vacio ?? []).map((o) => o.name)).not.toContain('justificante.pdf')
+})
+
+test('un token anónimo anterior a la conversión no borra el justificante posterior', async () => {
+  // El caso que motiva comprobar la permanencia también en el DELETE.
+  const ana = await visitanteAnonimo()
+
+  // Se guarda el token anónimo TAL CUAL, antes de convertir. Sigue vigente.
+  const { data: sesionAnonima } = await ana.db.auth.getSession()
+  const tokenAnonimo = sesionAnonima.session!.access_token
+  expect(tokenAnonimo, 'hace falta el token anónimo para la prueba').toBeTruthy()
+
+  // La misma cuenta pasa a permanente: el uid no cambia.
+  const email = `${marca('token-viejo')}@ejemplo.test`
+  const { error: errorConversion } = await ana.db.auth.updateUser({ email, password: 'prueba-rls-1234' })
+  expect(errorConversion).toBeNull()
+  const { data: renovada } = await ana.db.auth.refreshSession()
+  expect(renovada.session?.user.is_anonymous).toBe(false)
+  expect(renovada.session?.user.id, 'la conversión conserva el uid').toBe(ana.uid)
+
+  const { error: errorFicha } = await ana.db.from('clientes').insert({ id: ana.uid, email })
+  expect(errorFicha).toBeNull()
+  creados.push({ tabla: 'clientes', id: ana.uid })
+
+  // Ya como cuenta permanente, sube su justificante.
+  const ruta = `${ana.uid}/justificante.pdf`
+  const { error: errorSubida } = await ana.db.storage
+    .from('descuentos-educativos')
+    .upload(ruta, new Blob(['justificante ya permanente'], { type: 'application/pdf' }), {
+      contentType: 'application/pdf',
+      upsert: true,
+    })
+  expect(errorSubida, 'la cuenta convertida debe poder subir').toBeNull()
+  objetos.push(ruta)
+
+  // Y ahora el token viejo, todavía vigente, intenta borrarlo.
+  const viejo = clienteConToken(tokenAnonimo)
+  const { data: borrados } = await viejo.storage.from('descuentos-educativos').remove([ruta])
+  expect(borrados ?? [], 'el token anónimo anterior no debe borrar nada').toEqual([])
+
+  const admin = clienteServicio()
+  const { data: sigue } = await admin.storage.from('descuentos-educativos').list(ana.uid)
+  expect(
+    (sigue ?? []).map((o) => o.name),
+    'el justificante debe seguir ahí',
+  ).toContain('justificante.pdf')
+})

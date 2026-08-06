@@ -170,6 +170,29 @@ describe('una sesión anónima no puede actuar como cliente', () => {
     expect(error).toMatch(/cuenta registrada/i)
   })
 
+  it('no puede borrar un objeto de su propia carpeta', async () => {
+    // El DELETE se había quedado sin la comprobación. Importa porque la
+    // carpeta se llama como el uid y la conversión a cuenta permanente conserva
+    // ese uid: un token anónimo anterior seguiría apuntando a la carpeta de la
+    // cuenta ya registrada. El objeto lo pone el propietario de la tabla, como
+    // haría `service_role`.
+    await db.exec(
+      `insert into storage.objects (bucket_id, name) values ('descuentos-educativos', '${ANONIMO}/justificante.pdf')`,
+    )
+    const { error } = await como(
+      ANONIMO,
+      { anonimo: true },
+      `delete from storage.objects where bucket_id = 'descuentos-educativos' and name = $1`,
+      [`${ANONIMO}/justificante.pdf`],
+    )
+    // RLS no lanza error al borrar: filtra las filas, así que no borra ninguna.
+    expect(error).toBeNull()
+    const { rows } = await db.query<{ n: number }>(`select count(*)::int as n from storage.objects where name = $1`, [
+      `${ANONIMO}/justificante.pdf`,
+    ])
+    expect(rows[0].n, 'el objeto debe seguir ahí').toBe(1)
+  })
+
   it('no puede subir un justificante a Storage', async () => {
     const { error } = await como(
       ANONIMO,
@@ -246,6 +269,29 @@ describe('la cuenta permanente conserva sus recorridos', () => {
       [`${PERMANENTE}/justificante.pdf`],
     )
     expect(error).toBeNull()
+  })
+
+  it('borra el suyo y no el de otra carpeta', async () => {
+    const ajeno = `${ANONIMO}/justificante.pdf`
+    const { rows: antes } = await db.query<{ n: number }>(
+      `select count(*)::int as n from storage.objects where name = $1`,
+      [ajeno],
+    )
+
+    await como(PERMANENTE, { anonimo: false }, `delete from storage.objects where name = $1`, [ajeno])
+    const { rows: sigue } = await db.query<{ n: number }>(
+      `select count(*)::int as n from storage.objects where name = $1`,
+      [ajeno],
+    )
+    expect(sigue[0].n, 'no debe alcanzar la carpeta de otro').toBe(antes[0].n)
+
+    const propio = `${PERMANENTE}/justificante.pdf`
+    await como(PERMANENTE, { anonimo: false }, `delete from storage.objects where name = $1`, [propio])
+    const { rows: borrado } = await db.query<{ n: number }>(
+      `select count(*)::int as n from storage.objects where name = $1`,
+      [propio],
+    )
+    expect(borrado[0].n, 'el propio sí se borra').toBe(0)
   })
 })
 
