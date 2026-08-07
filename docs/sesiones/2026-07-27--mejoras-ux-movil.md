@@ -30,7 +30,7 @@ Corregir cinco problemas de usabilidad detectados por el usuario en la versión 
 
 - `npm run build`: correcto; 421 módulos transformados.
 - PR #8 fusionada en `main`; workflow `30266223973` completado con `success`.
-- URL pública actualizada: https://luis-lop-nas.github.io/pagina-banana/
+- URL pública actualizada: https://oskrrr09.github.io/pagina-banana/
 
 ## Archivos afectados
 

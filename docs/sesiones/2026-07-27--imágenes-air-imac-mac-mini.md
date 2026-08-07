@@ -63,7 +63,7 @@ Se añadió una sección "Catálogo completo Mac" al final de `ShowcaseFamilyPag
 
 - `npm run build`: correcto, 421 módulos, sin errores de TypeScript.
 - Workflow `30283909013` completado con `success`.
-- URL pública desplegada en `https://luis-lop-nas.github.io/pagina-banana/`.
+- URL pública desplegada en `https://oskrrr09.github.io/pagina-banana/`.
 
 ## Archivos afectados
 
