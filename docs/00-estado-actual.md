@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-06
+actualizado: 2026-08-07
 ---
 
 # Estado actual
@@ -192,9 +192,14 @@ Android (2026-08-01).**
   estado nulo y el informe JSON RLS.
 - PR #33 y PR #34: abiertas en borrador, encadenadas y sin conflictos. No han
   desplegado Pages.
-- URL pública conocida:
-  <https://oskrrr09.github.io/pagina-banana/>. Todavía representa `main`,
-  no la migración de seguridad.
+- **Repositorio**: `Oskrrr09/pagina-banana`. Transferido el 2026-08-07 desde
+  `luis-lop-nas`; con la transferencia cambió la URL pública, porque GitHub
+  Pages no redirige entre cuentas y la dirección anterior devuelve 404.
+- URL pública: <https://oskrrr09.github.io/pagina-banana/>.
+- **`main` está protegida** por el ruleset «Protección de main» (`20547777`):
+  exige pull request y los cuatro checks de CI en verde, bloquea force push y
+  borrado, y no admite bypass ni para el propietario. Ver
+  [[02-decisiones#D-063]].
 - **Node.js 24** en el workflow unificado `ci.yml`; `.nvmrc` alinea local y CI.
 - **Estado de dependencias (actualizado el 2026-08-06)**: React Router se migró
   de 6.30.4 a 7.18.2 y se probó en cuatro motores. Esa versión cierra los dos

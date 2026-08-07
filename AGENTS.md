@@ -85,3 +85,9 @@ Antes de terminar:
    debe terminar con commit, push, integración en `main`, despliegue en GitHub
    Pages y comprobación de la URL pública, salvo que el usuario indique
    expresamente que quiere mantenerlo solo en local o sin publicar.
+5. **`main` está protegida y no acepta escrituras directas** (ruleset
+   «Protección de main», desde el 2026-08-07). La integración pasa
+   obligatoriamente por rama y pull request, con los cuatro checks de CI en
+   verde y la rama al día. No hay bypass, tampoco para el propietario, así que
+   intentar empujar a `main` sólo produce un rechazo del servidor. Ver
+   [[docs/02-decisiones|D-063]].

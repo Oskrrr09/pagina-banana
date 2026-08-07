@@ -1,6 +1,6 @@
 ---
 tipo: decisiones
-actualizado: 2026-08-06
+actualizado: 2026-08-07
 ---
 
 # Decisiones
@@ -1074,6 +1074,41 @@ No atribuye motivaciones que el repositorio no documenta.
   clave en vez de escribir `"[]"`. Ausente y vacía significan lo mismo al leer,
   y que el almacenamiento lo refleje evita tener que borrarlas por separado.
 - Evidencia: `tests/unit/account-session.test.ts` y `tests/e2e-prefs/`.
+
+## D-063 — `main` protegida por ruleset, sin bypass
+
+- Fecha: 2026-08-07.
+- Estado: vigente.
+- Contexto: el repositorio se transfirió a `Oskrrr09/pagina-banana` y `main`
+  estaba **sin ninguna protección**: aceptaba force push, borrado y escritura
+  directa.
+- Decisión: ruleset «Protección de main» (`20547777`), activo, sobre
+  `~DEFAULT_BRANCH`. Exige pull request con **0 aprobaciones** —el proyecto lo
+  mantiene una sola persona—, los cuatro checks de CI en verde, la rama al día
+  con `main`, y bloquea force push y borrado. `bypass_actors` vacío, así que
+  alcanza también al propietario.
+- Ruleset y no protección clásica: los *bypass actors* son una lista explícita y
+  auditable, se puede desactivar temporalmente sin perder la configuración, y es
+  la vía que GitHub mantiene.
+- `~DEFAULT_BRANCH` en vez de `refs/heads/main`: si algún día se renombra la
+  rama por defecto, la protección la sigue en vez de quedarse apuntando a una
+  rama inexistente.
+- `integration_id: 15368` en cada check: los ata a GitHub Actions. Sin eso,
+  cualquier aplicación externa podría publicar un check con el mismo nombre y
+  darlo por bueno.
+- **`Publicar en GitHub Pages` queda deliberadamente FUERA de los obligatorios.**
+  Está condicionado a `push` sobre `main`, así que en un pull request siempre
+  aparece *skipped*, y un check obligatorio omitido es una causa clásica de PR
+  bloqueados para siempre.
+- Comprobado con la PR #37, que se abrió para eso: con checks pendientes el
+  estado fue `BLOCKED` y GitHub rechazó la fusión —«the base branch policy
+  prohibits the merge»—; con los cuatro en verde pasó a `CLEAN` y se fusionó sin
+  privilegios especiales.
+- No se probó `--admin`: confirmarlo exigiría intentar una fusión con los checks
+  en rojo, y si la protección fallara se habría fusionado de verdad. El riesgo no
+  compensa cuando `bypass_actors` está vacío y el bloqueo ya está demostrado.
+- Consecuencia práctica: el flujo de trabajo del repositorio pasa
+  obligatoriamente por rama y PR. Recogido en `AGENTS.md`.
 
 ## Cómo añadir una decisión
 

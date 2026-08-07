@@ -1,12 +1,32 @@
 ---
 tipo: cambios
-actualizado: 2026-08-06
+actualizado: 2026-08-07
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-07 — Transferencia del repositorio y protección de `main`
+
+- El repositorio pasa a `Oskrrr09/pagina-banana`. Con la transferencia cambia la
+  **URL pública**: GitHub Pages no redirige entre cuentas, así que la anterior
+  devuelve 404 y la buena es <https://oskrrr09.github.io/pagina-banana/>.
+- PR #37: 33 referencias al propietario anterior actualizadas en README y
+  documentación. Diez estaban rotas —las de Pages—; las otras funcionaban por la
+  redirección de GitHub, que se rompe en cuanto alguien cree un repositorio con
+  el mismo nombre bajo la cuenta antigua.
+- Nuevo ruleset «Protección de main» (`20547777`): pull request obligatorio con
+  0 aprobaciones, los cuatro checks de CI en verde, rama al día, force push y
+  borrado bloqueados, sin bypass ni para el propietario. Ver
+  [[02-decisiones#D-063]].
+- Verificado en la propia PR #37: con checks pendientes GitHub **rechazó** la
+  fusión y el estado era `BLOCKED`; con los cuatro en verde pasó a `CLEAN` y se
+  fusionó con normalidad.
+- `Publicar en GitHub Pages` no figura entre los obligatorios, a propósito: en un
+  PR siempre sale *skipped* y bloquearía la fusión para siempre.
+- `AGENTS.md` recoge que `main` ya no acepta escrituras directas.
 
 ## 2026-08-06 — Las preferencias de cuenta no sobreviven al cierre de sesión
 
