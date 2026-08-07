@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useCatalogo, useIdioma } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { ProductCard } from '../components/product/ProductCard'
@@ -12,6 +12,8 @@ import { getFamilyModels, familyInfo, variantPath } from '../data/products'
 import type { Family, Model } from '../data/types'
 import { euro } from '../lib/format'
 import { NotFound } from './NotFound'
+import { CatalogFilters } from '../components/product/CatalogFilters'
+import { aplicarFiltros, escribirFiltrosEnUrl, leerFiltrosDeUrl, type FiltrosCatalogo } from '../lib/catalogFilters'
 
 // Página de familia genérica (§4.5): encabezado, modelos, acceso al comparador
 // y filtro rápido por precio. Sirve para iPhone, Mac, iPad, Watch y AirPods.
@@ -245,11 +247,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
 
       <Container className="py-10">
         <h2 className="mb-6 text-2xl font-extrabold text-ink">Catálogo completo {family.name}</h2>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {models.map((m) => (
-            <ProductCard key={m.slug} model={m} />
-          ))}
-        </div>
+        <CatalogoFiltrable models={models} />
       </Container>
     </>
   )
@@ -265,4 +263,39 @@ function etiquetaTramo(
   if (min === 0) return t('family.priceUpTo', { importe: euro(max, intl) })
   if (max === Infinity) return t('family.priceOver', { importe: euro(min, intl) })
   return t('family.priceBetween', { desde: euro(min, intl), hasta: euro(max, intl) })
+}
+
+/**
+ * Rejilla del catálogo con filtros y orden.
+ *
+ * El estado vive en la URL, no en `useState`: así Atrás y Adelante recuperan lo
+ * que se estaba viendo y un enlace compartido llega filtrado igual. Se navega
+ * con `replace` para no llenar el historial de una entrada por cada toque en un
+ * filtro — de lo contrario, salir de la página exigiría pulsar Atrás tantas
+ * veces como filtros se hubieran tocado.
+ */
+function CatalogoFiltrable({ models }: { models: Model[] }) {
+  const { t } = useIdioma()
+  const [params, setParams] = useSearchParams()
+  const filtros = useMemo(() => leerFiltrosDeUrl(params), [params])
+  const visibles = useMemo(() => aplicarFiltros(models, filtros), [models, filtros])
+
+  const cambiar = (siguiente: FiltrosCatalogo) => {
+    setParams(escribirFiltrosEnUrl(siguiente), { replace: true })
+  }
+
+  return (
+    <>
+      <CatalogFilters filtros={filtros} onCambiar={cambiar} totalVisible={visibles.length} totalSin={models.length} />
+      {visibles.length > 0 ? (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {visibles.map((m) => (
+            <ProductCard key={m.slug} model={m} />
+          ))}
+        </div>
+      ) : (
+        <p className="py-10 text-center text-muted">{t('catalog.noResults')}</p>
+      )}
+    </>
+  )
 }

@@ -17,6 +17,9 @@ import { serviceFaq } from '../data/content'
 import { getAccessoriesForModel, accessoryPath } from '../data/accessories'
 import { euro } from '../lib/format'
 import { useStore } from '../lib/store'
+import { registrarVisto } from '../lib/recentlyViewed'
+import { isNativeApp } from '../lib/nativeApp'
+import { ALTURA_TAB_BAR } from '../components/layout/AppTabBar'
 import { useCustomerAuth } from '../lib/customerAuth'
 import { NotFound } from './NotFound'
 
@@ -127,6 +130,18 @@ export function VariantPage() {
     io.observe(el)
     return () => io.disconnect()
   }, [])
+
+  // Historial de «vistos recientemente».
+  //
+  // Se anota aquí, al resolverse la ficha, y no al pulsar una tarjeta: así
+  // cuenta igual llegar por un enlace directo, por la búsqueda, desde
+  // favoritos, desde el propio historial o con el botón Atrás. Depende sólo de
+  // familia y modelo, no de la variante, para que cambiar de color o capacidad
+  // no vuelva a registrar lo mismo.
+  useEffect(() => {
+    if (!model) return
+    registrarVisto(`${model.family}/${model.slug}`)
+  }, [model])
 
   // Actualiza la URL al cambiar de variante, sin recargar (§9.3)
   useEffect(() => {
@@ -530,6 +545,20 @@ export function VariantPage() {
             animate={{ y: 0 }}
             exit={{ y: 80 }}
             transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+            // Dónde se apoya esta barra depende de si hay navegación inferior.
+            //
+            // En la app, `AppTabBar` NO es `fixed`: es el último hermano de la
+            // columna que ocupa la pantalla. Una barra `bottom-0` se coloca
+            // respecto al viewport, así que quedaba justo detrás de la
+            // navegación —que además pinta por encima con su z-50— y sus
+            // botones eran inalcanzables. Se sube exactamente la altura de esa
+            // barra, tomada de `ALTURA_TAB_BAR`, que ya incluye el área segura.
+            //
+            // En el navegador móvil no hay navegación inferior, así que se
+            // queda abajo; el relleno de área segura la aparta del indicador
+            // de inicio del iPhone, que antes tampoco se respetaba.
+            style={isNativeApp ? { bottom: ALTURA_TAB_BAR } : { paddingBottom: 'env(safe-area-inset-bottom)' }}
+            data-buy-bar
             className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur-md lg:hidden"
           >
             <div className="flex items-center gap-2 px-4 py-3">

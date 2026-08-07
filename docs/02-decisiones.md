@@ -1117,6 +1117,64 @@ No atribuye motivaciones que el repositorio no documenta.
 - Consecuencia práctica: el flujo de trabajo del repositorio pasa
   obligatoriamente por rama y PR. Recogido en `AGENTS.md`.
 
+## D-064 — El historial de vistos es del dispositivo, no de la cuenta
+
+- Fecha: 2026-08-07.
+- Estado: vigente.
+- Decisión: `banana:recientes` guarda sólo `familia/slug` de los últimos ocho
+  productos vistos, y **no se borra al cerrar sesión**.
+- Frontera con las preferencias de cuenta: la tienda favorita y los seguimientos
+  de disponibilidad sí se vacían al cerrar sesión (ver
+  [[02-decisiones#D-062]]), porque pertenecen a la CUENTA. El historial de
+  navegación pertenece al DISPOSITIVO —es lo que se ha mirado en este navegador,
+  haya sesión o no—, igual que el carrito o el idioma. Nunca se sincroniza con
+  Supabase.
+- Consecuencia buscada: sobrevive al cierre de sesión explícito, y debe
+  sobrevivir también al que venga de otra pestaña o de una sesión invalidada
+  cuando se resuelva SEG-PREF-001. Por eso **no** se suscribe al aviso de
+  `accountSession.ts`; no hacerlo es la decisión, no un olvido.
+- Qué no se guarda: ni nombres, ni precios, ni imágenes —ya están en el
+  catálogo—, ni fechas ni recuentos de visita. El orden de la lista basta.
+- Se anota al resolverse `VariantPage`, no al pulsar una tarjeta, para que
+  cuenten igual los enlaces directos, la búsqueda, favoritos y el botón Atrás.
+- Evidencia: `src/lib/recentlyViewed.ts` y `tests/unit/recently-viewed.test.ts`.
+
+## D-065 — La app tiene su propia portada, no la web adaptada
+
+- Fecha: 2026-08-07.
+- Estado: vigente.
+- Decisión: dentro del binario, `Home` monta `AppHome`. El orden es
+  producto → descubrimiento → disponibilidad → compra, y los servicios van al
+  final.
+- Por qué un componente aparte y no condicionales: son dos composiciones con
+  públicos opuestos que comparten catálogo, tarjetas y rutas pero no estructura.
+  Repartir `isNativeApp` por las doce secciones de la portada web habría dejado
+  un archivo que nadie puede leer entero. La decisión se toma una vez, arriba.
+- Nada inventado: el hero elige por dato el producto con oferta más caro, las
+  oportunidades salen sólo de `previousPrice` real, y **no se promete recogida
+  ni disponibilidad por tienda** porque el catálogo tiene existencias por
+  variante, no por tienda. Sin dato, la sección no aparece.
+- `ProductCardCompact` acompaña a la portada: `ProductCard` mide 400 px de alto
+  como mínimo, correcto en una rejilla de escritorio e inmanejable en un
+  carrusel de móvil.
+- Evidencia: `tests/e2e/app-shopping.spec.ts`.
+
+## D-066 — La barra de compra se apoya en la navegación de la app
+
+- Fecha: 2026-08-07.
+- Estado: vigente.
+- Problema: la barra de compra de `VariantPage` es `fixed bottom-0`, pero
+  `AppTabBar` **no** es `fixed` —es el último hermano de la columna que ocupa la
+  pantalla—. Medido en un iPhone 13 simulado: la barra terminaba en 844 px y la
+  navegación empezaba en 785, con 59 px de solape y sus botones inalcanzables.
+- Decisión: en la app se sube exactamente `ALTURA_TAB_BAR`, la constante que ya
+  exportaba `AppTabBar` y que incluye el área segura; en el navegador móvil se
+  queda abajo y gana el relleno de `safe-area-inset-bottom`, que antes tampoco
+  respetaba.
+- Una sola fuente para la altura: nada de repetir `4rem` por el código.
+- Evidencia: `tests/e2e/app-shopping.spec.ts` compara las cajas de las dos
+  barras en los dos modos.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y
