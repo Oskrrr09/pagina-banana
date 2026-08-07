@@ -7,6 +7,7 @@ import { ProvisionalBadge, OfferBadge } from '../ui/Tag'
 import { Icon } from '../ui/Icon'
 import { variantPath } from '../../data/products'
 import { useCatalogo, useIdioma } from '../../lib/i18n'
+import { presentacionDeTarjeta } from '../../lib/offers'
 
 // Tarjeta de producto (§6): resume un modelo para decidir si entrar a la ficha.
 // Precio y disponibilidad en texto, no solo en color. Favorito con estado.
@@ -16,12 +17,13 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
   const { toggleFavorite, isFavorite } = useStore()
   const favId = `${model.family}/${model.slug}`
   const fav = isFavorite(favId)
-  const firstCap = model.colors[0].capacities[0]
-  const hasOffer = firstCap.previousPrice != null
-  const discount =
-    hasOffer && firstCap.previousPrice
-      ? Math.round(((firstCap.previousPrice - firstCap.price) / firstCap.previousPrice) * 100)
-      : 0
+  // La oferta se busca en todo el modelo, no sólo en su primera capacidad:
+  // hay modelos rebajados en otra configuración —el MacBook Air M5, por
+  // ejemplo—, y mirando sólo la de entrada se quedaban sin marcar. Imagen,
+  // precio, precio anterior, porcentaje y enlace salen de la MISMA variante,
+  // para no juntar el «desde» de una con el precio anterior —o la foto— de otra.
+  const { oferta, color, capacity } = presentacionDeTarjeta(model)
+  const destino = variantPath(model, color, capacity)
 
   if (loading) {
     return (
@@ -48,23 +50,23 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
         <Icon name="heart" className={fav ? 'fill-danger text-danger' : ''} />
       </button>
 
-      {hasOffer && (
+      {oferta && (
         <div className="absolute left-4 top-4 z-10 flex items-center gap-2">
-          {discount > 0 && (
+          {oferta.descuento > 0 && (
             <span className="rounded-[10px] bg-danger px-2.5 py-1.5 text-sm font-extrabold leading-none text-white shadow-[var(--shadow-rest)]">
-              -{discount}%
+              -{oferta.descuento}%
             </span>
           )}
           <OfferBadge>{t('common.offer')}</OfferBadge>
         </div>
       )}
 
-      <Link to={variantPath(model)} className="block focus-visible:outline-none">
+      <Link to={destino} className="block focus-visible:outline-none">
         <ProductImage
-          src={model.colors[0].image}
-          alt={`${cat(model.name)} ${model.colors[0].name}`}
-          bgColor={model.colors[0].imageBg}
-          pad={!model.colors[0].imageBg}
+          src={color.image}
+          alt={`${cat(model.name)} ${color.name}`}
+          bgColor={color.imageBg}
+          pad={!color.imageBg}
         />
         <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">{cat(model.name)}</h3>
       </Link>
@@ -72,11 +74,11 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
       <p className="mt-1 min-h-10 line-clamp-2 text-sm text-muted">{cat(model.tagline)}</p>
 
       <div className="mt-auto pt-3">
-        {hasOffer && firstCap.previousPrice ? (
+        {oferta ? (
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold leading-none text-danger">{euro(model.fromPrice, intl)}</span>
+            <span className="text-2xl font-extrabold leading-none text-danger">{euro(oferta.precio, intl)}</span>
             <span className="text-sm font-semibold text-muted line-through decoration-2">
-              {euro(firstCap.previousPrice, intl)}
+              {euro(oferta.precioAnterior, intl)}
             </span>
           </div>
         ) : (

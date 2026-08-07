@@ -17,8 +17,26 @@ import { homeFaq } from '../data/content'
 import { useIdioma } from '../lib/i18n'
 import { claim } from '../data/commercialClaims'
 import { euro } from '../lib/format'
+import { isNativeApp } from '../lib/nativeApp'
+import { AppHome } from '../components/home/app/AppHome'
 
+/**
+ * Portada.
+ *
+ * Dentro del binario nativo se monta otra distinta. No es la misma página con
+ * condicionales repartidos: son dos composiciones con públicos opuestos —una
+ * escaparate corporativo, la otra tienda— que comparten catálogo, tarjetas y
+ * rutas pero no estructura. Salpicar `isNativeApp` por doce secciones habría
+ * dejado un archivo que nadie puede leer entero.
+ *
+ * La decisión se toma aquí, una vez, y la portada web de abajo queda intacta.
+ */
 export function Home() {
+  if (isNativeApp) return <AppHome />
+  return <HomeWeb />
+}
+
+function HomeWeb() {
   const { t, intl } = useIdioma()
   const [financeOpen, setFinanceOpen] = useState(false)
   const launches = iphoneModels.slice(0, 3)

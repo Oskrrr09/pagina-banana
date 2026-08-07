@@ -47,6 +47,10 @@ export function AppTabBar() {
         //
         // No es `fixed`: es el último hermano de la columna que ocupa la
         // pantalla. Ver el comentario de `AppTopBar`.
+        // La altura sale de la constante, no de la suma de sus paddings: así
+        // el hueco que dejan otros elementos y lo que la barra ocupa de verdad
+        // son el mismo número por construcción.
+        style={{ minHeight: ALTURA_TAB_BAR }}
         className="z-50 shrink-0 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]"
       >
         <ul className="mx-auto flex max-w-lg items-stretch">
@@ -145,8 +149,13 @@ function Tab({
 }
 
 /**
- * Altura que la barra ocupa por abajo, para que el contenido y los elementos
- * flotantes no queden debajo. Se expone como clase utilitaria para no repetir
- * el número mágico en cada sitio.
+ * Altura que ocupa la barra, área segura del dispositivo incluida.
+ *
+ * Es la ÚNICA fuente: la propia barra se dimensiona con ella —ver el
+ * `minHeight` de su `<nav>`— y quien tenga que apartarse por abajo la usa
+ * también. Antes este valor era un literal escrito aparte que se parecía a la
+ * altura real por casualidad: la barra medía 58,75 px por sus paddings y su
+ * icono, y la constante decía 64. Nada fallaba a la vista, pero cualquier
+ * cambio de padding habría separado las dos cifras sin que nadie se enterara.
  */
 export const ALTURA_TAB_BAR = 'calc(4rem + env(safe-area-inset-bottom))'

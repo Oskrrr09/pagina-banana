@@ -1117,6 +1117,91 @@ No atribuye motivaciones que el repositorio no documenta.
 - Consecuencia práctica: el flujo de trabajo del repositorio pasa
   obligatoriamente por rama y PR. Recogido en `AGENTS.md`.
 
+## D-064 — El historial de vistos es del dispositivo, no de la cuenta
+
+- Fecha: 2026-08-07.
+- Estado: vigente.
+- Decisión: `banana:recientes` guarda sólo `familia/slug` de los últimos ocho
+  productos vistos, y **no se borra al cerrar sesión**.
+- Frontera con las preferencias de cuenta: la tienda favorita y los seguimientos
+  de disponibilidad sí se vacían al cerrar sesión (ver
+  [[02-decisiones#D-062]]), porque pertenecen a la CUENTA. El historial de
+  navegación pertenece al DISPOSITIVO —es lo que se ha mirado en este navegador,
+  haya sesión o no—, igual que el carrito o el idioma. Nunca se sincroniza con
+  Supabase.
+- Consecuencia buscada: sobrevive al cierre de sesión explícito, y debe
+  sobrevivir también al que venga de otra pestaña o de una sesión invalidada
+  cuando se resuelva SEG-PREF-001. Por eso **no** se suscribe al aviso de
+  `accountSession.ts`; no hacerlo es la decisión, no un olvido.
+- Qué no se guarda: ni nombres, ni precios, ni imágenes —ya están en el
+  catálogo—, ni fechas ni recuentos de visita. El orden de la lista basta.
+- Se anota al resolverse `VariantPage`, no al pulsar una tarjeta, para que
+  cuenten igual los enlaces directos, la búsqueda, favoritos y el botón Atrás.
+- Evidencia: `src/lib/recentlyViewed.ts` y `tests/unit/recently-viewed.test.ts`.
+
+## D-065 — La app tiene su propia portada, no la web adaptada
+
+- Fecha: 2026-08-07.
+- Estado: vigente.
+- Decisión: dentro del binario, `Home` monta `AppHome`. El orden es
+  producto → descubrimiento → disponibilidad → compra, y los servicios van al
+  final.
+- Por qué un componente aparte y no condicionales: son dos composiciones con
+  públicos opuestos que comparten catálogo, tarjetas y rutas pero no estructura.
+  Repartir `isNativeApp` por las doce secciones de la portada web habría dejado
+  un archivo que nadie puede leer entero. La decisión se toma una vez, arriba.
+- Nada inventado: el hero elige por dato el producto con oferta más caro, las
+  oportunidades salen sólo de `previousPrice` real, y **no se promete recogida
+  ni disponibilidad por tienda** porque el catálogo tiene existencias por
+  variante, no por tienda. Sin dato, la sección no aparece.
+- **La oferta se busca en el modelo entero**, con `lib/offers.ts`, no en su
+  primera capacidad. La rebaja vive en la variante: el MacBook Air M5 no la
+  tiene en su configuración de entrada y sí en la de 15 pulgadas, y mirando sólo
+  la primera se quedaba fuera —cinco modelos en oferta de los seis que hay—.
+  Precio, precio anterior, porcentaje y enlace salen todos de esa misma
+  variante; juntar el «desde» de una con el precio anterior de otra anunciaría
+  un descuento que nadie puede comprar. Lo usan la portada de la app,
+  `ProductCardCompact` y también `ProductCard`, que arrastraba el mismo fallo.
+- **La imagen también sale de esa variante** (`presentacionDeTarjeta`). Con el
+  precio corregido pero la foto todavía en `colors[0]`, una tarjeta podía
+  enseñar la foto de un color, la rebaja de otro y abrir el segundo al pulsar.
+  Hoy no se ve —las seis rebajas del catálogo están en el primer color—, y por
+  eso mismo se cierra ahora: en cuanto se rebaje un color posterior la tarjeta
+  empezaría a mentir sin que fallara nada. Sin oferta, el color y la capacidad
+  son los de entrada, así que la mayoría de tarjetas no cambia.
+- Todas las familias de dispositivos comparten `CatalogoFiltrable`. AirPods
+  entraba por la página genérica y conservaba un filtro por tramos de precio
+  propio, sin disponibilidad, sin ordenación y con el estado en `useState`; se
+  retiró en vez de mantener dos sistemas según por dónde se entrara.
+- `ProductCardCompact` acompaña a la portada: `ProductCard` mide 400 px de alto
+  como mínimo, correcto en una rejilla de escritorio e inmanejable en un
+  carrusel de móvil.
+- Evidencia: `tests/e2e/app-shopping.spec.ts`.
+
+## D-066 — La barra de compra se apoya en la navegación de la app
+
+- Fecha: 2026-08-07.
+- Estado: vigente.
+- Problema: la barra de compra de `VariantPage` es `fixed bottom-0`, pero
+  `AppTabBar` **no** es `fixed` —es el último hermano de la columna que ocupa la
+  pantalla—. Medido en un iPhone 13 simulado: la barra terminaba en 844 px y la
+  navegación empezaba en 785, con 59 px de solape y sus botones inalcanzables.
+- Decisión: en la app se sube exactamente `ALTURA_TAB_BAR`, la constante que ya
+  exportaba `AppTabBar` y que incluye el área segura; en el navegador móvil se
+  queda abajo y gana el relleno de `safe-area-inset-bottom`, que antes tampoco
+  respetaba.
+- **Corrección del 2026-08-07 — «una sola fuente» no era cierto.** La constante
+  existía, pero la barra no se dimensionaba con ella: su altura salía de sus
+  paddings, su icono y su texto, y los `4rem` del literal se le parecían por
+  casualidad. Ni siquiera coincidían — la barra medía **58,75 px** frente a los
+  64 declarados, así que la barra de compra se apartaba 5 px de más y quedaba un
+  hueco. Ahora el `<nav>` toma su `minHeight` de `ALTURA_TAB_BAR`: la altura
+  real y el hueco que dejan los demás son el mismo número por construcción.
+- Efecto visible, pequeño y buscado: la barra pasa de 58,75 a 64 px y el hueco
+  entre ella y la barra de compra desaparece.
+- Evidencia: `tests/e2e/app-shopping.spec.ts` compara las cajas de las dos
+  barras en los dos modos.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y
