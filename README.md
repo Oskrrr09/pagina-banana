@@ -8,7 +8,7 @@ sobre React + Vite + TypeScript y publicada en GitHub Pages.
 > _Pedido de demostración_, _Condición demostrativa_, _Stock de ejemplo_ o
 > _Pendiente de validación con Banana Computer_.
 
-**URL pública:** <https://luis-lop-nas.github.io/pagina-banana/>
+**URL pública:** <https://oskrrr09.github.io/pagina-banana/>
 
 ## Stack
 

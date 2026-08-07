@@ -69,11 +69,11 @@ accesibilidad sin alterar el diseño general ni añadir flujos de producto.
 
 ## Pendientes y siguiente paso
 
-La PR [#1](https://github.com/luis-lop-nas/pagina-banana/pull/1) se fusionó en
+La PR [#1](https://github.com/Oskrrr09/pagina-banana/pull/1) se fusionó en
 `main` como `bdd7c85`. El workflow de Pages
-[`30206642599`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30206642599)
+[`30206642599`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30206642599)
 terminó correctamente y la versión pública se verificó en
-<https://luis-lop-nas.github.io/pagina-banana/>.
+<https://oskrrr09.github.io/pagina-banana/>.
 
 El siguiente paso es validar visualmente el prototipo publicado con el equipo
 de Banana Computer y convertir sus observaciones en tareas concretas.

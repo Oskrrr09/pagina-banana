@@ -10,7 +10,7 @@ tema: auditoría UX de la web oficial de Banana Computer
 
 Analizar https://tienda.bananacomputer.com/ desde el punto de vista
 UX, generar hallazgos accionables y compararlos con el prototipo
-existente en `luis-lop-nas/pagina-banana` sin implementar todavía
+existente en `Oskrrr09/pagina-banana` sin implementar todavía
 ninguna mejora.
 
 ## Metodología

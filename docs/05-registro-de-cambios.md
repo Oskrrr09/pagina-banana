@@ -1457,11 +1457,11 @@ Workflow `30277394128` completado con `success`.
 
 ## 2026-07-26 — Selector de tema e imágenes Mac, publicado
 
-La PR [#5](https://github.com/luis-lop-nas/pagina-banana/pull/5) se fusionó en
+La PR [#5](https://github.com/Oskrrr09/pagina-banana/pull/5) se fusionó en
 `main`. El workflow
-[`30214178171`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30214178171)
+[`30214178171`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30214178171)
 compiló y publicó la versión en
-<https://luis-lop-nas.github.io/pagina-banana/>.
+<https://oskrrr09.github.io/pagina-banana/>.
 
 - Añadido un selector claro/oscuro en la cabecera comercial y en checkout.
 - La preferencia del sistema actúa como valor inicial y la elección manual se
@@ -1478,11 +1478,11 @@ compiló y publicó la versión en
 
 ## 2026-07-26 — Consistencia visual y tema del dispositivo, publicado
 
-La PR [#4](https://github.com/luis-lop-nas/pagina-banana/pull/4) se fusionó en
+La PR [#4](https://github.com/Oskrrr09/pagina-banana/pull/4) se fusionó en
 `main`. El workflow
-[`30211613240`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30211613240)
+[`30211613240`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30211613240)
 compiló y publicó la versión en
-<https://luis-lop-nas.github.io/pagina-banana/>.
+<https://oskrrr09.github.io/pagina-banana/>.
 
 - Fijada la altura del carrusel de tiendas y del mega-menú de escritorio.
 - El mega-menú Mac usa imagen de producto, sitúa “Nuevo” sobre la tarjeta y
@@ -1496,11 +1496,11 @@ compiló y publicó la versión en
 
 ## 2026-07-26 — Catálogo y flujo de compra publicado
 
-La PR [#3](https://github.com/luis-lop-nas/pagina-banana/pull/3) se fusionó en
+La PR [#3](https://github.com/Oskrrr09/pagina-banana/pull/3) se fusionó en
 `main`. El workflow
-[`30210351355`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30210351355)
+[`30210351355`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30210351355)
 compiló y publicó la versión, verificada después en
-<https://luis-lop-nas.github.io/pagina-banana/>.
+<https://oskrrr09.github.io/pagina-banana/>.
 
 - Nueva presentación de iPhone y Mac con franja horizontal de modelos, ofertas
   destacadas y acceso directo a variantes.
@@ -1521,9 +1521,9 @@ compiló y publicó la versión, verificada después en
 
 ## 2026-07-26 — Flujo de variantes y seguro publicado
 
-La PR [#2](https://github.com/luis-lop-nas/pagina-banana/pull/2) se fusionó en
+La PR [#2](https://github.com/Oskrrr09/pagina-banana/pull/2) se fusionó en
 `main` y el workflow
-[`30208520075`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30208520075)
+[`30208520075`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30208520075)
 publicó correctamente esta versión en GitHub Pages.
 
 ### Flujo de variantes y seguro
@@ -1538,11 +1538,11 @@ publicó correctamente esta versión en GitHub Pages.
 
 ## 2026-07-26 — Publicado en GitHub Pages
 
-La PR [#1](https://github.com/luis-lop-nas/pagina-banana/pull/1) se fusionó en
+La PR [#1](https://github.com/Oskrrr09/pagina-banana/pull/1) se fusionó en
 `main` y el workflow
-[`30206642599`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30206642599)
+[`30206642599`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30206642599)
 publicó correctamente esta versión en
-<https://luis-lop-nas.github.io/pagina-banana/>.
+<https://oskrrr09.github.io/pagina-banana/>.
 
 ### Presentación y accesibilidad
 

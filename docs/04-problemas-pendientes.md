@@ -196,7 +196,7 @@ forman el backlog verificable.
   botón de enviar — el test seguía buscando las etiquetas y la
   estructura antiguas y llevaba fallando en CI desde entonces sin que
   se detectara (`docs: chat en tiempo real...`, run
-  [`30573485862`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30573485862)).
+  [`30573485862`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30573485862)).
   Reescrito para reflejar el diálogo actual.
 
 ## SEG-001 — Avisos de seguridad en React Router
@@ -341,7 +341,7 @@ forman el backlog verificable.
 ## CHAT-SEC-001-HIST — Estado anterior de CHAT-SEC-001 (Fase 1)
 
 - Estado: histórico, resuelto. Se conserva para no perder el contexto.
-- Impacto: medio en producción (`https://luis-lop-nas.github.io/pagina-banana/agente`).
+- Impacto: medio en producción (`https://oskrrr09.github.io/pagina-banana/agente`).
 - Evidencia: `src/pages/AgentPage.tsx` no protege la ruta; las políticas
   RLS en `supabase/schema.sql` permiten a `anon` leer y escribir en las
   tres tablas.

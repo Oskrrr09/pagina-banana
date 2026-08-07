@@ -14,8 +14,8 @@ actualizado: 2026-08-06
 
 ## Auditoría de seguridad en curso (2026-08-02 a 2026-08-06)
 
-Las PR [#33](https://github.com/luis-lop-nas/pagina-banana/pull/33) y
-[#34](https://github.com/luis-lop-nas/pagina-banana/pull/34) cierran la lectura
+Las PR [#33](https://github.com/Oskrrr09/pagina-banana/pull/33) y
+[#34](https://github.com/Oskrrr09/pagina-banana/pull/34) cierran la lectura
 anónima incondicional del chat y las escrituras directas sobre conversaciones,
 mensajes, agentes, clientes y reservas. El visitante usa ahora una sesión
 anónima firmada; propietario, autor, agente, estado y fechas sensibles los
@@ -193,7 +193,7 @@ Android (2026-08-01).**
 - PR #33 y PR #34: abiertas en borrador, encadenadas y sin conflictos. No han
   desplegado Pages.
 - URL pública conocida:
-  <https://luis-lop-nas.github.io/pagina-banana/>. Todavía representa `main`,
+  <https://oskrrr09.github.io/pagina-banana/>. Todavía representa `main`,
   no la migración de seguridad.
 - **Node.js 24** en el workflow unificado `ci.yml`; `.nvmrc` alinea local y CI.
 - **Estado de dependencias (actualizado el 2026-08-06)**: React Router se migró
@@ -450,23 +450,23 @@ bloquear el despliegue si falta la validación RLS dedicada.
 > del documento.
 
 El despliegue de la PR #1 finalizó correctamente el 2026-07-26 en el workflow
-[`30206642599`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30206642599).
+[`30206642599`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30206642599).
 
 El despliegue de la PR #4 finalizó correctamente el 2026-07-26 en el workflow
-[`30211613240`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30211613240).
+[`30211613240`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30211613240).
 La URL pública devolvió HTTP 200, cargó los recursos desde
 `/pagina-banana/assets/` y mostró el bloque neutro de opiniones que existía en
 esa versión antigua (hoy la portada muestra reseñas demostrativas visibles a
 propósito).
 
 El despliegue de la PR #5 finalizó correctamente el 2026-07-26 en el workflow
-[`30214178171`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30214178171).
+[`30214178171`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30214178171).
 La versión pública de aquel momento conservaba el tema oscuro tras navegar
 (la interfaz **actual** utiliza un modo claro fijo), mantuvo el fondo negro
 continuo de la campaña y cargó las ocho fotografías Mac centradas.
 
 El despliegue de la PR #2 finalizó correctamente en el workflow
-[`30208520075`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30208520075).
+[`30208520075`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30208520075).
 La versión pública abrió `512gb-naranja` desde el configurador, conservó el
 `basename` y mostró el seguro como casilla.
 
@@ -521,7 +521,7 @@ El 2026-07-26, en la rama `feature/catalog-and-purchase-flow`:
 - El acceso al chat abre un aviso de disponibilidad futura, cierra con Escape y
   devuelve el foco a su botón.
 - La PR #3 se fusionó en `main`; el workflow
-  [`30210351355`](https://github.com/luis-lop-nas/pagina-banana/actions/runs/30210351355)
+  [`30210351355`](https://github.com/Oskrrr09/pagina-banana/actions/runs/30210351355)
   compiló y desplegó correctamente.
 - La URL pública mostró el catálogo Mac, la ruta profunda de MacBook Neo, las
   dos acciones de compra, el seguro por producto, la cabecera amarilla suave y
