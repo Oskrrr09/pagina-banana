@@ -24,8 +24,12 @@ autores, diffs y marcas de tiempo.
 - Verificado en la propia PR #37: con checks pendientes GitHub **rechazó** la
   fusión y el estado era `BLOCKED`; con los cuatro en verde pasó a `CLEAN` y se
   fusionó con normalidad.
-- `Publicar en GitHub Pages` no figura entre los obligatorios, a propósito: en un
-  PR siempre sale *skipped* y bloquearía la fusión para siempre.
+- `Publicar en GitHub Pages` no figura entre los obligatorios, a propósito: es un
+  job de despliegue condicionado al `push` sobre `main`, no valida el PR, y
+  exigirlo añadiría una dependencia innecesaria entre validación y despliegue.
+  (No es que un check omitido bloquee la fusión: GitHub acepta `success`,
+  `skipped` o `neutral`. Lo que bloquea indefinidamente es un workflow exigido
+  que no llegue a reportar ningún estado.)
 - `AGENTS.md` recoge que `main` ya no acepta escrituras directas.
 
 ## 2026-08-06 — Las preferencias de cuenta no sobreviven al cierre de sesión

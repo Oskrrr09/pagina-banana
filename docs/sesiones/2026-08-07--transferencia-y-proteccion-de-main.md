@@ -42,10 +42,18 @@ Tres decisiones que no son evidentes:
 - **`integration_id: 15368`** en cada check, para atarlos a GitHub Actions. Sin
   eso, cualquier aplicación externa podría publicar un check con el mismo nombre
   y darlo por bueno.
-- **`Publicar en GitHub Pages` fuera de los obligatorios.** Está condicionado a
-  `push` sobre `main`, así que en un PR siempre sale *skipped*, y un check
-  obligatorio omitido es una causa clásica de PR bloqueados para siempre. Era el
-  riesgo principal del diseño.
+- **`Publicar en GitHub Pages` fuera de los obligatorios.** Es un job de
+  despliegue condicionado al `push` sobre `main`: no valida el pull request, y
+  exigirlo como condición previa a la fusión ataría la validación al despliegue
+  sin necesidad.
+
+  Conviene dejar escrito el error que se cometió al justificarlo, porque es
+  fácil repetirlo: se dijo que un check omitido bloquearía la fusión para
+  siempre. **No es cierto.** GitHub da por satisfecho un check obligatorio con
+  `success`, `skipped` o `neutral`. Lo que sí bloquea indefinidamente es que el
+  workflow exigido **no reporte ningún estado**, por ejemplo si un filtro de
+  `paths` o `branches` impide que llegue a dispararse. La exclusión sigue siendo
+  correcta; el razonamiento que la sostenía, no.
 
 ### La transferencia había roto la URL pública
 

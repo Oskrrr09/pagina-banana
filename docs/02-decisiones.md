@@ -1097,9 +1097,16 @@ No atribuye motivaciones que el repositorio no documenta.
   cualquier aplicación externa podría publicar un check con el mismo nombre y
   darlo por bueno.
 - **`Publicar en GitHub Pages` queda deliberadamente FUERA de los obligatorios.**
-  Está condicionado a `push` sobre `main`, así que en un pull request siempre
-  aparece *skipped*, y un check obligatorio omitido es una causa clásica de PR
-  bloqueados para siempre.
+  Es un job de **despliegue**, condicionado al `push` sobre `main`: no valida el
+  pull request, y exigirlo como condición previa a la fusión añadiría una
+  dependencia innecesaria entre validación y despliegue.
+- Corrección del 2026-08-07: una versión anterior de esta decisión justificaba
+  esa exclusión diciendo que un check omitido bloquearía la fusión para siempre.
+  **Es falso.** GitHub da por satisfecho un check obligatorio con `success`,
+  `skipped` **o** `neutral`. Lo que sí puede bloquear indefinidamente es que el
+  workflow exigido no llegue a reportar **ningún** estado —por ejemplo, si un
+  filtro de `paths` o de `branches` impide que se dispare—. La decisión no
+  cambia; el motivo, sí.
 - Comprobado con la PR #37, que se abrió para eso: con checks pendientes el
   estado fue `BLOCKED` y GitHub rechazó la fusión —«the base branch policy
   prohibits the merge»—; con los cuatro en verde pasó a `CLEAN` y se fusionó sin
