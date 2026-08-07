@@ -5,6 +5,7 @@ import type { Model } from '../../../data/types'
 import { euro } from '../../../lib/format'
 import { useCatalogo, useIdioma } from '../../../lib/i18n'
 import { leerRecientes } from '../../../lib/recentlyViewed'
+import { getOfferVariant, tieneOferta } from '../../../lib/offers'
 import { useStorePreference } from '../../../lib/storePreference'
 import { ButtonLink } from '../../ui/Button'
 import { Icon } from '../../ui/Icon'
@@ -99,16 +100,21 @@ function HeroDestacado() {
   const { t, intl } = useIdioma()
   const cat = useCatalogo()
 
+  // Misma noción de oferta que el resto de la portada: `getOfferVariant`, no
+  // la primera capacidad. Si no hubiera ninguna rebaja, el más caro del
+  // catálogo.
   const destacado = useMemo<Model | undefined>(() => {
-    const conOferta = allModels.filter((m) => m.colors[0].capacities[0].previousPrice != null)
+    const conOferta = allModels.filter(tieneOferta)
     const candidatos = conOferta.length > 0 ? conOferta : allModels
     return [...candidatos].sort((a, b) => b.fromPrice - a.fromPrice)[0]
   }, [])
 
   if (!destacado) return null
 
-  const color = destacado.colors[0]
-  const primera = color.capacities[0]
+  const oferta = getOfferVariant(destacado)
+  // Con oferta se enseña y se enlaza ESA variante; sin ella, la de entrada.
+  const color = oferta ? oferta.color : destacado.colors[0]
+  const destino = oferta ? variantPath(destacado, oferta.color, oferta.capacity) : variantPath(destacado)
 
   return (
     <section aria-labelledby="app-hero-titulo" className="px-4 pt-4">
@@ -119,10 +125,10 @@ function HeroDestacado() {
             {cat(destacado.name)}
           </h1>
           <p className="mt-2 text-sm text-ink">
-            {t('common.from', { precio: euro(destacado.fromPrice, intl) })}
-            {primera.previousPrice && (
+            {oferta ? euro(oferta.precio, intl) : t('common.from', { precio: euro(destacado.fromPrice, intl) })}
+            {oferta && (
               <span className="ml-2 text-sm font-semibold text-muted line-through">
-                {euro(primera.previousPrice, intl)}
+                {euro(oferta.precioAnterior, intl)}
               </span>
             )}
           </p>
@@ -132,7 +138,7 @@ function HeroDestacado() {
             fuera, que es justo lo contrario de lo que tiene que hacer un hero
             comercial. Así entran imagen, precio y llamada a la acción de una
             sola mirada. */}
-        <Link to={variantPath(destacado)} className="mt-3 block px-5">
+        <Link to={destino} className="mt-3 block px-5">
           <ProductImage
             src={color.image}
             alt={`${cat(destacado.name)} ${color.name}`}
@@ -144,7 +150,7 @@ function HeroDestacado() {
           />
         </Link>
         <div className="p-5 pt-4">
-          <ButtonLink to={variantPath(destacado)} size="lg" className="w-full justify-center">
+          <ButtonLink to={destino} size="lg" className="w-full justify-center">
             {t('common.buy')}
           </ButtonLink>
         </div>
@@ -203,7 +209,7 @@ function VistosRecientemente() {
  */
 function Oportunidades() {
   const { t } = useIdioma()
-  const enOferta = useMemo(() => allModels.filter((m) => m.colors[0].capacities[0].previousPrice != null), [])
+  const enOferta = useMemo(() => allModels.filter(tieneOferta), [])
 
   if (enOferta.length === 0) return null
 
@@ -268,10 +274,7 @@ function PorCategoria() {
  */
 function Destacados() {
   const { t } = useIdioma()
-  const seleccion = useMemo(
-    () => allModels.filter((m) => m.colors[0].capacities[0].previousPrice == null).slice(0, 6),
-    [],
-  )
+  const seleccion = useMemo(() => allModels.filter((m) => !tieneOferta(m)).slice(0, 6), [])
 
   if (seleccion.length === 0) return null
 

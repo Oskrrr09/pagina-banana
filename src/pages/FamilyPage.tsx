@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useCatalogo, useIdioma } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { ProductCard } from '../components/product/ProductCard'
 import { Button, ButtonLink } from '../components/ui/Button'
-import { Chip } from '../components/ui/Chip'
 import { Icon } from '../components/ui/Icon'
 import { ProductImage } from '../components/product/ProductImage'
 import { OfferBadge, ProvisionalBadge } from '../components/ui/Tag'
@@ -15,31 +14,21 @@ import { NotFound } from './NotFound'
 import { CatalogFilters } from '../components/product/CatalogFilters'
 import { aplicarFiltros, escribirFiltrosEnUrl, leerFiltrosDeUrl, type FiltrosCatalogo } from '../lib/catalogFilters'
 
-// Página de familia genérica (§4.5): encabezado, modelos, acceso al comparador
-// y filtro rápido por precio. Sirve para iPhone, Mac, iPad, Watch y AirPods.
-// Los tramos se guardan como cifras y el rótulo se compone al pintar: el
-// símbolo del euro no va en el mismo sitio en todos los idiomas («900 €» pero
-// «€900»), así que dejarlo escrito en el dato lo dejaría mal en cuatro de los
-// cinco. La selección va por índice, no por rótulo.
-const PRICE_RANGES = [
-  { min: 0, max: Infinity },
-  { min: 0, max: 900 },
-  { min: 900, max: 1500 },
-  { min: 1500, max: Infinity },
-]
+// Página de familia genérica (§4.5): encabezado, modelos y acceso al
+// comparador. Sirve para las familias sin escaparate propio —hoy AirPods—.
+//
+// El filtro por tramos de precio que vivía aquí se retiró: hacía lo mismo que
+// `CatalogoFiltrable` pero peor —sin disponibilidad, sin ordenación y guardando
+// el estado en `useState`, así que Atrás no lo recuperaba y un enlace no lo
+// llevaba—. Mantener dos sistemas de filtrado según la familia sólo servía para
+// que la experiencia dependiera de por dónde entrases.
 
 export function FamilyPage() {
-  const { t, intl } = useIdioma()
+  const { t } = useIdioma()
   const { family: familySlug } = useParams()
-  const [range, setRange] = useState(0)
 
   const family = familyInfo(familySlug ?? '')
   const models = getFamilyModels(familySlug ?? '')
-
-  const filtered = useMemo(() => {
-    const r = PRICE_RANGES[range]
-    return models.filter((m) => m.fromPrice >= r.min && m.fromPrice <= r.max)
-  }, [models, range])
 
   // Familia inexistente o sin catálogo desarrollado → 404 amable.
   if (!family || models.length === 0) return <NotFound />
@@ -49,7 +38,6 @@ export function FamilyPage() {
   }
 
   const heroImage = models[0].colors[0].image
-  const minPrice = Math.min(...models.map((m) => m.fromPrice))
 
   return (
     <>
@@ -83,38 +71,9 @@ export function FamilyPage() {
       </section>
 
       <Container className="py-10">
-        {/* 4 — Filtro rápido por precio */}
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
-              <Icon name="filter" size={16} /> {t('family.filterByPrice')}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {PRICE_RANGES.map((r, i) => (
-                <Chip key={i} selected={range === i} onClick={() => setRange(i)}>
-                  {etiquetaTramo(r, t, intl)}
-                </Chip>
-              ))}
-            </div>
-          </div>
-          <p className="text-sm text-muted">
-            {filtered.length} {filtered.length === 1 ? t('catalog.model') : t('catalog.models')} ·{' '}
-            {t('common.from', { precio: euro(minPrice, intl) })}
-          </p>
-        </div>
-
-        {/* 2 — Modelos disponibles */}
-        {filtered.length > 0 ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((m) => (
-              <ProductCard key={m.slug} model={m} />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-[12px] border border-dashed border-line py-16 text-center text-muted">
-            No hay modelos en este rango de precio.
-          </div>
-        )}
+        {/* Los mismos filtros que el resto de familias: no había motivo para
+            que AirPods tuviera su propio sistema con otro comportamiento. */}
+        <CatalogoFiltrable models={models} />
 
         {/* 3 — Acceso al comparador */}
         {models.length > 1 && (
@@ -251,18 +210,6 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
       </Container>
     </>
   )
-}
-
-/** Compone el rótulo de un tramo de precio en el idioma activo. */
-function etiquetaTramo(
-  { min, max }: { min: number; max: number },
-  t: ReturnType<typeof useIdioma>['t'],
-  intl: string,
-): string {
-  if (min === 0 && max === Infinity) return t('family.priceAll')
-  if (min === 0) return t('family.priceUpTo', { importe: euro(max, intl) })
-  if (max === Infinity) return t('family.priceOver', { importe: euro(min, intl) })
-  return t('family.priceBetween', { desde: euro(min, intl), hasta: euro(max, intl) })
 }
 
 /**

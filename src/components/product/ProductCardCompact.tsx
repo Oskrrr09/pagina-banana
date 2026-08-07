@@ -6,6 +6,7 @@ import { ProductImage } from './ProductImage'
 import { Icon } from '../ui/Icon'
 import { variantPath } from '../../data/products'
 import { useCatalogo, useIdioma } from '../../lib/i18n'
+import { getOfferVariant } from '../../lib/offers'
 
 /**
  * Tarjeta de producto para carruseles horizontales de la aplicación.
@@ -22,9 +23,10 @@ import { useCatalogo, useIdioma } from '../../lib/i18n'
  * mismo archivo habría dejado media docena de condicionales repartidos por el
  * marcado.
  *
- * El descuento se calcula igual que en `ProductCard`, sobre la primera
- * capacidad del primer color, para que las dos digan lo mismo del mismo
- * producto.
+ * La oferta sale de `getOfferVariant`, que recorre el modelo entero. Precio,
+ * precio anterior, porcentaje y enlace se refieren todos a **esa** variante: si
+ * la rebaja está en la de 15 pulgadas, la tarjeta enseña su precio y abre esa,
+ * no la configuración de entrada.
  *
  * La imagen se deja en carga diferida —`ProductImage` lo hace por defecto sin
  * `priority`—: estos carruseles viven por debajo del pliegue.
@@ -36,9 +38,9 @@ export function ProductCardCompact({ model }: { model: Model }) {
 
   const favId = `${model.family}/${model.slug}`
   const fav = isFavorite(favId)
-  const primera = model.colors[0].capacities[0]
-  const anterior = primera.previousPrice
-  const descuento = anterior ? Math.round(((anterior - primera.price) / anterior) * 100) : 0
+  const oferta = getOfferVariant(model)
+  // Sin oferta se enlaza la variante de entrada, como cualquier otra tarjeta.
+  const destino = oferta ? variantPath(model, oferta.color, oferta.capacity) : variantPath(model)
 
   return (
     <article className="relative flex w-[9.5rem] shrink-0 flex-col rounded-[12px] border border-line bg-surface p-3 sm:w-44">
@@ -57,13 +59,13 @@ export function ProductCardCompact({ model }: { model: Model }) {
         <Icon name="heart" size={18} className={fav ? 'fill-danger text-danger' : ''} />
       </button>
 
-      {descuento > 0 && (
+      {oferta && oferta.descuento > 0 && (
         <span className="absolute left-2 top-2 z-10 rounded-[8px] bg-danger px-1.5 py-1 text-xs font-extrabold leading-none text-white">
-          -{descuento}%
+          -{oferta.descuento}%
         </span>
       )}
 
-      <Link to={variantPath(model)} className="flex flex-1 flex-col focus-visible:outline-none">
+      <Link to={destino} className="flex flex-1 flex-col focus-visible:outline-none">
         <ProductImage
           src={model.colors[0].image}
           alt={`${cat(model.name)} ${model.colors[0].name}`}
@@ -72,12 +74,13 @@ export function ProductCardCompact({ model }: { model: Model }) {
         />
         <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-ink">{cat(model.name)}</h3>
         <div className="mt-auto pt-2">
-          {anterior ? (
+          {oferta ? (
             <>
+              {/* Los dos precios son de la MISMA variante: la ofertada. */}
               <span className="block text-base font-extrabold leading-none text-danger">
-                {euro(model.fromPrice, intl)}
+                {euro(oferta.precio, intl)}
               </span>
-              <span className="text-xs font-semibold text-muted line-through">{euro(anterior, intl)}</span>
+              <span className="text-xs font-semibold text-muted line-through">{euro(oferta.precioAnterior, intl)}</span>
             </>
           ) : (
             <span className="block text-base font-bold leading-none text-ink">

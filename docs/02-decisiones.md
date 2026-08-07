@@ -1154,6 +1154,18 @@ No atribuye motivaciones que el repositorio no documenta.
   oportunidades salen sólo de `previousPrice` real, y **no se promete recogida
   ni disponibilidad por tienda** porque el catálogo tiene existencias por
   variante, no por tienda. Sin dato, la sección no aparece.
+- **La oferta se busca en el modelo entero**, con `lib/offers.ts`, no en su
+  primera capacidad. La rebaja vive en la variante: el MacBook Air M5 no la
+  tiene en su configuración de entrada y sí en la de 15 pulgadas, y mirando sólo
+  la primera se quedaba fuera —cinco modelos en oferta de los seis que hay—.
+  Precio, precio anterior, porcentaje y enlace salen todos de esa misma
+  variante; juntar el «desde» de una con el precio anterior de otra anunciaría
+  un descuento que nadie puede comprar. Lo usan la portada de la app,
+  `ProductCardCompact` y también `ProductCard`, que arrastraba el mismo fallo.
+- Todas las familias de dispositivos comparten `CatalogoFiltrable`. AirPods
+  entraba por la página genérica y conservaba un filtro por tramos de precio
+  propio, sin disponibilidad, sin ordenación y con el estado en `useState`; se
+  retiró en vez de mantener dos sistemas según por dónde se entrara.
 - `ProductCardCompact` acompaña a la portada: `ProductCard` mide 400 px de alto
   como mínimo, correcto en una rejilla de escritorio e inmanejable en un
   carrusel de móvil.
@@ -1171,7 +1183,15 @@ No atribuye motivaciones que el repositorio no documenta.
   exportaba `AppTabBar` y que incluye el área segura; en el navegador móvil se
   queda abajo y gana el relleno de `safe-area-inset-bottom`, que antes tampoco
   respetaba.
-- Una sola fuente para la altura: nada de repetir `4rem` por el código.
+- **Corrección del 2026-08-07 — «una sola fuente» no era cierto.** La constante
+  existía, pero la barra no se dimensionaba con ella: su altura salía de sus
+  paddings, su icono y su texto, y los `4rem` del literal se le parecían por
+  casualidad. Ni siquiera coincidían — la barra medía **58,75 px** frente a los
+  64 declarados, así que la barra de compra se apartaba 5 px de más y quedaba un
+  hueco. Ahora el `<nav>` toma su `minHeight` de `ALTURA_TAB_BAR`: la altura
+  real y el hueco que dejan los demás son el mismo número por construcción.
+- Efecto visible, pequeño y buscado: la barra pasa de 58,75 a 64 px y el hueco
+  entre ella y la barra de compra desaparece.
 - Evidencia: `tests/e2e/app-shopping.spec.ts` compara las cajas de las dos
   barras en los dos modos.
 

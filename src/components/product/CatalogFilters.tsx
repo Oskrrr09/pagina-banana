@@ -78,13 +78,22 @@ export function CatalogFilters({
           )}
         </Button>
 
-        {/* El orden no se esconde tras el panel: se cambia de un toque. */}
-        <label className="flex items-center gap-2 text-sm text-muted">
-          <span>{t('catalog.sort')}</span>
+        {/* El orden no se esconde tras el panel: se cambia de un toque.
+            `min-w-0` en la etiqueta y en el desplegable, y `max-w-full` en
+            este: el ancho intrínseco de un `<select>` lo fija su opción más
+            larga, y «Orden del catálogo» no cabe junto a «Filtrar» en una
+            pantalla de 320 px. Un elemento flexible no encoge por debajo de su
+            contenido salvo que se le quite ese mínimo, así que sin esto se
+            salía de la pantalla —tres píxeles con las fuentes de Linux, cero
+            con las de macOS, que es la clase de diferencia que sólo aparece en
+            CI—. Envolver no bastaba: `flex-wrap` mueve elementos de línea, no
+            los estrecha. */}
+        <label className="flex min-w-0 items-center gap-2 text-sm text-muted">
+          <span className="shrink-0">{t('catalog.sort')}</span>
           <select
             value={filtros.orden}
             onChange={(e) => onCambiar({ ...filtros, orden: e.target.value as Orden })}
-            className="h-9 rounded-[10px] border border-line bg-surface px-2 text-sm font-semibold text-ink"
+            className="h-9 min-w-0 max-w-full truncate rounded-[10px] border border-line bg-surface px-2 text-sm font-semibold text-ink"
           >
             {ORDENES.map((o) => (
               <option key={o.valor} value={o.valor}>

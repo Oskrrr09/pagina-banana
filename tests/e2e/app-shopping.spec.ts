@@ -146,3 +146,29 @@ test.describe('barra de compra y navegación inferior', () => {
     expect(Math.round(caja.y + caja.height), 'debe quedar pegada al borde inferior').toBeGreaterThanOrEqual(alto - 2)
   })
 })
+
+test.describe('filtros del catálogo', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('AirPods tiene los mismos filtros que el resto de familias', async ({ page }) => {
+    // Entraba por la página genérica y conservaba un filtro por tramos de
+    // precio distinto, sin disponibilidad ni ordenación y sin estado en la URL.
+    await comoApp(page)
+    await page.goto('./airpods')
+
+    await expect(page.getByRole('button', { name: /Filtrar/ })).toBeVisible()
+    await expect(page.getByRole('combobox')).toBeVisible()
+    await expect(page.getByText('Filtrar por precio'), 'el sistema antiguo debe haber desaparecido').toHaveCount(0)
+  })
+
+  test('los filtros quedan en la URL y Atrás los recupera', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./airpods')
+
+    await page.getByRole('combobox').selectOption('precio-desc')
+    await expect(page).toHaveURL(/orden=precio-desc/)
+
+    await page.goBack()
+    await expect(page, 'Atrás vuelve al catálogo sin ordenar').not.toHaveURL(/orden=/)
+  })
+})
