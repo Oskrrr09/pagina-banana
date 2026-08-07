@@ -7,7 +7,7 @@ import { ProvisionalBadge, OfferBadge } from '../ui/Tag'
 import { Icon } from '../ui/Icon'
 import { variantPath } from '../../data/products'
 import { useCatalogo, useIdioma } from '../../lib/i18n'
-import { getOfferVariant } from '../../lib/offers'
+import { presentacionDeTarjeta } from '../../lib/offers'
 
 // Tarjeta de producto (§6): resume un modelo para decidir si entrar a la ficha.
 // Precio y disponibilidad en texto, no solo en color. Favorito con estado.
@@ -19,11 +19,11 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
   const fav = isFavorite(favId)
   // La oferta se busca en todo el modelo, no sólo en su primera capacidad:
   // hay modelos rebajados en otra configuración —el MacBook Air M5, por
-  // ejemplo—, y mirando sólo la de entrada se quedaban sin marcar. Precio,
-  // precio anterior y porcentaje salen de la MISMA variante, para no juntar el
-  // «desde» de una con el precio anterior de otra.
-  const oferta = getOfferVariant(model)
-  const destino = oferta ? variantPath(model, oferta.color, oferta.capacity) : variantPath(model)
+  // ejemplo—, y mirando sólo la de entrada se quedaban sin marcar. Imagen,
+  // precio, precio anterior, porcentaje y enlace salen de la MISMA variante,
+  // para no juntar el «desde» de una con el precio anterior —o la foto— de otra.
+  const { oferta, color, capacity } = presentacionDeTarjeta(model)
+  const destino = variantPath(model, color, capacity)
 
   if (loading) {
     return (
@@ -63,10 +63,10 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
 
       <Link to={destino} className="block focus-visible:outline-none">
         <ProductImage
-          src={model.colors[0].image}
-          alt={`${cat(model.name)} ${model.colors[0].name}`}
-          bgColor={model.colors[0].imageBg}
-          pad={!model.colors[0].imageBg}
+          src={color.image}
+          alt={`${cat(model.name)} ${color.name}`}
+          bgColor={color.imageBg}
+          pad={!color.imageBg}
         />
         <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">{cat(model.name)}</h3>
       </Link>

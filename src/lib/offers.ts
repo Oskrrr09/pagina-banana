@@ -63,3 +63,33 @@ export function getOfferVariant(model: Model): VarianteOfertada | null {
 export function tieneOferta(model: Model): boolean {
   return getOfferVariant(model) !== null
 }
+
+/** Lo que una tarjeta de producto necesita para pintarse sin contradecirse. */
+export interface PresentacionDeTarjeta {
+  /** `null` si el modelo no tiene ninguna variante rebajada. */
+  oferta: VarianteOfertada | null
+  /** De aquí salen la imagen, su fondo y el nombre del color. */
+  color: ColorVariant
+  /** A esta variante abre la tarjeta. */
+  capacity: CapacityOption
+}
+
+/**
+ * Resuelve la variante que una tarjeta debe **enseñar**, no sólo la que debe
+ * cobrar.
+ *
+ * Sin esto, una tarjeta acababa cogiendo el precio de la variante ofertada y la
+ * imagen de `colors[0]`: foto de un color, rebaja de otro y, al pulsar, apertura
+ * de un tercero. El fallo no se ve hoy —las seis rebajas del catálogo están en
+ * el primer color—, y por eso mismo conviene cerrarlo ahora: en cuanto alguien
+ * rebaje un color que no sea el primero, la tarjeta empieza a mentir sin que
+ * nada falle.
+ *
+ * Sin oferta devuelve exactamente el color y la capacidad de entrada, que es lo
+ * que las tarjetas ya hacían: el comportamiento de la inmensa mayoría no cambia.
+ */
+export function presentacionDeTarjeta(model: Model): PresentacionDeTarjeta {
+  const oferta = getOfferVariant(model)
+  const color = oferta?.color ?? model.colors[0]
+  return { oferta, color, capacity: oferta?.capacity ?? color.capacities[0] }
+}

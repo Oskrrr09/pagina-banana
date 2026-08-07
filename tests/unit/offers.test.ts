@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { getOfferVariant, tieneOferta } from '../../src/lib/offers'
-import { allModels, getModel } from '../../src/data/products/index'
+import { getOfferVariant, presentacionDeTarjeta, tieneOferta } from '../../src/lib/offers'
+import { allModels, getModel, variantPath } from '../../src/data/products/index'
 import type { Model } from '../../src/data/types'
 
 // Detección de la variante realmente ofertada.
@@ -20,7 +20,12 @@ function modelo(colores: { name: string; capacities: ReturnType<typeof variante>
     name: 'Prueba',
     tagline: '',
     fromPrice: colores[0].capacities[0].price,
-    colors: colores.map((c) => ({ color: c.name.toLowerCase(), name: c.name, hex: '#000', image: '', ...c })),
+    colors: colores.map((c) => {
+      const slug = c.name.toLowerCase().replace(/ /g, '-')
+      // Imagen distinta por color: es lo que permite comprobar que la tarjeta
+      // enseña la foto de la variante ofertada y no la de la primera.
+      return { color: slug, name: c.name, hex: '#000', image: `/img/${slug}.webp`, ...c }
+    }),
   } as unknown as Model
 }
 
@@ -86,12 +91,69 @@ describe('getOfferVariant', () => {
   })
 })
 
+// Coherencia de la tarjeta. Se prueba la función y no el componente montado a
+// propósito: lo que puede romperse es la elección de la variante, y montar
+// React aquí sólo añadiría maquetación entre el fallo y la prueba.
+describe('presentacionDeTarjeta', () => {
+  it('sin oferta enseña y abre el color de entrada', () => {
+    const m = modelo([
+      { name: 'Plata', capacities: [variante('256GB', 1000, null)] },
+      { name: 'Negro', capacities: [variante('256GB', 1000, null)] },
+    ])
+    const p = presentacionDeTarjeta(m)
+
+    expect(p.oferta).toBeNull()
+    expect(p.color).toBe(m.colors[0])
+    expect(p.capacity).toBe(m.colors[0].capacities[0])
+    // El destino tiene que salir idéntico al que daba `variantPath(model)`:
+    // la tarjeta sin rebaja —la mayoría— no cambia de comportamiento.
+    expect(variantPath(m, p.color, p.capacity)).toBe(variantPath(m))
+  })
+
+  it('con la oferta en un color posterior, foto, precio y destino son de ESE color', () => {
+    const m = modelo([
+      { name: 'Plata', capacities: [variante('256GB', 1000, null)] },
+      { name: 'Negro', capacities: [variante('512GB', 900, 1100)] },
+    ])
+    const p = presentacionDeTarjeta(m)
+
+    expect(p.oferta, 'la rebaja está en el segundo color').not.toBeNull()
+    // El fallo que se quiere evitar: foto de la Plata, precio de la Negra y,
+    // al pulsar, apertura de la Negra.
+    expect(p.color.name, 'la imagen sale del color rebajado').toBe('Negro')
+    expect(p.color.image).toBe('/img/negro.webp')
+    expect(p.color.image, 'no puede ser la del primer color').not.toBe(m.colors[0].image)
+    expect(p.oferta!.color).toBe(p.color)
+    expect(p.capacity).toBe(p.oferta!.capacity)
+    expect(variantPath(m, p.color, p.capacity)).toContain('negro')
+  })
+
+  it('la capacidad enseñada es la rebajada aunque no sea la primera', () => {
+    const m = modelo([{ name: 'Plata', capacities: [variante('256GB', 1319, null), variante('512GB', 1579, 1649)] }])
+    const p = presentacionDeTarjeta(m)
+
+    expect(p.capacity.capacity).toBe('512GB')
+    expect(p.oferta!.precio).toBe(p.capacity.price)
+  })
+})
+
 describe('contra el catálogo real', () => {
   it('encuentra los seis modelos con rebaja, no cinco', () => {
     const conOferta = allModels.filter(tieneOferta).map((m) => `${m.family}/${m.slug}`)
     expect(conOferta).toHaveLength(6)
     // El que se perdía al mirar sólo la primera capacidad.
     expect(conOferta, 'el MacBook Air M5 tiene la rebaja en la de 15 pulgadas').toContain('mac/macbook-air-m5')
+  })
+
+  it('ninguna tarjeta del catálogo mezcla color y capacidad', () => {
+    // La capacidad que se enseña tiene que existir DENTRO del color que se
+    // enseña. Es la invariante que rompía coger la imagen de `colors[0]`.
+    for (const m of allModels) {
+      const p = presentacionDeTarjeta(m)
+      expect(p.color.capacities, `${m.family}/${m.slug}`).toContain(p.capacity)
+      expect(m.colors, `${m.family}/${m.slug}`).toContain(p.color)
+      if (p.oferta) expect(p.oferta.precio).toBe(p.capacity.price)
+    }
   })
 
   it('la oferta del MacBook Air M5 apunta a la variante correcta', () => {

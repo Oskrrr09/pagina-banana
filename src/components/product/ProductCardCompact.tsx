@@ -6,7 +6,7 @@ import { ProductImage } from './ProductImage'
 import { Icon } from '../ui/Icon'
 import { variantPath } from '../../data/products'
 import { useCatalogo, useIdioma } from '../../lib/i18n'
-import { getOfferVariant } from '../../lib/offers'
+import { presentacionDeTarjeta } from '../../lib/offers'
 
 /**
  * Tarjeta de producto para carruseles horizontales de la aplicación.
@@ -23,10 +23,10 @@ import { getOfferVariant } from '../../lib/offers'
  * mismo archivo habría dejado media docena de condicionales repartidos por el
  * marcado.
  *
- * La oferta sale de `getOfferVariant`, que recorre el modelo entero. Precio,
- * precio anterior, porcentaje y enlace se refieren todos a **esa** variante: si
- * la rebaja está en la de 15 pulgadas, la tarjeta enseña su precio y abre esa,
- * no la configuración de entrada.
+ * La variante sale de `presentacionDeTarjeta`, que recorre el modelo entero.
+ * Imagen, precio, precio anterior, porcentaje y enlace se refieren todos a
+ * **esa** variante: si la rebaja está en la de 15 pulgadas, la tarjeta enseña su
+ * precio y abre esa, no la configuración de entrada.
  *
  * La imagen se deja en carga diferida —`ProductImage` lo hace por defecto sin
  * `priority`—: estos carruseles viven por debajo del pliegue.
@@ -38,9 +38,10 @@ export function ProductCardCompact({ model }: { model: Model }) {
 
   const favId = `${model.family}/${model.slug}`
   const fav = isFavorite(favId)
-  const oferta = getOfferVariant(model)
-  // Sin oferta se enlaza la variante de entrada, como cualquier otra tarjeta.
-  const destino = oferta ? variantPath(model, oferta.color, oferta.capacity) : variantPath(model)
+  // Sin oferta, `color` y `capacity` son los de entrada: es lo mismo que hacía
+  // antes `variantPath(model)`.
+  const { oferta, color, capacity } = presentacionDeTarjeta(model)
+  const destino = variantPath(model, color, capacity)
 
   return (
     <article className="relative flex w-[9.5rem] shrink-0 flex-col rounded-[12px] border border-line bg-surface p-3 sm:w-44">
@@ -66,11 +67,12 @@ export function ProductCardCompact({ model }: { model: Model }) {
       )}
 
       <Link to={destino} className="flex flex-1 flex-col focus-visible:outline-none">
+        {/* La foto es la del color al que abre el enlace, no la del primero. */}
         <ProductImage
-          src={model.colors[0].image}
-          alt={`${cat(model.name)} ${model.colors[0].name}`}
-          bgColor={model.colors[0].imageBg}
-          pad={!model.colors[0].imageBg}
+          src={color.image}
+          alt={`${cat(model.name)} ${color.name}`}
+          bgColor={color.imageBg}
+          pad={!color.imageBg}
         />
         <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-ink">{cat(model.name)}</h3>
         <div className="mt-auto pt-2">

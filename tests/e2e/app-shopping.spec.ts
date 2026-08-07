@@ -161,14 +161,39 @@ test.describe('filtros del catálogo', () => {
     await expect(page.getByText('Filtrar por precio'), 'el sistema antiguo debe haber desaparecido').toHaveCount(0)
   })
 
-  test('los filtros quedan en la URL y Atrás los recupera', async ({ page }) => {
+  test('Atrás desde una ficha devuelve el catálogo tal y como estaba', async ({ page }) => {
+    // Lo que hay que demostrar es el recorrido real: filtro, entro a un
+    // producto, vuelvo. Comprobar en cambio que Atrás borra los filtros no
+    // probaría nada, porque los cambios de filtro se navegan con `replace` —a
+    // propósito, para no meter una entrada de historial por cada toque— y ese
+    // Atrás se limitaría a salir de la página.
     await comoApp(page)
     await page.goto('./airpods')
 
+    await page.getByRole('button', { name: /Filtrar/ }).click()
+    await page.getByRole('button', { name: 'Hasta 500 €' }).click()
+    await page.getByRole('button', { name: /Ver \d+ modelos/ }).click()
     await page.getByRole('combobox').selectOption('precio-desc')
-    await expect(page).toHaveURL(/orden=precio-desc/)
+
+    await expect(page).toHaveURL(/\?precio=500&orden=precio-desc$/)
+    await expect(page.getByRole('combobox')).toHaveValue('precio-desc')
+    // 3 de los 4 AirPods bajan de 500 €; los Max, a 579 €, quedan fuera.
+    await expect(page.getByText('3 de 4')).toBeVisible()
+
+    // Se entra al primero de la rejilla, que con este orden es el más caro de
+    // los que quedan.
+    const primera = page.getByRole('link', { name: /AirPods Pro 3/ }).first()
+    await primera.click()
+    await expect(page.getByRole('heading', { level: 1, name: /AirPods Pro 3/ })).toBeVisible()
 
     await page.goBack()
-    await expect(page, 'Atrás vuelve al catálogo sin ordenar').not.toHaveURL(/orden=/)
+
+    // La URL vuelve con los dos parámetros...
+    await expect(page, 'Atrás recupera el catálogo que se estaba viendo').toHaveURL(/\?precio=500&orden=precio-desc$/)
+    // ...y los controles vuelven a reflejarlos, que es lo que ve quien navega.
+    await expect(page.getByRole('combobox')).toHaveValue('precio-desc')
+    await expect(page.getByText('3 de 4'), 'el filtro de precio sigue aplicado').toBeVisible()
+    await expect(page.getByRole('button', { name: /Filtrar 1/ }), 'el contador del botón sigue a 1').toBeVisible()
+    await expect(page.getByRole('link', { name: /AirPods Max/ })).toHaveCount(0)
   })
 })

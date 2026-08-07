@@ -1162,6 +1162,13 @@ No atribuye motivaciones que el repositorio no documenta.
   variante; juntar el «desde» de una con el precio anterior de otra anunciaría
   un descuento que nadie puede comprar. Lo usan la portada de la app,
   `ProductCardCompact` y también `ProductCard`, que arrastraba el mismo fallo.
+- **La imagen también sale de esa variante** (`presentacionDeTarjeta`). Con el
+  precio corregido pero la foto todavía en `colors[0]`, una tarjeta podía
+  enseñar la foto de un color, la rebaja de otro y abrir el segundo al pulsar.
+  Hoy no se ve —las seis rebajas del catálogo están en el primer color—, y por
+  eso mismo se cierra ahora: en cuanto se rebaje un color posterior la tarjeta
+  empezaría a mentir sin que fallara nada. Sin oferta, el color y la capacidad
+  son los de entrada, así que la mayoría de tarjetas no cambia.
 - Todas las familias de dispositivos comparten `CatalogoFiltrable`. AirPods
   entraba por la página genérica y conservaba un filtro por tramos de precio
   propio, sin disponibilidad, sin ordenación y con el estado en `useState`; se
