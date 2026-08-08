@@ -17,6 +17,13 @@ import { test, expect, type Page } from '@playwright/test'
 //
 // La tolerancia es de 2 px: los motores redondean el subpíxel de forma distinta
 // y una aserción a cero sería intermitente sin cazar nada más.
+//
+// QUÉ NO CUBRE
+//
+// `/cuenta` no está aquí: sin sesión no llega a pintar el formulario —rebota a
+// identificarse o enseña el aviso de configuración— y sin formulario no hay
+// nada que medir. Su encaje se prueba con sesión inyectada, hoja de estilos y
+// `<meta viewport>` en `tests/e2e-prefs/cuenta-encaje.spec.ts`.
 // ============================================================================
 
 const TOLERANCIA = 2
@@ -75,6 +82,53 @@ for (const width of ANCHOS) {
       await page.waitForSelector('#root > *', { timeout: 15_000 }).catch(() => {})
       const desborde = await desbordamiento(page)
       expect(desborde, `${ruta} desborda ${desborde}px a ${width}px`).toBeLessThanOrEqual(TOLERANCIA)
+    }
+  })
+}
+
+// ============================================================================
+// Y lo mismo dentro del binario.
+//
+// La web puede caber y la app no: tiene otro armazón —barra superior propia,
+// barra inferior, y un `#contenido` que es quien se desplaza en vez del
+// documento—. Dar por validada la app porque la web no desborda sería dar por
+// buena una pantalla que nadie ha medido.
+//
+// Capacitor se simula igual que en el resto de la suite: inyecta
+// `window.Capacitor` antes del bundle, y `addInitScript` corre en ese mismo
+// momento, así que se recorre el mismo camino de código.
+// ============================================================================
+
+const RUTAS_APP = ['/', '/tienda', '/mis-productos', '/cuenta', '/iphone', '/iphone/17-pro/256gb-plata', '/carrito']
+
+for (const width of [320, 414, 768]) {
+  test(`en la app tampoco desborda a ${width} px @all`, async ({ page }) => {
+    await page.addInitScript(() => {
+      ;(window as { Capacitor?: unknown }).Capacitor = {}
+      localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
+    })
+    await page.setViewportSize({ width, height: 850 })
+
+    for (const ruta of RUTAS_APP) {
+      await page.goto('.' + ruta)
+      await page.waitForSelector('#root > *', { timeout: 15_000 }).catch(() => {})
+
+      // En la app el documento no se desplaza: lo hace `#contenido`. Se miran
+      // los dos, porque el desbordamiento se puede quedar en cualquiera.
+      const medida = await page.evaluate(() => {
+        const de = document.documentElement
+        const guardado = [de.style.overflowX, document.body.style.overflowX]
+        de.style.overflowX = 'visible'
+        document.body.style.overflowX = 'visible'
+        const documento = de.scrollWidth - de.clientWidth
+        de.style.overflowX = guardado[0]
+        document.body.style.overflowX = guardado[1]
+        const contenido = document.querySelector('#contenido')
+        return { documento, contenido: contenido ? contenido.scrollWidth - contenido.clientWidth : 0 }
+      })
+
+      expect(medida.documento, `app ${ruta}: el documento desborda a ${width}px`).toBeLessThanOrEqual(TOLERANCIA)
+      expect(medida.contenido, `app ${ruta}: el contenido desborda a ${width}px`).toBeLessThanOrEqual(TOLERANCIA)
     }
   })
 }

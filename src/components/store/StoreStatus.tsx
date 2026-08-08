@@ -1,4 +1,5 @@
 import { useT } from '../../lib/i18n'
+import { useAhora } from '../../lib/reloj'
 import { estadoDeApertura, type EstadoTienda } from '../../data/stores'
 import type { Store } from '../../data/types'
 
@@ -37,11 +38,19 @@ const ESTILOS: Record<EstadoTienda, { fondo: string; texto: string; punto: strin
 type ClaveDeEstado = 'availability.openNow' | 'availability.closed' | 'stores.openingSoon' | 'stores.closingSoon'
 
 /**
- * @param date Sólo para las pruebas: fija el momento en que se evalúa.
+ * SE ACTUALIZA SOLO
+ *
+ * El estado depende de la hora, así que calcularlo una vez al montar dejaría
+ * la pantalla mintiendo: quien abra `/tiendas` a las 09:25 y la deje abierta
+ * seguiría viendo «Cerrado» a las 09:35. El reloj compartido de `lib/reloj`
+ * avanza una vez por minuto y con un solo temporizador para todas las tarjetas.
+ *
+ * @param date Sólo para las pruebas: fija el momento y desactiva el refresco.
  */
 export function StoreStatus({ store, date, className = '' }: { store: Store; date?: Date; className?: string }) {
   const t = useT()
-  const estado = estadoDeApertura(store, date)
+  const ahora = useAhora(date)
+  const estado = estadoDeApertura(store, ahora)
   const estilo = ESTILOS[estado]
 
   return (
