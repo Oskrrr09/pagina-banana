@@ -24,6 +24,22 @@ test('el icono de cuenta lleva a /login cuando no hay sesión', async ({ page })
   await expect(page.getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute('href', /\/login$/)
 })
 
+test('/mis-productos existe como ruta propia y no enseña nada sin sesión', async ({ page }) => {
+  // La pantalla se prueba con su fixture (tests/e2e-prefs/mis-productos.spec.ts).
+  // Lo que se comprueba aquí es el cableado, que el fixture no toca: que la ruta
+  // resuelve en la aplicación de verdad —y no se la come `/:family`— y que el
+  // guardia de sesión aguanta.
+  await page.goto('./mis-productos')
+
+  await expect(page.getByRole('heading', { name: 'Mis productos' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Ver producto/ })).toHaveCount(0)
+
+  const redirigido = /\/login/.test(page.url())
+  if (!redirigido) {
+    await expect(page.getByText('necesitan Supabase configurado')).toBeVisible()
+  }
+})
+
 test('/cuenta nunca muestra datos de cuenta sin sesión', async ({ page }) => {
   await page.goto('./cuenta')
   // Con Supabase configurado rebota a /login; sin él, enseña el aviso de

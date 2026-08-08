@@ -11,10 +11,18 @@ export interface DemoOrderLine {
   family: string
   name: string
   color: string
+  /** Slug del color. Ver `CartLine.colorSlug`: esto resuelve, `color` se enseña. */
+  colorSlug?: string
   capacity: string
   price: number
   qty: number
   insured: boolean
+  /**
+   * Opcional aunque `createFromCart` siempre lo ponga: este objeto se
+   * deserializa de `sessionStorage`, donde puede quedar un pedido escrito por
+   * una versión anterior. Declararlo obligatorio sería prometer algo que el
+   * almacenamiento no garantiza.
+   */
   kind?: 'device' | 'accessory'
   image?: string
   /** Línea reservada (lista de espera) en vez de comprada. */
@@ -71,7 +79,15 @@ function generateId() {
   return 'BC-' + Math.floor(100000 + Math.random() * 899999)
 }
 
-const INSURANCE_MONTHLY = 8.99
+/**
+ * Cuota mensual del seguro demostrativo.
+ *
+ * Se exporta para que `orderSync` recalcule los agregados de lo que sí se
+ * compra sin tener que copiar la cifra. Ojo con lo que significa: es una
+ * constante del front, no una tarifa guardada — de un pedido antiguo no se
+ * puede recuperar la prima que se le aplicó.
+ */
+export const INSURANCE_MONTHLY = 8.99
 
 export interface CreateOrderInput {
   cart: CartLine[]
@@ -99,11 +115,15 @@ export const demoOrderRepository = {
         family: line.family,
         name: line.name,
         color: line.color,
+        colorSlug: line.colorSlug,
         capacity: line.capacity,
         price: line.price,
         qty: line.qty,
         insured: Boolean(line.insured),
-        kind: line.kind,
+        // `kind` se normaliza aquí y no se deja pasar como `undefined`: las
+        // líneas de dispositivo nunca lo ponían y el «device» estaba sólo en
+        // la convención. A partir de aquí es un dato, no un acuerdo tácito.
+        kind: line.kind ?? 'device',
         image: line.image,
         reservation: line.reservation,
       })),

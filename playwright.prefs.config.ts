@@ -4,8 +4,9 @@ import { defineConfig, devices } from '@playwright/test'
 // `playwright.agent.config.ts`: montan proveedores y pantallas reales en un
 // navegador real, con su `localStorage`, sin arrastrar la aplicación entera.
 //
-// Dos fixtures: los proveedores de preferencias, y la pantalla `/cuenta` con el
-// contexto de sesión inyectado. Cada spec navega a su propio HTML.
+// Tres fixtures: los proveedores de preferencias, la pantalla `/cuenta` con el
+// contexto de sesión inyectado y la de `/mis-productos`. Cada spec navega a su
+// propio HTML.
 //
 // Va en su propia configuración y no como un proyecto de `playwright.config.ts`
 // porque necesita el servidor de desarrollo: la suite principal se ejecuta en
@@ -17,7 +18,9 @@ const FIXTURE = `${HOST}/pagina-banana/tests/e2e-prefs/fixture.html`
 
 export default defineConfig({
   testDir: './tests/e2e-prefs',
-  testMatch: /-cierre-sesion\.spec\.ts$/,
+  // Todas las specs de la carpeta: el patrón anterior sólo cogía las del
+  // cierre de sesión y una spec nueva se habría quedado fuera sin avisar.
+  testMatch: /\.spec\.ts$/,
   fullyParallel: true,
   retries: 0,
   reporter: 'list',

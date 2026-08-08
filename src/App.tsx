@@ -26,6 +26,7 @@ import { AgentAppScope } from './components/agent/AgentAppScope'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { MyProductsPage } from './pages/MyProductsPage'
 import { NotFound } from './pages/NotFound'
 
 // Rutas del apartado 9.1.
@@ -42,6 +43,7 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<RegisterPage />} />
           <Route path="/cuenta" element={<ProfilePage />} />
+          <Route path="/mis-productos" element={<MyProductsPage />} />
           <Route path="/:family" element={<FamilyPage />} />
           <Route path="/:family/:model" element={<ModelPage />} />
           <Route path="/:family/:model/:variant" element={<VariantPage />} />
