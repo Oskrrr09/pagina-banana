@@ -40,7 +40,15 @@ export function AppCustomerHome() {
           </li>
           {session && (
             <li>
-              <Acceso to="/cuenta" icono="truck" titulo="Mis pedidos" detalle="Pedidos y reservas de tu cuenta" />
+              {/* Al apartado, no a la cuenta a secas: `/cuenta` abre «Datos
+                  personales», y un acceso que dice «Mis pedidos» y enseña otra
+                  cosa es peor que no tenerlo. */}
+              <Acceso
+                to="/cuenta?apartado=pedidos"
+                icono="truck"
+                titulo="Mis pedidos"
+                detalle="Pedidos y reservas de tu cuenta"
+              />
             </li>
           )}
           <li>

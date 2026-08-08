@@ -100,6 +100,58 @@ test.describe('barra inferior', () => {
 test.describe('barra superior', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
+  test('en Tienda manda el buscador; en el área de cliente, la marca', async ({ page }) => {
+    await comoApp(page)
+
+    // Comercial: el campo grande ocupa casi todo el ancho.
+    await page.goto('./tienda')
+    await expect(page.locator('[data-app-topbar="comercial"]')).toBeVisible()
+    await expect(page.locator('[data-app-search="prominente"]')).toBeVisible()
+    await expect(page.locator('[data-app-chips]')).toBeVisible()
+    await expect(page.locator('[data-app-cart]')).toBeVisible()
+
+    const cabecera = (await page.locator('[data-app-topbar]').boundingBox())!
+    const campo = (await page.locator('[data-app-search="prominente"]').boundingBox())!
+    expect(campo.width, 'el buscador debería dominar la barra').toBeGreaterThan(cabecera.width * 0.6)
+
+    // Cliente: marca a la izquierda y dos botones compactos.
+    for (const ruta of ['./', './mis-productos', './cuenta']) {
+      await page.goto(ruta)
+      await expect(page.locator('[data-app-topbar="cliente"]'), ruta).toBeVisible()
+      await expect(page.locator('[data-app-search="compacto"]'), ruta).toBeVisible()
+      await expect(page.locator('[data-app-search="prominente"]'), ruta).toHaveCount(0)
+      await expect(page.locator('[data-app-chips]'), ruta).toHaveCount(0)
+      await expect(page.getByRole('link', { name: /Banana Computer/ }).first(), ruta).toBeVisible()
+      await expect(page.locator('[data-app-cart]'), ruta).toBeVisible()
+    }
+  })
+
+  test('los dos buscadores abren el mismo diálogo y devuelven el foco a su botón', async ({ page }) => {
+    await comoApp(page)
+
+    for (const [ruta, selector] of [
+      ['./tienda', '[data-app-search="prominente"]'],
+      ['./mis-productos', '[data-app-search="compacto"]'],
+    ] as const) {
+      await page.goto(ruta)
+      const boton = page.locator(selector)
+      // 44 px de lado en las dos variantes.
+      const caja = (await boton.boundingBox())!
+      expect(caja.height, `${ruta}: alto táctil`).toBeGreaterThanOrEqual(44)
+      expect(caja.width, `${ruta}: ancho táctil`).toBeGreaterThanOrEqual(44)
+
+      await boton.click()
+      const dialogo = page.getByRole('dialog', { name: 'Buscar' })
+      await expect(dialogo, ruta).toBeVisible()
+      await expect(page.getByTestId('header-search-input'), ruta).toBeFocused()
+
+      await page.keyboard.press('Escape')
+      await expect(dialogo, ruta).toHaveCount(0)
+      // Y el foco vuelve al botón exacto que lo abrió, no a otro.
+      await expect(boton, ruta).toBeFocused()
+    }
+  })
+
   test('el carrito está arriba, con su contador', async ({ page }) => {
     await comoApp(page, [LINEA])
     await page.goto('./')
@@ -197,6 +249,24 @@ test.describe('Inicio y Tienda son dos cosas distintas', () => {
 
     await expect(page.locator('[data-app-tab-bar]')).toHaveCount(0)
     await expect(page.locator('[data-app-cart]')).toHaveCount(0)
+  })
+})
+
+test.describe('accesos de Inicio', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  // El recorrido completo de «Mis pedidos» se prueba en
+  // `tests/e2e-prefs/inicio-accesos.spec.ts`: ese acceso sólo se pinta con
+  // sesión, y en esta suite no hay Supabase configurado.
+
+  test('el acceso a Soporte lleva al centro de ayuda', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./')
+    await page
+      .locator('#contenido')
+      .getByRole('link', { name: /Soporte/ })
+      .click()
+    await expect(page).toHaveURL(/\/soporte$/)
   })
 })
 

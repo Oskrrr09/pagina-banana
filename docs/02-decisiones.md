@@ -1296,9 +1296,32 @@ No atribuye motivaciones que el repositorio no documenta.
 - **La ruta sigue siendo `/mis-productos`.** Cambiar la URL sólo para que case
   con el rótulo añadiría riesgo —enlaces, pruebas, historial— a cambio de nada
   que el cliente note.
+- **La tarjeta de acceso que la PR #40 puso en Cuenta desaparece en la app**:
+  allí ya hay pestaña, y repetir el mismo destino en la misma pantalla no ayuda.
+  En la web se queda, porque no hay barra inferior y es como se descubre que la
+  sección existe. En los dos sitios se llama «Mis compras».
+- **La barra superior tiene dos variantes.** En Tienda manda el buscador, que
+  ocupa casi todo el ancho porque es lo que más se usa para comprar desde el
+  móvil. En Inicio, Mis compras y Cuenta ese mismo campo enorme hacía que la
+  pantalla siguiera pareciendo una tienda aunque el contenido fuera del cliente:
+  allí la barra se reduce a la marca y a dos botones compactos de 44 px. **El
+  buscador y el carrito son los mismos** —mismo `HeaderSearch`, mismo diálogo,
+  mismo foco, mismo contador—; sólo cambia el tamaño del botón que los abre.
+- **`/cuenta?apartado=pedidos`** abre «Mis pedidos» directamente. Es un enlace
+  profundo mínimo y no una ruta nueva: la cuenta sigue siendo una pantalla con
+  un menú. Un valor desconocido se ignora y abre «Datos personales», porque
+  llegar a la cuenta y no ver nada por un parámetro mal escrito sería peor.
 - **Soporte no tiene pestaña.** Es de urgencia altísima y frecuencia bajísima:
-  ocuparía un cuarto de la barra el 99 % del tiempo. Se llega desde el producto,
-  desde Inicio y desde Cuenta, que es donde nace la necesidad.
+  ocuparía un cuarto de la barra el 99 % del tiempo. Debe llegarse desde donde
+  nace la necesidad.
+  - **Lo que esta PR entrega**: acceso a `/soporte` y al chat desde **Inicio**.
+    El del chat no es un extra: al retirar «Explorar» era su única puerta dentro
+    del binario, porque el botón flotante no se pinta ahí.
+  - **Lo que NO entrega, y conviene no dar por hecho**: comprobado que
+    `ProfilePage`, `VariantPage` y `ModelPage` **no tienen hoy ningún enlace a
+    soporte** —ni antes de esta PR ni después—. El soporte que empieza en el
+    producto queda como dirección, no como hecho, y se construirá en su propia
+    entrega.
 - **El carrito sube a la barra superior**, con contador y 44 px de lado. No es
   un escondite: pasa de verse sólo al mirar hacia abajo a estar junto al
   buscador en todas las pantallas. Dentro del propio carrito desaparece.
