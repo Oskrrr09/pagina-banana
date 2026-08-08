@@ -77,3 +77,38 @@ test('el historial se reemplaza: volver atrás no devuelve a la cuenta', async (
   await expect(page.getByTestId('ruta'), 'atrás no puede devolver a /cuenta').not.toHaveText('/cuenta')
   await expect(page.getByRole('heading', { name: 'Mi cuenta' })).toHaveCount(0)
 })
+
+// ============================================================================
+// El enlace profundo de `/cuenta?apartado=…`.
+//
+// «Mis pedidos» de Inicio apuntaba a `/cuenta` a secas, que abre «Datos
+// personales»: la etiqueta prometía una cosa y la pantalla enseñaba otra.
+// ============================================================================
+
+const FIXTURE_CUENTA = '/pagina-banana/tests/e2e-prefs/cuenta-fixture.html'
+
+test('sin parámetro se abre Datos personales, como siempre', async ({ page }) => {
+  await page.goto(FIXTURE_CUENTA)
+  await expect(page.getByRole('heading', { name: 'Datos personales' })).toBeVisible()
+})
+
+test('`?apartado=pedidos` abre Mis pedidos', async ({ page }) => {
+  await page.goto(`${FIXTURE_CUENTA}?apartado=pedidos`)
+
+  await expect(page.getByRole('heading', { name: 'Mis pedidos' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Datos personales' })).toHaveCount(0)
+  // Y el menú lo refleja, no sólo el contenido.
+  await expect(page.getByRole('button', { name: 'Mis pedidos' })).toHaveAttribute('aria-current', 'page')
+})
+
+test('vale para cualquier apartado real', async ({ page }) => {
+  await page.goto(`${FIXTURE_CUENTA}?apartado=reservas`)
+  await expect(page.getByRole('heading', { name: 'Mis reservas' })).toBeVisible()
+})
+
+test('un apartado inventado no rompe la cuenta', async ({ page }) => {
+  // Llegar a la cuenta y no ver nada porque alguien escribió mal el parámetro
+  // sería peor que abrir el apartado de siempre.
+  await page.goto(`${FIXTURE_CUENTA}?apartado=loquesea`)
+  await expect(page.getByRole('heading', { name: 'Datos personales' })).toBeVisible()
+})

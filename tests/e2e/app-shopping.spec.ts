@@ -4,6 +4,10 @@ import { test, expect, type Page } from '@playwright/test'
 // La app nativa como tienda: portada comercial, historial de vistos y la barra
 // de compra conviviendo con la navegación inferior.
 //
+// La portada comercial vive en `/tienda` desde la PR #41. Antes ocupaba `/`,
+// que ahora es Inicio —mi relación con Banana—; lo que se prueba aquí no ha
+// cambiado, sólo la dirección por la que se llega.
+//
 // Se simula el binario igual que en `app-shell.spec.ts`: Capacitor inyecta
 // `window.Capacitor` antes del bundle y `addInitScript` corre en ese mismo
 // momento, así que se recorre el mismo camino de código.
@@ -17,12 +21,12 @@ async function comoApp(page: Page, recientes?: string[]) {
   }, recientes)
 }
 
-test.describe('portada de la app', () => {
+test.describe('portada de la tienda', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
   test('empieza por producto, no por servicios corporativos', async ({ page }) => {
     await comoApp(page)
-    await page.goto('./')
+    await page.goto('./tienda')
 
     // El primer encabezado de la portada es un producto del catálogo, y lleva
     // a su ficha. Es la diferencia con la portada web, que abre con marca.
@@ -37,7 +41,7 @@ test.describe('portada de la app', () => {
 
   test('los servicios quedan después del contenido comercial', async ({ page }) => {
     await comoApp(page)
-    await page.goto('./')
+    await page.goto('./tienda')
 
     const categorias = page.getByRole('heading', { name: 'Compra por categoría' })
     const servicios = page.getByRole('heading', { name: 'Servicios y ayuda' })
@@ -50,7 +54,7 @@ test.describe('portada de la app', () => {
 
   test('las categorías llevan a su familia', async ({ page }) => {
     await comoApp(page)
-    await page.goto('./')
+    await page.goto('./tienda')
 
     await page.getByRole('link', { name: 'iPhone', exact: true }).first().click()
     await expect(page).toHaveURL(/\/pagina-banana\/iphone$/)
@@ -58,14 +62,14 @@ test.describe('portada de la app', () => {
 
   test('sin historial no aparece la sección de recientes', async ({ page }) => {
     await comoApp(page)
-    await page.goto('./')
+    await page.goto('./tienda')
 
     await expect(page.getByRole('heading', { name: 'Continúa donde lo dejaste' })).toHaveCount(0)
   })
 
   test('con historial aparece y enlaza a la ficha', async ({ page }) => {
     await comoApp(page, ['iphone/17-pro'])
-    await page.goto('./')
+    await page.goto('./tienda')
 
     await expect(page.getByRole('heading', { name: 'Continúa donde lo dejaste' })).toBeVisible()
     const lista = page.getByRole('list', { name: 'Continúa donde lo dejaste' })
@@ -78,7 +82,7 @@ test.describe('portada de la app', () => {
       localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
       localStorage.setItem('banana:recientes', 'esto no es json')
     })
-    await page.goto('./')
+    await page.goto('./tienda')
 
     await expect(page.locator('#app-hero-titulo')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Continúa donde lo dejaste' })).toHaveCount(0)
@@ -93,7 +97,7 @@ test.describe('portada de la app', () => {
     // que llegar pulsando una tarjeta.
     await expect.poll(() => page.evaluate(() => localStorage.getItem('banana:recientes'))).toContain('iphone/17-pro')
 
-    await page.goto('./')
+    await page.goto('./tienda')
     await expect(page.getByRole('heading', { name: 'Continúa donde lo dejaste' })).toBeVisible()
   })
 })

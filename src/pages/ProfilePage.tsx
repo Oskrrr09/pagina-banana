@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
@@ -7,6 +7,7 @@ import { Field } from '../components/ui/Field'
 import { Icon } from '../components/ui/Icon'
 import { useCustomerAuth } from '../lib/customerAuth'
 import { useStore } from '../lib/store'
+import { isNativeApp } from '../lib/nativeApp'
 import { useStorePreference } from '../lib/storePreference'
 import { listMyOrders } from '../lib/orderSync'
 import {
@@ -41,10 +42,32 @@ const APARTADOS = [
 
 type Apartado = (typeof APARTADOS)[number]['id']
 
+/**
+ * El apartado que pide la URL, si pide alguno válido.
+ *
+ * `/cuenta?apartado=pedidos` abre «Mis pedidos» en vez de «Datos personales».
+ * Es un enlace profundo mínimo y no una ruta nueva: la cuenta sigue siendo una
+ * sola pantalla con un menú, y convertir cada apartado en ruta sería rehacer
+ * el área entera para resolver un enlace.
+ *
+ * Un valor desconocido se ignora en vez de romper: llegar a la cuenta y no ver
+ * nada porque alguien escribió mal un parámetro sería peor que abrir el
+ * apartado de siempre.
+ */
+function apartadoDeLaUrl(valor: string | null): Apartado {
+  const encontrado = APARTADOS.find((a) => a.id === valor)
+  return encontrado ? encontrado.id : 'datos'
+}
+
 export function ProfilePage() {
   const { session, cliente, loading, signOut } = useCustomerAuth()
   const navigate = useNavigate()
-  const [apartado, setApartado] = useState<Apartado>('datos')
+  const t = useT()
+  const [params] = useSearchParams()
+  // Sólo como valor inicial: a partir de ahí manda el menú. Sincronizarlo con
+  // la URL en cada cambio obligaría a escribir el parámetro al pulsar cada
+  // apartado, que es la reestructuración que aquí no toca hacer.
+  const [apartado, setApartado] = useState<Apartado>(() => apartadoDeLaUrl(params.get('apartado')))
   const [cerrandoSesion, setCerrandoSesion] = useState(false)
   const [errorCierre, setErrorCierre] = useState<string | null>(null)
 
@@ -124,23 +147,28 @@ export function ProfilePage() {
         </p>
       )}
 
-      {/* Entrada provisional a «Mis productos». Es un enlace y no un apartado
-          más del menú de al lado porque el menú cambia de sección sin navegar,
-          y esto sí es otra página. Cuando «Productos» llegue a la navegación
-          inferior de la app, esta fila sobra. */}
-      <Link
-        to="/mis-productos"
-        className="mt-6 flex min-h-11 items-center gap-3 rounded-[12px] border border-line bg-surface px-4 py-3 transition-colors hover:border-ink/30"
-      >
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-neutral text-ink">
-          <Icon name="package" size={18} aria-hidden="true" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-semibold text-ink">Mis productos</span>
-          <span className="block text-sm text-muted">Productos de tus compras en Banana</span>
-        </span>
-        <Icon name="chevron-right" size={18} aria-hidden="true" className="shrink-0 text-muted" />
-      </Link>
+      {/* Acceso a «Mis compras» — sólo en la web.
+          Dentro de la app tiene pestaña propia en la barra inferior desde la
+          PR #41, y repetir el mismo destino en la misma pantalla no ayuda a
+          nadie. En la web no hay barra, así que aquí sigue siendo la forma de
+          descubrir que la sección existe. Es un enlace y no un apartado más
+          del menú de al lado porque el menú cambia de sección sin navegar, y
+          esto sí es otra página. */}
+      {!isNativeApp && (
+        <Link
+          to="/mis-productos"
+          className="mt-6 flex min-h-11 items-center gap-3 rounded-[12px] border border-line bg-surface px-4 py-3 transition-colors hover:border-ink/30"
+        >
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-neutral text-ink">
+            <Icon name="package" size={18} aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-ink">{t('purchases.title')}</span>
+            <span className="block text-sm text-muted">{t('purchases.subtitle')}</span>
+          </span>
+          <Icon name="chevron-right" size={18} aria-hidden="true" className="shrink-0 text-muted" />
+        </Link>
+      )}
 
       <div className="mt-4 rounded-[12px] border border-line bg-neutral px-4 py-2 text-xs text-muted">
         <strong className="text-ink">Cuenta de demostración.</strong> Los pedidos, reservas y descuentos de esta página

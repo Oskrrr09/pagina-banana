@@ -34,6 +34,10 @@ const SESION_FALSA = {
 function Fixture() {
   const params = new URLSearchParams(window.location.search)
   const resultado = params.get('resultado') ?? 'ok'
+  // `?apartado=` se reenvía a la ruta montada para poder probar el enlace
+  // profundo de `/cuenta?apartado=pedidos` sin levantar Supabase.
+  const apartado = params.get('apartado')
+  const entradaInicial = apartado ? `/cuenta?apartado=${encodeURIComponent(apartado)}` : '/cuenta'
   const [cerrada, setCerrada] = useState(false)
 
   const valor = useMemo<CustomerAuthState>(
@@ -70,7 +74,7 @@ function Fixture() {
   )
 
   return (
-    <MemoryRouter initialEntries={['/cuenta']}>
+    <MemoryRouter initialEntries={[entradaInicial]}>
       <IdiomaProvider>
         <StoreProvider>
           <StorePreferenceProvider>

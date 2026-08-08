@@ -1251,11 +1251,126 @@ No atribuye motivaciones que el repositorio no documenta.
   y no entra en «Mis productos». No se asocia por nombre: los accesorios se
   guardan con la variante pegada al nombre y los nombres de modelo son texto que
   cambia, así que una coincidencia no demuestra nada.
+- **Ampliación del 2026-08-08 — lo que faltaba.** Esta decisión se escribió
+  antes de dos remates de la revisión de la PR #40 y se quedó sin ellos:
+  - **El `id` sólo completa si no contradice.** Como fallback de compatibilidad
+    se puede parsear, pero se descarta **entero** en cuanto discrepa de
+    `family` o de `modelSlug` explícitos. Descartarlo no invalida una identidad
+    explícita que ya se baste: el campo que falte se queda sin resolver. El caso
+    que lo motiva es silencioso: `azul` existe tanto en `iphone/17` como en
+    `iphone/17-pro`, así que con el modelo explícito y un `id` del otro modelo,
+    la variante se resolvía —y se resolvía bien— con el color de otro producto.
+  - **De dónde sale la foto**, en este orden: la del color resuelto en el
+    catálogo de hoy; si ese color ya no existe, la que se guardó al comprar
+    (`line.image`, que las líneas de dispositivo ahora sí escriben); y si no hay
+    ninguna, ninguna. **Nunca `model.colors[0].image`**, que es la foto de otro
+    producto con aspecto de ser la correcta: mejor el hueco neutro que
+    `ProductImage` ya sabe dejar.
 - Evidencia: `tests/unit/order-sync-contrato.test.ts` fija el contrato de
-  escritura y el caso mixto; `tests/unit/my-products.test.ts`, la resolución;
+  escritura y el caso mixto; `tests/unit/my-products.test.ts`, la resolución, el
+  `id` contradictorio y la procedencia de la foto;
   `tests/e2e-prefs/mis-productos.spec.ts`, la pantalla. Contraprueba con la
   implementación anterior: guardaba las dos líneas y un `products_total` de
-  2808 € que incluía el aparato reservado.
+  2808 € que incluía el aparato reservado, y tres de las pruebas nuevas fallan
+  contra el código previo a los remates.
+
+## D-068 — La app acompaña al cliente: Inicio · Tienda · Mis compras · Cuenta
+
+- Fecha: 2026-08-08.
+- Estado: vigente. Reemplaza la barra de cinco pestañas de D-065.
+- Problema: la navegación nativa era `Inicio · Favoritos · Explorar · Carrito ·
+  Cuenta`. Cinco destinos para una app que sólo sabía vender, con una pestaña
+  que no navegaba —«Explorar» abría un diálogo— y sin ningún sitio donde vivir
+  lo que el cliente ya había comprado. Un cliente que compró un iPhone vuelve
+  dentro de tres o cuatro años: ese ritmo no sostiene una app instalada.
+- Decisión: cuatro pestañas, cada una respondiendo a una pregunta distinta.
+  - **Inicio** — mi relación con Banana. En la app, `/` deja de ser escaparate.
+  - **Tienda** (`/tienda`) — lo que puedo comprar. Es la portada comercial de la
+    PR #39 **entera**, sólo que con pestaña propia en vez de ocupar la raíz.
+  - **Mis compras** (`/mis-productos`) — lo que ya compré y su postventa.
+  - **Cuenta** — quién soy, mis datos y mis ajustes.
+- **Se llama «Mis compras»**, no «Productos» ni «Dispositivos». «Productos» se
+  lee como catálogo, que es justo lo que hay en la pestaña de al lado;
+  «Dispositivos» como una categoría de la tienda. El rótulo tiene que decir que
+  eso ya es tuyo sin que haga falta entrar.
+- **La ruta sigue siendo `/mis-productos`.** Cambiar la URL sólo para que case
+  con el rótulo añadiría riesgo —enlaces, pruebas, historial— a cambio de nada
+  que el cliente note.
+- **La tarjeta de acceso que la PR #40 puso en Cuenta desaparece en la app**:
+  allí ya hay pestaña, y repetir el mismo destino en la misma pantalla no ayuda.
+  En la web se queda, porque no hay barra inferior y es como se descubre que la
+  sección existe. En los dos sitios se llama «Mis compras».
+- **La barra superior tiene dos variantes.** En Tienda manda el buscador, que
+  ocupa casi todo el ancho porque es lo que más se usa para comprar desde el
+  móvil. En Inicio, Mis compras y Cuenta ese mismo campo enorme hacía que la
+  pantalla siguiera pareciendo una tienda aunque el contenido fuera del cliente:
+  allí la barra se reduce a la marca y a dos botones compactos de 44 px. **El
+  buscador y el carrito son los mismos** —mismo `HeaderSearch`, mismo diálogo,
+  mismo foco, mismo contador—; sólo cambia el tamaño del botón que los abre.
+- **`/cuenta?apartado=pedidos`** abre «Mis pedidos» directamente. Es un enlace
+  profundo mínimo y no una ruta nueva: la cuenta sigue siendo una pantalla con
+  un menú. Un valor desconocido se ignora y abre «Datos personales», porque
+  llegar a la cuenta y no ver nada por un parámetro mal escrito sería peor.
+- **Soporte no tiene pestaña.** Es de urgencia altísima y frecuencia bajísima:
+  ocuparía un cuarto de la barra el 99 % del tiempo. Debe llegarse desde donde
+  nace la necesidad.
+  - **Lo que esta PR entrega**: acceso a `/soporte` y al chat desde **Inicio**.
+    El del chat no es un extra: al retirar «Explorar» era su única puerta dentro
+    del binario, porque el botón flotante no se pinta ahí.
+  - **Lo que NO entrega, y conviene no dar por hecho**: comprobado que
+    `ProfilePage`, `VariantPage` y `ModelPage` **no tienen hoy ningún enlace a
+    soporte** —ni antes de esta PR ni después—. El soporte que empieza en el
+    producto queda como dirección, no como hecho, y se construirá en su propia
+    entrega.
+- **El carrito sube a la barra superior**, con contador y 44 px de lado. No es
+  un escondite: pasa de verse sólo al mirar hacia abajo a estar junto al
+  buscador en todas las pantallas. Dentro del propio carrito desaparece.
+- **Favoritos** deja de necesitar pestaña: es una lista de deseos, se consulta
+  al comprar. Sigue en `/favoritos` y en el corazón de cada ficha.
+- **«Explorar» desaparece.** Era una pestaña que no navegaba. Las categorías
+  viven dentro de Tienda, que sí es un destino. `MobileMenu` **no se elimina**:
+  lo sigue usando la cabecera de la web.
+- **Los chips de categoría sólo salen en el contexto comercial.** Encima de «Mis
+  compras» o de «Cuenta» invitan a irse justo cuando alguien ha entrado a mirar
+  lo suyo. La clasificación vive en `src/lib/appSections.ts`, en un solo sitio y
+  con pruebas: antes cada componente la resolvía con su propio `startsWith` y
+  bastaba una ruta nueva para que dijeran cosas distintas de la misma pantalla.
+- En rutas ambiguas —soporte, tiendas, servicio técnico— **ninguna pestaña se
+  marca**. Marcar una cualquiera le diría a quien navega que está donde no está.
+- La web no cambia: `/` sigue siendo la portada corporativa y `/tienda` redirige
+  a la raíz para no tener dos portadas que dicen lo mismo.
+- Evidencia: `tests/unit/app-sections.test.ts` y
+  `tests/e2e/app-shell-navegacion.spec.ts`.
+
+## D-069 — El cupón del carrito desbordaba la página en móvil
+
+- Fecha: 2026-08-08.
+- Estado: vigente.
+- Problema: en `/carrito`, al abrir «¿Tienes un cupón?», la página se podía
+  arrastrar de lado. Medido a 320 px: **31 px** de desbordamiento.
+- Causa, que no era la que parecía: un `<input>` sin `size` mide **20
+  caracteres** de ancho intrínseco, y en pantalla táctil la regla de
+  `index.css` le pone además un suelo de 16 px al texto para que iOS no amplíe
+  la página al enfocarlo. Las dos cosas juntas dan un mínimo de **221 px** que
+  `flex-1` no puede reducir: un hijo flex no baja de su contenido mientras
+  conserve `min-width: auto`. Con el botón «Aplicar» al lado, la fila pedía
+  331 px donde había 280.
+- Y por qué parecía otra cosa: una celda de grid también tiene `min-width:
+  auto`, así que la columna se ensanchaba entera y arrastraba con ella la lista
+  de productos, **que sí cabía**. Al medir, el sospechoso era el `<ul>`.
+- Decisión: `min-w-0` en el campo con `size={1}`, `shrink-0` en el botón, y
+  `min-w-0` en las dos celdas del grid para que nada de lo que se plante ahí
+  dentro vuelva a estirar la página. **No** se añadió `overflow-x: hidden` en
+  ningún sitio: habría escondido el fallo dejándolo dentro.
+- **La prueba que había no podía verlo.** `mobile-layout.spec.ts` mide
+  `documentElement.scrollWidth`, y el documento lleva `overflow-x: clip`: bajo
+  `clip` nunca declara desbordamiento aunque su contenido se salga. La prueba
+  nueva mide `#contenido` —el contenedor que se desplaza de verdad en la app— y
+  el documento con la contención neutralizada un instante.
+- Y tiene que correr con **puntero grueso**: sin él la regla de los 16 px no se
+  aplica, el campo cabe y la prueba pasa con el fallo presente. Comprobado.
+- Evidencia: `tests/e2e/carrito-movil.spec.ts`. Contraprueba: con el arreglo
+  revertido la prueba falla con 17 px; con `Desktop Chrome`, pasa.
 
 ## Cómo añadir una decisión
 
