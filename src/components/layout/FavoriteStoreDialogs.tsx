@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
-import { stores, isOpenNow, getTodayHours } from '../../data/stores'
+import { stores, getTodayHours } from '../../data/stores'
+import { StoreStatus } from '../store/StoreStatus'
 import { useStorePreference } from '../../lib/storePreference'
 import { isNativeApp } from '../../lib/nativeApp'
 import { useT } from '../../lib/i18n'
@@ -184,7 +185,6 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
         ) : (
           <ul className="mt-4 space-y-2">
             {stores.map((store) => {
-              const open = isOpenNow(store)
               const today = getTodayHours(store)
               return (
                 <li key={store.slug}>
@@ -199,13 +199,7 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
                     <span className="flex-1">
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="font-semibold text-ink">{store.name}</span>
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                            open ? 'bg-[#e4f5ea] text-[#1f5b34]' : 'bg-[#fce8e8] text-[#8f2929]'
-                          }`}
-                        >
-                          {open ? 'Abierto ahora' : 'Cerrado'}
-                        </span>
+                        <StoreStatus store={store} className="!px-2 !text-[10px]" />
                       </span>
                       <span className="block text-xs text-muted">
                         {store.island} · {store.address}

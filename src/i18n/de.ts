@@ -76,6 +76,8 @@ export const de: Diccionario = {
   'availability.inStock': 'Verfügbar',
   'availability.backorder': 'Auf Bestellung',
   'availability.soldOut': 'Ausverkauft',
+  'stores.openingSoon': 'Öffnet bald',
+  'stores.closingSoon': 'Schließt bald',
   'availability.openNow': 'Jetzt geöffnet',
   'availability.closed': 'Geschlossen',
 

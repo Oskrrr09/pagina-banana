@@ -4,7 +4,8 @@ import { useCatalogo, useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { Chip } from '../components/ui/Chip'
-import { stores, islands, ALL_SERVICES, UNIVERSAL_SERVICES, getTodayHours, isOpenNow } from '../data/stores'
+import { stores, islands, ALL_SERVICES, UNIVERSAL_SERVICES, getTodayHours } from '../data/stores'
+import { StoreStatus } from '../components/store/StoreStatus'
 import type { Store } from '../data/types'
 import { useStorePreference, sortStoresWithFavoriteFirst } from '../lib/storePreference'
 
@@ -134,7 +135,6 @@ export function StoresPage() {
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {filtered.map((store) => {
           const todayHours = getTodayHours(store)
-          const open = isOpenNow(store)
           const isActive = activeStore === store.slug
           const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.mapQuery)}`
 
@@ -152,14 +152,7 @@ export function StoresPage() {
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-bold text-ink">{store.name}</h2>
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                    open ? 'bg-[#e4f5ea] text-[#2e7a4a]' : 'bg-[#fce8e8] text-[#b13333]'
-                  }`}
-                >
-                  <span className={`h-2 w-2 rounded-full ${open ? 'bg-[#2e9a5a]' : 'bg-[#c14545]'}`} />
-                  {open ? t('availability.openNow') : t('availability.closed')}
-                </span>
+                <StoreStatus store={store} />
               </div>
               {favoriteSlug === store.slug && (
                 <p className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-brand-050 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink">
