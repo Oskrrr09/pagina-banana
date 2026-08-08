@@ -62,7 +62,13 @@ export interface ProductoComprado {
   colorNombre: string
   /** Capacidad tal y como se guardó al comprar. */
   capacidad: string
-  /** Imagen del catálogo. Las líneas de dispositivo nunca guardaron una. */
+  /**
+   * Foto que se enseña, en este orden: la del color resuelto, o la que se
+   * guardó al comprar si ese color ya no existe. Nunca la del primer color del
+   * modelo — sería la foto de un producto que no es el que se compró—, así que
+   * puede quedarse en `undefined` y la tarjeta lo resuelve con el hueco neutro
+   * de `ProductImage`.
+   */
   imagen: string | undefined
 
   /**
@@ -93,10 +99,25 @@ function identidadDe(line: DbOrderLine): { family: string; modelSlug: string; co
   // Ningún slug de color ni ninguna capacidad del catálogo contiene `/`, así que
   // más o menos de cuatro significa que esto no es lo que parece.
   const partes = line.id?.split('/') ?? []
-  const delId = partes.length === 4 ? { family: partes[0], modelSlug: partes[1], colorSlug: partes[2] } : null
+  const crudo = partes.length === 4 ? { family: partes[0], modelSlug: partes[1], colorSlug: partes[2] } : null
+
+  // El `id` sólo sirve si habla del MISMO producto que los campos explícitos.
+  //
+  // Con `family: 'iphone'`, `modelSlug: '17-pro'` y un `id` que empieza por
+  // `mac/otro-modelo/negro/…`, coger de ahí el color daría el de otro producto
+  // — y si por casualidad ese slug existiera también en el iPhone, la tarjeta
+  // enseñaría la foto equivocada y abriría la variante equivocada sin que nada
+  // fallara. Ante la contradicción se descarta el `id` entero.
+  const contradice =
+    crudo !== null &&
+    ((line.family !== undefined && line.family !== crudo.family) ||
+      (line.modelSlug !== undefined && line.modelSlug !== crudo.modelSlug))
+  const delId = contradice ? null : crudo
 
   const family = line.family ?? delId?.family
   const modelSlug = line.modelSlug ?? delId?.modelSlug
+  // Descartar el `id` no invalida una identidad explícita que ya se baste: lo
+  // único que pasa es que el campo que falta se queda sin resolver.
   if (!family || !modelSlug) return null
 
   return { family, modelSlug, colorSlug: line.colorSlug ?? delId?.colorSlug ?? null }
@@ -132,7 +153,7 @@ function productoDeLinea(order: DbOrder, line: DbOrderLine, indice: number): Pro
     nombre: line.name,
     colorNombre: line.color,
     capacidad: line.capacity,
-    imagen: color?.image ?? model.colors[0]?.image,
+    imagen: color?.image ?? line.image,
     ruta: varianteExacta ? variantPath(model, color!, capacity!) : `/${model.family}/${model.slug}`,
     varianteExacta,
   }

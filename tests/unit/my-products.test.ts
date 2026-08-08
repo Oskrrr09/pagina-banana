@@ -26,6 +26,7 @@ function linea(parcial: Partial<DbOrderLine> = {}): DbOrderLine {
     price: CAPACIDAD.price,
     qty: 1,
     insured: false,
+    image: COLOR.image,
     ...parcial,
   }
 }
@@ -95,6 +96,35 @@ describe('resolución contra el catálogo', () => {
   it('un modelo retirado del catálogo no entra', () => {
     const productos = productosDeMisPedidos([pedido('BC-1', [linea({ modelSlug: 'iphone-de-2011' })])])
     expect(productos).toHaveLength(0)
+  })
+})
+
+describe('la foto es la de lo que se compró', () => {
+  it('con el color resuelto, la del catálogo de hoy', () => {
+    // Si el color sigue existiendo, su foto actual manda sobre la guardada:
+    // una imagen reprocesada o corregida debe verse.
+    const [producto] = productosDeMisPedidos([pedido('BC-1', [linea({ image: '/img/foto-vieja.webp' })])])
+    expect(producto.imagen).toBe(COLOR.image)
+  })
+
+  it('con el color retirado, la que se guardó al comprar', () => {
+    const [producto] = productosDeMisPedidos([
+      pedido('BC-1', [linea({ colorSlug: 'color-retirado', image: '/img/el-que-compre.webp' })]),
+    ])
+
+    expect(producto.color).toBeNull()
+    expect(producto.imagen).toBe('/img/el-que-compre.webp')
+  })
+
+  it('sin color y sin foto guardada, no se sustituye por la del primer color', () => {
+    // Es lo que hacía antes. La foto del primer color es la de otro producto:
+    // más vale un hueco honesto que una imagen convincente y falsa.
+    const [producto] = productosDeMisPedidos([
+      pedido('BC-1', [linea({ colorSlug: 'color-retirado', image: undefined })]),
+    ])
+
+    expect(producto.imagen).toBeUndefined()
+    expect(producto.imagen).not.toBe(IPHONE.colors[0].image)
   })
 })
 
@@ -198,6 +228,58 @@ describe('compatibilidad: el `id` como último recurso', () => {
       pedido('BC-1', [linea({ id: 'esto/no/es', family: undefined, modelSlug: undefined, colorSlug: undefined })]),
     ])
     expect(productos).toHaveLength(0)
+  })
+
+  it('un `id` que contradice la familia explícita no aporta nada', () => {
+    // Lo explícito manda. Coger el color de un `id` que habla de otro producto
+    // daría el color de ese otro — y si el slug existiera por casualidad
+    // también en este modelo, la tarjeta enseñaría la foto equivocada y abriría
+    // la variante equivocada sin que nada fallara.
+    const [producto] = productosDeMisPedidos([
+      pedido('BC-1', [linea({ id: 'mac/macbook-air-m5/azul-cielo/512GB', colorSlug: undefined })]),
+    ])
+
+    // La identidad explícita se basta: el modelo sigue siendo el iPhone.
+    expect(producto.model.slug).toBe('17-pro')
+    // Pero el color no se rellena con el del `id`.
+    expect(producto.color).toBeNull()
+    expect(producto.varianteExacta).toBe(false)
+    expect(producto.ruta).toBe('/iphone/17-pro')
+  })
+
+  it('un `id` que contradice el modelo explícito tampoco', () => {
+    // Este es el caso que hace daño de verdad: `azul` existe TANTO en el
+    // iPhone 17 como en el 17 Pro. Cogiendo el color del `id` sin comprobar de
+    // qué modelo habla, la variante se resolvería —y resolvería bien— con el
+    // color de otro producto. Nada fallaría; simplemente sería falso.
+    const [producto] = productosDeMisPedidos([
+      pedido('BC-1', [linea({ id: 'iphone/17/azul/256GB', colorSlug: undefined })]),
+    ])
+
+    expect(producto.model.slug).toBe('17-pro')
+    expect(producto.color, 'el `azul` es del iPhone 17, no de este pedido').toBeNull()
+    expect(producto.varianteExacta).toBe(false)
+  })
+
+  it('un `id` incompatible no invalida una identidad explícita completa', () => {
+    // Con `colorSlug` explícito, el `id` sobra por completo: aunque diga otra
+    // cosa, la variante se resuelve entera.
+    const [producto] = productosDeMisPedidos([pedido('BC-1', [linea({ id: 'mac/macbook-air-m5/azul-cielo/512GB' })])])
+
+    expect(producto.model.slug).toBe('17-pro')
+    expect(producto.color?.color).toBe(COLOR.color)
+    expect(producto.varianteExacta).toBe(true)
+  })
+
+  it('un `id` coherente sí completa lo que falta', () => {
+    // Misma familia y mismo modelo: el `id` habla del mismo producto, así que
+    // su color vale.
+    const [producto] = productosDeMisPedidos([
+      pedido('BC-1', [linea({ id: `iphone/17-pro/${COLOR.color}/256GB`, colorSlug: undefined })]),
+    ])
+
+    expect(producto.color?.color).toBe(COLOR.color)
+    expect(producto.varianteExacta).toBe(true)
   })
 
   it('un `id` que parsea pero apunta a algo inexistente no inventa nada', () => {

@@ -95,19 +95,36 @@ test('una compra resuelta enlaza a su variante exacta', async ({ page }) => {
 })
 
 test('si el catálogo ya no tiene esa variante, el enlace va al modelo y no a otra', async ({ page }) => {
-  await conPedidos(page, [pedido('BC-1', [linea({ colorSlug: 'color-retirado', color: 'Color retirado' })])])
+  await conPedidos(page, [
+    pedido('BC-1', [linea({ colorSlug: 'color-retirado', color: 'Color retirado', image: '/img/el-que-compre.webp' })]),
+  ])
   await page.goto(FIXTURE)
 
   const tarjeta = page.locator('article').filter({ hasText: 'iPhone 17 Pro' })
   await expect(tarjeta).toBeVisible()
   // Se sigue enseñando lo que se compró…
   await expect(tarjeta.getByText('Color retirado · 256GB')).toBeVisible()
+  // …incluida su foto, la guardada al comprar y no la de otro color.
+  await expect(tarjeta.locator('img')).toHaveAttribute('src', '/img/el-que-compre.webp')
 
   const enlace = tarjeta.getByRole('link', { name: /Ver producto/ })
   // …pero el enlace lleva a la ficha del modelo, nunca a una variante que no
   // es la comprada. Ese enlace funcionaría, y sería mentira.
   await expect(enlace).toHaveAttribute('href', '/iphone/17-pro')
   await expect(enlace).not.toHaveAttribute('href', /256gb-plata/)
+})
+
+test('sin color resuelto y sin foto guardada, hueco neutro y no la de otro color', async ({ page }) => {
+  await conPedidos(page, [
+    pedido('BC-1', [linea({ colorSlug: 'color-retirado', color: 'Color retirado', image: undefined })]),
+  ])
+  await page.goto(FIXTURE)
+
+  const tarjeta = page.locator('article').filter({ hasText: 'iPhone 17 Pro' })
+  await expect(tarjeta).toBeVisible()
+  // `ProductImage` deja su hueco con el texto alternativo. Más vale eso que una
+  // foto convincente de un producto que no es el que se compró.
+  await expect(tarjeta.locator('img')).toHaveCount(0)
 })
 
 test('lo que no se puede resolver no aparece', async ({ page }) => {
