@@ -57,7 +57,13 @@ export function CartPage() {
     <Container className="py-10">
       <h1 className="text-3xl font-extrabold text-ink">Tu cesta ({cartCount})</h1>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
+      {/* `min-w-0` en las dos columnas del grid.
+          Una celda de grid tiene `min-width: auto` y no baja de su contenido:
+          por eso el cupón, que desbordaba dentro de la columna izquierda, la
+          ensanchaba entera y arrastraba también la lista de productos, que sí
+          cabía. Sin este mínimo, cualquier cosa que se plante aquí dentro
+          vuelve a estirar la página en lugar de encogerse. */}
+      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px] [&>*]:min-w-0">
         {/* Líneas de producto */}
         <div>
           <ul className="divide-y divide-line border-y border-line">
@@ -160,13 +166,25 @@ export function CartPage() {
           {/* Cupón */}
           <div className="mt-4">
             {couponOpen ? (
+              // `min-w-0` en el campo y `shrink-0` en el botón.
+              //
+              // Un `<input>` sin `size` mide 20 caracteres de ancho intrínseco,
+              // y en pantalla táctil la regla de `index.css` le pone además un
+              // suelo de 16 px de texto para que iOS no amplíe la página al
+              // enfocarlo. Las dos cosas juntas dan un mínimo de 221 px que
+              // `flex-1` no puede reducir, porque un hijo flex no baja de su
+              // contenido mientras conserve `min-width: auto`. Con el botón al
+              // lado, la fila pedía 331 px donde había 280.
               <div className="flex gap-2">
                 <input
                   placeholder="Código de cupón"
                   aria-label="Código de cupón"
-                  className="h-11 flex-1 rounded-[12px] border border-line px-4 text-sm outline-none"
+                  size={1}
+                  className="h-11 min-w-0 flex-1 rounded-[12px] border border-line px-4 text-sm outline-none"
                 />
-                <Button variant="secondary">{t('cart.apply')}</Button>
+                <span className="shrink-0">
+                  <Button variant="secondary">{t('cart.apply')}</Button>
+                </span>
               </div>
             ) : (
               <button onClick={() => setCouponOpen(true)} className="text-sm font-semibold text-ink hover:underline">

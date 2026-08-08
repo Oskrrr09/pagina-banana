@@ -4,6 +4,7 @@ import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
 import { ProductImage } from '../components/product/ProductImage'
 import { useCustomerAuth } from '../lib/customerAuth'
+import { useIdioma, useT } from '../lib/i18n'
 import { supabaseEnabled } from '../lib/supabase'
 import { listMyOrders } from '../lib/orderSync'
 import { productosDeMisPedidos, type ProductoComprado } from '../lib/myProducts'
@@ -19,13 +20,20 @@ import { productosDeMisPedidos, type ProductoComprado } from '../lib/myProducts'
 // significa que se marcó la casilla en un checkout demostrativo, no que exista
 // una cobertura viva.
 //
-// Se entra desde «Mi cuenta» mientras la navegación de la app no cambie. Y va
-// en castellano como el resto del área de cuenta, que todavía no está
-// traducida; cuando esta pantalla salga a la barra inferior y deje de ser un
-// rincón de la cuenta, entra en el barrido de idiomas con las demás.
+// SE LLAMA «MIS COMPRAS»
+//
+// La ruta sigue siendo `/mis-productos` a propósito: cambiar la URL sólo para
+// que case con el rótulo añadiría riesgo —enlaces, pruebas, historial— a cambio
+// de nada que el cliente note. Lo que ve dice «Mis compras»; lo que hay en la
+// barra de direcciones da igual.
+//
+// Ya está traducida a los cinco idiomas: al pasar a la navegación principal
+// dejó de ser un rincón del área de cuenta, y con ello venció la deuda de
+// idioma que la PR #40 dejó anotada.
 
 export function MyProductsPage() {
   const { session, loading } = useCustomerAuth()
+  const { t, intl } = useIdioma()
   const [productos, setProductos] = useState<ProductoComprado[]>([])
   const [estado, setEstado] = useState<'cargando' | 'listo' | 'error'>('cargando')
 
@@ -54,10 +62,10 @@ export function MyProductsPage() {
   if (!supabaseEnabled) {
     return (
       <Container className="py-20 text-center">
-        <h1 className="text-2xl font-bold text-ink">Mis productos</h1>
-        <p className="mt-2 text-muted">Tus productos necesitan Supabase configurado en este entorno.</p>
+        <h1 className="text-2xl font-bold text-ink">{t('purchases.title')}</h1>
+        <p className="mt-2 text-muted">{t('purchases.needsSupabase')}</p>
         <Link to="/" className="mt-4 inline-block font-semibold text-ink hover:underline">
-          Volver a la portada
+          {t('purchases.backHome')}
         </Link>
       </Container>
     )
@@ -66,7 +74,7 @@ export function MyProductsPage() {
   if (loading) {
     return (
       <Container className="py-20 text-center">
-        <p className="text-muted">Cargando tus productos…</p>
+        <p className="text-muted">{t('purchases.loading')}</p>
       </Container>
     )
   }
@@ -77,22 +85,27 @@ export function MyProductsPage() {
 
   return (
     <Container className="py-12">
-      <h1 className="text-2xl font-bold text-ink">Mis productos</h1>
-      <p className="mt-1 text-sm text-muted">Productos de tus compras en Banana</p>
+      <h1 className="text-2xl font-bold text-ink">{t('purchases.title')}</h1>
+      <p className="mt-1 text-sm text-muted">{t('purchases.subtitle')}</p>
 
-      {estado === 'cargando' && <p className="mt-8 text-sm text-muted">Cargando…</p>}
-      {estado === 'error' && <p className="mt-8 text-sm text-danger">No se pudieron cargar tus productos.</p>}
+      {estado === 'cargando' && <p className="mt-8 text-sm text-muted">{t('purchases.loading')}</p>}
+      {estado === 'error' && <p className="mt-8 text-sm text-danger">{t('purchases.error')}</p>}
 
       {estado === 'listo' && productos.length === 0 && <SinProductos />}
 
       {estado === 'listo' && productos.length > 0 && (
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {productos.map((producto) => (
-            <li key={producto.clave}>
-              <TarjetaProducto producto={producto} />
-            </li>
-          ))}
-        </ul>
+        <section aria-labelledby="mis-compras-dispositivos" className="mt-8">
+          <h2 id="mis-compras-dispositivos" className="text-lg font-bold text-ink">
+            {t('purchases.devices')}
+          </h2>
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {productos.map((producto) => (
+              <li key={producto.clave}>
+                <TarjetaProducto producto={producto} intl={intl} />
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </Container>
   )
@@ -105,27 +118,28 @@ export function MyProductsPage() {
  * vacía: quien llega aquí sin compras necesita saber qué va a aparecer.
  */
 function SinProductos() {
+  const t = useT()
+
   return (
     <div className="mt-8 rounded-[16px] border border-line bg-neutral p-8 text-center">
       <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-surface text-muted">
         <Icon name="package" size={24} aria-hidden="true" />
       </span>
-      <p className="mt-4 font-semibold text-ink">Todavía no hay productos que enseñar</p>
-      <p className="mx-auto mt-1 max-w-md text-sm text-muted">
-        Aquí aparecerán los productos que compres en Banana con la sesión iniciada.
-      </p>
+      <p className="mt-4 font-semibold text-ink">{t('purchases.empty.title')}</p>
+      <p className="mx-auto mt-1 max-w-md text-sm text-muted">{t('purchases.empty.body')}</p>
       <Link
-        to="/iphone"
+        to="/tienda"
         className="mt-5 inline-flex min-h-11 items-center rounded-full bg-brand px-5 font-semibold text-ink"
       >
-        Ver el catálogo
+        {t('purchases.empty.cta')}
       </Link>
     </div>
   )
 }
 
-function TarjetaProducto({ producto }: { producto: ProductoComprado }) {
-  const fecha = new Date(producto.compradoEn).toLocaleDateString('es-ES', {
+function TarjetaProducto({ producto, intl }: { producto: ProductoComprado; intl: string }) {
+  const t = useT()
+  const fecha = new Date(producto.compradoEn).toLocaleDateString(intl, {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -148,10 +162,10 @@ function TarjetaProducto({ producto }: { producto: ProductoComprado }) {
       {variante && <p className="mt-0.5 text-sm text-muted">{variante}</p>}
 
       <p className="mt-2 text-sm text-muted">
-        Comprado el {fecha}
-        {producto.cantidad > 1 && <> · {producto.cantidad} unidades</>}
+        {t('purchases.boughtOn', { fecha })}
+        {producto.cantidad > 1 && <> · {t('purchases.units', { total: producto.cantidad })}</>}
       </p>
-      <p className="mt-0.5 font-mono text-xs text-muted">Pedido {producto.pedidoId}</p>
+      <p className="mt-0.5 font-mono text-xs text-muted">{t('purchases.order', { id: producto.pedidoId })}</p>
 
       <div className="mt-auto pt-4">
         {/* Con la variante resuelta se abre esa; si el catálogo ya no la tiene,
@@ -161,7 +175,7 @@ function TarjetaProducto({ producto }: { producto: ProductoComprado }) {
           to={producto.ruta}
           className="inline-flex min-h-11 items-center gap-1 font-semibold text-ink hover:underline"
         >
-          Ver producto
+          {t('purchases.viewProduct')}
           <Icon name="chevron-right" size={16} aria-hidden="true" />
         </Link>
       </div>

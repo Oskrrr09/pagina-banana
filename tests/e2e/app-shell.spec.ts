@@ -26,9 +26,11 @@ test.describe('interfaz de la app nativa', () => {
     const barra = page.getByRole('navigation', { name: 'Navegación principal' })
     await expect(barra).toBeVisible()
 
-    // El orden importa: es el que se acordó con Oscar.
+    // El orden importa: es el que se acordó con Oscar. Cuatro destinos desde
+    // la PR #41; el carrito subió a la barra de arriba y «Explorar» y
+    // «Favoritos» dejaron de ocupar sitio permanente.
     const etiquetas = await barra.locator('li').allInnerTexts()
-    expect(etiquetas.map((t) => t.trim())).toEqual(['Inicio', 'Favoritos', 'Explorar', 'Carrito', 'Cuenta'])
+    expect(etiquetas.map((t) => t.trim())).toEqual(['Inicio', 'Tienda', 'Mis compras', 'Cuenta'])
 
     // El pie de página es un mapa del sitio; dentro de una app sobra.
     await expect(page.getByRole('contentinfo')).toHaveCount(0)
@@ -38,12 +40,15 @@ test.describe('interfaz de la app nativa', () => {
     // Regresión de lo que Oscar vio en el iPhone: las barras "flotaban" al
     // arrastrar y el contenido se colaba por encima de la de búsqueda.
     //
+    // Se mide en Tienda y no en Inicio: desde la PR #41, Inicio es corta a
+    // propósito y no siempre da para desplazar.
+    //
     // La causa era `position: fixed`: en WKWebView los elementos fijos se
     // recolocan al TERMINAR el gesto, no durante. La solución no es ajustar
     // el fixed, es que el documento no se desplace: las barras son hermanas
     // del contenido y solo se desplaza el contenido.
     await comoApp(page)
-    await page.goto('./')
+    await page.goto('./tienda')
 
     const alto = page.viewportSize()!.height
     const cabecera = page.getByRole('banner')
@@ -76,23 +81,10 @@ test.describe('interfaz de la app nativa', () => {
     expect(await page.locator('#contenido').evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
   })
 
-  test('el menú de la app no repite lo que ya está en la barra inferior', async ({ page }) => {
-    await comoApp(page)
-    await page.goto('./')
-    await page.getByRole('button', { name: 'Explorar' }).click()
-    const menu = page.getByRole('dialog', { name: 'Menú principal' })
-
-    // "Tiendas y horarios" ya está en Servicios y ayuda; Favoritos es una
-    // pestaña fija abajo.
-    await expect(menu.getByRole('link', { name: 'Tiendas y horarios' })).toHaveCount(0)
-    await expect(menu.getByRole('link', { name: 'Favoritos' })).toHaveCount(0)
-
-    // Lo que sí sigue: el chat, el centro de ayuda, y el pie con cuenta e idioma.
-    await expect(menu.getByRole('button', { name: /Chatea con Bananito/ })).toBeVisible()
-    await expect(menu.getByRole('link', { name: 'Centro de ayuda' })).toBeVisible()
-    await expect(menu.getByRole('button', { name: /Cuenta/ })).toBeVisible()
-    await expect(menu.getByRole('button', { name: /Idioma/ })).toBeVisible()
-  })
+  // La prueba del menú de «Explorar» se retiró con la PR #41: esa pestaña ya
+  // no existe —abría un diálogo en vez de navegar— y las categorías viven
+  // dentro de Tienda. `MobileMenu` sigue en la cabecera de la web, que es
+  // quien lo usa ahora, y se cubre en la sección «la web no cambia».
 
   test('la pestaña activa refleja la ruta', async ({ page }) => {
     await comoApp(page)
@@ -100,9 +92,9 @@ test.describe('interfaz de la app nativa', () => {
     const barra = page.getByRole('navigation', { name: 'Navegación principal' })
     await expect(barra.getByRole('link', { name: /^Inicio/ })).toHaveAttribute('aria-current', 'page')
 
-    await barra.getByRole('link', { name: /^Favoritos/ }).click()
-    await expect(page).toHaveURL(/\/favoritos$/)
-    await expect(barra.getByRole('link', { name: /^Favoritos/ })).toHaveAttribute('aria-current', 'page')
+    await barra.getByRole('link', { name: /^Tienda/ }).click()
+    await expect(page).toHaveURL(/\/tienda$/)
+    await expect(barra.getByRole('link', { name: /^Tienda/ })).toHaveAttribute('aria-current', 'page')
     await expect(barra.getByRole('link', { name: /^Inicio/ })).not.toHaveAttribute('aria-current', 'page')
   })
 
@@ -130,12 +122,13 @@ test.describe('interfaz de la app nativa', () => {
     })
     await page.goto('./')
 
-    const barra = page.getByRole('navigation', { name: 'Navegación principal' })
-    await expect(barra.getByRole('link', { name: 'Carrito (2)' })).toBeVisible()
+    // Desde la PR #41 el carrito vive ARRIBA, no abajo: salió de la barra
+    // inferior para dejar sitio a «Mis compras». Sigue valiendo lo de no
+    // repetir un mismo destino dos veces en pantalla, sólo que al revés.
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Carrito (2)' })).toBeVisible()
 
-    // Un mismo destino dos veces en pantalla confunde: en la app el carrito
-    // solo está abajo.
-    await expect(page.getByRole('banner').getByRole('link', { name: /Carrito/ })).toHaveCount(0)
+    const barra = page.getByRole('navigation', { name: 'Navegación principal' })
+    await expect(barra.getByRole('link', { name: /Carrito/ })).toHaveCount(0)
   })
 
   test('sin sesión, la pestaña Cuenta lleva al acceso', async ({ page }) => {
@@ -148,7 +141,7 @@ test.describe('interfaz de la app nativa', () => {
     await expect(page).toHaveURL(/\/login$/)
   })
 
-  test('el chat no flota: se abre desde "Contacta con nosotros"', async ({ page }) => {
+  test('el chat no flota, pero sigue teniendo puerta', async ({ page }) => {
     await comoApp(page)
     await page.goto('./')
 
@@ -156,15 +149,11 @@ test.describe('interfaz de la app nativa', () => {
     // inferior: dentro de la app no existe.
     await expect(page.getByRole('button', { name: 'Abrir chat de Bananito' })).toHaveCount(0)
 
-    await page.getByRole('button', { name: 'Explorar' }).click()
-    const menu = page.getByRole('dialog', { name: 'Menú principal' })
-    await expect(menu.getByText('Contacta con nosotros')).toBeVisible()
-
-    await menu.getByRole('button', { name: /Chatea con Bananito/ }).click()
-
-    // El menú se cierra y el chat queda abierto.
-    await expect(menu).toBeHidden()
-    await expect(page.getByRole('dialog', { name: 'Bananito' })).toBeVisible()
+    // Se abría desde el menú de «Explorar». Al retirarse esa pestaña el acceso
+    // pasó a Inicio: sin él, el chat se habría quedado sin ninguna puerta
+    // dentro del binario.
+    await page.getByRole('button', { name: /Chatea con Bananito/ }).click()
+    await expect(page.getByRole('dialog', { name: /Bananito/ })).toBeVisible()
   })
 
   test('al cerrar el chat el foco no se pierde', async ({ page }) => {
@@ -172,11 +161,7 @@ test.describe('interfaz de la app nativa', () => {
     // `body` obligaría a quien navega por teclado a empezar desde arriba.
     await comoApp(page)
     await page.goto('./')
-    await page.getByRole('button', { name: 'Explorar' }).click()
-    await page
-      .getByRole('dialog', { name: 'Menú principal' })
-      .getByRole('button', { name: /Chatea con Bananito/ })
-      .click()
+    await page.getByRole('button', { name: /Chatea con Bananito/ }).click()
 
     const chat = page.getByRole('dialog', { name: 'Bananito' })
     await expect(chat).toBeVisible()
@@ -190,18 +175,15 @@ test.describe('interfaz de la app nativa', () => {
   test('el aviso de tienda favorita no se cuela al pasar del menú al chat', async ({ page }) => {
     // Regresión encontrada en el emulador, no en las pruebas: comprobar la
     // presencia de modales una sola vez dejaba un hueco entre que se cierra
-    // el menú y se monta el chat, y por ahí el aviso aparecía encima.
+    // el diálogo anterior y se monta el chat, y por ahí el aviso aparecía
+    // encima. Sigue valiendo aunque el acceso ya no sea el menú sino Inicio.
     // A propósito NO se descarta el aviso en este caso.
     await page.addInitScript(() => {
       ;(window as { Capacitor?: unknown }).Capacitor = {}
     })
     await page.goto('./')
 
-    await page.getByRole('button', { name: 'Explorar' }).click()
-    await page
-      .getByRole('dialog', { name: 'Menú principal' })
-      .getByRole('button', { name: /Chatea con Bananito/ })
-      .click()
+    await page.getByRole('button', { name: /Chatea con Bananito/ }).click()
 
     const chat = page.getByRole('dialog', { name: 'Bananito' })
     await expect(chat).toBeVisible()
@@ -214,25 +196,27 @@ test.describe('interfaz de la app nativa', () => {
 
   test('arriba hay un buscador con filtros de categoría, no una cabecera de web', async ({ page }) => {
     await comoApp(page)
-    await page.goto('./')
+    await page.goto('./tienda')
 
     const cabecera = page.getByRole('banner')
     await expect(cabecera.getByRole('button', { name: 'Buscar en Banana Computer' })).toBeVisible()
 
     // Filtros rápidos por familia, con las categorías reales del catálogo.
     // Van dentro del contenido, no de la cabecera: ver la prueba siguiente.
+    // Y sólo en Tienda: encima de «Mis compras» o de «Cuenta» no aparecen.
     const categorias = page.getByRole('navigation', { name: 'Categorías' })
     await expect(categorias.getByRole('link', { name: 'iPhone' })).toBeVisible()
     await expect(categorias.getByRole('link', { name: 'Accesorios' })).toBeVisible()
 
-    // El menú y el mega-menú de la web ya no están arriba: el menú lo abre
-    // "Explorar", abajo.
+    // El menú y el mega-menú de la web no están arriba. Desde la PR #41
+    // tampoco hay «Explorar» abajo: las categorías son estos chips, y sólo
+    // salen aquí, en el contexto comercial.
     await expect(cabecera.getByRole('button', { name: 'Abrir menú' })).toHaveCount(0)
   })
 
   test('solo el buscador queda fijo: los filtros se esconden al bajar', async ({ page }) => {
     await comoApp(page)
-    await page.goto('./')
+    await page.goto('./tienda')
 
     const buscador = page.getByRole('button', { name: 'Buscar en Banana Computer' })
     const categorias = page.getByRole('navigation', { name: 'Categorías' })
@@ -270,7 +254,7 @@ test.describe('interfaz de la app nativa', () => {
 
   test('un filtro de categoría navega a su familia', async ({ page }) => {
     await comoApp(page)
-    await page.goto('./')
+    await page.goto('./tienda')
     await page.getByRole('navigation', { name: 'Categorías' }).getByRole('link', { name: 'iPhone' }).click()
     await expect(page).toHaveURL(/\/iphone$/)
   })

@@ -18,21 +18,25 @@ import { useIdioma } from '../lib/i18n'
 import { claim } from '../data/commercialClaims'
 import { euro } from '../lib/format'
 import { isNativeApp } from '../lib/nativeApp'
-import { AppHome } from '../components/home/app/AppHome'
+import { AppCustomerHome } from '../components/home/app/AppCustomerHome'
 
 /**
  * Portada.
  *
  * Dentro del binario nativo se monta otra distinta. No es la misma página con
- * condicionales repartidos: son dos composiciones con públicos opuestos —una
- * escaparate corporativo, la otra tienda— que comparten catálogo, tarjetas y
- * rutas pero no estructura. Salpicar `isNativeApp` por doce secciones habría
- * dejado un archivo que nadie puede leer entero.
+ * condicionales repartidos: son dos composiciones con públicos opuestos que
+ * comparten catálogo, tarjetas y rutas pero no estructura. Salpicar
+ * `isNativeApp` por doce secciones habría dejado un archivo ilegible.
+ *
+ * En la app, `/` dejó de ser el escaparate. Lo comercial se mudó entero a
+ * `/tienda` —ver `StorePage`— y aquí queda **mi relación con Banana**: mis
+ * compras, mis pedidos y el soporte. Un cliente que ya compró un iPhone no
+ * abre la app para volver a comprarlo.
  *
  * La decisión se toma aquí, una vez, y la portada web de abajo queda intacta.
  */
 export function Home() {
-  if (isNativeApp) return <AppHome />
+  if (isNativeApp) return <AppCustomerHome />
   return <HomeWeb />
 }
 

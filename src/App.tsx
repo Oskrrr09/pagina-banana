@@ -27,6 +27,7 @@ import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { MyProductsPage } from './pages/MyProductsPage'
+import { StorePage } from './pages/StorePage'
 import { NotFound } from './pages/NotFound'
 
 // Rutas del apartado 9.1.
@@ -44,6 +45,7 @@ export function App() {
           <Route path="/registro" element={<RegisterPage />} />
           <Route path="/cuenta" element={<ProfilePage />} />
           <Route path="/mis-productos" element={<MyProductsPage />} />
+          <Route path="/tienda" element={<StorePage />} />
           <Route path="/:family" element={<FamilyPage />} />
           <Route path="/:family/:model" element={<ModelPage />} />
           <Route path="/:family/:model/:variant" element={<VariantPage />} />

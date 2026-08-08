@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 // ============================================================================
-// La pantalla `/mis-productos`.
+// La pantalla `/mis-productos`, que se llama «Mis compras» desde la PR #41.
 //
 // `tests/unit/my-products.test.ts` cubre qué compras se convierten en producto
 // y cuáles no; esto cubre lo que se ve: el guardia de sesión, el vacío, la
@@ -63,15 +63,15 @@ test('sin sesión manda a identificarse y no enseña nada', async ({ page }) => 
   await page.goto(`${FIXTURE}?sesion=no`)
 
   await expect(page.getByTestId('ruta')).toHaveText('/login?redirect=%2Fmis-productos')
-  await expect(page.getByRole('heading', { name: 'Mis productos' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Mis compras' })).toHaveCount(0)
 })
 
 test('sin compras explica para qué sirve la pantalla', async ({ page }) => {
   await conPedidos(page, [])
   await page.goto(FIXTURE)
 
-  await expect(page.getByRole('heading', { name: 'Mis productos' })).toBeVisible()
-  await expect(page.getByText('Todavía no hay productos que enseñar')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Mis compras' })).toBeVisible()
+  await expect(page.getByText('Todavía no hay compras que enseñar')).toBeVisible()
   // Un vacío que sólo dijera «no hay nada» no le sirve a quien acaba de entrar.
   await expect(page.getByText(/Aquí aparecerán los productos que compres/)).toBeVisible()
   await expect(page.getByRole('link', { name: 'Ver el catálogo' })).toBeVisible()
@@ -135,7 +135,7 @@ test('lo que no se puede resolver no aparece', async ({ page }) => {
   await conPedidos(page, [pedido('BC-1', [antigua, accesorio])])
   await page.goto(FIXTURE)
 
-  await expect(page.getByText('Todavía no hay productos que enseñar')).toBeVisible()
+  await expect(page.getByText('Todavía no hay compras que enseñar')).toBeVisible()
   await expect(page.getByRole('link', { name: /Ver producto/ })).toHaveCount(0)
 })
 
