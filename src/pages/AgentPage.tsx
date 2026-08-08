@@ -243,12 +243,12 @@ function NotAnAgentScreen() {
   const { signOut, session } = useAgentAuth()
   return (
     <div className="grid min-h-screen place-items-center bg-neutral p-8">
-      <div className="max-w-lg space-y-3 rounded-2xl border border-line bg-surface p-6 shadow-sm">
+      <div className="w-full min-w-0 max-w-lg space-y-3 rounded-2xl border border-line bg-surface p-6 shadow-sm">
         <h1 className="text-lg font-semibold text-ink">Sin permiso de agente</h1>
         <p className="text-sm text-ink/70">
           La cuenta <strong>{session?.user.email}</strong> ha iniciado sesión, pero no está dada de alta como agente. El
           alta se hace a mano desde el panel de Supabase; los pasos están en{' '}
-          <code className="rounded bg-neutral px-1 text-xs">supabase/schema.sql</code>.
+          <code className="break-all rounded bg-neutral px-1 text-xs">supabase/schema.sql</code>.
         </p>
         <button
           type="button"
@@ -1073,14 +1073,14 @@ function EducationalDiscountsPanel() {
 function SupabaseMissingScreen() {
   return (
     <div className="grid min-h-screen place-items-center bg-neutral p-8">
-      <div className="max-w-lg space-y-3 rounded-2xl border border-line bg-surface p-6 shadow-sm">
+      <div className="w-full min-w-0 max-w-lg space-y-3 rounded-2xl border border-line bg-surface p-6 shadow-sm">
         <h1 className="text-lg font-semibold text-ink">Panel de agentes</h1>
         <p className="text-sm text-ink/70">
           Este panel requiere Supabase configurado. Añade las variables
-          <code className="mx-1 rounded bg-neutral px-1 text-xs">VITE_SUPABASE_URL</code>y
-          <code className="mx-1 rounded bg-neutral px-1 text-xs">VITE_SUPABASE_ANON_KEY</code>
-          en un archivo <code className="rounded bg-neutral px-1 text-xs">.env.local</code>y reinicia el servidor de
-          desarrollo.
+          <code className="mx-1 break-all rounded bg-neutral px-1 text-xs">VITE_SUPABASE_URL</code>y
+          <code className="mx-1 break-all rounded bg-neutral px-1 text-xs">VITE_SUPABASE_ANON_KEY</code>
+          en un archivo <code className="break-all rounded bg-neutral px-1 text-xs">.env.local</code>y reinicia el
+          servidor de desarrollo.
         </p>
         <p className="text-sm text-ink/70">
           El script SQL para crear las tablas está en

@@ -92,6 +92,8 @@ export const es = {
   'availability.inStock': 'Disponible',
   'availability.backorder': 'Bajo pedido',
   'availability.soldOut': 'Agotado',
+  'stores.openingSoon': 'Abre pronto',
+  'stores.closingSoon': 'Cierra pronto',
   'availability.openNow': 'Abierto ahora',
   'availability.closed': 'Cerrado',
 

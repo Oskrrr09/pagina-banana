@@ -6,7 +6,6 @@ import { Icon } from '../components/ui/Icon'
 import {
   currentStoreDay,
   getStore,
-  isOpenNow,
   STORE_HOURS_CHECKED_ON,
   STORE_HOURS_NOTICE,
   UNIVERSAL_SERVICES,
@@ -14,6 +13,7 @@ import {
 import { allModels } from '../data/products'
 import { useStorePreference } from '../lib/storePreference'
 import { NotFound } from './NotFound'
+import { StoreStatus } from '../components/store/StoreStatus'
 
 // Ficha de una tienda (§4.14).
 export function StoreDetailPage() {
@@ -31,7 +31,6 @@ export function StoreDetailPage() {
   if (!store) return <NotFound />
 
   const today = currentStoreDay()
-  const open = isOpenNow(store)
   // Todos los servicios de la tienda: los comunes + los propios (p. ej. técnico).
   const services = [...UNIVERSAL_SERVICES, ...store.services]
   // Búsqueda por nombre real ("Banana Safari", "Banana Mesa y López"…) para
@@ -78,14 +77,7 @@ export function StoreDetailPage() {
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-extrabold text-ink">{store.name}</h1>
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                open ? 'bg-[#e4f5ea] text-[#2e7a4a]' : 'bg-[#fce8e8] text-[#b13333]'
-              }`}
-            >
-              <span className={`h-2 w-2 rounded-full ${open ? 'bg-[#2e9a5a]' : 'bg-[#c14545]'}`} />
-              {open ? 'Abierto ahora' : 'Cerrado'}
-            </span>
+            <StoreStatus store={store} />
           </div>
           <p className="mt-2 flex items-center gap-1.5 text-muted">
             <Icon name="map-pin" size={16} /> {store.address}

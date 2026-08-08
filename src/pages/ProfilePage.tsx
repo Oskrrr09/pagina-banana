@@ -175,7 +175,16 @@ export function ProfilePage() {
         son de ejemplo: no se cobra ni se envía nada.
       </div>
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      {/* `min-w-0` en las dos celdas del grid.
+          El menú de apartados es un `flex` sin envolver, así que su ancho
+          mínimo es la SUMA de los siete chips: 1088 px. Una celda de grid tiene
+          `min-width: auto` y no baja de su contenido, de modo que la columna se
+          estiraba a esa medida y arrastraba con ella los campos, que salían
+          fuera de la pantalla —789 px de desbordamiento a 320—. Y el
+          `overflow-x-auto` del menú no llegaba a actuar: nadie le ponía un
+          límite, así que en vez de desplazarse dentro de su caja empujaba la
+          página. */}
+      <div className="mt-10 grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)] [&>*]:min-w-0">
         <ProfileNav active={apartado} onChange={setApartado} />
         <div>
           {apartado === 'datos' && <PersonalDataSection />}

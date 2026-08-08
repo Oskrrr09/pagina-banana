@@ -113,32 +113,85 @@ export function getTodayHours(store: Store, date = new Date()) {
   return store.hours.find((entry) => entry.day === today)
 }
 
+/** Cuánto antes se avisa de que la tienda abre o cierra. */
+export const MINUTOS_DE_AVISO = 30
+
+/**
+ * En qué momento del horario está la tienda.
+ *
+ * `abre-pronto` y `cierra-pronto` existen porque «Abierto» y «Cerrado» a secas
+ * no bastan para decidir si merece la pena acercarse: llegar cinco minutos
+ * antes del cierre es, en la práctica, llegar tarde. El aviso se da con media
+ * hora, que es tiempo suficiente para cambiar de idea.
+ */
+export type EstadoTienda = 'abierta' | 'cierra-pronto' | 'abre-pronto' | 'cerrada'
+
 // Convierte "HH:MM" en minutos desde medianoche. "24:00" → 1440.
 function toMinutes(hhmm: string) {
   const [h, m] = hhmm.trim().split(':').map(Number)
   return h * 60 + (m || 0)
 }
 
-// Devuelve `true` si en `date` (hora de Canarias) la tienda está abierta.
-// Interpreta strings tipo "10:00–20:30" o "10:30–14:30 · 17:00–20:00" o
-// cualquiera que contenga "Cerrado".
-export function isOpenNow(store: Store, date = new Date()) {
+/** Los tramos de hoy en minutos, ya ordenados. Vacío si la tienda no abre. */
+function tramosDeHoy(store: Store, date: Date): { abre: number; cierra: number }[] {
   const entry = getTodayHours(store, date)
-  if (!entry || /cerrado/i.test(entry.time)) return false
+  if (!entry || /cerrado/i.test(entry.time)) return []
 
-  const nowStr = new Intl.DateTimeFormat('es-ES', {
+  // Puede haber tramos separados por " · " (mediodía). El separador de rango
+  // es un guion largo "–" o un guion normal "-".
+  return entry.time
+    .split('·')
+    .map((chunk) => {
+      const [start, end] = chunk.split(/[–-]/).map((s) => s.trim())
+      if (!start || !end) return null
+      return { abre: toMinutes(start), cierra: toMinutes(end) }
+    })
+    .filter((t): t is { abre: number; cierra: number } => t !== null)
+    .sort((a, b) => a.abre - b.abre)
+}
+
+/** La hora local de Canarias en minutos desde medianoche. */
+function minutosAhora(date: Date) {
+  const hhmm = new Intl.DateTimeFormat('es-ES', {
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',
     timeZone: 'Atlantic/Canary',
   }).format(date)
-  const now = toMinutes(nowStr)
+  return toMinutes(hhmm)
+}
 
-  // Puede haber tramos separados por " · " (mediodía). El separador de rango
-  // es un guion largo "–" o un guion normal "-".
-  return entry.time.split('·').some((chunk) => {
-    const [start, end] = chunk.split(/[–-]/).map((s) => s.trim())
-    if (!start || !end) return false
-    return now >= toMinutes(start) && now < toMinutes(end)
-  })
+/**
+ * Estado de la tienda en `date` (hora de Canarias).
+ *
+ * Con horario partido —«10:30–14:30 · 17:00–20:00»— cada tramo cuenta por su
+ * cuenta: a las 14:15 cierra pronto, y a las 16:45 abre pronto, aunque entre
+ * medias esté cerrada.
+ */
+export function estadoDeApertura(store: Store, date = new Date()): EstadoTienda {
+  const tramos = tramosDeHoy(store, date)
+  if (tramos.length === 0) return 'cerrada'
+  const ahora = minutosAhora(date)
+
+  for (const { abre, cierra } of tramos) {
+    if (ahora >= abre && ahora < cierra) {
+      return cierra - ahora <= MINUTOS_DE_AVISO ? 'cierra-pronto' : 'abierta'
+    }
+  }
+  // Fuera de todo tramo: ¿queda poco para que empiece alguno?
+  const proximo = tramos.find(({ abre }) => abre > ahora)
+  if (proximo && proximo.abre - ahora <= MINUTOS_DE_AVISO) return 'abre-pronto'
+
+  return 'cerrada'
+}
+
+/**
+ * Devuelve `true` si la tienda está abierta.
+ *
+ * Se mantiene porque «abierta» y «cierra pronto» son las dos formas de estar
+ * abierto, y hay sitios donde eso es lo único que importa.
+ */
+export function isOpenNow(store: Store, date = new Date()) {
+  const estado = estadoDeApertura(store, date)
+  return estado === 'abierta' || estado === 'cierra-pronto'
 }
