@@ -164,7 +164,13 @@ export function VariantPage() {
     family: family.slug,
     name: model.name,
     color: color.name,
+    colorSlug: color.color,
     capacity: current.capacity,
+    kind: 'device' as const,
+    // La foto del color comprado. El campo ya existía para los accesorios y las
+    // líneas de dispositivo lo dejaban vacío, así que si mañana ese color
+    // desaparece del catálogo no queda ni rastro de qué se compró.
+    image: color.image,
     price: current.price,
     previousPrice: current.previousPrice,
     insured: insurance,

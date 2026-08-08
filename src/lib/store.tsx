@@ -12,6 +12,14 @@ export interface CartLine {
   family: string
   name: string // 'iPhone 17 Pro' | 'Cargador MagSafe · 1 m'
   color: string // 'Plata' — vacío para accesorios sin color
+  /**
+   * Slug del color (`plata`), que es lo que resuelve la variante y lo que usa
+   * `variantPath`. `color` de al lado es el nombre visible y puede cambiar con
+   * una corrección de estilo o una traducción; este no.
+   *
+   * Opcional porque hay carritos ya guardados en `localStorage` sin él.
+   */
+  colorSlug?: string
   capacity: string // '256GB' — vacío para accesorios sin capacidad
   price: number
   previousPrice: number | null

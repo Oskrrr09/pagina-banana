@@ -4,6 +4,7 @@ import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { Field } from '../components/ui/Field'
+import { Icon } from '../components/ui/Icon'
 import { useCustomerAuth } from '../lib/customerAuth'
 import { useStore } from '../lib/store'
 import { useStorePreference } from '../lib/storePreference'
@@ -122,6 +123,24 @@ export function ProfilePage() {
           No se ha podido cerrar la sesión: {errorCierre}. Sigues dentro de tu cuenta; inténtalo de nuevo.
         </p>
       )}
+
+      {/* Entrada provisional a «Mis productos». Es un enlace y no un apartado
+          más del menú de al lado porque el menú cambia de sección sin navegar,
+          y esto sí es otra página. Cuando «Productos» llegue a la navegación
+          inferior de la app, esta fila sobra. */}
+      <Link
+        to="/mis-productos"
+        className="mt-6 flex min-h-11 items-center gap-3 rounded-[12px] border border-line bg-surface px-4 py-3 transition-colors hover:border-ink/30"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-neutral text-ink">
+          <Icon name="package" size={18} aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold text-ink">Mis productos</span>
+          <span className="block text-sm text-muted">Productos de tus compras en Banana</span>
+        </span>
+        <Icon name="chevron-right" size={18} aria-hidden="true" className="shrink-0 text-muted" />
+      </Link>
 
       <div className="mt-4 rounded-[12px] border border-line bg-neutral px-4 py-2 text-xs text-muted">
         <strong className="text-ink">Cuenta de demostración.</strong> Los pedidos, reservas y descuentos de esta página

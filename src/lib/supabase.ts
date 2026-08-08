@@ -117,7 +117,32 @@ export interface DbCustomer {
   descuento_educativo_revisado_por: string | null
 }
 
+/**
+ * Una línea dentro de `pedidos.lines` (jsonb).
+ *
+ * IDENTIDAD DEL PRODUCTO
+ *
+ * Los cinco primeros campos son opcionales porque las filas guardadas antes de
+ * agosto de 2026 no los tienen: el espejo sólo escribía nombre, color,
+ * capacidad, precio, cantidad y seguro, así que de un pedido no se podía
+ * volver al producto. Se añadieron para que «Mis productos» pueda resolver la
+ * compra contra el catálogo.
+ *
+ * `colorSlug` y `capacity` son lo que RESUELVE; `color` y `name` son la foto
+ * de lo que el cliente vio al comprar y se conservan aunque el catálogo cambie
+ * — en una línea de factura importa lo que se compró, no cómo se llama hoy.
+ *
+ * En `pedidos` sólo hay COMPRAS. Las reservas viven en `reservas` y por eso
+ * aquí no hay ninguna marca de reserva: si apareciera una, sería un error.
+ */
 export interface DbOrderLine {
+  /** `familia/modelo/color/capacidad`, o `accessory:slug/variante`. */
+  id?: string
+  family?: string
+  modelSlug?: string
+  kind?: 'device' | 'accessory'
+  /** Slug del color (`plata`), no el nombre visible. */
+  colorSlug?: string
   name: string
   color: string
   capacity: string

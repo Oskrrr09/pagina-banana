@@ -1202,6 +1202,61 @@ No atribuye motivaciones que el repositorio no documenta.
 - Evidencia: `tests/e2e/app-shopping.spec.ts` compara las cajas de las dos
   barras en los dos modos.
 
+## D-067 — El pedido guarda la identidad del producto, y sólo lo comprado
+
+- Fecha: 2026-08-08.
+- Estado: vigente.
+- Problema: `mirrorOrderToSupabase` traducía cada línea a
+  `{name, color, capacity, price, qty, insured, image}` y **perdía por el camino
+  `id`, `family`, `modelSlug`, `kind` y `reservation`**. De un pedido guardado no
+  se podía volver al producto del catálogo: quedaba un nombre suelto. Y con un
+  carrito mixto —algo comprado y algo reservado— la línea reservada acababa
+  dentro de `pedidos` sin ninguna marca y sumando en `products_total`, así que
+  el dato afirmaba que el cliente había comprado un aparato que en realidad
+  estaba esperando en una lista.
+- Decisión, en tres partes:
+  1. **La identidad se persiste explícita.** `family`, `modelSlug`, `kind`,
+     `colorSlug` e `id`. `colorSlug` es nuevo en toda la cadena
+     `CartLine → DemoOrderLine → DbOrderLine`: el catálogo distingue el slug
+     (`plata`, estable, el que usa `variantPath`) del nombre visible (`Plata`,
+     texto editorial que cambia con una corrección de estilo o al traducirse).
+     Se resuelve por el slug; el nombre se conserva como foto de lo que el
+     cliente compró.
+  2. **`pedidos` sólo contiene compras.** El filtro vive en `orderSync`, que es
+     quien decide qué entra, no en el checkout: así ningún llamante futuro puede
+     saltárselo. Los agregados —`products_total`, `insurance_total`,
+     `insured_units`— se **recalculan** sobre las líneas guardadas en vez de
+     copiarse del pedido local, que legítimamente suma también las reservas
+     porque representa el paso por caja entero.
+  3. **No se deduplica por SKU.** Sin número de serie ni IMEI no hay forma de
+     saber si dos compras de la misma variante son el mismo aparato;
+     probablemente sean dos. La identidad en la interfaz es pedido + posición de
+     la línea, y `qty: 2` se dice como «2 unidades» en vez de partirse en dos
+     tarjetas que serían dos objetos inventados.
+- `id` se conserva como identidad canónica del SKU y como comprobación, pero
+  **no es la fuente primaria**: parsearlo queda sólo como compatibilidad con
+  datos locales antiguos, y únicamente si el formato encaja exacto y el
+  resultado se confirma contra el catálogo.
+- Sin migración: `pedidos.lines` ya es `jsonb`
+  (`20260802000100_estado_seguro.sql:221`), sin `check` ni trigger, y la RLS es
+  por fila. Ampliar el contenido del JSON es aditivo. Comprobado además que
+  nadie más lee esa columna: sólo `OrdersSection`, que usa nombre y cantidad.
+- Qué NO se afirma: `insured` significa que se marcó la casilla del seguro en un
+  checkout demostrativo. No hay póliza, ni estado, ni fechas, ni aseguradora, ni
+  número de contrato — y los 8,99 € son una constante del front, no una tarifa
+  guardada, así que de un pedido antiguo ni siquiera se puede recuperar la prima
+  que se le aplicó. La interfaz no habla de cobertura.
+- Los pedidos ya guardados no tienen los campos nuevos y **no se reparan**: una
+  línea sin identidad sigue apareciendo en «Mis pedidos», donde el dato es fiel,
+  y no entra en «Mis productos». No se asocia por nombre: los accesorios se
+  guardan con la variante pegada al nombre y los nombres de modelo son texto que
+  cambia, así que una coincidencia no demuestra nada.
+- Evidencia: `tests/unit/order-sync-contrato.test.ts` fija el contrato de
+  escritura y el caso mixto; `tests/unit/my-products.test.ts`, la resolución;
+  `tests/e2e-prefs/mis-productos.spec.ts`, la pantalla. Contraprueba con la
+  implementación anterior: guardaba las dos líneas y un `products_total` de
+  2808 € que incluía el aparato reservado.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y
