@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
+import { DivisorPanel, useAnchoLista } from '../components/agent/DivisorPanel'
+import { Icon } from '../components/ui/Icon'
 import { supabaseEnabled, type AgentStatus, type DbAgent, type DbConversation, type DbCustomer } from '../lib/supabase'
 import {
   assignConversation,
@@ -128,27 +130,149 @@ export function AgentPage() {
       <TopBar tab={tab} onTabChange={setTab} sinLeer={badge} />
       <AgentAppBar notificaciones={permission} onPedirNotificaciones={() => void pedirNotificaciones()} />
       {tab === 'conversaciones' ? (
-        <div className="flex min-h-0 flex-1">
-          <InboxColumn
-            items={inbox.items}
-            status={inbox.status}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            unreadIds={unreadIds}
-            bandeja={bandeja}
-            onBandejaChange={(next) => {
-              setBandeja(next)
-              // La conversación abierta puede no estar en la otra bandeja.
-              setSelectedId(null)
-            }}
-          />
-          <ConversationColumn conversationId={selectedId} conversation={selected?.conversation ?? null} />
-          <VisitorColumn conversationId={selectedId} />
-        </div>
+        <PanelConversaciones
+          selectedId={selectedId}
+          onVolver={() => setSelectedId(null)}
+          lista={
+            <InboxColumn
+              items={inbox.items}
+              status={inbox.status}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              unreadIds={unreadIds}
+              bandeja={bandeja}
+              onBandejaChange={(next) => {
+                setBandeja(next)
+                // La conversación abierta puede no estar en la otra bandeja.
+                setSelectedId(null)
+              }}
+            />
+          }
+          conversacion={
+            <ConversationColumn conversationId={selectedId} conversation={selected?.conversation ?? null} />
+          }
+          visitante={<VisitorColumn conversationId={selectedId} />}
+        />
       ) : (
         <EducationalDiscountsPanel />
       )}
     </div>
+  )
+}
+
+/**
+ * Composición de las tres columnas del panel.
+ *
+ * ESCRITORIO Y TABLET (≥ 768 px)
+ *
+ * Lista y conversación separadas por un divisor arrastrable. La lista era
+ * `w-80 shrink-0` —320 px que no cedían nunca—, así que en una ventana de 900
+ * la conversación se quedaba con 580 y en una de 700 con 380, que es donde el
+ * canal, la asignación y la caja de respuesta empiezan a amontonarse.
+ *
+ * MÓVIL (< 768 px)
+ *
+ * Dos paneles ahí no caben: a 414 px la lista se comía 320 y dejaba 94 para la
+ * conversación. **No había ninguna rama móvil**, así que se añade una: se ve la
+ * lista, y al elegir una conversación pasa a ocupar la pantalla con un botón
+ * para volver. Es lo mismo que hace cualquier bandeja de correo en un móvil, y
+ * por el mismo motivo.
+ */
+export function PanelConversaciones({
+  lista,
+  conversacion,
+  visitante,
+  selectedId,
+  onVolver,
+}: {
+  lista: ReactNode
+  conversacion: ReactNode
+  visitante: ReactNode
+  selectedId: string | null
+  onVolver: () => void
+}) {
+  const { ancho, setAncho, caja, refContenedor } = useAnchoLista()
+  const escritorio = useEsEscritorio()
+
+  // Se decide en JavaScript y no con clases `md:` a propósito. Con dos ramas
+  // pintadas a la vez y una escondida por CSS, la lista se montaría DOS veces:
+  // en el panel real eso son dos suscripciones a la bandeja, dos contadores de
+  // sin leer y dos veces el mismo trabajo. Aquí sólo existe una.
+  if (!escritorio) {
+    if (!selectedId) return <div className="flex min-h-0 flex-1">{lista}</div>
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <button
+          type="button"
+          onClick={onVolver}
+          data-volver-a-lista
+          className="flex min-h-11 shrink-0 items-center gap-2 border-b border-line bg-surface px-4 text-sm font-semibold text-ink"
+        >
+          <Icon name="chevron-right" size={16} className="rotate-180" aria-hidden="true" />
+          Conversaciones
+        </button>
+        <div className="flex min-h-0 flex-1">{conversacion}</div>
+      </div>
+    )
+  }
+
+  // La ficha del visitante queda FUERA del bloque que se mide. Es una tercera
+  // columna de ancho fijo que no participa del reparto, y contarla como espacio
+  // disponible hacía que el máximo de la lista dejara la conversación en 279 px
+  // a 1280 y en 351 a 1440 — por debajo de su mínimo, con las pruebas en verde
+  // porque el fixture no la montaba.
+  return (
+    <div className="flex min-h-0 flex-1">
+      <div ref={refContenedor} className="flex min-h-0 min-w-0 flex-1" data-bloque-conversacion>
+        <div className="flex min-h-0 shrink-0" style={{ width: ancho }} data-lista-conversaciones>
+          {lista}
+        </div>
+        <DivisorPanel
+          ancho={ancho}
+          onAncho={setAncho}
+          anchoContenedor={caja.ancho}
+          izquierdaContenedor={caja.izquierda}
+        />
+        <div className="flex min-h-0 min-w-0 flex-1" data-columna-conversacion>
+          {conversacion}
+        </div>
+      </div>
+      {visitante}
+    </div>
+  )
+}
+
+/**
+ * ¿Caben las dos columnas?
+ *
+ * Por debajo de 768 px no: a 414 la lista se comía 320 y dejaba 94 para la
+ * conversación. Ahí se enseña una cosa u otra, como cualquier bandeja de correo
+ * en un móvil y por el mismo motivo.
+ */
+const CONSULTA_ESCRITORIO = '(min-width: 768px)'
+
+function suscribirAEscritorio(alCambiar: () => void) {
+  const consulta = window.matchMedia(CONSULTA_ESCRITORIO)
+  consulta.addEventListener('change', alCambiar)
+  return () => consulta.removeEventListener('change', alCambiar)
+}
+
+function useEsEscritorio() {
+  // `useSyncExternalStore` y no `useState` + `useEffect` a propósito.
+  //
+  // Con el par de siempre hay una ventana entre el primer render y el efecto
+  // que suscribe: si el ancho cruza los 768 px ahí en medio, el evento no llega
+  // a nadie y la rama se queda congelada en la que tocaba al montar. Se vio en
+  // CI —el panel se quedaba en móvil después de un cambio de tamaño y el
+  // divisor no aparecía nunca—, y en la aplicación real es una rotación de
+  // pantalla justo al cargar.
+  //
+  // Esto lo cierra por diseño: React vuelve a leer el estado nada más
+  // suscribirse, así que un cambio perdido se recupera en el acto.
+  return useSyncExternalStore(
+    suscribirAEscritorio,
+    () => window.matchMedia(CONSULTA_ESCRITORIO).matches,
+    () => true,
   )
 }
 
@@ -279,8 +403,11 @@ function InboxColumn({
   bandeja: Bandeja
   onBandejaChange: (next: Bandeja) => void
 }) {
+  // Sin ancho propio: lo decide `PanelConversaciones`, que es quien sabe si
+  // estamos en móvil —a pantalla completa— o junto al divisor. Antes era
+  // `w-80 shrink-0` y no cedía nunca.
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-r border-line bg-surface">
+    <aside className="flex min-w-0 flex-1 flex-col border-r border-line bg-surface">
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <h2 className="text-sm font-semibold text-ink">Conversaciones</h2>
         <span className="text-xs text-ink/60">{items.length}</span>
