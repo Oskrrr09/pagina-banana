@@ -11,10 +11,20 @@ import {
 // ============================================================================
 // chatSession — sesión de chat del visitante contra Supabase
 //
-// Un visitante = un navegador. Guardamos su UUID en localStorage para que
-// persista entre visitas y podamos recuperar historial. Cada visitante tiene
-// una única conversación "abierta" a la vez (Fase 1); si el agente la cierra
-// se abriría una nueva en el próximo mensaje.
+// LA IDENTIDAD ANÓNIMA ES EFÍMERA
+//
+// Antes un visitante era «un navegador»: nombre y correo se guardaban en
+// `localStorage` para no volver a pedirlos, y la sesión anónima de Supabase
+// persistía con ellos. El resultado, medido con Supabase real, era que quien
+// cerraba y volvía a abrir sin cuenta seguía siendo la misma persona: mismo
+// `auth.uid`, misma conversación y su historial a la vista.
+//
+// La regla ahora es que **la persistencia duradera exige una cuenta**. Sin
+// ella, cada inicialización de la aplicación empieza una identidad nueva: se
+// vuelve a pedir nombre y correo, y no se rehidrata nada de la anterior.
+//
+// Cada visitante sigue teniendo una única conversación "abierta" a la vez
+// (Fase 1); si el agente la cierra se abriría una nueva en el próximo mensaje.
 //
 // El hook expone:
 //   messages       → lista ordenada del historial + tiempo real
@@ -24,10 +34,37 @@ import {
 //                    de canned replies del componente)
 // ============================================================================
 
-const CONVERSATION_STORAGE_KEY = 'bananito:conversation_id'
-// Nombre y email de quien escribe sin cuenta. Se guardan para no volver a
-// pedírselos en cada visita desde el mismo navegador.
-const GUEST_STORAGE_KEY = 'bananito:guest'
+/**
+ * Claves duraderas que este módulo ya NO usa, y que hay que retirar de las
+ * instalaciones que las tengan.
+ *
+ * `bananito:guest` guardaba nombre y correo del visitante sin cuenta.
+ * `bananito:conversation_id` era almacenamiento **vestigial**: se escribía y se
+ * borraba, pero no se leía en ninguna parte —comprobado—, así que ni siquiera
+ * era lo que reenganchaba la conversación; eso lo hacía el `auth.uid`.
+ *
+ * Se limpian una sola vez al cargar el módulo, y sólo estas dos: ni el
+ * carrito, ni el idioma, ni las preferencias, ni la sesión de Supabase.
+ */
+const CLAVES_HEREDADAS = ['bananito:guest', 'bananito:conversation_id'] as const
+
+function limpiarResiduoHeredado() {
+  for (const clave of CLAVES_HEREDADAS) removeStored(clave)
+}
+
+/**
+ * ¿La sesión anónima actual la ha creado ESTA ejecución de la aplicación?
+ *
+ * Vive en el módulo, así que un arranque nuevo —recarga, cerrar y volver a
+ * abrir la web, relanzar la app— la devuelve a `false`. Es lo que distingue
+ * «la sesión anónima que acabo de crear para este chat», que sí se reutiliza
+ * mientras dure la instancia, de «la que quedó de la vez anterior», que no.
+ *
+ * No se resuelve con un efecto aparte a propósito: `asegurarSesion()` se llama
+ * desde un único sitio y antes de abrir ninguna conversación, así que no hay
+ * ventana en la que el chat pueda leer nada bajo la identidad antigua.
+ */
+let anonimaDeEstaInstancia = false
 
 // La bienvenida ya no vive aquí ni se guarda en la base.
 //
@@ -67,30 +104,12 @@ export interface ChatSession {
   empezarNuevaConversacion: () => void
 }
 
-function readStored(key: string): string | null {
-  if (typeof window === 'undefined') return null
-  try {
-    return window.localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
 function removeStored(key: string) {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.removeItem(key)
   } catch {
     /* localStorage puede estar deshabilitada; ignoramos */
-  }
-}
-
-function writeStored(key: string, value: string) {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(key, value)
-  } catch {
-    /* localStorage puede estar deshabilitada; ignoramos y seguimos en sesión */
   }
 }
 
@@ -109,18 +128,6 @@ export interface VisitorIdentity {
 interface GuestIdentity {
   nombre: string
   email: string
-}
-
-function readGuest(): GuestIdentity | null {
-  const raw = readStored(GUEST_STORAGE_KEY)
-  if (!raw) return null
-  try {
-    const parsed = JSON.parse(raw) as Partial<GuestIdentity>
-    if (!parsed.nombre || !parsed.email) return null
-    return { nombre: parsed.nombre, email: parsed.email }
-  } catch {
-    return null
-  }
 }
 
 /**
@@ -148,7 +155,29 @@ async function asegurarSesion(): Promise<boolean> {
   const {
     data: { session },
   } = await supabase.auth.getSession()
-  if (session) return true
+
+  // Una sesión PERMANENTE se conserva intacta. Es el caso de quien tiene
+  // cuenta: su identidad y su chat deben sobrevivir a cerrar y volver a abrir.
+  if (session && session.user.is_anonymous !== true) return true
+
+  // Una sesión ANÓNIMA que viene de una inicialización anterior no se reutiliza.
+  //
+  // Es la pieza que de verdad sostiene la frontera. Medido con Supabase real:
+  // borrando `bananito:guest` y `bananito:conversation_id` pero conservando esta
+  // sesión, el `auth.uid` seguía siendo el mismo y el servidor volvía a
+  // resolver al mismo visitante. Sin esto, «volver a pedir los datos» sería
+  // sólo un cambio de fachada.
+  //
+  // `scope: 'local'` a propósito: el alcance por defecto de `signOut` es
+  // global y cerraría la sesión en todos los dispositivos. Aquí sólo se suelta
+  // en esta instalación. Y sólo se llega a esta línea con `is_anonymous ===
+  // true` comprobado.
+  if (session && !anonimaDeEstaInstancia) {
+    await supabase.auth.signOut({ scope: 'local' })
+    limpiarResiduoHeredado()
+  } else if (session) {
+    return true
+  }
 
   const { error } = await supabase.auth.signInAnonymously()
   if (error) {
@@ -160,6 +189,7 @@ async function asegurarSesion(): Promise<boolean> {
     )
     return false
   }
+  anonimaDeEstaInstancia = true
   return true
 }
 
@@ -207,7 +237,6 @@ async function abrirConversacion(identity: VisitorIdentity | null, guest: GuestI
     }
   }
 
-  writeStored(CONVERSATION_STORAGE_KEY, data as string)
   return data as string
 }
 
@@ -215,7 +244,9 @@ export function useVisitorChatSession(active: boolean, identity: VisitorIdentity
   const [status, setStatus] = useState<Status>(supabaseEnabled ? 'loading' : 'demo')
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<DbMessage[]>([])
-  const [guest, setGuest] = useState<GuestIdentity | null>(() => readGuest())
+  // Nace vacío SIEMPRE. Es lo que hace que una inicialización nueva vuelva a
+  // pedir nombre y correo: mientras `guest` sea null, `necesitaDatos` es true.
+  const [guest, setGuest] = useState<GuestIdentity | null>(null)
   const [conversation, setConversation] = useState<DbConversation | null>(null)
   // Guardamos IDs vistos en un Set para dedupear entre insert optimista y
   // el evento realtime que llega después con el mismo id.
@@ -424,7 +455,8 @@ export function useVisitorChatSession(active: boolean, identity: VisitorIdentity
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(limpio.email)) {
       return { error: 'Escribe un email válido.' }
     }
-    writeStored(GUEST_STORAGE_KEY, JSON.stringify(limpio))
+    // No se guarda en ningún sitio duradero: vive en memoria mientras esta
+    // instancia de la aplicación siga abierta.
     // Al pasar de null a datos, el efecto de inicialización arranca solo.
     setGuest(limpio)
     return { error: null }
@@ -465,7 +497,6 @@ export function useVisitorChatSession(active: boolean, identity: VisitorIdentity
   // entrar (depende de `conversationId`) y, como la anterior quedó
   // cerrada, `ensureConversation` crea una nueva en vez de reutilizarla.
   const empezarNuevaConversacion = useCallback(() => {
-    removeStored(CONVERSATION_STORAGE_KEY)
     seenIdsRef.current = new Set()
     setMessages([])
     setConversation(null)
