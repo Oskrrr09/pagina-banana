@@ -45,17 +45,18 @@ export function AppTopBar() {
         // ocupa la pantalla, y quien se desplaza es el contenido de en medio.
         // En iOS los elementos fijos se recolocan al terminar el gesto, no
         // durante, y por eso parecían despegarse al arrastrar.
-        // PRUEBA VISUAL (PR de barras): amarillo Banana en las DOS variantes,
-        // no sólo en la comercial. El contraste del contenido sigue siendo
-        // oscuro sobre amarillo, que es la combinación de la marca.
+        // EL COLOR SEPARA LOS DOS MUNDOS, Y SE QUEDA ASÍ
         //
-        // Ojo con lo que esto cuesta: la PR #41 usaba el color para separar el
-        // mundo comercial del de cliente —amarillo arriba en Tienda, claro en
-        // Inicio, Mis compras y Cuenta—. Con las dos en amarillo, esa distinción
-        // deja de ser cromática y se sostiene sólo en la composición: buscador
-        // grande y chips en Tienda, marca y dos botones compactos en el resto.
-        className="z-40 shrink-0 bg-banana"
-        data-app-topbar-color="banana"
+        // Amarillo Banana en Tienda; claro en Inicio, Mis compras y Cuenta. Es
+        // lo que hacía la PR #41 y lo que se conserva tras verlo en el
+        // simulador: con las dos variantes en amarillo, la distinción dejaba de
+        // ser cromática y se sostenía sólo en la composición —buscador grande y
+        // chips frente a marca y dos botones—, que es una señal más débil y que
+        // además se pierde al bajar, cuando los chips se esconden.
+        //
+        // La barra inferior sí es azul en toda la app: ésa no distingue
+        // contextos, los enmarca.
+        className={`z-40 shrink-0 ${comercial ? 'bg-banana' : 'border-b border-line bg-surface'}`}
         data-app-topbar={comercial ? 'comercial' : 'cliente'}
         // El WebView llega al borde de la pantalla: sin esto la barra queda
         // debajo de la Dynamic Island y del reloj.

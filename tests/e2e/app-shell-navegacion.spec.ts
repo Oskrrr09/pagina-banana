@@ -97,6 +97,9 @@ test.describe('barra inferior', () => {
   })
 })
 
+/** El amarillo de marca, el que lleva la barra de Tienda. */
+const BANANA = 'rgb(255, 206, 31)'
+
 test.describe('barra superior', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
@@ -106,6 +109,7 @@ test.describe('barra superior', () => {
     // Comercial: el campo grande ocupa casi todo el ancho.
     await page.goto('./tienda')
     await expect(page.locator('[data-app-topbar="comercial"]')).toBeVisible()
+    await expect(page.locator('[data-app-topbar]')).toHaveCSS('background-color', BANANA)
     await expect(page.locator('[data-app-search="prominente"]')).toBeVisible()
     await expect(page.locator('[data-app-chips]')).toBeVisible()
     await expect(page.locator('[data-app-cart]')).toBeVisible()
@@ -118,6 +122,11 @@ test.describe('barra superior', () => {
     for (const ruta of ['./', './mis-productos', './cuenta']) {
       await page.goto(ruta)
       await expect(page.locator('[data-app-topbar="cliente"]'), ruta).toBeVisible()
+      // Y NO amarilla. El color es lo que separa los dos mundos, y es una
+      // decisión tomada mirando la app en el simulador: con las dos variantes
+      // en amarillo, la distinción se sostenía sólo en la composición, que
+      // además se pierde al bajar y esconderse los chips.
+      await expect(page.locator('[data-app-topbar]'), ruta).not.toHaveCSS('background-color', BANANA)
       await expect(page.locator('[data-app-search="compacto"]'), ruta).toBeVisible()
       await expect(page.locator('[data-app-search="prominente"]'), ruta).toHaveCount(0)
       await expect(page.locator('[data-app-chips]'), ruta).toHaveCount(0)
