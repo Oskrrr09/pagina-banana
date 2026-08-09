@@ -66,6 +66,11 @@ function limpiarResiduoHeredado() {
  */
 let anonimaDeEstaInstancia = false
 
+// El residuo de versiones anteriores se retira al cargar el módulo, no sólo al
+// rotar una sesión anónima: quien actualice sin sesión viva también lo tiene, y
+// una clave duradera de una identidad que ahora es efímera no debe quedarse.
+limpiarResiduoHeredado()
+
 // La bienvenida ya no vive aquí ni se guarda en la base.
 //
 // Antes la insertaba este módulo con `autor: 'bot'`, lo que obligaba a que las

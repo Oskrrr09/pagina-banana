@@ -21,12 +21,30 @@ const CLAVES_DE_CUENTA = [
   'banana:favorite-notifications',
 ] as const
 
-/** Claves que NO son de la cuenta y deben sobrevivir al cierre de sesión. */
+/**
+ * Claves que NO son de la cuenta y deben sobrevivir al cierre de sesión.
+ *
+ * EL CHAT ANÓNIMO SALIÓ DE ESTA LISTA — CAMBIO DE PRODUCTO
+ *
+ * Aquí estaban también `bananito:guest` y `bananito:conversation_id`, porque la
+ * regla de entonces era que un visitante era «un navegador» y no se le volvían
+ * a pedir nombre y correo. Esa regla cambió: la persistencia duradera del chat
+ * exige ahora una cuenta, y sin ella cada inicialización empieza una identidad
+ * nueva.
+ *
+ * Lo que esta prueba protege sigue siendo válido y no se toca: que cerrar
+ * sesión NO haga un borrado indiscriminado. El carrito y el idioma no son de la
+ * cuenta y tienen que seguir ahí.
+ *
+ * La garantía nueva —que el siguiente visitante no herede la identidad del
+ * chat— es FUNCIONAL y no se puede comprobar en este fixture, que monta los
+ * proveedores de preferencias sin el módulo del chat. Vive donde puede
+ * demostrarse de verdad, contra Supabase real:
+ * `tests/integration/chat-anonimo-efimero.spec.ts` y `chat-identidad-cuentas.spec.ts`.
+ */
 const CLAVES_AJENAS = {
   'banana:cart': '[{"id":"iphone/17-pro/plata/256GB","qty":1}]',
   'banana:idioma': 'es',
-  'bananito:guest': '{"nombre":"Elena R.","email":"elena@example.test"}',
-  'bananito:conversation_id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
 }
 
 async function claves(page: Page): Promise<Record<string, string | null>> {
@@ -83,7 +101,7 @@ test('al cerrar sesión desaparecen las cuatro claves y los proveedores se vací
   }
 })
 
-test('el carrito, el idioma y el chat anónimo sobreviven al cierre de sesión', async ({ page }) => {
+test('el carrito y el idioma sobreviven al cierre de sesión', async ({ page }) => {
   await cuentaConPreferencias(page)
 
   await page.getByRole('button', { name: 'Cerrar sesión' }).click()
