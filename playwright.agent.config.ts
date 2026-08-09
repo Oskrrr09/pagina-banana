@@ -6,7 +6,9 @@ const FIXTURE = `${HOST}/pagina-banana/tests/e2e-agent/fixture.html`
 
 export default defineConfig({
   testDir: './tests/e2e-agent',
-  testMatch: 'agent-panel.spec.ts',
+  // Todas las specs de la carpeta: el patrón anterior nombraba un único
+  // fichero y una spec nueva se habría quedado fuera sin avisar.
+  testMatch: /\.spec\.ts$/,
   fullyParallel: true,
   retries: 0,
   reporter: 'list',

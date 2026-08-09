@@ -98,7 +98,19 @@ export function Header() {
         {/* Azul profundo (#0768A9). Con texto blanco se cumple WCAG AA
              (ratio ~5.2:1). El hover usa blanco translúcido para conservar
              legibilidad. */}
-        <div className="relative hidden bg-[#0768A9] text-white sm:block">
+        {/* POR QUÉ `xl` Y NO `sm`.
+             Esta barra aparecía desde 640 px, pero su contenido no cabe ahí: los
+             enlaces van centrados en el flujo y «Elige tienda» está posicionado
+             en absoluto, fuera de él, así que los primeros no saben que el
+             segundo existe y se le meten debajo. Medido, solapaba de 640 a
+             ~1000 px —hasta 89 px de «Soporte» sobre «Elige tienda»—, y en
+             francés seguía solapando a 1024 y 1100.
+             Sólo cabe limpia en los cinco idiomas a partir de 1280, que es
+             además donde desaparece la hamburguesa (`xl:hidden`): por debajo,
+             estos mismos enlaces y la tienda favorita viven en `MobileMenu`, así
+             que no se pierde ningún acceso — sólo deja de haber dos sitios para
+             lo mismo. */}
+        <div className="relative hidden bg-[#0768A9] text-white xl:block">
           <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium">
             {utilityLinks.map((link) => (
               <Link
