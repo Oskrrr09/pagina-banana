@@ -115,20 +115,29 @@ test('quien abre la aplicación sin usar el chat no crea ninguna identidad', asy
   test.skip(!URL_SUPABASE || !SERVICE, 'Necesita el Supabase local.')
   await page.addInitScript(() => localStorage.setItem('banana:favorite-store-prompt', 'dismissed'))
 
-  // Cada `signInAnonymously()` crea un usuario real en Supabase. Abrir la web
-  // —o recargarla— no puede dar de alta a nadie.
-  const admin = createClient(URL_SUPABASE!, SERVICE!, { auth: { persistSession: false } })
-  const antes = await admin.auth.admin.listUsers({ perPage: 1000 })
-
+  // Cada `signInAnonymously()` crea un usuario real en Supabase, así que abrir
+  // o recargar la web no puede dar de alta a nadie.
+  //
+  // Se comprueba sobre ESTE navegador y no contando usuarios en el servidor: la
+  // instancia de Supabase es compartida por toda la suite y otras pruebas crean
+  // cuentas mientras ésta corre, así que un recuento global mide el ruido de
+  // las demás. Lo detectó el CI, donde daba +1 y +3 sin que esta prueba hubiera
+  // tocado el chat. Que no exista sesión aquí es la evidencia exacta de que no
+  // se ha llamado a `signInAnonymously()`.
   await page.goto('./')
   await page.reload()
   await page.goto('./tiendas')
 
-  const despues = await admin.auth.admin.listUsers({ perPage: 1000 })
-  expect(despues.data.users.length, 'abrir y recargar la web no debe crear usuarios anónimos').toBe(
-    antes.data.users.length,
-  )
-
   const sesion = await identidad(page)
-  expect(sesion.uid, 'y no debe quedar ninguna sesión').toBeNull()
+  expect(sesion.uid, 'no debe quedar ninguna sesión: nadie ha usado el chat').toBeNull()
+
+  const claves = await page.evaluate(() => Object.keys(localStorage).filter((k) => /^sb-.*-auth-token$/.test(k)))
+  expect(claves, 'ni ninguna credencial guardada').toEqual([])
+
+  // Y abrir el widget sin completar los datos tampoco crea identidad.
+  await page.goto('./')
+  await abrirChat(page)
+  await expect(page.getByText('Antes de empezar')).toBeVisible()
+  const trasAbrir = await identidad(page)
+  expect(trasAbrir.uid, 'abrir el chat sin identificarse no crea usuario').toBeNull()
 })
