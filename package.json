@@ -22,6 +22,7 @@
     "test:integration": "node scripts/test-supabase-local.mjs",
     "test:confirmacion": "node scripts/test-supabase-confirmacion.mjs",
     "test:e2e": "playwright test",
+    "test:artefacto": "npm run build:test && E2E_CONTRA_BUILD=1 PW_SKIP_WEBSERVER=1 playwright test tests/e2e/secretos.spec.ts --project=chromium",
     "test:smoke": "playwright test tests/e2e/smoke-cross-browser.spec.ts --project=chromium --project=firefox --project=webkit --project=mobile-webkit",
     "test:pwa": "npm run build:test && E2E_CONTRA_BUILD=1 playwright test tests/e2e/pwa.spec.ts --project=chromium",
     "test:e2e:agent": "playwright test --config=playwright.agent.config.ts",

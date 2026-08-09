@@ -12,6 +12,32 @@ import { join } from 'node:path'
 //
 // La clave anónima sí puede ir en el bundle: para eso está, y es la que las
 // políticas mantienen a raya.
+//
+// DOS CONTRATOS DISTINTOS, Y CONVIENE NO CONFUNDIRLOS
+//
+// 1 · SEGURIDAD — que el frontend publicado no lleve una credencial
+//     privilegiada (`service_role` y compañía). Se comprueba sobre el código
+//     fuente y sobre el artefacto.
+// 2 · AISLAMIENTO — que el artefacto que sirven las PRUEBAS no apunte a un
+//     Supabase real, para que la suite no escriba visitantes y conversaciones
+//     de mentira en el proyecto de verdad. Ya pasó una vez (QA-002).
+//
+// El segundo no es un problema de seguridad: la anon key está diseñada para
+// viajar al cliente y la protección real es RLS. Es un problema de aislamiento
+// de las pruebas, y por eso `build:test` la vacía a propósito.
+//
+// POR QUÉ CAMBIÓ EL CONTRATO DE LAS DOS COMPROBACIONES DE ARTEFACTO
+//
+// Antes hacían `test.skip(!existsSync(dist))` sin más. Es decir: quien
+// ejecutara una validación que dice inspeccionar el bundle y no tuviera bundle
+// obtenía «PASS · 2 skipped» — una omisión silenciosa disfrazada de
+// aprobación. Ahora se distingue:
+//
+// - Si se está validando el ARTEFACTO —`E2E_CONTRA_BUILD=1`, que es lo que
+//   hacen el CI y `npm run test:artefacto`—, la ausencia de `dist` es un FALLO
+//   de precondición.
+// - Si se está corriendo la suite normal contra el servidor de desarrollo, no
+//   hay artefacto que validar y se omite diciendo por qué.
 
 /** Recorre un directorio y devuelve las rutas de sus ficheros. */
 function ficheros(dir: string): string[] {
@@ -58,18 +84,94 @@ test('el código fuente no lee una clave de servicio desde el entorno del client
   ).toEqual([])
 })
 
+/**
+ * ¿Se está validando el artefacto, o corriendo contra el servidor de desarrollo?
+ *
+ * Es la misma variable con la que el CI decide servir el `dist` compilado, así
+ * que las dos cosas no pueden desincronizarse.
+ */
+const VALIDANDO_ARTEFACTO = process.env.E2E_CONTRA_BUILD === '1'
+const DIST = join(process.cwd(), 'dist')
+
+/**
+ * Los roles declarados por los JWT que haya dentro de un fichero.
+ *
+ * QUÉ DETECTA, EXACTAMENTE
+ *
+ * Cadenas con tres segmentos base64url separados por puntos. De cada candidata
+ * se decodifica el SEGUNDO segmento —el payload— y, si resulta ser JSON con un
+ * campo `role`, se devuelve ese rol. Nada más: no se valida la firma ni se
+ * interpreta el token de ninguna otra forma.
+ *
+ * ES DEFENSIVO A PROPÓSITO
+ *
+ * Un bundle minificado tiene muchas cadenas con puntos que no son tokens. Todo
+ * lo que no decodifique, o no sea JSON, o no traiga `role`, se descarta en
+ * silencio: la comprobación no puede caerse por encontrarse algo raro, porque
+ * entonces dejaría de vigilar.
+ *
+ * QUÉ NO DETECTA, Y SE DICE A PROPÓSITO
+ *
+ * Los formatos de clave de Supabase que no son JWT no se buscan por prefijo.
+ * Inventarse un prefijo daría una sensación de cobertura que no existe; añadir
+ * uno real exige mirar la documentación oficial vigente y es una decisión
+ * aparte de esta prueba.
+ */
+function rolesDeTokens(contenido: string): string[] {
+  const roles: string[] = []
+  const candidatos = contenido.match(/[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g) ?? []
+  for (const candidato of candidatos) {
+    const payload = candidato.split('.')[1]
+    try {
+      const json = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { role?: unknown }
+      if (typeof json.role === 'string') roles.push(json.role)
+    } catch {
+      /* no era un token: ni se decodifica ni es JSON. Se ignora. */
+    }
+  }
+  return roles
+}
+
+/** La precondición del contrato: si digo que valido el bundle, tiene que haberlo. */
+function exigirArtefacto(motivo: string) {
+  if (!VALIDANDO_ARTEFACTO) {
+    // Se omite SIEMPRE, exista o no `dist/`. Antes se omitía sólo cuando no
+    // había artefacto, así que un `dist` que hubiera quedado de una ejecución
+    // anterior se inspeccionaba igualmente: un bundle viejo, que no tiene por
+    // qué corresponder con lo que sirve el servidor de desarrollo, dando un
+    // veredicto sobre algo que nadie ha pedido validar. Fuera de
+    // `E2E_CONTRA_BUILD` el artefacto no forma parte del experimento.
+    test.skip(true, 'Modo desarrollo: el artefacto no forma parte de este experimento. Usa `npm run test:artefacto`.')
+    return
+  }
+  expect(
+    existsSync(DIST),
+    `PRECONDICIÓN INCUMPLIDA: se pidió validar el artefacto (E2E_CONTRA_BUILD=1) y no existe \`dist/\`. ${motivo} ` +
+      'Compílalo con `npm run build:test`. Esto NO puede omitirse: una validación de bundle sin bundle no valida nada.',
+  ).toBe(true)
+}
+
 test('el bundle construido no contiene una clave de servicio', () => {
-  const dist = join(process.cwd(), 'dist')
-  test.skip(!existsSync(dist), 'No hay build. Ejecuta `npm run build` antes.')
+  exigirArtefacto('No se puede afirmar que el bundle publicado esté limpio de credenciales privilegiadas.')
+  const dist = DIST
 
   const ofensores: string[] = []
   for (const ruta of ficheros(dist)) {
     if (!/\.(js|css|html|webmanifest|json)$/.test(ruta)) continue
     const contenido = readFileSync(ruta, 'utf8')
-    // Un JWT de Supabase lleva su rol dentro del payload. Se busca el literal
-    // del rol, que es lo que distingue una clave de servicio de la anónima.
-    if (contenido.includes('service_role')) {
-      ofensores.push(ruta.replace(process.cwd() + '/', ''))
+    const corto = ruta.replace(process.cwd() + '/', '')
+
+    // 1 · El literal, por si aparece en claro en una constante o un comentario.
+    if (contenido.includes('service_role')) ofensores.push(`${corto} (literal)`)
+
+    // 2 · Y el rol DENTRO del token, que es donde de verdad viaja.
+    //
+    // Buscar sólo el literal era un falso verde de seguridad, y está medido:
+    // con un JWT sintético de rol `service_role` dentro del bundle, la
+    // comprobación pasaba. El payload va en base64url, así que la cadena
+    // `service_role` no aparece por ninguna parte del fichero.
+    for (const rol of rolesDeTokens(contenido)) {
+      if (rol === 'service_role') ofensores.push(`${corto} (JWT con role=service_role)`)
     }
   }
   expect(ofensores, `Estos artefactos publicados mencionan service_role:\n  ` + ofensores.join('\n  ')).toEqual([])
@@ -84,8 +186,8 @@ test('el bundle que sirven las pruebas no apunta a ningún Supabase', () => {
   // .js, y las pruebas acabarían escribiendo visitantes y conversaciones de
   // mentira en el Supabase de la demostración, mezclados con los reales. Ya
   // pasó una vez (QA-002).
-  const dist = join(process.cwd(), 'dist')
-  test.skip(!existsSync(dist), 'No hay build. Ejecuta `npm run build` antes.')
+  exigirArtefacto('No se puede afirmar que el artefacto de pruebas esté aislado del Supabase real.')
+  const dist = DIST
 
   const conUrl: string[] = []
   for (const ruta of ficheros(dist)) {

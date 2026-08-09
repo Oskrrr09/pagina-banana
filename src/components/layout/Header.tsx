@@ -110,8 +110,16 @@ export function Header() {
              estos mismos enlaces y la tienda favorita viven en `MobileMenu`, así
              que no se pierde ningún acceso — sólo deja de haber dos sitios para
              lo mismo. */}
-        <div className="relative hidden bg-[#0768A9] text-white xl:block">
-          <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium">
+        {/* Los tres `data-*` son ganchos de prueba, sin efecto visual ni de
+            comportamiento. El selector anterior era `div[class*="0768A9"]`:
+            colgaba de un color escrito a mano, así que un cambio de tono —o el
+            paso a un token— habría dejado la prueba midiendo cero piezas y, con
+            ella, en verde. */}
+        <div data-nav-utilidades className="relative hidden bg-[#0768A9] text-white xl:block">
+          <div
+            data-nav-utilidades-enlaces
+            className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[13px] font-medium"
+          >
             {utilityLinks.map((link) => (
               <Link
                 key={link.label}
@@ -122,7 +130,7 @@ export function Header() {
               </Link>
             ))}
           </div>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <div data-nav-tienda className="absolute right-4 top-1/2 -translate-y-1/2">
             <FavoriteStoreMenu />
           </div>
         </div>
