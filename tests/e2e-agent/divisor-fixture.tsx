@@ -33,7 +33,15 @@ function Fixture() {
             Conversación
           </div>
         }
-        visitante={null}
+        // La ficha del visitante SÍ se monta, con las mismas clases que
+        // `VisitorColumn` en el panel real: `hidden w-72 shrink-0 … xl:flex`.
+        // Montarla como `null` fue el agujero que dejó pasar el fallo — el
+        // reparto se probaba sobre una geometría que en `xl` no existe.
+        visitante={
+          <aside data-falso-visitante className="hidden w-72 shrink-0 flex-col border-l border-line bg-surface xl:flex">
+            <div className="p-3">Visitante</div>
+          </aside>
+        }
       />
     </div>
   )

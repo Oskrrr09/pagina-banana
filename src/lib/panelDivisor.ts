@@ -19,6 +19,29 @@ export const ANCHO_INICIAL = 400
  */
 export const MAXIMO_PROPORCION = 0.55
 
+/**
+ * Lo que ocupa el propio divisor.
+ *
+ * Parecen nueve píxeles sin importancia y no lo son: si no se descuentan, el
+ * mínimo de la conversación se calcula sobre un espacio que no existe.
+ */
+export const ANCHO_DIVISOR = 9
+
+/**
+ * Hasta dónde puede llegar la lista con el espacio que hay.
+ *
+ * `anchoContenedor` es el del bloque `lista | divisor | conversación`, y NADA
+ * más. La ficha del visitante queda fuera a propósito: es una tercera columna
+ * que no participa del reparto, y contarla llevaba a anunciar máximos que
+ * dejaban la conversación en 279 px a 1280 y en 351 a 1440, por debajo de su
+ * mínimo.
+ */
+export function maximoLista(anchoContenedor: number): number {
+  const topeProporcional = anchoContenedor * MAXIMO_PROPORCION
+  const topePorConversacion = anchoContenedor - MINIMO_CONVERSACION - ANCHO_DIVISOR
+  return Math.min(topeProporcional, topePorConversacion)
+}
+
 const CLAVE = 'banana:agente-ancho-lista'
 
 /**
@@ -35,9 +58,7 @@ export function encajarAncho(pedido: number, anchoContenedor: number): number {
     return MINIMO_LISTA
   }
 
-  const topeProporcional = anchoContenedor * MAXIMO_PROPORCION
-  const topePorConversacion = anchoContenedor - MINIMO_CONVERSACION
-  const maximo = Math.min(topeProporcional, topePorConversacion)
+  const maximo = maximoLista(anchoContenedor)
 
   if (maximo < MINIMO_LISTA) return MINIMO_LISTA
   return Math.round(Math.min(Math.max(pedido, MINIMO_LISTA), maximo))

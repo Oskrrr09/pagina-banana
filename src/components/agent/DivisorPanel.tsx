@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { encajarAncho, guardarAncho, leerAnchoGuardado, MAXIMO_PROPORCION, MINIMO_LISTA } from '../../lib/panelDivisor'
+import { encajarAncho, guardarAncho, leerAnchoGuardado, maximoLista, MINIMO_LISTA } from '../../lib/panelDivisor'
 
 // Divisor vertical arrastrable entre la lista de conversaciones y la
 // conversación abierta.
@@ -94,7 +94,10 @@ export function DivisorPanel({
       tabIndex={0}
       aria-valuenow={Math.round(ancho)}
       aria-valuemin={MINIMO_LISTA}
-      aria-valuemax={Math.round(anchoContenedor * MAXIMO_PROPORCION)}
+      // El máximo REAL, no el proporcional: anunciar un número al que no se
+      // puede llegar sin romper la conversación es mentirle a quien navega con
+      // teclado o con lector de pantalla.
+      aria-valuemax={Math.round(maximoLista(anchoContenedor))}
       data-divisor-panel
       onPointerDown={(e) => {
         e.preventDefault()
@@ -118,25 +121,48 @@ export function DivisorPanel({
  *
  * La caja se guarda en estado y no se lee del `ref` al pintar: leer un `ref`
  * durante el render no garantiza que el componente se actualice cuando cambia.
+ *
+ * SE OBSERVA EL ELEMENTO, NO LA VENTANA
+ *
+ * Antes esto medía en un `resize` de `window`, y al pasar de móvil a escritorio
+ * el divisor aparecía con el contenedor a 0: el evento llega ANTES de que React
+ * monte la rama de escritorio, así que no había nada que medir y no volvía a
+ * haber otro evento. `aria-valuemax` anunciaba −369 y el arrastre no respondía
+ * hasta recargar.
+ *
+ * Con un `ResizeObserver` sobre el propio bloque, la medida se toma cuando el
+ * elemento existe y cada vez que cambia de tamaño, venga de donde venga el
+ * cambio. El `ref` es una función para engancharlo en ese mismo instante.
  */
-export function useAnchoLista(contenedor: React.RefObject<HTMLDivElement | null>) {
+export function useAnchoLista() {
   const [ancho, setAncho] = useState(() => leerAnchoGuardado())
   const [caja, setCaja] = useState({ ancho: 0, izquierda: 0 })
+  const [nodo, setNodo] = useState<HTMLDivElement | null>(null)
 
   useEffect(() => {
+    if (!nodo) return
+
     const medir = () => {
-      const r = contenedor.current?.getBoundingClientRect()
-      if (!r || r.width === 0) return
+      const r = nodo.getBoundingClientRect()
+      if (r.width === 0) return
       setCaja({ ancho: r.width, izquierda: r.left })
-      // Al cambiar el tamaño de la ventana, el ancho guardado puede haber
-      // dejado de caber: se reencaja en vez de quedarse con un número que
-      // estrangula la conversación.
+      // Si el bloque encoge, el ancho guardado puede haber dejado de caber: se
+      // reencaja en vez de quedarse con un número que estrangula la
+      // conversación.
       setAncho((actual) => encajarAncho(actual, r.width))
     }
-    medir()
-    window.addEventListener('resize', medir)
-    return () => window.removeEventListener('resize', medir)
-  }, [contenedor])
 
-  return { ancho, setAncho, caja }
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(nodo)
+    // El borde izquierdo puede moverse sin que cambie el ancho —una barra
+    // lateral que aparece—, y de ahí se traduce el puntero a un ancho.
+    window.addEventListener('resize', medir)
+    return () => {
+      observador.disconnect()
+      window.removeEventListener('resize', medir)
+    }
+  }, [nodo])
+
+  return { ancho, setAncho, caja, refContenedor: setNodo }
 }

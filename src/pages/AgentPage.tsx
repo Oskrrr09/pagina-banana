@@ -191,8 +191,7 @@ export function PanelConversaciones({
   selectedId: string | null
   onVolver: () => void
 }) {
-  const contenedor = useRef<HTMLDivElement>(null)
-  const { ancho, setAncho, caja } = useAnchoLista(contenedor)
+  const { ancho, setAncho, caja, refContenedor } = useAnchoLista()
   const escritorio = useEsEscritorio()
 
   // Se decide en JavaScript y no con clases `md:` a propósito. Con dos ramas
@@ -217,18 +216,27 @@ export function PanelConversaciones({
     )
   }
 
+  // La ficha del visitante queda FUERA del bloque que se mide. Es una tercera
+  // columna de ancho fijo que no participa del reparto, y contarla como espacio
+  // disponible hacía que el máximo de la lista dejara la conversación en 279 px
+  // a 1280 y en 351 a 1440 — por debajo de su mínimo, con las pruebas en verde
+  // porque el fixture no la montaba.
   return (
-    <div ref={contenedor} className="flex min-h-0 flex-1">
-      <div className="flex min-h-0 shrink-0" style={{ width: ancho }} data-lista-conversaciones>
-        {lista}
+    <div className="flex min-h-0 flex-1">
+      <div ref={refContenedor} className="flex min-h-0 min-w-0 flex-1" data-bloque-conversacion>
+        <div className="flex min-h-0 shrink-0" style={{ width: ancho }} data-lista-conversaciones>
+          {lista}
+        </div>
+        <DivisorPanel
+          ancho={ancho}
+          onAncho={setAncho}
+          anchoContenedor={caja.ancho}
+          izquierdaContenedor={caja.izquierda}
+        />
+        <div className="flex min-h-0 min-w-0 flex-1" data-columna-conversacion>
+          {conversacion}
+        </div>
       </div>
-      <DivisorPanel
-        ancho={ancho}
-        onAncho={setAncho}
-        anchoContenedor={caja.ancho}
-        izquierdaContenedor={caja.izquierda}
-      />
-      <div className="flex min-h-0 min-w-0 flex-1">{conversacion}</div>
       {visitante}
     </div>
   )

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   ANCHO_INICIAL,
   encajarAncho,
+  ANCHO_DIVISOR,
   MAXIMO_PROPORCION,
+  maximoLista,
   MINIMO_CONVERSACION,
   MINIMO_LISTA,
 } from '../../src/lib/panelDivisor'
@@ -68,5 +70,35 @@ describe('límites del arrastre', () => {
     // El inicial tiene que caber en una pantalla de portátil sin comerse la
     // conversación.
     expect(encajarAncho(ANCHO_INICIAL, 1280)).toBe(ANCHO_INICIAL)
+  })
+})
+
+describe('maximoLista descuenta lo que el divisor ocupa', () => {
+  // Los 9 px del divisor son espacio real, no una raya pintada encima. Sin
+  // descontarlos, el máximo deja a la conversación 9 px por debajo de su mínimo
+  // en cuanto el tope que manda es el de la conversación y no el proporcional.
+  it('con el tope de la conversación mandando, resta el divisor', () => {
+    const bloque = 700
+    expect(maximoLista(bloque)).toBe(bloque - MINIMO_CONVERSACION - ANCHO_DIVISOR)
+    expect(bloque - maximoLista(bloque) - ANCHO_DIVISOR).toBe(MINIMO_CONVERSACION)
+  })
+
+  it('con el tope proporcional mandando, la conversación sobra de largo', () => {
+    const bloque = 1600
+    expect(maximoLista(bloque)).toBe(bloque * MAXIMO_PROPORCION)
+    expect(bloque - maximoLista(bloque) - ANCHO_DIVISOR).toBeGreaterThan(MINIMO_CONVERSACION)
+  })
+
+  it('el ancho del bloque es el del panel MENOS la ficha del visitante', () => {
+    // 1280 y 1440 con `VisitorColumn` a 288: los dos casos del bloqueante.
+    for (const [ventana, conversacionEsperada] of [
+      [1280, 437],
+      [1440, 509],
+    ] as const) {
+      const bloque = ventana - 288
+      const lista = Math.round(maximoLista(bloque))
+      expect(bloque - lista - ANCHO_DIVISOR).toBe(conversacionEsperada)
+      expect(bloque - lista - ANCHO_DIVISOR).toBeGreaterThanOrEqual(MINIMO_CONVERSACION)
+    }
   })
 })
