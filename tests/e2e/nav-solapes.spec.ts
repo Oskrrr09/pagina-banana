@@ -113,50 +113,42 @@ for (const idioma of IDIOMAS) {
   })
 
   test(`por debajo de xl la barra cede el sitio al menú en ${idioma} @all`, async ({ page }) => {
+    // Primero se leen los destinos REALES de la barra en `xl`, en este idioma.
+    await abrirEn(page, idioma, 1280)
+    await expect(page.locator(BARRA)).toBeVisible()
+    const destinosBarra = await page
+      .locator(ENLACES)
+      .evaluateAll((els) => els.map((a) => (a as HTMLAnchorElement).getAttribute('href')))
+    expect(destinosBarra.length, `${idioma}: la barra no trae sus enlaces`).toBe(ENLACES_ESPERADOS)
+
     for (const width of ANCHOS_SIN_BARRA) {
       await abrirEn(page, idioma, width)
 
       // La barra desaparece porque no cabe…
       await expect(page.locator(BARRA), `${idioma} a ${width}px: la barra no debería verse`).not.toBeVisible()
 
-      // …pero sus accesos no. La hamburguesa está, y el menú los tiene: si
-      // desapareciera sin que el menú los recogiera, esto sería una pérdida de
-      // acceso disfrazada de arreglo, y en verde.
-      const menu = page.locator(HAMBURGUESA)
-      await expect(menu, `${idioma} a ${width}px: sin hamburguesa`).toBeVisible()
+      // …pero sus accesos no. Si desapareciera sin que el menú los recogiera,
+      // esto sería una pérdida de acceso disfrazada de arreglo, y en verde.
+      await expect(page.locator(HAMBURGUESA), `${idioma} a ${width}px: sin hamburguesa`).toBeVisible()
     }
 
-    // El menú se abre una vez por idioma —es el mismo a los cinco anchos— y se
-    // comprueba que trae enlaces de verdad. Que sean LOS de la barra se
-    // verifica aparte, comparando destinos reales.
+    // Y la equivalencia se comprueba EN ESTE IDIOMA, no sólo en castellano.
+    //
+    // Antes la comparación de destinos vivía en una única prueba en `es`, y las
+    // de los otros cuatro idiomas sólo exigían «el menú tiene algún enlace».
+    // Medido: quitando `/servicio-tecnico` del menú sólo en francés, las once
+    // pruebas seguían en verde. El menú es el mismo a los cinco anchos, así que
+    // basta con abrirlo una vez.
     await page.locator(HAMBURGUESA).click()
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toBeVisible()
-    const enlacesDelMenu = await dialogo.locator('a[href]').count()
-    expect(enlacesDelMenu, `${idioma}: el menú se abre vacío`).toBeGreaterThan(0)
+
+    const destinosMenu = await dialogo
+      .locator('a[href]')
+      .evaluateAll((els) => els.map((a) => (a as HTMLAnchorElement).getAttribute('href')))
+    expect(destinosMenu.length, `${idioma}: el menú se abre vacío`).toBeGreaterThan(0)
+
+    const perdidos = destinosBarra.filter((d) => !destinosMenu.includes(d))
+    expect(perdidos, `${idioma}: la barra ofrece destinos que el menú no: ${perdidos.join(' · ')}`).toEqual([])
   })
 }
-
-test('los destinos de la barra siguen alcanzables desde el menú @all', async ({ page }) => {
-  // Se leen los destinos reales en `xl` y se comprueba que el menú de por
-  // debajo los ofrece todos. Así «los accesos viven en el menú» deja de ser un
-  // comentario y pasa a estar comprobado.
-  await abrirEn(page, 'es', 1280)
-  await expect(page.locator(BARRA)).toBeVisible()
-  const destinos = await page
-    .locator(ENLACES)
-    .evaluateAll((els) => els.map((a) => (a as HTMLAnchorElement).getAttribute('href')))
-  expect(destinos.length).toBe(ENLACES_ESPERADOS)
-
-  await abrirEn(page, 'es', 1100)
-  await expect(page.locator(BARRA)).not.toBeVisible()
-  await page.locator(HAMBURGUESA).click()
-  const dialogo = page.getByRole('dialog')
-  await expect(dialogo).toBeVisible()
-
-  const enMenu = await dialogo
-    .locator('a[href]')
-    .evaluateAll((els) => els.map((a) => (a as HTMLAnchorElement).getAttribute('href')))
-  const perdidos = destinos.filter((d) => !enMenu.includes(d!))
-  expect(perdidos, `destinos que la barra ofrece y el menú no: ${perdidos.join(' · ')}`).toEqual([])
-})

@@ -207,12 +207,45 @@ for (const width of [320, 414, 768]) {
       // ausencia significa que la app no montó, nunca «esta pantalla no lo
       // usa». Antes se hacía `contenido ? medida : 0`, que convertía la
       // ausencia en un cero tranquilizador.
-      const armazon = await page.evaluate(() => ({
-        contenido: !!document.querySelector('#contenido'),
-        topbar: !!document.querySelector('[data-app-topbar]'),
-      }))
+      //
+      // Y NO BASTA CON EL ARMAZÓN. Medido: vaciando el cuerpo de `/tienda` y
+      // dejando vivos AppShell, barra superior, barra inferior y `#contenido`,
+      // las tres pruebas de la app seguían pasando. `#contenido` conservaba 14
+      // elementos visibles y 40 caracteres, porque los chips de categoría viven
+      // dentro de él y los pone la ruta, no la página. Un `#contenido` vacío
+      // desborda cero, y cero se leía como «cabe».
+      //
+      // La señal que separa «armazón montado, página ausente» de «página real»
+      // es estructural: los hijos de `#contenido` que NO son los chips. Con el
+      // cuerpo desaparecido son cero; en las siete rutas reales, medidas a 320
+      // y a 768, siempre hay al menos uno, con un mínimo de 4 elementos
+      // visibles y 91 caracteres —`/cuenta`, la más escueta—.
+      const armazon = await page.evaluate(() => {
+        const contenido = document.querySelector('#contenido') as HTMLElement | null
+        if (!contenido) return { contenido: false, topbar: false, cuerpos: 0, visibles: 0, texto: 0 }
+        const cuerpos = [...contenido.children].filter((el) => !el.hasAttribute('data-app-chips'))
+        const visibles = cuerpos
+          .flatMap((el) => [...el.querySelectorAll('*'), el])
+          .filter((el) => {
+            const caja = el.getBoundingClientRect()
+            return caja.width > 0 && caja.height > 0
+          }).length
+        return {
+          contenido: true,
+          topbar: !!document.querySelector('[data-app-topbar]'),
+          cuerpos: cuerpos.length,
+          visibles,
+          texto: cuerpos.map((el) => (el as HTMLElement).innerText.trim()).join('').length,
+        }
+      })
       expect(armazon.contenido, `app ${ruta.path}: sin #contenido — la app no montó`).toBe(true)
       expect(armazon.topbar, `app ${ruta.path}: sin barra superior — la app no montó`).toBe(true)
+      expect(
+        armazon.cuerpos,
+        `app ${ruta.path}: #contenido sólo trae el armazón — la página no montó`,
+      ).toBeGreaterThanOrEqual(1)
+      expect(armazon.visibles, `app ${ruta.path}: la página montó sin nada visible`).toBeGreaterThanOrEqual(3)
+      expect(armazon.texto, `app ${ruta.path}: la página montó sin texto`).toBeGreaterThanOrEqual(40)
 
       // En la app el documento no se desplaza: lo hace `#contenido`. Se miran
       // los dos, porque el desbordamiento se puede quedar en cualquiera.
