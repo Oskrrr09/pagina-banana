@@ -339,6 +339,13 @@ test.describe('rango ARIA al cruzar de móvil a escritorio', () => {
   test('tampoco al aparecer el divisor por un cambio de tamaño', async ({ page }) => {
     await espiarAria(page)
     await page.goto(FIXTURE)
+
+    // Se espera a que la rama móvil esté montada ANTES de redimensionar. Sin
+    // esto la prueba dependía de que React llegara a montar entre el `goto` y
+    // el cambio de ancho, y en CI no llegó: falló ahí, no en lo que viene a
+    // comprobar. La transición en sí ya la cubre la prueba de más arriba.
+    await expect(page.locator('[data-falsa-lista]')).toBeVisible()
+
     await page.setViewportSize({ width: 1280, height: 900 })
     await expect(page.locator('[data-divisor-panel]')).toBeVisible()
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { DivisorPanel, useAnchoLista } from '../components/agent/DivisorPanel'
 import { Icon } from '../components/ui/Icon'
@@ -249,19 +249,31 @@ export function PanelConversaciones({
  * conversación. Ahí se enseña una cosa u otra, como cualquier bandeja de correo
  * en un móvil y por el mismo motivo.
  */
+const CONSULTA_ESCRITORIO = '(min-width: 768px)'
+
+function suscribirAEscritorio(alCambiar: () => void) {
+  const consulta = window.matchMedia(CONSULTA_ESCRITORIO)
+  consulta.addEventListener('change', alCambiar)
+  return () => consulta.removeEventListener('change', alCambiar)
+}
+
 function useEsEscritorio() {
-  const [escritorio, setEscritorio] = useState(
-    () => typeof window === 'undefined' || window.matchMedia('(min-width: 768px)').matches,
+  // `useSyncExternalStore` y no `useState` + `useEffect` a propósito.
+  //
+  // Con el par de siempre hay una ventana entre el primer render y el efecto
+  // que suscribe: si el ancho cruza los 768 px ahí en medio, el evento no llega
+  // a nadie y la rama se queda congelada en la que tocaba al montar. Se vio en
+  // CI —el panel se quedaba en móvil después de un cambio de tamaño y el
+  // divisor no aparecía nunca—, y en la aplicación real es una rotación de
+  // pantalla justo al cargar.
+  //
+  // Esto lo cierra por diseño: React vuelve a leer el estado nada más
+  // suscribirse, así que un cambio perdido se recupera en el acto.
+  return useSyncExternalStore(
+    suscribirAEscritorio,
+    () => window.matchMedia(CONSULTA_ESCRITORIO).matches,
+    () => true,
   )
-
-  useEffect(() => {
-    const consulta = window.matchMedia('(min-width: 768px)')
-    const alCambiar = (e: MediaQueryListEvent) => setEscritorio(e.matches)
-    consulta.addEventListener('change', alCambiar)
-    return () => consulta.removeEventListener('change', alCambiar)
-  }, [])
-
-  return escritorio
 }
 
 type Bandeja = 'abierta' | 'cerrada'
