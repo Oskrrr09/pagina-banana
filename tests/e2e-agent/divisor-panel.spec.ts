@@ -274,3 +274,112 @@ test.describe('cambio de tamaño en caliente', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   })
 })
+
+// ============================================================================
+// El rango ARIA nunca puede ser imposible.
+//
+// `caja.ancho` vale 0 hasta que el `ResizeObserver` mide el bloque, y con 0 el
+// máximo sale NEGATIVO. Medido en los seis anchos y también al cruzar de móvil
+// a escritorio, el primer render exponía:
+//
+//   aria-valuemin=280 · aria-valuemax=-369 · aria-valuenow=400
+//
+// Un separator cuyo valor actual está fuera de sus propios límites. Ahora, sin
+// medida, no se anuncia rango: se reserva el hueco y punto.
+// ============================================================================
+
+/** Todos los `aria-value*` que se lleguen a fijar, desde el primer render. */
+async function espiarAria(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __aria: string[] }
+    w.__aria = []
+    const original = Element.prototype.setAttribute
+    Element.prototype.setAttribute = function (nombre: string, valor: string) {
+      if (nombre.startsWith('aria-value')) w.__aria.push(`${nombre}=${valor}`)
+      return original.call(this, nombre, valor)
+    }
+  })
+}
+
+function maximosAnunciados(sets: string[]) {
+  return sets.filter((s) => s.startsWith('aria-valuemax=')).map((s) => Number(s.split('=')[1]))
+}
+
+test.describe('rango ARIA', () => {
+  test.use({ viewport: { width: 1280, height: 900 } })
+
+  test('no se anuncia un máximo imposible en el primer render', async ({ page }) => {
+    await espiarAria(page)
+    await page.goto(FIXTURE)
+    await expect(page.locator('[data-divisor-panel]')).toBeVisible()
+
+    const sets = await page.evaluate(() => (window as unknown as { __aria: string[] }).__aria)
+    const maximos = maximosAnunciados(sets)
+
+    // Ninguno por debajo del mínimo de la lista: es ahí donde salía −369.
+    expect(maximos.length).toBeGreaterThan(0)
+    for (const m of maximos) expect(m).toBeGreaterThanOrEqual(MINIMO_LISTA)
+
+    // Y el rango final es coherente consigo mismo.
+    const d = page.locator('[data-divisor-panel]')
+    const [min, max, ahora] = await Promise.all([
+      d.getAttribute('aria-valuemin'),
+      d.getAttribute('aria-valuemax'),
+      d.getAttribute('aria-valuenow'),
+    ])
+    expect(Number(max)).toBeGreaterThan(Number(min))
+    expect(Number(ahora)).toBeGreaterThanOrEqual(Number(min))
+    expect(Number(ahora)).toBeLessThanOrEqual(Number(max))
+  })
+})
+
+test.describe('rango ARIA al cruzar de móvil a escritorio', () => {
+  test.use({ viewport: { width: 390, height: 800 } })
+
+  test('tampoco al aparecer el divisor por un cambio de tamaño', async ({ page }) => {
+    await espiarAria(page)
+    await page.goto(FIXTURE)
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await expect(page.locator('[data-divisor-panel]')).toBeVisible()
+
+    const sets = await page.evaluate(() => (window as unknown as { __aria: string[] }).__aria)
+    for (const m of maximosAnunciados(sets)) expect(m).toBeGreaterThanOrEqual(MINIMO_LISTA)
+  })
+})
+
+// ============================================================================
+// Un arrastre no puede sobrevivir al componente.
+//
+// Los oyentes están en `window` y los estilos en el `body`. Si el divisor
+// desaparece a mitad de arrastre —el ancho baja de 768 y la composición pasa a
+// la rama móvil—, no queda nadie que los quite: el `body` se quedaba con
+// `cursor: col-resize; user-select: none` y la aplicación entera sin poder
+// seleccionar texto hasta que llegara un `pointerup` que puede no llegar nunca
+// si se suelta fuera de la ventana.
+// ============================================================================
+
+test.describe('el arrastre no sobrevive al desmontaje', () => {
+  test.use({ viewport: { width: 1280, height: 900 } })
+
+  test('el body queda limpio si el divisor desaparece arrastrando @all', async ({ page }) => {
+    await page.goto(FIXTURE)
+
+    const caja = (await page.locator('[data-divisor-panel]').boundingBox())!
+    await page.mouse.move(caja.x + caja.width / 2, 400)
+    await page.mouse.down()
+    await page.mouse.move(600, 400, { steps: 4 })
+    expect(await page.evaluate(() => document.body.style.cssText)).toContain('user-select')
+
+    // Se cae a la rama móvil sin soltar el ratón.
+    await page.setViewportSize({ width: 390, height: 800 })
+    await expect(page.locator('[data-divisor-panel]')).toHaveCount(0)
+
+    expect(await page.evaluate(() => document.body.style.cssText)).toBe('')
+
+    // Y moverse por la página ya no cambia nada: los oyentes se fueron con él.
+    await page.mouse.move(200, 400, { steps: 3 })
+    expect(await page.evaluate(() => document.body.style.cssText)).toBe('')
+    await page.mouse.up()
+    expect(await page.evaluate(() => document.body.style.cssText)).toBe('')
+  })
+})

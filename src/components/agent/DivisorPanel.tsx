@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { encajarAncho, guardarAncho, leerAnchoGuardado, maximoLista, MINIMO_LISTA } from '../../lib/panelDivisor'
 
 // Divisor vertical arrastrable entre la lista de conversaciones y la
@@ -36,6 +36,19 @@ export function DivisorPanel({
   izquierdaContenedor: number
 }) {
   /**
+   * El desmontaje tiene que poder cerrar un arrastre en curso.
+   *
+   * Los oyentes viven en `window` y los estilos en el `body`, así que si el
+   * divisor desaparece a mitad de arrastre —el ancho baja de 768 y la
+   * composición pasa a la rama móvil— no queda nadie que los quite. Medido: el
+   * `body` se queda con `cursor: col-resize; user-select: none`, y si el
+   * puntero se suelta fuera de la ventana no llega el `pointerup` que los
+   * limpiaría. Eso deja toda la aplicación sin poder seleccionar texto.
+   */
+  const soltarPendiente = useRef<(() => void) | null>(null)
+  useEffect(() => () => soltarPendiente.current?.(), [])
+
+  /**
    * El arrastre se engancha en el propio `pointerdown`, no en un efecto.
    *
    * Y los oyentes van en `window`, no en el divisor: el puntero se adelanta al
@@ -55,6 +68,7 @@ export function DivisorPanel({
       onAncho(ultimo)
     }
     const soltar = () => {
+      soltarPendiente.current = null
       document.body.style.removeProperty('cursor')
       document.body.style.removeProperty('user-select')
       guardarAncho(ultimo)
@@ -66,6 +80,7 @@ export function DivisorPanel({
     // Mientras se arrastra, el cursor manda en toda la ventana: si no, al pasar
     // por encima del texto vuelve a ser de selección y parece que el arrastre
     // se ha soltado.
+    soltarPendiente.current = soltar
     document.body.style.setProperty('cursor', 'col-resize')
     document.body.style.setProperty('user-select', 'none')
     window.addEventListener('pointermove', mover)
@@ -84,6 +99,23 @@ export function DivisorPanel({
     const encajado = encajarAncho(pedido, anchoContenedor)
     onAncho(encajado)
     guardarAncho(encajado)
+  }
+
+  // Hasta que el bloque no está medido no hay rango que anunciar.
+  //
+  // Con el contenedor a 0 el máximo sale negativo, y en el primer render el
+  // separator se exponía como `valuemin=280 · valuemax=-369 · valuenow=400`:
+  // un rango imposible, en el que el valor actual está fuera de sus propios
+  // límites. Pasaba en los seis anchos, y también al cruzar de móvil a
+  // escritorio. Se reserva el hueco —los mismos 9 px, para no dar un salto al
+  // medir— sin anunciar nada ni entrar en el orden de tabulación: un control
+  // que aún no puede operarse no debería ofrecerse como si pudiera.
+  if (anchoContenedor <= 0) {
+    return (
+      <div aria-hidden="true" className="relative w-[9px] shrink-0">
+        <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-line" />
+      </div>
+    )
   }
 
   return (
