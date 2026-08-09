@@ -141,3 +141,56 @@ test('quien abre la aplicación sin usar el chat no crea ninguna identidad', asy
   const trasAbrir = await identidad(page)
   expect(trasAbrir.uid, 'abrir el chat sin identificarse no crea usuario').toBeNull()
 })
+
+test('la sesión anónima heredada se descarta al arrancar, antes del formulario', async ({ page }) => {
+  test.skip(!URL_SUPABASE || !SERVICE, 'Necesita el Supabase local.')
+  await page.addInitScript(() => localStorage.setItem('banana:favorite-store-prompt', 'dismissed'))
+
+  // ── Visitante A ──
+  await page.goto('./')
+  await abrirChat(page)
+  await expect(page.getByText('Antes de empezar')).toBeVisible()
+  await identificarse(page, 'Visitante A', 'a@example.test')
+  await escribir(page, 'mensaje de A antes de reiniciar')
+  const a = await identidad(page)
+  expect(a.anonima).toBe(true)
+
+  // ── NUEVA INICIALIZACIÓN, y NADA MÁS ──
+  //
+  // Ni se abre el chat ni se envía el formulario. La frontera exige que el
+  // token anónimo heredado deje de estar disponible ya en el arranque: si
+  // sobrevive hasta que alguien vuelve a identificarse, durante todo ese rato
+  // el navegador sigue teniendo la identidad de A a mano.
+  await page.reload()
+  await expect(page.locator('header')).toBeVisible()
+
+  await expect
+    .poll(async () => (await identidad(page)).uid, {
+      message: 'el token anónimo heredado debe descartarse al arrancar, sin esperar al formulario',
+      timeout: 15_000,
+    })
+    .toBeNull()
+
+  // Y descartarlo NO puede significar crear otro: hasta que no se identifique
+  // alguien, no debe haber sesión de ningún tipo.
+  const claves = await page.evaluate(() => Object.keys(localStorage).filter((k) => /^sb-.*-auth-token$/.test(k)))
+  expect(claves, 'no se crea una sesión nueva sólo por arrancar').toEqual([])
+
+  // ── Y al identificarse, identidad nueva ──
+  await abrirChat(page)
+  await expect(page.getByText('Antes de empezar')).toBeVisible()
+  await identificarse(page, 'Visitante B', 'b@example.test')
+
+  // El campo de escribir aparece en cuanto hay datos, antes de que la sesión
+  // esté creada: se espera a la condición real, no a un tiempo.
+  await expect
+    .poll(async () => (await identidad(page)).uid, {
+      message: 'al identificarse debe crearse la sesión anónima nueva',
+      timeout: 15_000,
+    })
+    .not.toBeNull()
+
+  const b = await identidad(page)
+  expect(b.anonima).toBe(true)
+  expect(b.uid, 'y sólo entonces aparece un uid, distinto del de A').not.toBe(a.uid)
+})

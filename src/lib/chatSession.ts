@@ -53,18 +53,13 @@ function limpiarResiduoHeredado() {
 }
 
 /**
- * ¿La sesión anónima actual la ha creado ESTA ejecución de la aplicación?
+ * ¿Se ha clasificado ya la sesión persistida en esta carga de la aplicación?
  *
  * Vive en el módulo, así que un arranque nuevo —recarga, cerrar y volver a
- * abrir la web, relanzar la app— la devuelve a `false`. Es lo que distingue
- * «la sesión anónima que acabo de crear para este chat», que sí se reutiliza
- * mientras dure la instancia, de «la que quedó de la vez anterior», que no.
- *
- * No se resuelve con un efecto aparte a propósito: `asegurarSesion()` se llama
- * desde un único sitio y antes de abrir ninguna conversación, así que no hay
- * ventana en la que el chat pueda leer nada bajo la identidad antigua.
+ * abrir la web, relanzar la app— la devuelve a `false`, que es exactamente
+ * cuando hay que volver a mirar qué había guardado.
  */
-let anonimaDeEstaInstancia = false
+let sesionPreparada = false
 
 // El residuo de versiones anteriores se retira al cargar el módulo, no sólo al
 // rotar una sesión anónima: quien actualice sin sesión viva también lo tiene, y
@@ -155,34 +150,60 @@ interface GuestIdentity {
  * anónimos (Authentication → Providers → Anonymous sign-ins). En ese caso el
  * chat cae a modo demostración en vez de romperse.
  */
+async function prepararSesion(): Promise<boolean> {
+  if (!supabase) return true
+  // Idempotente: una sola clasificación por carga de la aplicación. Sin esto,
+  // un remontaje del hook —o el doble render de StrictMode— descartaría la
+  // sesión anónima que se acaba de crear para este mismo chat.
+  if (sesionPreparada) return true
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  // Sin sesión, o con una PERMANENTE, no hay nada que descartar. La de una
+  // cuenta se conserva intacta: su identidad y su chat deben sobrevivir a
+  // cerrar y volver a abrir.
+  if (!session || session.user.is_anonymous !== true) {
+    sesionPreparada = true
+    return true
+  }
+
+  // Sesión ANÓNIMA heredada de una inicialización anterior: se suelta aquí, en
+  // el arranque, sin esperar a que nadie rellene el formulario. Si se dejara
+  // para entonces, el navegador seguiría teniendo a mano la identidad anterior
+  // durante todo ese rato.
+  //
+  // `scope: 'local'` a propósito: el alcance por defecto de `signOut` es global
+  // y cerraría la sesión en todos los dispositivos.
+  const { error } = await supabase.auth.signOut({ scope: 'local' })
+  if (error) {
+    // No se ha podido descartar. NO se declara preparada, así que el chat no
+    // abre ninguna conversación: hacerlo sería trabajar bajo la identidad
+    // anterior, que es justo lo que esto viene a impedir.
+    console.warn('[chatSession] no se pudo descartar la sesión anónima heredada; el chat no se inicia.', error)
+    return false
+  }
+  limpiarResiduoHeredado()
+  sesionPreparada = true
+  return true
+}
+
+/**
+ * Crea la sesión anónima del chat, y sólo cuando de verdad hace falta.
+ *
+ * Se llega aquí con la clasificación ya hecha: o hay una sesión permanente que
+ * se reutiliza, o no hay ninguna y se crea una anónima. Cada
+ * `signInAnonymously()` da de alta un usuario real, así que no puede
+ * dispararse por abrir o recargar la aplicación: sólo al arrancar de verdad una
+ * conversación, con nombre y correo ya dados.
+ */
 async function asegurarSesion(): Promise<boolean> {
   if (!supabase) return false
   const {
     data: { session },
   } = await supabase.auth.getSession()
-
-  // Una sesión PERMANENTE se conserva intacta. Es el caso de quien tiene
-  // cuenta: su identidad y su chat deben sobrevivir a cerrar y volver a abrir.
-  if (session && session.user.is_anonymous !== true) return true
-
-  // Una sesión ANÓNIMA que viene de una inicialización anterior no se reutiliza.
-  //
-  // Es la pieza que de verdad sostiene la frontera. Medido con Supabase real:
-  // borrando `bananito:guest` y `bananito:conversation_id` pero conservando esta
-  // sesión, el `auth.uid` seguía siendo el mismo y el servidor volvía a
-  // resolver al mismo visitante. Sin esto, «volver a pedir los datos» sería
-  // sólo un cambio de fachada.
-  //
-  // `scope: 'local'` a propósito: el alcance por defecto de `signOut` es
-  // global y cerraría la sesión en todos los dispositivos. Aquí sólo se suelta
-  // en esta instalación. Y sólo se llega a esta línea con `is_anonymous ===
-  // true` comprobado.
-  if (session && !anonimaDeEstaInstancia) {
-    await supabase.auth.signOut({ scope: 'local' })
-    limpiarResiduoHeredado()
-  } else if (session) {
-    return true
-  }
+  if (session) return true
 
   const { error } = await supabase.auth.signInAnonymously()
   if (error) {
@@ -194,7 +215,6 @@ async function asegurarSesion(): Promise<boolean> {
     )
     return false
   }
-  anonimaDeEstaInstancia = true
   return true
 }
 
@@ -252,6 +272,9 @@ export function useVisitorChatSession(active: boolean, identity: VisitorIdentity
   // Nace vacío SIEMPRE. Es lo que hace que una inicialización nueva vuelva a
   // pedir nombre y correo: mientras `guest` sea null, `necesitaDatos` es true.
   const [guest, setGuest] = useState<GuestIdentity | null>(null)
+  // Barrera de inicialización: hasta que la sesión persistida no está
+  // clasificada, no se abre ninguna conversación. Ver el efecto de abajo.
+  const [authLista, setAuthLista] = useState(false)
   const [conversation, setConversation] = useState<DbConversation | null>(null)
   // Guardamos IDs vistos en un Set para dedupear entre insert optimista y
   // el evento realtime que llega después con el mismo id.
@@ -303,10 +326,38 @@ export function useVisitorChatSession(active: boolean, identity: VisitorIdentity
     return () => data.subscription.unsubscribe()
   }, [])
 
+  // Clasificación de la sesión persistida. Corre en CUANTO se monta el hook, no
+  // cuando el chat tiene datos: es lo que hace que el token anónimo heredado se
+  // suelte ya en el arranque y no siga disponible mientras alguien rellena el
+  // formulario.
+  //
+  // No crea ninguna sesión: sólo decide qué hacer con la que hubiera.
+  useEffect(() => {
+    if (!supabaseEnabled || !supabase) {
+      setAuthLista(true)
+      return
+    }
+    let cancelado = false
+    ;(async () => {
+      const preparada = await prepararSesion()
+      if (cancelado) return
+      // Si no se pudo descartar la heredada, la barrera NO se abre: el chat no
+      // abrirá conversación bajo la identidad anterior.
+      if (preparada) setAuthLista(true)
+      else setStatus('error')
+    })()
+    return () => {
+      cancelado = true
+    }
+  }, [])
+
   // Inicialización: se ejecuta cuando el chat se activa por primera vez.
   useEffect(() => {
     if (!supabaseEnabled || !supabase) return
     if (!active) return
+    // La barrera. Sin esto, abrir la conversación podría ganarle la carrera al
+    // descarte del uid anterior y el RPC correría bajo la identidad heredada.
+    if (!authLista) return
     if (conversationId) return
     if (necesitaDatos) return
     let cancelled = false
@@ -349,7 +400,7 @@ export function useVisitorChatSession(active: boolean, identity: VisitorIdentity
     }
     // `identity` se omite a propósito: el efecto solo inicializa una vez.
     // Los cambios de sesión posteriores los recoge el efecto de abajo.
-  }, [active, conversationId, necesitaDatos, guest])
+  }, [active, authLista, conversationId, necesitaDatos, guest])
 
   // Si el visitante inicia sesión con el chat ya abierto, le pegamos la
   // identidad a su fila para que el agente deje de ver un UUID anónimo.
