@@ -38,6 +38,11 @@
   --color-backorder: #cf6a12;
   --color-backorder-050: #fdf0e3;
   --color-soldout: #9e9e9e;
+  --color-azul: #0768a9; /* Azul Banana — el de la barra utilitaria de la web.
+     Con texto blanco cumple WCAG AA (≈5,2:1). Se usa también en la barra de
+     navegación de la app nativa. */
+  --color-azul-claro: #cfe6f6; /* Para el texto de las pestañas en reposo:
+     blanco puro para las cuatro haría que la activa no destacara. */
   --color-danger: #e21b1b; /* Rojo Banana — ofertas y errores */
   --color-danger-050: #fdeaea;
 

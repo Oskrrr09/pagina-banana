@@ -59,7 +59,10 @@ export function AppTabBar() {
       // el hueco que dejan otros elementos y lo que la barra ocupa de verdad
       // son el mismo número por construcción.
       style={{ minHeight: ALTURA_TAB_BAR }}
-      className="z-50 shrink-0 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]"
+      // Azul Banana, el mismo de la barra utilitaria de la web. La franja se
+      // corta con el área segura para que no quede un bloque de color
+      // desproporcionado en los móviles con indicador de inicio.
+      className="z-50 shrink-0 bg-azul pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="mx-auto flex max-w-lg items-stretch">
         <Tab to="/" icon="home" clave="appnav.home" activa={activa === 'inicio'} />
@@ -89,9 +92,12 @@ function Tab({ to, icon, clave, activa }: { to: string; icon: string; clave: Cla
         data-tab={clave}
         className="flex w-full flex-col items-center gap-0.5 px-0.5 pb-1.5 pt-2"
       >
+        {/* La pestaña activa no se distingue sólo por el color: la píldora
+            amarilla cambia también la FORMA, y el rótulo pasa a negrita. Quien
+            no distinga el amarillo del azul sigue viendo dónde está. */}
         <span
           className={`relative grid h-7 w-12 place-items-center rounded-full transition-colors ${
-            activa ? 'bg-brand text-ink' : 'text-muted'
+            activa ? 'bg-brand text-ink' : 'text-[color:var(--color-azul-claro)]'
           }`}
         >
           <Icon name={icon} size={20} aria-hidden="true" />
@@ -103,7 +109,7 @@ function Tab({ to, icon, clave, activa }: { to: string; icon: string; clave: Cla
             altura de la barra respecto a las demás. */}
         <span
           className={`whitespace-nowrap text-[11px] leading-tight tracking-tight ${
-            activa ? 'font-bold text-ink' : 'font-medium text-muted'
+            activa ? 'font-bold text-white' : 'font-medium text-[color:var(--color-azul-claro)]'
           }`}
         >
           {etiqueta}
