@@ -653,8 +653,26 @@ test('"Comparar estas opciones" envía los resultados a /comparar', async ({ pag
   await expect(page.locator('h3').first()).toBeVisible()
   await page.getByRole('button', { name: 'Comparar estas opciones' }).click()
   await expect(page).toHaveURL(/\/comparar$/)
-  // Al menos un iPhone aparece en la cabecera del comparador y como mucho tres.
+
+  // La URL NO significa que el comparador esté montado.
+  //
+  // `navigate()` cambia la dirección con la History API en el mismo tick, así
+  // que `toHaveURL` se cumple mientras React todavía está pintando la ruta
+  // anterior. Medido en el instante en que este test contaba: URL ya en
+  // `/comparar`, pero el grupo de modelos aún sin existir y el `<main>` con el
+  // contenido del asistente —5545 caracteres frente a 5941—; entre 8 y 11 ms
+  // después, sin ninguna acción, aparecía el grupo con sus modelos. `count()`
+  // devuelve el número de ese instante y no espera a nada, así que medía cero y
+  // fallaba. Reproducido en local 6 veces de 20 contra el artefacto compilado.
+  //
+  // Se espera por tanto a una señal REAL de que la pantalla está lista: el
+  // grupo visible y el primer modelo dentro. No es una pausa disfrazada —no hay
+  // tiempo fijo—: es la condición semántica de «ya hay algo que contar».
   const cards = page.getByRole('group', { name: /^Modelos comparados/ })
+  await expect(cards).toBeVisible()
+  await expect(cards.locator('p.font-bold').first()).toBeVisible()
+
+  // Al menos un iPhone aparece en la cabecera del comparador y como mucho tres.
   const boldCount = await cards.locator('p.font-bold').count()
   expect(boldCount).toBeGreaterThanOrEqual(1)
   expect(boldCount).toBeLessThanOrEqual(3)
