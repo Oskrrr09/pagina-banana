@@ -12,6 +12,32 @@ import { join } from 'node:path'
 //
 // La clave anónima sí puede ir en el bundle: para eso está, y es la que las
 // políticas mantienen a raya.
+//
+// DOS CONTRATOS DISTINTOS, Y CONVIENE NO CONFUNDIRLOS
+//
+// 1 · SEGURIDAD — que el frontend publicado no lleve una credencial
+//     privilegiada (`service_role` y compañía). Se comprueba sobre el código
+//     fuente y sobre el artefacto.
+// 2 · AISLAMIENTO — que el artefacto que sirven las PRUEBAS no apunte a un
+//     Supabase real, para que la suite no escriba visitantes y conversaciones
+//     de mentira en el proyecto de verdad. Ya pasó una vez (QA-002).
+//
+// El segundo no es un problema de seguridad: la anon key está diseñada para
+// viajar al cliente y la protección real es RLS. Es un problema de aislamiento
+// de las pruebas, y por eso `build:test` la vacía a propósito.
+//
+// POR QUÉ CAMBIÓ EL CONTRATO DE LAS DOS COMPROBACIONES DE ARTEFACTO
+//
+// Antes hacían `test.skip(!existsSync(dist))` sin más. Es decir: quien
+// ejecutara una validación que dice inspeccionar el bundle y no tuviera bundle
+// obtenía «PASS · 2 skipped» — una omisión silenciosa disfrazada de
+// aprobación. Ahora se distingue:
+//
+// - Si se está validando el ARTEFACTO —`E2E_CONTRA_BUILD=1`, que es lo que
+//   hacen el CI y `npm run test:artefacto`—, la ausencia de `dist` es un FALLO
+//   de precondición.
+// - Si se está corriendo la suite normal contra el servidor de desarrollo, no
+//   hay artefacto que validar y se omite diciendo por qué.
 
 /** Recorre un directorio y devuelve las rutas de sus ficheros. */
 function ficheros(dir: string): string[] {
@@ -58,9 +84,31 @@ test('el código fuente no lee una clave de servicio desde el entorno del client
   ).toEqual([])
 })
 
+/**
+ * ¿Se está validando el artefacto, o corriendo contra el servidor de desarrollo?
+ *
+ * Es la misma variable con la que el CI decide servir el `dist` compilado, así
+ * que las dos cosas no pueden desincronizarse.
+ */
+const VALIDANDO_ARTEFACTO = process.env.E2E_CONTRA_BUILD === '1'
+const DIST = join(process.cwd(), 'dist')
+
+/** La precondición del contrato: si digo que valido el bundle, tiene que haberlo. */
+function exigirArtefacto(motivo: string) {
+  if (!VALIDANDO_ARTEFACTO) {
+    test.skip(!existsSync(DIST), 'Sin artefacto y sin E2E_CONTRA_BUILD: no hay bundle que validar.')
+    return
+  }
+  expect(
+    existsSync(DIST),
+    `PRECONDICIÓN INCUMPLIDA: se pidió validar el artefacto (E2E_CONTRA_BUILD=1) y no existe \`dist/\`. ${motivo} ` +
+      'Compílalo con `npm run build:test`. Esto NO puede omitirse: una validación de bundle sin bundle no valida nada.',
+  ).toBe(true)
+}
+
 test('el bundle construido no contiene una clave de servicio', () => {
-  const dist = join(process.cwd(), 'dist')
-  test.skip(!existsSync(dist), 'No hay build. Ejecuta `npm run build` antes.')
+  exigirArtefacto('No se puede afirmar que el bundle publicado esté limpio de credenciales privilegiadas.')
+  const dist = DIST
 
   const ofensores: string[] = []
   for (const ruta of ficheros(dist)) {
@@ -84,8 +132,8 @@ test('el bundle que sirven las pruebas no apunta a ningún Supabase', () => {
   // .js, y las pruebas acabarían escribiendo visitantes y conversaciones de
   // mentira en el Supabase de la demostración, mezclados con los reales. Ya
   // pasó una vez (QA-002).
-  const dist = join(process.cwd(), 'dist')
-  test.skip(!existsSync(dist), 'No hay build. Ejecuta `npm run build` antes.')
+  exigirArtefacto('No se puede afirmar que el artefacto de pruebas esté aislado del Supabase real.')
+  const dist = DIST
 
   const conUrl: string[] = []
   for (const ruta of ficheros(dist)) {

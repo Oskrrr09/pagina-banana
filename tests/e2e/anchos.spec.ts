@@ -32,27 +32,106 @@ const TOLERANCIA = 2
 // propósito entre los cortes de Tailwind, que es donde suele romperse.
 const ANCHOS = [320, 414, 600, 768, 900, 1024]
 
-const RUTAS = [
-  '/',
-  '/iphone',
-  '/iphone/17-pro',
-  '/iphone/17-pro/256gb-plata',
-  '/accesorios',
-  '/buscar?q=airpods',
-  '/comparar',
-  '/carrito',
-  '/favoritos',
-  '/tiendas',
-  '/soporte',
-  '/plan-renove',
-  '/elige-tu-apple',
-  '/login',
-  '/mis-productos',
+/**
+ * Cada ruta declara qué armazón debe haber montado.
+ *
+ * `web` — cabecera y `<main>`: el catálogo entero.
+ * `panel` — el panel de agentes, que sin credenciales pinta un aviso a pantalla
+ * completa sin cabecera. Es un estado legítimo, y por eso se declara en vez de
+ * dejarlo pasar por omisión.
+ */
+const RUTAS: { path: string; armazon: 'web' | 'panel' }[] = [
+  { path: '/', armazon: 'web' },
+  { path: '/iphone', armazon: 'web' },
+  { path: '/iphone/17-pro', armazon: 'web' },
+  { path: '/iphone/17-pro/256gb-plata', armazon: 'web' },
+  { path: '/accesorios', armazon: 'web' },
+  { path: '/buscar?q=airpods', armazon: 'web' },
+  { path: '/comparar', armazon: 'web' },
+  { path: '/carrito', armazon: 'web' },
+  { path: '/favoritos', armazon: 'web' },
+  { path: '/tiendas', armazon: 'web' },
+  { path: '/soporte', armazon: 'web' },
+  { path: '/plan-renove', armazon: 'web' },
+  { path: '/elige-tu-apple', armazon: 'web' },
+  { path: '/login', armazon: 'web' },
+  { path: '/mis-productos', armazon: 'web' },
   // El panel de agentes es parte de la web aunque no del catálogo, y sus
   // avisos a pantalla completa se salían por debajo de 414 px.
-  '/agente',
-  '/agente/login',
+  { path: '/agente', armazon: 'panel' },
+  { path: '/agente/login', armazon: 'panel' },
 ]
+
+/**
+ * Demuestra que la ruta llegó a montar algo real ANTES de medirla.
+ *
+ * POR QUÉ ESTO ES EL CORAZÓN DE LA PRUEBA
+ *
+ * Antes había un `await page.waitForSelector('#root > *').catch(() => {})`. Si
+ * la ruta no montaba, la espera fallaba, el fallo se tragaba, y se medía una
+ * página vacía: cero desbordamiento, aprobado. Una ruta rota se leía como una
+ * ruta que cabe. Se comprueba, por tanto, en este orden:
+ *
+ * 1. el árbol tiene hijos —sin `catch`: si no monta, la prueba muere aquí—;
+ * 2. la URL resolvió a la ruta pedida y no a otra cosa;
+ * 3. hay elementos visibles de tamaño no nulo, y no una cáscara;
+ * 4. el armazón declarado está presente.
+ *
+ * Los umbrales son deliberadamente bajos —5 elementos y 100 caracteres—: no
+ * están para describir la página, están para distinguir «montó» de «no montó».
+ * La ruta más escueta del barrido, `/agente/login`, tiene 8 elementos visibles
+ * y 201 caracteres.
+ */
+async function montada(page: Page, ruta: { path: string; armazon: 'web' | 'panel' }) {
+  await page.waitForSelector('#root > *', { timeout: 15_000 })
+
+  const estado = await page.evaluate(() => {
+    const root = document.querySelector('#root') as HTMLElement | null
+    if (!root) return null
+    const visibles = [...root.querySelectorAll('*')].filter((el) => {
+      const caja = el.getBoundingClientRect()
+      return caja.width > 0 && caja.height > 0
+    }).length
+    const main = document.querySelector('main') as HTMLElement | null
+    const mainVisibles = main
+      ? [...main.querySelectorAll('*')].filter((el) => {
+          const caja = el.getBoundingClientRect()
+          return caja.width > 0 && caja.height > 0
+        }).length
+      : 0
+    return {
+      visibles,
+      texto: root.innerText.trim().length,
+      header: !!document.querySelector('header'),
+      main: !!main,
+      mainVisibles,
+      mainTexto: main ? main.innerText.trim().length : 0,
+      pathname: location.pathname,
+    }
+  })
+
+  expect(estado, `${ruta.path}: no existe #root`).not.toBeNull()
+  expect(estado!.visibles, `${ruta.path}: montó una cáscara sin nada visible`).toBeGreaterThanOrEqual(5)
+  expect(estado!.texto, `${ruta.path}: montó sin texto`).toBeGreaterThanOrEqual(100)
+
+  // La ruta pedida, no otra: un `/algo` inexistente que cayera en el fallback
+  // del SPA mediría una pantalla que no es la que se cree estar midiendo.
+  const esperado = ('/pagina-banana' + ruta.path).split('?')[0]
+  expect(estado!.pathname, `${ruta.path}: la URL resolvió a ${estado!.pathname}`).toBe(esperado)
+
+  if (ruta.armazon === 'web') {
+    expect(estado!.header, `${ruta.path}: sin cabecera`).toBe(true)
+    expect(estado!.main, `${ruta.path}: sin <main>`).toBe(true)
+
+    // Y con la PÁGINA dentro, no sólo el armazón. Si el componente de ruta
+    // dejara de montar, la cabecera y el pie seguirían ahí y los umbrales
+    // sobre `#root` no lo notarían: se mediría un `main` vacío y daría cero
+    // desbordamiento. Los mínimos vienen de la ruta más escueta del barrido,
+    // `/mis-productos`, con 4 elementos visibles y 93 caracteres.
+    expect(estado!.mainVisibles, `${ruta.path}: <main> vacío — la página no montó`).toBeGreaterThanOrEqual(3)
+    expect(estado!.mainTexto, `${ruta.path}: <main> sin texto — la página no montó`).toBeGreaterThanOrEqual(40)
+  }
+}
 
 async function sinAvisos(page: Page) {
   await page.addInitScript(() => localStorage.setItem('banana:favorite-store-prompt', 'dismissed'))
@@ -78,10 +157,10 @@ for (const width of ANCHOS) {
     await page.setViewportSize({ width, height: 850 })
 
     for (const ruta of RUTAS) {
-      await page.goto('.' + ruta)
-      await page.waitForSelector('#root > *', { timeout: 15_000 }).catch(() => {})
+      await page.goto('.' + ruta.path)
+      await montada(page, ruta)
       const desborde = await desbordamiento(page)
-      expect(desborde, `${ruta} desborda ${desborde}px a ${width}px`).toBeLessThanOrEqual(TOLERANCIA)
+      expect(desborde, `${ruta.path} desborda ${desborde}px a ${width}px`).toBeLessThanOrEqual(TOLERANCIA)
     }
   })
 }
@@ -99,7 +178,17 @@ for (const width of ANCHOS) {
 // momento, así que se recorre el mismo camino de código.
 // ============================================================================
 
-const RUTAS_APP = ['/', '/tienda', '/mis-productos', '/cuenta', '/iphone', '/iphone/17-pro/256gb-plata', '/carrito']
+const RUTAS_APP: { path: string; armazon: 'web' | 'panel' }[] = [
+  '/',
+  '/tienda',
+  '/mis-productos',
+  '/cuenta',
+  '/iphone',
+  '/iphone/17-pro/256gb-plata',
+  '/carrito',
+  // Dentro del armazón nativo no hay `<header>` de la web: la cabecera es
+  // `AppTopBar`. Se comprueba aparte, justo debajo.
+].map((path) => ({ path, armazon: 'panel' }))
 
 for (const width of [320, 414, 768]) {
   test(`en la app tampoco desborda a ${width} px @all`, async ({ page }) => {
@@ -110,8 +199,20 @@ for (const width of [320, 414, 768]) {
     await page.setViewportSize({ width, height: 850 })
 
     for (const ruta of RUTAS_APP) {
-      await page.goto('.' + ruta)
-      await page.waitForSelector('#root > *', { timeout: 15_000 }).catch(() => {})
+      await page.goto('.' + ruta.path)
+      await montada(page, ruta)
+
+      // El armazón nativo, comprobado y no supuesto. Las SIETE rutas del
+      // barrido montan `#contenido` y barra superior —medido—, así que su
+      // ausencia significa que la app no montó, nunca «esta pantalla no lo
+      // usa». Antes se hacía `contenido ? medida : 0`, que convertía la
+      // ausencia en un cero tranquilizador.
+      const armazon = await page.evaluate(() => ({
+        contenido: !!document.querySelector('#contenido'),
+        topbar: !!document.querySelector('[data-app-topbar]'),
+      }))
+      expect(armazon.contenido, `app ${ruta.path}: sin #contenido — la app no montó`).toBe(true)
+      expect(armazon.topbar, `app ${ruta.path}: sin barra superior — la app no montó`).toBe(true)
 
       // En la app el documento no se desplaza: lo hace `#contenido`. Se miran
       // los dos, porque el desbordamiento se puede quedar en cualquiera.
@@ -123,12 +224,12 @@ for (const width of [320, 414, 768]) {
         const documento = de.scrollWidth - de.clientWidth
         de.style.overflowX = guardado[0]
         document.body.style.overflowX = guardado[1]
-        const contenido = document.querySelector('#contenido')
-        return { documento, contenido: contenido ? contenido.scrollWidth - contenido.clientWidth : 0 }
+        const contenido = document.querySelector('#contenido')!
+        return { documento, contenido: contenido.scrollWidth - contenido.clientWidth }
       })
 
-      expect(medida.documento, `app ${ruta}: el documento desborda a ${width}px`).toBeLessThanOrEqual(TOLERANCIA)
-      expect(medida.contenido, `app ${ruta}: el contenido desborda a ${width}px`).toBeLessThanOrEqual(TOLERANCIA)
+      expect(medida.documento, `app ${ruta.path}: el documento desborda a ${width}px`).toBeLessThanOrEqual(TOLERANCIA)
+      expect(medida.contenido, `app ${ruta.path}: el contenido desborda a ${width}px`).toBeLessThanOrEqual(TOLERANCIA)
     }
   })
 }
