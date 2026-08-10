@@ -238,12 +238,12 @@ test('un usuario rápido no puede abrir conversación mientras se descarta la se
   })
 
   let backendRespondio: (estado: number) => void
-  const respondio = new Promise<number>((resolver) => {
-    backendRespondio = resolver
+  const respondio = new Promise<number>((resolve) => {
+    backendRespondio = resolve
   })
   let liberar: () => void
-  const entregar = new Promise<void>((resolver) => {
-    liberar = resolver
+  const entregar = new Promise<void>((resolve) => {
+    liberar = resolve
   })
 
   // No se inventa la respuesta: se pide la REAL y sólo se retrasa su entrega.
