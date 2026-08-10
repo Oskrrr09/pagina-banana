@@ -63,25 +63,37 @@ begin
   -- p_user_agent se mantiene solo por compatibilidad de firma. No se guarda:
   -- no participa en ninguna función del prototipo y aumenta la huella de
   -- identificación del visitante sin aportar una finalidad demostrable.
-  select id into v_visitante from public.visitantes where auth_id = v_uid;
-  if v_visitante is null then
-    insert into public.visitantes (auth_id, nombre, email, telefono, user_agent)
-    values (v_uid, p_nombre, p_email, p_telefono, null)
-    returning id into v_visitante;
-  else
-    update public.visitantes
-       set nombre     = coalesce(nullif(p_nombre, ''), nombre),
-           email      = coalesce(nullif(p_email, ''), email),
-           telefono   = coalesce(nullif(p_telefono, ''), telefono),
-           user_agent = null
-     where id = v_visitante;
-  end if;
-
-  -- El `for update` serializa dos aperturas simultáneas del mismo visitante:
-  -- la segunda espera y ve la conversación que acaba de crear la primera, en
-  -- vez de crear otra. Sin él, dos pestañas abiertas a la vez —o el doble
-  -- render de un montaje— podían terminar en conversaciones distintas.
-  perform 1 from public.visitantes where id = v_visitante for update;
+  -- Resolución ATÓMICA del visitante, apoyada en `visitantes_auth_id_key`.
+  --
+  -- Antes esto era «buscar, y si no está insertar», con un `for update`
+  -- DESPUÉS. Y ese bloqueo no puede proteger una fila que todavía no existe:
+  -- en la PRIMERA apertura de una cuenta, dos llamadas concurrentes veían las
+  -- dos que no había visitante, las dos insertaban, y una se estrellaba contra
+  -- la unicidad. Medido con un único token compartido y dos POST simultáneos al
+  -- RPC: 13 de 13 iteraciones devolvieron `23505` en una de las dos llamadas,
+  -- con HTTP 409, y alternando cuál de ellas fallaba. La integridad se
+  -- conservaba —un visitante y una conversación—, pero uno de los dos que
+  -- abrían el chat se quedaba sin conversación.
+  --
+  -- Con `on conflict (auth_id) do update` la carrera desaparece por
+  -- construcción: quien pierde no revienta, relee la fila del ganador. Y el
+  -- `do update` toma el bloqueo de esa fila y lo mantiene hasta el final de la
+  -- transacción, así que también serializa el tramo de abajo —buscar
+  -- conversación reciente y crearla si falta— para ese mismo visitante. Por eso
+  -- el `for update` que había aquí se retira: era redundante con este bloqueo y
+  -- llegaba tarde para lo único que no cubría.
+  --
+  -- La semántica de actualización se conserva: nombre, email y teléfono sólo se
+  -- pisan si llega un valor no vacío, y `user_agent` se sigue sin guardar.
+  -- `cliente_id` y `auth_id` no se tocan.
+  insert into public.visitantes (auth_id, nombre, email, telefono, user_agent)
+  values (v_uid, p_nombre, p_email, p_telefono, null)
+  on conflict (auth_id) do update
+     set nombre     = coalesce(nullif(excluded.nombre, ''), public.visitantes.nombre),
+         email      = coalesce(nullif(excluded.email, ''), public.visitantes.email),
+         telefono   = coalesce(nullif(excluded.telefono, ''), public.visitantes.telefono),
+         user_agent = null
+  returning id into v_visitante;
 
   select id into v_conversacion
     from public.conversaciones

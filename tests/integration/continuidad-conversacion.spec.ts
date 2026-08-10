@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 // ============================================================================
 // Continuidad temporal de la conversación de una cuenta.
@@ -18,8 +20,11 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 // `trg_touch_conversation` al insertar en `mensajes`: se mueve con un mensaje
 // del visitante y también con uno del agente, y no con una asignación.
 //
-// El tiempo lo pone Postgres, no el navegador, y la antigüedad se prepara
-// escribiendo datos de prueba: aquí no se espera media hora.
+// El corte productivo lo evalúa Postgres con su propio `now()`. La ANTIGÜEDAD
+// de los datos, en cambio, se prepara desde Node, así que los casos funcionales
+// usan márgenes amplios —5 y 45 minutos— y no un borde de un segundo: con esa
+// holgura, un pequeño desfase de reloj entre Node y la base no puede cambiar el
+// resultado. Aquí no se espera media hora.
 // ============================================================================
 
 const URL_SUPABASE = process.env.VITE_SUPABASE_URL
@@ -51,7 +56,14 @@ async function abrir(email: string): Promise<string> {
   return data as string
 }
 
-/** Coloca la última actividad N minutos atrás. El reloj es el de Postgres. */
+/**
+ * Coloca la última actividad N minutos atrás.
+ *
+ * El instante lo calcula Node, no Postgres. Por eso los casos funcionales van
+ * con márgenes amplios: una diferencia de reloj de unos segundos entre el
+ * proceso de pruebas y la base es irrelevante frente a 5 ó 45 minutos, pero
+ * volvería frágil un borde de 29m59s contra 30m01s.
+ */
 async function inactivaDesdeHace(id: string, minutos: number) {
   const { error } = await admin()
     .from('conversaciones')
@@ -88,15 +100,27 @@ test('una conversación inactiva más de media hora no se reanuda', async () => 
   expect(vieja!.estado, 'y sigue abierta: dejar de ser reanudable no es cerrarla').toBe('abierta')
 })
 
-test('el corte de los treinta minutos es estricto', async () => {
-  const email = await cuenta('borde')
-  const c1 = await abrir(email)
-
-  await inactivaDesdeHace(c1, 29 + 59 / 60)
-  expect(await abrir(email), '29m59s todavía se reanuda').toBe(c1)
-
-  await inactivaDesdeHace(c1, 30 + 1 / 60)
-  expect(await abrir(email), '30m01s ya no').not.toBe(c1)
+test('el corte de los treinta minutos es estricto', () => {
+  // OPCIÓN B de las dos que había: comprobación estática sobre el SQL de la
+  // migración, acompañada de los casos funcionales de 5 y 45 minutos.
+  //
+  // La A —ejecutar SQL contra el Postgres desplegado— exigiría exponer la
+  // definición de la función a través de PostgREST, es decir, añadir un RPC de
+  // producción cuyo único cliente serían las pruebas. No compensa.
+  //
+  // Lo que se fija aquí es el OPERADOR: con `>=` los treinta minutos exactos se
+  // reanudarían, y el contrato dice que ya están fuera. El comportamiento a
+  // ambos lados lo cubren las pruebas funcionales; esto cubre el borde exacto,
+  // que con timestamps generados desde Node sería frágil de medir.
+  const sql = readFileSync(
+    join(process.cwd(), 'supabase/migrations/20260810000500_continuidad_temporal_conversacion.sql'),
+    'utf8',
+  )
+  expect(
+    sql.replace(/\s+/g, ' '),
+    'el corte debe ser ESTRICTO: con `>=` los treinta minutos exactos se reanudarían',
+  ).toContain("ultimo_mensaje_at > now() - interval '30 minutes'")
+  expect(sql, 'y no puede colarse un `>=`').not.toContain('ultimo_mensaje_at >= now()')
 })
 
 test('una conversación cerrada no se reanuda aunque sea reciente', async () => {
@@ -140,14 +164,54 @@ test('la conversación nueva no hereda la asignación de la anterior', async () 
 })
 
 test('dos aperturas simultáneas no crean dos conversaciones', async () => {
+  // El arnés importa tanto como el contrato. Antes esto hacía dos
+  // `signInWithPassword` concurrentes, y eso mezclaba dos cosas: la emisión del
+  // JWT y el RPC. Uno de los dos tokens llegaba a ser rechazado por el
+  // validador —«JWT issued at future»— y la prueba fallaba sin que
+  // `abrir_conversacion` llegara a ejecutarse dos veces.
+  //
+  // Ahora: UNA autenticación, UN token, y dos peticiones concurrentes con ese
+  // mismo token. Así lo único que se mide es la concurrencia del RPC.
   const email = await cuenta('concurrencia')
+  const c = await sesion(email)
+  const { data: s } = await c.auth.getSession()
+  const token = s.session!.access_token
 
-  // Sin conversación previa: las dos deben acabar en la misma.
-  const [a, b] = await Promise.all([abrir(email), abrir(email)])
-  expect(b, 'sin conversación previa, dos aperturas a la vez dan una sola').toBe(a)
+  const llamar = () =>
+    fetch(`${URL_SUPABASE}/rest/v1/rpc/abrir_conversacion`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, apikey: ANON!, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_nombre: 'Concurrencia', p_email: email }),
+    }).then(async (r) => ({ estado: r.status, cuerpo: await r.text() }))
 
-  // Con una reciente: las dos deben recuperar esa misma.
-  const [c, d] = await Promise.all([abrir(email), abrir(email)])
-  expect(c, 'con una reciente, ambas la recuperan').toBe(a)
-  expect(d).toBe(a)
+  // PRIMERA APERTURA · no hay visitante todavía. Es donde estaba la carrera:
+  // dos INSERT simultáneos y uno se estrellaba contra `visitantes_auth_id_key`
+  // con `23505`, devolviendo HTTP 409 a quien perdía.
+  const [a, b] = await Promise.all([llamar(), llamar()])
+  expect(a.estado, `la primera llamada debe funcionar: ${a.cuerpo.slice(0, 120)}`).toBe(200)
+  expect(b.estado, `y la segunda también: ${b.cuerpo.slice(0, 120)}`).toBe(200)
+  expect(b.cuerpo, 'las dos deben acabar en la misma conversación').toBe(a.cuerpo)
+
+  const { data: uid } = await c.auth.getUser()
+  const { data: visitantes } = await admin().from('visitantes').select('id').eq('auth_id', uid.user!.id)
+  expect(visitantes!.length, 'exactamente un visitante').toBe(1)
+  const { data: convs } = await admin().from('conversaciones').select('id').eq('visitor_id', visitantes![0].id)
+  expect(convs!.length, 'y exactamente una conversación').toBe(1)
+
+  // VISITANTE EXISTENTE + C1 RECIENTE · las dos deben recuperarla.
+  const [c1, c2] = await Promise.all([llamar(), llamar()])
+  expect(c1.cuerpo).toBe(a.cuerpo)
+  expect(c2.cuerpo).toBe(a.cuerpo)
+
+  // VISITANTE EXISTENTE + C1 CADUCADA · las dos deben coincidir en la nueva, y
+  // la anterior sigue existiendo: el total pasa a ser dos, no una.
+  await inactivaDesdeHace(JSON.parse(a.cuerpo) as string, 45)
+  const [d1, d2] = await Promise.all([llamar(), llamar()])
+  expect(d1.estado).toBe(200)
+  expect(d2.estado).toBe(200)
+  expect(d2.cuerpo, 'ambas en la misma conversación nueva').toBe(d1.cuerpo)
+  expect(d1.cuerpo, 'que no es la caducada').not.toBe(a.cuerpo)
+
+  const { data: finales } = await admin().from('conversaciones').select('id').eq('visitor_id', visitantes![0].id)
+  expect(finales!.length, 'la caducada se conserva: C1 + C2').toBe(2)
 })

@@ -207,6 +207,7 @@ test('migración · quien actualiza con las claves antiguas empieza de cero', as
     .click()
   await escribir(page, 'mensaje de la instalación antigua')
   const viejo = await sesion(page)
+  expect(viejo.uid, 'debe haber un uid anónimo de partida').not.toBeNull()
 
   // Se reponen a mano las dos claves que escribía la versión anterior.
   await page.evaluate(() => {
@@ -217,15 +218,28 @@ test('migración · quien actualiza con las claves antiguas empieza de cero', as
     localStorage.setItem('bananito:conversation_id', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc')
   })
 
-  const usuarios = admin()
-  const antes = await usuarios.auth.admin.listUsers({ perPage: 1000 })
+  // Se observa la creación de identidad anónima DE ESTE navegador.
+  //
+  // Antes esto se medía contando `auth.admin.listUsers()` antes y después. Es
+  // inválido: la instancia de Supabase es compartida por toda la suite y otras
+  // pruebas crean cuentas mientras ésta corre, así que el contador medía el
+  // ruido de las demás —en CI dio +2— y la prueba fallaba sin que este
+  // navegador hubiera creado a nadie.
+  //
+  // `signInAnonymously()` se materializa, en `@supabase/auth-js` 2.111.0, como
+  // un `POST` a `/auth/v1/signup` cuyo cuerpo NO lleva `email` ni `phone`
+  // —comprobado en la implementación instalada—. Ése es el rasgo que lo
+  // distingue de un registro normal, y es lo que se observa aquí. Sólo se
+  // observa: no se intercepta ni se bloquea nada.
+  const altasAnonimas: string[] = []
+  page.on('request', (peticion) => {
+    if (peticion.method() !== 'POST') return
+    if (!new URL(peticion.url()).pathname.endsWith('/auth/v1/signup')) return
+    const cuerpo = peticion.postData() ?? ''
+    if (!cuerpo.includes('"email"') && !cuerpo.includes('"phone"')) altasAnonimas.push(peticion.url())
+  })
 
   await page.reload()
-
-  // Arrancar no crea a nadie, ni siquiera con las claves antiguas presentes.
-  const trasArrancar = await usuarios.auth.admin.listUsers({ perPage: 1000 })
-  expect(trasArrancar.data.users.length, 'arrancar no da de alta a nadie').toBe(antes.data.users.length)
-
   await abrirChat(page)
   await expect(page.getByText('Antes de empezar'), 'las claves antiguas no rehidratan identidad').toBeVisible({
     timeout: 20_000,
@@ -239,6 +253,14 @@ test('migración · quien actualiza con las claves antiguas empieza de cero', as
   expect(residuo.guest, 'la clave heredada se retira').toBeNull()
   expect(residuo.conv, 'y la vestigial también').toBeNull()
 
+  const trasArrancar = await sesion(page)
+  expect(trasArrancar.uid, 'el uid anónimo heredado ya no está activo').toBeNull()
+  expect(
+    altasAnonimas.length,
+    `arrancar no puede crear identidad anónima; se observaron ${altasAnonimas.length} altas`,
+  ).toBe(0)
+
+  // Y sólo al identificarse aparece una identidad, distinta de la anterior.
   await page.getByLabel('Nombre').fill('Instalación nueva')
   await page.getByLabel('Email').fill('nueva@example.test')
   await page
@@ -249,4 +271,5 @@ test('migración · quien actualiza con las claves antiguas empieza de cero', as
 
   const nuevo = await sesion(page)
   expect(nuevo.uid, 'y al chatear de nuevo, otro uid').not.toBe(viejo.uid)
+  expect(altasAnonimas.length, 'la identidad se crea al identificarse, no al arrancar').toBeGreaterThan(0)
 })
