@@ -31,9 +31,13 @@ test('abrir el chat no da de alta al visitante como cliente', async ({ page }) =
     'Necesita el Supabase local en marcha. Se ejecuta desde npm run test:integration.',
   )
 
+  // Antes se sembraba `bananito:guest` para saltarse el formulario. Esa clave
+  // ya no se lee: la identidad del visitante sin cuenta es efímera y cada
+  // inicialización vuelve a pedir nombre y correo. Así que ahora se rellena, que
+  // es además el recorrido que hace cualquiera. Lo que esta prueba vigila no
+  // cambia: abrir el chat NO puede dar de alta a nadie en `clientes`.
   await page.addInitScript(() => {
     localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
-    localStorage.setItem('bananito:guest', JSON.stringify({ nombre: 'Visitante Anónimo', email: 'anon@example.test' }))
   })
 
   // Antes de abrir el chat no hay ninguna sesión.
@@ -45,6 +49,15 @@ test('abrir el chat no da de alta al visitante como cliente', async ({ page }) =
 
   await page.getByRole('button', { name: 'Abrir chat de Bananito' }).click()
   await expect(page.getByRole('dialog', { name: /Bananito/ })).toBeVisible()
+
+  // Se identifica: hasta que no lo hace no se crea ninguna sesión, para no dar
+  // de alta usuarios anónimos por el mero hecho de abrir la aplicación.
+  await page.getByLabel('Nombre').fill('Visitante Anónimo')
+  await page.getByLabel('Email').fill('anon@example.test')
+  await page
+    .getByRole('button', { name: /Empezar|Continuar|Entrar/i })
+    .first()
+    .click()
 
   // El chat sí abre sesión: es anónima, y es lo que debe pasar.
   await expect
