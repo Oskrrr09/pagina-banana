@@ -125,6 +125,23 @@ export function AgentPage() {
 
   const selected = inbox.items.find((i) => i.conversation.id === selectedId)
 
+  // Una operación que cambia el estado mueve la conversación de bandeja, y la
+  // selección tiene que ir con ella.
+  //
+  // Sin esto, cerrar dejaba a `selectedId` apuntando a una conversación que ya
+  // no está en la bandeja de abiertas: `selected` pasaba a `undefined` y el
+  // panel enseñaba la conversación como si siguiera abierta y sin asignar,
+  // con el botón «Cerrar» deshabilitado. El cierre había funcionado —el RPC
+  // devolvía 204 y la base quedaba `cerrada`—, pero lo que se veía decía lo
+  // contrario.
+  //
+  // El cambio de pestaña A MANO sigue limpiando la selección: ahí sí es otra
+  // conversación la que se busca. Aquí es la misma, que se ha movido.
+  const alCambiarEstado = (operacion: ConversationOperation) => {
+    if (operacion === 'close') setBandeja('cerrada')
+    if (operacion === 'reopen') setBandeja('abierta')
+  }
+
   return (
     <div className="flex h-screen flex-col bg-neutral">
       <TopBar tab={tab} onTabChange={setTab} sinLeer={badge} />
@@ -149,7 +166,11 @@ export function AgentPage() {
             />
           }
           conversacion={
-            <ConversationColumn conversationId={selectedId} conversation={selected?.conversation ?? null} />
+            <ConversationColumn
+              conversationId={selectedId}
+              conversation={selected?.conversation ?? null}
+              onOperacion={alCambiarEstado}
+            />
           }
           visitante={<VisitorColumn conversationId={selectedId} />}
         />
@@ -511,15 +532,15 @@ function BandejaTab({
   )
 }
 
-function ConversationColumn({
+export function ConversationColumn({
   conversationId,
   conversation,
+  onOperacion,
 }: {
   conversationId: string | null
   conversation: DbConversation | null
+  onOperacion?: (operacion: ConversationOperation) => void
 }) {
-  const assignedTo = conversation?.agente_id ?? null
-  const estado = conversation?.estado ?? 'abierta'
   const { messages, sendMessage, status } = useAgentConversation(conversationId)
   const { visitor } = useConversationVisitor(conversationId)
   const agentNames = useAgentNames()
@@ -546,6 +567,24 @@ function ConversationColumn({
     )
   }
 
+  // Hay conversación seleccionada, pero todavía no tenemos sus datos: es la
+  // ventana entre que sale de una bandeja y llega de la otra.
+  //
+  // Antes esto no se distinguía de «conversación abierta y sin asignar»,
+  // porque el estado se calculaba con `conversation?.estado ?? 'abierta'` y la
+  // asignación con `?? null`. Esos respaldos convertían «no lo sé» en una
+  // afirmación falsa, y encima en la más peligrosa de las dos: la que ofrece
+  // acciones. No se infiere nada de lo que no se sabe.
+  if (!conversation) {
+    return (
+      <main className="grid flex-1 place-items-center bg-neutral p-8 text-center" data-conversacion-actualizando>
+        <p className="text-sm text-ink/70">Actualizando conversación…</p>
+      </main>
+    )
+  }
+
+  const assignedTo = conversation.agente_id
+  const estado = conversation.estado
   const mine = assignedTo != null && assignedTo === agente?.id
   const takenByOther = assignedTo != null && assignedTo !== agente?.id
   const cerrada = estado === 'cerrada'
@@ -584,11 +623,17 @@ function ConversationColumn({
             {cerrada && ' · Archivada'}
           </p>
         </div>
-        <ConversationActions conversationId={conversationId} estado={estado} assignedTo={assignedTo} agent={agente} />
+        <ConversationActions
+          conversationId={conversationId}
+          estado={estado}
+          assignedTo={assignedTo}
+          agent={agente}
+          onSuccess={onOperacion}
+        />
       </header>
 
       {/* Valoración recibida */}
-      {conversation?.valoracion_estrellas != null && (
+      {conversation.valoracion_estrellas != null && (
         <div className="border-b border-line bg-surface px-6 py-3">
           <p className="text-xs font-semibold text-ink">
             Valoración del cliente:{' '}
@@ -603,7 +648,7 @@ function ConversationColumn({
           )}
         </div>
       )}
-      {cerrada && conversation?.valoracion_solicitada && conversation.valoracion_estrellas == null && (
+      {cerrada && conversation.valoracion_solicitada && conversation.valoracion_estrellas == null && (
         <div className="border-b border-line bg-surface px-6 py-2 text-xs text-ink/60">
           Valoración pedida al cliente · pendiente de respuesta
         </div>
