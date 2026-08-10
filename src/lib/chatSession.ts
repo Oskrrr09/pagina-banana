@@ -23,8 +23,10 @@ import {
 // ella, cada inicialización de la aplicación empieza una identidad nueva: se
 // vuelve a pedir nombre y correo, y no se rehidrata nada de la anterior.
 //
-// Cada visitante sigue teniendo una única conversación "abierta" a la vez
-// (Fase 1); si el agente la cierra se abriría una nueva en el próximo mensaje.
+// Un visitante puede acumular conversaciones abiertas históricas: una que deja
+// de ser reanudable NO se cierra, se queda ahí. Lo que el servidor devuelve es
+// la abierta reciente que siga dentro de la ventana de continuidad, y si no hay
+// ninguna, una nueva.
 //
 // El hook expone:
 //   messages       → lista ordenada del historial + tiempo real

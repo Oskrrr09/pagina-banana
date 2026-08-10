@@ -194,3 +194,117 @@ test('la sesión anónima heredada se descarta al arrancar, antes del formulario
   expect(b.anonima).toBe(true)
   expect(b.uid, 'y sólo entonces aparece un uid, distinto del de A').not.toBe(a.uid)
 })
+
+test('un usuario rápido no puede abrir conversación mientras se descarta la sesión heredada', async ({ page }) => {
+  test.skip(!URL_SUPABASE || !SERVICE, 'Necesita el Supabase local.')
+  await page.addInitScript(() => localStorage.setItem('banana:favorite-store-prompt', 'dismissed'))
+
+  // ── LA VENTANA QUE ESTO PROTEGE ──
+  //
+  // `signOut({ scope: 'local' })` es, en `@supabase/auth-js` 2.111.0, un POST a
+  // `/auth/v1/logout?scope=local`, y el token sólo se borra de `localStorage`
+  // cuando llega la respuesta. El formulario, en cambio, aparece en cuanto
+  // `guest` es null. Existe por tanto una ventana real en la que se ve «Antes de
+  // empezar» con el token heredado todavía presente.
+  //
+  // Esa ventana no es una fuga por sí sola. La garantía es que NO se puede
+  // abrir conversación ni crear la identidad siguiente mientras dure. Aquí se
+  // ensancha a propósito —reteniendo la ENTREGA de un 204 real, sin
+  // inventarlo— y se comprueba que la barrera aguanta incluso si alguien
+  // rellena el formulario a toda prisa.
+
+  await page.goto('./')
+  await abrirChat(page)
+  await expect(page.getByText('Antes de empezar')).toBeVisible()
+  await identificarse(page, 'Visitante A', 'a@example.test')
+  await escribir(page, 'historial del visitante A')
+  const a = await identidad(page)
+  expect(a.uid, 'debe haber identidad de partida').not.toBeNull()
+
+  let altas = 0
+  let aperturas = 0
+  const autorizaciones: string[] = []
+  page.on('request', (peticion) => {
+    if (peticion.method() !== 'POST') return
+    const ruta = new URL(peticion.url()).pathname
+    if (ruta.includes('/rest/v1/rpc/abrir_conversacion')) {
+      aperturas++
+      autorizaciones.push((peticion.headers()['authorization'] ?? '').replace('Bearer ', ''))
+    }
+    if (ruta.endsWith('/auth/v1/signup')) {
+      const cuerpo = peticion.postData() ?? ''
+      if (!cuerpo.includes('"email"') && !cuerpo.includes('"phone"')) altas++
+    }
+  })
+
+  let backendRespondio: (estado: number) => void
+  const respondio = new Promise<number>((resolver) => {
+    backendRespondio = resolver
+  })
+  let liberar: () => void
+  const entregar = new Promise<void>((resolver) => {
+    liberar = resolver
+  })
+
+  // No se inventa la respuesta: se pide la REAL y sólo se retrasa su entrega.
+  await page.route('**/auth/v1/logout**', async (ruta) => {
+    const real = await ruta.fetch()
+    backendRespondio(real.status())
+    await entregar
+    await ruta.fulfill({ response: real })
+  })
+
+  try {
+    await page.reload()
+    expect(await respondio, 'el logout real debe responder 204').toBe(204)
+
+    // La ventana está abierta: el backend ya cerró la sesión, pero el navegador
+    // todavía no lo sabe.
+    await abrirChat(page)
+    await expect(page.getByText('Antes de empezar')).toBeVisible({ timeout: 20_000 })
+    const enVentana = await identidad(page)
+    expect(enVentana.uid, 'si el uid ya fuera null, esta prueba no mediría la ventana').toBe(a.uid)
+    await expect(page.getByText('historial del visitante A')).toHaveCount(0)
+    expect(altas, 'no puede crearse identidad durante el descarte').toBe(0)
+    expect(aperturas, 'ni abrirse conversación').toBe(0)
+
+    // USUARIO RÁPIDO: rellena y continúa con el descarte todavía pendiente. Se
+    // espera al cambio de interfaz que produce `setGuest`, no a un tiempo.
+    await page.getByLabel('Nombre').fill('Visitante rápido')
+    await page.getByLabel('Email').fill('rapido@example.test')
+    await page
+      .getByRole('button', { name: /Empezar|Continuar|Entrar/i })
+      .first()
+      .click()
+    await expect(page.getByText('Antes de empezar')).toHaveCount(0, { timeout: 20_000 })
+
+    const trasRapido = await identidad(page)
+    expect(trasRapido.uid, 'sigue siendo la identidad heredada, aún sin descartar').toBe(a.uid)
+    expect(altas, 'el usuario rápido no puede provocar un alta anónima').toBe(0)
+    expect(aperturas, 'ni una apertura de conversación bajo la identidad heredada').toBe(0)
+  } finally {
+    // Pase lo que pase, se entrega la respuesta: una aserción fallida no puede
+    // dejar la petición colgada y convertir la suite en un timeout.
+    // Se libera sin desmontar la ruta: hacerlo aquí competiría con el propio
+    // manejador, que todavía tiene que entregar la respuesta real.
+    liberar!()
+  }
+
+  // Liberado el 204 real: sólo ahora nace la identidad nueva.
+  await expect
+    .poll(async () => (await identidad(page)).uid, { message: 'la heredada debe descartarse', timeout: 20_000 })
+    .not.toBe(a.uid)
+
+  await expect
+    .poll(() => aperturas, { message: 'la conversación se abre después del descarte', timeout: 20_000 })
+    .toBeGreaterThan(0)
+
+  const b = await identidad(page)
+  expect(b.anonima, 'la nueva es anónima').toBe(true)
+  expect(altas, 'y la identidad se creó al identificarse, no al arrancar').toBeGreaterThan(0)
+
+  // El RPC corrió bajo la identidad NUEVA. Sólo se decodifica el `sub`.
+  const sub = JSON.parse(Buffer.from(autorizaciones[0].split('.')[1], 'base64url').toString()).sub as string
+  expect(sub, 'la conversación se abrió con la identidad nueva').toBe(b.uid)
+  expect(sub, 'y nunca con la heredada').not.toBe(a.uid)
+})

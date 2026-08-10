@@ -12,6 +12,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const URL_SUPABASE = process.env.VITE_SUPABASE_URL
 const SERVICE = process.env.RLS_TEST_SERVICE_KEY
+const ANON = process.env.VITE_SUPABASE_ANON_KEY
 const CLAVE = 'prueba-chat-1234'
 
 function admin() {
@@ -73,7 +74,10 @@ async function escribir(page: Page, texto: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  test.skip(!URL_SUPABASE || !SERVICE, 'Necesita el Supabase local. Se ejecuta desde npm run test:integration.')
+  test.skip(
+    !URL_SUPABASE || !SERVICE || !ANON,
+    'Necesita el Supabase local. Se ejecuta desde npm run test:integration.',
+  )
   await page.addInitScript(() => localStorage.setItem('banana:favorite-store-prompt', 'dismissed'))
 })
 
@@ -181,16 +185,46 @@ test('E · A cierra, B entra, y B no ve nada de A', async ({ page }) => {
 
   // Y no es sólo la interfaz: desde la sesión de B, las políticas no dejan
   // leer los mensajes de A.
-  const visibles = await page.evaluate(async (url) => {
-    const clave = Object.keys(localStorage).find((k) => /^sb-.*-auth-token$/.test(k))
-    const token = JSON.parse(localStorage.getItem(clave!)!).access_token
-    const r = await fetch(`${url}/rest/v1/mensajes?select=cuerpo`, {
-      headers: { Authorization: `Bearer ${token}`, apikey: token },
-    })
-    const filas = (await r.json()) as { cuerpo?: string }[]
-    return Array.isArray(filas) ? filas.map((f) => f.cuerpo ?? '') : []
-  }, URL_SUPABASE)
-  expect(visibles, 'RLS: B no puede leer el mensaje de A').not.toContain('secreto de la cuenta A')
+  //
+  // ESTA COMPROBACIÓN TENÍA TRES AGUJEROS, Y CUALQUIERA DE ELLOS BASTABA PARA
+  // QUE DIJERA «RLS PROTEGE» SIN HABER COMPROBADO NADA:
+  //
+  // 1. Pedía `select=cuerpo`, y la columna se llama `texto`. Aunque la
+  //    consulta funcionara, las filas venían sin ese campo y la búsqueda del
+  //    secreto no podía encontrarlo jamás.
+  // 2. Mandaba el JWT del usuario como `apikey`, que no es lo que espera
+  //    PostgREST.
+  // 3. Y si la respuesta era un 401, un 403 o un error JSON, `Array.isArray`
+  //    daba false, la lista quedaba vacía y `not.toContain` pasaba igual.
+  //
+  // Ahora se exige que la consulta FUNCIONE, y se comprueban las dos caras: que
+  // B ve lo suyo —si no, no estaríamos midiendo RLS sino un error— y que no ve
+  // lo de A.
+  await escribir(page, 'mensaje propio de la cuenta B')
+
+  const lectura = await page.evaluate(
+    async ([url, anon]) => {
+      const clave = Object.keys(localStorage).find((k) => /^sb-.*-auth-token$/.test(k))
+      const token = JSON.parse(localStorage.getItem(clave!)!).access_token
+      const r = await fetch(`${url}/rest/v1/mensajes?select=texto`, {
+        headers: { Authorization: `Bearer ${token}`, apikey: anon },
+      })
+      return { ok: r.ok, estado: r.status, cuerpo: await r.text() }
+    },
+    [URL_SUPABASE, ANON] as const,
+  )
+
+  expect(lectura.ok, `la consulta de B debe funcionar: HTTP ${lectura.estado} · ${lectura.cuerpo.slice(0, 200)}`).toBe(
+    true,
+  )
+  const filas = JSON.parse(lectura.cuerpo) as unknown
+  expect(Array.isArray(filas), `la respuesta debe ser una lista: ${lectura.cuerpo.slice(0, 200)}`).toBe(true)
+  const textos = (filas as { texto?: string }[]).map((f) => f.texto ?? '')
+
+  expect(textos, 'B debe poder leer lo SUYO; si no, no estaríamos midiendo RLS').toContain(
+    'mensaje propio de la cuenta B',
+  )
+  expect(textos, 'RLS: B no puede leer el mensaje de A').not.toContain('secreto de la cuenta A')
 })
 
 test('migración · quien actualiza con las claves antiguas empieza de cero', async ({ page }) => {
@@ -232,9 +266,12 @@ test('migración · quien actualiza con las claves antiguas empieza de cero', as
   // distingue de un registro normal, y es lo que se observa aquí. Sólo se
   // observa: no se intercepta ni se bloquea nada.
   const altasAnonimas: string[] = []
+  const aperturas: string[] = []
   page.on('request', (peticion) => {
     if (peticion.method() !== 'POST') return
-    if (!new URL(peticion.url()).pathname.endsWith('/auth/v1/signup')) return
+    const ruta = new URL(peticion.url()).pathname
+    if (ruta.includes('/rest/v1/rpc/abrir_conversacion')) aperturas.push(ruta)
+    if (!ruta.endsWith('/auth/v1/signup')) return
     const cuerpo = peticion.postData() ?? ''
     if (!cuerpo.includes('"email"') && !cuerpo.includes('"phone"')) altasAnonimas.push(peticion.url())
   })
@@ -253,12 +290,26 @@ test('migración · quien actualiza con las claves antiguas empieza de cero', as
   expect(residuo.guest, 'la clave heredada se retira').toBeNull()
   expect(residuo.conv, 'y la vestigial también').toBeNull()
 
-  const trasArrancar = await sesion(page)
-  expect(trasArrancar.uid, 'el uid anónimo heredado ya no está activo').toBeNull()
+  // El descarte del token heredado va detrás de una ida y vuelta de red
+  // —`signOut({ scope: 'local' })` es un POST a `/auth/v1/logout?scope=local` y
+  // sólo borra el token cuando llega la respuesta—, mientras que el formulario
+  // aparece en cuanto `guest` es null. Tomar «formulario visible» por «bootstrap
+  // terminado» era una suposición falsa, y bajo paralelismo hacía fallar esta
+  // prueba de forma intermitente. Se espera por tanto a la condición real.
+  await expect
+    .poll(async () => (await sesion(page)).uid, {
+      message: 'el uid anónimo heredado debe descartarse durante bootstrap antes de abrir conversación',
+      timeout: 20_000,
+    })
+    .toBeNull()
+
   expect(
     altasAnonimas.length,
     `arrancar no puede crear identidad anónima; se observaron ${altasAnonimas.length} altas`,
   ).toBe(0)
+  expect(aperturas.length, `ni abrir conversación bajo la identidad heredada; se observaron ${aperturas.length}`).toBe(
+    0,
+  )
 
   // Y sólo al identificarse aparece una identidad, distinta de la anterior.
   await page.getByLabel('Nombre').fill('Instalación nueva')
