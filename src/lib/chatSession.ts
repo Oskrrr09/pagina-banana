@@ -628,6 +628,18 @@ export function visitorDisplayName(
 export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
   items: InboxItem[]
   status: Status
+  /**
+   * Relee la bandeja del servidor, ahora.
+   *
+   * Existe porque el panel NO puede fiarse de recibir su propio eco de
+   * realtime: medido con Supabase local y varios paneles a la vez, hay páginas
+   * que llegan a `SUBSCRIBED`, mantienen el WebSocket abierto y aun así no
+   * reciben ni un `postgres_changes` —0 de 5 en los fallos, 25 de 25 en los
+   * aciertos—. Una operación que ha hecho este mismo panel se confirma con la
+   * respuesta del RPC y una relectura, no esperando un evento que puede no
+   * llegar.
+   */
+  refrescar: () => void
 } {
   const [status, setStatus] = useState<Status>(supabaseEnabled ? 'loading' : 'demo')
   const [items, setItems] = useState<InboxItem[]>([])
@@ -709,7 +721,7 @@ export function useAgentInbox(estado: 'abierta' | 'cerrada' = 'abierta'): {
     }
   }, [reload])
 
-  return { items, status }
+  return { items, status, refrescar: () => void reload() }
 }
 
 export function useAgentConversation(conversationId: string | null): {

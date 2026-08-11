@@ -2,6 +2,27 @@ import { useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { AgentMessageComposer, ConversationActions } from '../../src/pages/AgentPage'
 
+// ============================================================================
+// ALCANCE DE ESTE FIXTURE — botones y avisos, NO el panel.
+//
+// Monta `ConversationActions` y `AgentMessageComposer` sueltos, con `assign` y
+// `changeState` **sustituidos** por funciones locales que sólo mueven un
+// `useState`. Sirve para lo que sirve: qué botón se ofrece a quién, qué pasa
+// cuando el servidor rechaza una operación y que un error no deja el control
+// bloqueado. Nada de eso necesita red.
+//
+// Lo que NO modela, y conviene no dárselo por supuesto: `useAgentInbox`, el
+// filtro por bandeja, la conversación seleccionada ni el RPC real. Un bug del
+// panel vivió precisamente ahí —cerrar funcionaba en la base y la pantalla
+// seguía enseñando la conversación abierta y sin asignar— y estas pruebas no
+// podían verlo, porque aquí el estado siempre queda definido después de
+// cerrar.
+//
+// Ese flujo se prueba contra Supabase real en
+// `tests/integration/panel-agentes-cierre.spec.ts`. No conviertas esto en un
+// pseudo-Supabase: perdería lo que lo hace útil, que es ser barato y directo.
+// ============================================================================
+
 const AGENT_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const OTHER_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 
