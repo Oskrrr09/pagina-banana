@@ -140,6 +140,10 @@ export function AgentPage() {
   const alCambiarEstado = (operacion: ConversationOperation) => {
     if (operacion === 'close') setBandeja('cerrada')
     if (operacion === 'reopen') setBandeja('abierta')
+    // Asignar y soltar no cambian de bandeja, así que nada dispararía una
+    // relectura: sin esto el panel se queda esperando su propio eco de
+    // realtime, que puede no llegar nunca.
+    if (operacion === 'assign' || operacion === 'release') inbox.refrescar()
   }
 
   return (

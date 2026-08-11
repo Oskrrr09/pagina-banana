@@ -292,13 +292,19 @@ test('reabrir devuelve la conversación a abiertas conservando la selección', a
   ).toBeEnabled()
 })
 
-test('un cierre rechazado por el servidor no mueve de bandeja', async ({ page }) => {
-  // El salto a archivadas sólo puede ocurrir tras un cierre que el servidor
-  // acepta. Aquí se le deja intentarlo sin asignársela: el RPC lo rechaza —la
-  // autorización es del servidor, no de la pantalla— y nada debe moverse.
-  const nombre = `Rechazo ${sello()}`
+test('una conversación asignada a otro agente no ofrece el cierre', async ({ page }) => {
+  // OJO CON LO QUE PRUEBA ESTO, Y CON LO QUE NO.
+  //
+  // Aquí NO se llama al servidor: el botón está deshabilitado, así que no hay
+  // clic, no hay `cerrar_conversacion` y no hay nada que rechazar. Lo que se
+  // demuestra es la barrera PREVIA de la interfaz: un agente que no la lleva
+  // no puede ni empezar la operación, y nada se mueve de sitio.
+  //
+  // Que un cierre YA EMITIDO y rechazado por el servidor tampoco cambie de
+  // bandeja es otra propiedad distinta, y la prueba la siguiente.
+  const nombre = `Sin permiso ${sello()}`
   const { conversacionId } = await visitanteConConversacion(nombre)
-  const supervisor = await crearAgente('rechazo')
+  const supervisor = await crearAgente('sinpermiso')
   // Se le asigna a OTRO agente, así que éste no puede cerrarla.
   const otro = await crearAgente('duenno')
   const { error } = await admin().from('conversaciones').update({ agente_id: otro.uid }).eq('id', conversacionId)
@@ -318,4 +324,135 @@ test('un cierre rechazado por el servidor no mueve de bandeja', async ({ page })
   // Y la conversación sigue donde estaba: abierta, en la bandeja de abiertas.
   expect((await filaDeConversacion(conversacionId)).estado).toBe('abierta')
   await expect(page.getByRole('tab', { name: /Abiert/i })).toHaveAttribute('aria-selected', 'true')
+})
+
+test('un cierre que el servidor rechaza no mueve de bandeja', async ({ page }) => {
+  // LA FRONTERA DE `onSuccess`.
+  //
+  // El salto a Archivadas sólo puede ocurrir si `changeState` vuelve SIN
+  // error. Para demostrarlo hace falta un rechazo de verdad, no un 403
+  // inventado: la petición la emite el agente con su sesión real y la responde
+  // el servidor real.
+  //
+  // El truco para que sea determinista, y no una carrera con realtime: se
+  // retiene la petición ya emitida y, justo entonces, se le quita la
+  // conversación a A. Cuando la petición sigue su camino, el servidor la
+  // rechaza porque A ya no es quien la lleva. La interfaz había decidido
+  // cerrar cuando aún podía, que es exactamente el caso que interesa.
+  const nombre = `Rechazo ${sello()}`
+  const { conversacionId } = await visitanteConConversacion(nombre)
+  const agenteA = await crearAgente('rechazo-a')
+  const agenteB = await crearAgente('rechazo-b')
+
+  await entrarComoAgente(page, agenteA.email)
+  const fila = filaBandeja(page, nombre)
+  await expect(fila).toBeVisible({ timeout: 30_000 })
+  await fila.click()
+  await asignarse(page, nombre, conversacionId, agenteA.uid)
+
+  const cerrar = page.getByRole('button', { name: 'Cerrar', exact: true })
+  await expect(cerrar, 'hasta aquí la interfaz cree —con razón— que puede cerrarla').toBeEnabled()
+
+  const respuestas: { status: number; cuerpo: string }[] = []
+  let peticiones = 0
+
+  await page.route('**/rest/v1/rpc/cerrar_conversacion*', async (route) => {
+    peticiones++
+    // La petición ya está emitida, con el token real de A. Ahora se le retira
+    // la conversación, usando admin sólo como actor externo del experimento.
+    const { error } = await admin().from('conversaciones').update({ agente_id: agenteB.uid }).eq('id', conversacionId)
+    if (error) throw error
+
+    // Y se envía TAL CUAL al Supabase real: sin tocar cabeceras, sin fabricar
+    // cuerpo. Lo que conteste el servidor es lo que verá el navegador.
+    const response = await route.fetch()
+    respuestas.push({ status: response.status(), cuerpo: (await response.text()).slice(0, 300) })
+    await route.fulfill({ response })
+  })
+
+  await cerrar.click()
+  const dialogo = page.getByRole('dialog', { name: 'Cerrar conversación' })
+  await expect(dialogo).toBeVisible()
+  await dialogo.getByRole('button', { name: /Cerrar y pedir valoración/ }).click()
+
+  await expect
+    .poll(() => respuestas.length, { message: 'el servidor tiene que haber contestado al cierre', timeout: 20_000 })
+    .toBe(1)
+
+  expect(peticiones, 'una sola petición de cierre, ni reintentos ni duplicados').toBe(1)
+  const [respuesta] = respuestas
+  // El contrato observado: `cerrar_conversacion` levanta `42501` y PostgREST
+  // lo traduce a 403. Se fija el valor concreto —no un «cualquier cosa mayor
+  // que 400»— para que un 500 o un 404 por otra causa no se cuelen como si
+  // fueran este rechazo.
+  expect(respuesta.status, `el servidor debe rechazar el cierre; contestó ${respuesta.cuerpo}`).toBe(403)
+  expect(respuesta.cuerpo, 'y con el motivo del propio RPC').toContain('No se puede cerrar')
+
+  // La base: el cierre no ha ocurrido. La reasignación sí, que la hizo el test.
+  const fila1 = await filaDeConversacion(conversacionId)
+  expect(fila1.estado, 'un cierre rechazado no cierra nada').toBe('abierta')
+  expect(fila1.cerrada_at, 'ni fecha el cierre').toBeNull()
+  expect(fila1.agente_id, 'y la conversación es ya de B, que es lo que provocó el rechazo').toBe(agenteB.uid)
+
+  // La pantalla: NO se ha saltado a Archivadas. `onSuccess` no puede correr
+  // cuando `changeState` devuelve error.
+  await expect(
+    page.getByRole('tab', { name: /Abiert/i }),
+    'la bandeja no puede moverse por un cierre que el servidor rechazó',
+  ).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('tab', { name: /Archivad/i })).toHaveAttribute('aria-selected', 'false')
+
+  // Y el producto cuenta lo que ha pasado, en vez de tragárselo.
+  await expect(dialogo, 'el diálogo se queda para que se pueda reintentar').toBeVisible()
+  await expect(dialogo.getByRole('alert'), 'con el error real del servidor').toBeVisible()
+
+  await page.unroute('**/rest/v1/rpc/cerrar_conversacion*')
+})
+
+test('las operaciones propias funcionan aunque no llegue ni un evento de realtime', async ({ page }) => {
+  // LA PROPIEDAD QUE ESTA PRUEBA FIJA
+  //
+  // Medido con Supabase local y varios paneles a la vez: hay páginas que
+  // llegan a `SUBSCRIBED`, conservan el WebSocket abierto, no dan
+  // `CHANNEL_ERROR` ni `TIMED_OUT`… y no reciben ni un `postgres_changes` en
+  // veinte segundos. En los fallos, 0 de 5 recibieron evento; en los aciertos,
+  // 25 de 25. Mientras eso pasa la base está correcta y el panel miente.
+  //
+  // Así que lo que el agente acaba de hacer no puede depender de su propio eco.
+  // Aquí se corta el realtime de raíz —el WebSocket se intercepta y nunca se
+  // conecta al servidor— y se exige que asignarse, cerrar y reabrir sigan
+  // funcionando por RPC y relectura. HTTP y PostgREST siguen intactos.
+  await page.routeWebSocket(/realtime/, () => {
+    // Sin `connectToServer`: el canal queda mudo a propósito.
+  })
+
+  const nombre = `Sin realtime ${sello()}`
+  const { conversacionId } = await visitanteConConversacion(nombre)
+  const agente = await crearAgente('sin-realtime')
+
+  await entrarComoAgente(page, agente.email)
+  const fila = filaBandeja(page, nombre)
+  await expect(fila, 'la carga inicial es REST, así que la bandeja debe llegar igual').toBeVisible({ timeout: 30_000 })
+  await fila.click()
+  await asignarse(page, nombre, conversacionId, agente.uid)
+
+  // Cerrar.
+  await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
+  const dialogo = page.getByRole('dialog', { name: 'Cerrar conversación' })
+  await expect(dialogo).toBeVisible()
+  await dialogo.getByRole('button', { name: /Cerrar y pedir valoración/ }).click()
+
+  await expect(botonEstado(page), 'sin realtime, cerrar debe reflejarse igual').toHaveText('Reabrir', {
+    timeout: 20_000,
+  })
+  await expect(cabecera(page)).toContainText('Archivada')
+  expect((await filaDeConversacion(conversacionId)).estado).toBe('cerrada')
+
+  // Y reabrir.
+  await botonEstado(page).click()
+  await expect(botonEstado(page), 'y reabrir también').toHaveText('Cerrar', { timeout: 20_000 })
+  await expect(cabecera(page)).not.toContainText('Archivada')
+  const reabierta = await filaDeConversacion(conversacionId)
+  expect(reabierta.estado).toBe('abierta')
+  expect(reabierta.agente_id, 'reabrir conserva quién atendió').toBe(agente.uid)
 })
