@@ -119,20 +119,58 @@ test.describe('barra superior', () => {
     expect(campo.width, 'el buscador debería dominar la barra').toBeGreaterThan(cabecera.width * 0.6)
 
     // Cliente: marca a la izquierda y dos botones compactos.
+    //
+    // El COLOR va aparte, en la prueba siguiente: Inicio comparte el amarillo
+    // con Tienda pero no su composición, y mezclar las dos cosas aquí haría
+    // que un cambio de color pareciera un cambio de disposición.
     for (const ruta of ['./', './mis-productos', './cuenta']) {
       await page.goto(ruta)
       await expect(page.locator('[data-app-topbar="cliente"]'), ruta).toBeVisible()
-      // Y NO amarilla. El color es lo que separa los dos mundos, y es una
-      // decisión tomada mirando la app en el simulador: con las dos variantes
-      // en amarillo, la distinción se sostenía sólo en la composición, que
-      // además se pierde al bajar y esconderse los chips.
-      await expect(page.locator('[data-app-topbar]'), ruta).not.toHaveCSS('background-color', BANANA)
       await expect(page.locator('[data-app-search="compacto"]'), ruta).toBeVisible()
       await expect(page.locator('[data-app-search="prominente"]'), ruta).toHaveCount(0)
       await expect(page.locator('[data-app-chips]'), ruta).toHaveCount(0)
       await expect(page.getByRole('link', { name: /Banana Computer/ }).first(), ruta).toBeVisible()
       await expect(page.locator('[data-app-cart]'), ruta).toBeVisible()
     }
+  })
+
+  test('Inicio y Tienda llevan la superficie de marca; el área personal, la clara', async ({ page }) => {
+    // LA REGLA DE COLOR, SUELTA DE LA COMPOSICIÓN
+    //
+    // Inicio comparte el amarillo con Tienda —es la puerta de entrada, y en la
+    // app nativa esa superficie se continúa con la barra de estado— pero sigue
+    // siendo contexto `cliente`: ni chips ni buscador grande. El área personal
+    // sí se distingue por color.
+    //
+    // Lo que esta prueba NO puede demostrar: que en iOS el amarillo llegue
+    // hasta el borde superior por detrás de la Dynamic Island. Aquí no hay
+    // barra de estado y `env(safe-area-inset-top)` vale cero; eso se comprueba
+    // en el simulador. Aquí se fija la decisión de CSS, que es la que un
+    // cambio de código puede romper sin que nadie lo vea.
+    await comoApp(page)
+
+    for (const ruta of ['./', './tienda']) {
+      await page.goto(ruta)
+      await expect(page.locator('[data-app-topbar]'), `${ruta} debería llevar la marca`).toHaveCSS(
+        'background-color',
+        BANANA,
+      )
+    }
+
+    for (const ruta of ['./mis-productos', './cuenta']) {
+      await page.goto(ruta)
+      await expect(page.locator('[data-app-topbar]'), `${ruta} debería quedarse en superficie clara`).not.toHaveCSS(
+        'background-color',
+        BANANA,
+      )
+    }
+
+    // Y el amarillo de Inicio es el MISMO que el de Tienda, no uno parecido.
+    await page.goto('./')
+    const inicio = await page.locator('[data-app-topbar]').evaluate((el) => getComputedStyle(el).backgroundColor)
+    await page.goto('./tienda')
+    const tienda = await page.locator('[data-app-topbar]').evaluate((el) => getComputedStyle(el).backgroundColor)
+    expect(inicio, 'los dos amarillos deben salir del mismo token').toBe(tienda)
   })
 
   test('los dos buscadores abren el mismo diálogo y devuelven el foco a su botón', async ({ page }) => {

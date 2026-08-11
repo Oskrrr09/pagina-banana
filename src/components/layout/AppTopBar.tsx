@@ -6,7 +6,7 @@ import { Logo } from './Logo'
 import { HeaderSearch } from '../search/HeaderSearch'
 import { useStore } from '../../lib/store'
 import { useT } from '../../lib/i18n'
-import { contextoDe, muestraCarrito, muestraChipsDeCategoria } from '../../lib/appSections'
+import { contextoDe, muestraCarrito, muestraChipsDeCategoria, seccionActiva } from '../../lib/appSections'
 
 /**
  * Barra superior de la aplicación nativa.
@@ -38,6 +38,19 @@ export function AppTopBar() {
 
   const comercial = contextoDe(pathname) === 'comercial'
 
+  /**
+   * ¿La barra va en amarillo Banana?
+   *
+   * En Tienda y en Inicio sí; en el área personal —Mis compras, Cuenta— no.
+   *
+   * Color y contexto dejan de ser lo mismo a propósito: **Inicio sigue siendo
+   * `neutro`**, así que no le entran los chips de categoría ni el buscador
+   * grande. Lo único que comparte con Tienda es la superficie de marca. Se
+   * decide con las funciones que ya clasifican las rutas, para no abrir una
+   * segunda lista que se desincronice.
+   */
+  const barraAmarilla = comercial || seccionActiva(pathname) === 'inicio'
+
   return (
     <>
       <header
@@ -45,18 +58,21 @@ export function AppTopBar() {
         // ocupa la pantalla, y quien se desplaza es el contenido de en medio.
         // En iOS los elementos fijos se recolocan al terminar el gesto, no
         // durante, y por eso parecían despegarse al arrastrar.
-        // EL COLOR SEPARA LOS DOS MUNDOS, Y SE QUEDA ASÍ
+        // EL COLOR: MARCA ARRIBA, SUPERFICIE CLARA EN LO PERSONAL
         //
-        // Amarillo Banana en Tienda; claro en Inicio, Mis compras y Cuenta. Es
-        // lo que hacía la PR #41 y lo que se conserva tras verlo en el
-        // simulador: con las dos variantes en amarillo, la distinción dejaba de
-        // ser cromática y se sostenía sólo en la composición —buscador grande y
-        // chips frente a marca y dos botones—, que es una señal más débil y que
-        // además se pierde al bajar, cuando los chips se esconden.
+        // **Inicio y Tienda van en amarillo Banana**; **Mis compras y Cuenta**
+        // conservan la superficie clara. Inicio recupera el amarillo de marca
+        // porque es la puerta de entrada a la aplicación y así la cabecera se
+        // ve como una sola superficie con la barra de estado.
         //
-        // La barra inferior sí es azul en toda la app: ésa no distingue
+        // Esto cambia la regla anterior —que dejaba claro también Inicio—, pero
+        // no el motivo de fondo: lo que separa Inicio de Tienda sigue siendo la
+        // composición, marca y dos botones compactos frente a buscador grande y
+        // chips. El área personal sí se distingue por color.
+        //
+        // La barra inferior sigue siendo azul en toda la app: ésa no distingue
         // contextos, los enmarca.
-        className={`z-40 shrink-0 ${comercial ? 'bg-banana' : 'border-b border-line bg-surface'}`}
+        className={`z-40 shrink-0 ${barraAmarilla ? 'bg-banana' : 'border-b border-line bg-surface'}`}
         data-app-topbar={comercial ? 'comercial' : 'cliente'}
         // El WebView llega al borde de la pantalla: sin esto la barra queda
         // debajo de la Dynamic Island y del reloj.
