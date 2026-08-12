@@ -88,6 +88,18 @@ body {
   overscroll-behavior-x: none;
 }
 
+/* Arranque de la app nativa: el documento nace en amarillo de marca.
+   El WebView ya llega amarillo por `ios.backgroundColor`, pero el documento
+   se pintaba con `--color-surface` hasta que React montaba, y ahí aparecía un
+   fotograma blanco entre el fondo nativo y la cabecera de Inicio.
+   Se pintan `html` y `body` para no depender de cómo se propaga el fondo del
+   body al viewport. El marcador lo pone `index.html` y lo retira `App` al
+   montar, así que esto NO afecta a la web ni al resto de pantallas. */
+html[data-native-boot],
+html[data-native-boot] body {
+  background-color: var(--color-banana);
+}
+
 /* Dentro de la app nativa, el documento NO se desplaza.
    Se desplaza únicamente el contenido entre la barra de búsqueda y la de
    navegación, que son hermanos suyos en una columna que ocupa la pantalla.

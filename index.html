@@ -46,6 +46,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Arranque de la app nativa: el documento nace con el color de marca.
+         El WebView ya es amarillo (`ios.backgroundColor`), pero el documento
+         se pintaba blanco hasta que React montaba, y eso dejaba un fotograma
+         blanco entre el fondo nativo y la cabecera de Inicio. Va aquí, en
+         línea y antes del bundle, porque un efecto de React llega tarde: el
+         primer pintado del documento ya habría ocurrido.
+         `App` retira el marcador en cuanto monta. -->
+    <script>
+      if (window.Capacitor) document.documentElement.setAttribute('data-native-boot', '')
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
