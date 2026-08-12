@@ -96,11 +96,29 @@ describe('bootstrap del documento en la app nativa', () => {
     ).toMatch(/background-color:\s*var\(--color-banana\)/)
   })
 
-  it('App retira el marcador al montar', () => {
-    // Si se quedara puesto, teñiría de amarillo el fondo de Cuenta, Mis
-    // compras y el checkout.
-    expect(app, 'App debe retirar `data-native-boot` tras el primer montaje').toMatch(
-      /removeAttribute\(\s*['"]data-native-boot['"]\s*\)/,
-    )
+  it('App retira el marcador dentro de un efecto de montaje', () => {
+    // OJO CON LO QUE SE COMPRUEBA AQUÍ, Y POR QUÉ NO BASTA MENOS.
+    //
+    // Buscar sólo `removeAttribute('data-native-boot')` en el fichero daría
+    // verde con esto, que es justo lo que NO queremos:
+    //
+    //   export function App() {
+    //     document.documentElement.removeAttribute('data-native-boot')
+    //     useEffect(() => {}, [])
+    //
+    // Ahí se retiraría durante el render, antes de que el primer árbol haya
+    // pintado, y el fotograma blanco volvería. Así que se exigen las cuatro
+    // cosas a la vez: `useEffect`, su callback, la retirada DENTRO de ese
+    // callback, y el array de dependencias vacío para que sea el montaje y no
+    // cada render.
+    //
+    // Tolera espacios, saltos y comentarios; no fija el formato.
+    const efectoDeMontaje =
+      /useEffect\(\s*\(\s*\)\s*=>\s*\{[\s\S]*?removeAttribute\(\s*['"]data-native-boot['"]\s*\)[\s\S]*?\}\s*,\s*\[\s*\]\s*\)/
+
+    expect(
+      app,
+      'la retirada tiene que vivir dentro de `useEffect(() => { … }, [])`: en el cuerpo del render se ejecutaría antes del primer pintado',
+    ).toMatch(efectoDeMontaje)
   })
 })
