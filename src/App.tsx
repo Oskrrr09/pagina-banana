@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
 import { CheckoutLayout } from './components/layout/CheckoutLayout'
@@ -32,6 +33,21 @@ import { NotFound } from './pages/NotFound'
 
 // Rutas del apartado 9.1.
 export function App() {
+  // Fin del arranque nativo.
+  //
+  // `index.html` marca el documento con `data-native-boot` para que nazca en
+  // amarillo y no se vea un fotograma blanco antes de la cabecera. En cuanto
+  // React monta, el marcador sobra: a partir de aquí el fondo de cada pantalla
+  // lo decide la propia pantalla, y dejarlo puesto teñiría de amarillo lo que
+  // hay debajo de Cuenta, Mis compras o el checkout.
+  //
+  // Va en `App` y no en `Layout` porque el checkout monta `CheckoutLayout`, y
+  // el marcador tiene que retirarse igual. `useEffect` y no `useLayoutEffect`:
+  // se quita después de que el primer árbol haya tenido ocasión de pintarse.
+  useEffect(() => {
+    document.documentElement.removeAttribute('data-native-boot')
+  }, [])
+
   return (
     <>
       <Routes>

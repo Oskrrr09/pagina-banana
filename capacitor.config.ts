@@ -38,6 +38,23 @@ const config: CapacitorConfig = {
     // Además así el amarillo de la cabecera se pinta por detrás de la barra
     // de estado, que es como debe verse.
     contentInset: 'never',
+
+    // El WebView nace con el amarillo de la interfaz en vez del blanco del
+    // sistema.
+    //
+    // Medido en el simulador: entre el fundido de apertura y el primer pintado
+    // del documento se veían ~700 ms de blanco. No era la barra de estado, ni
+    // la ventana, ni el `UIViewController`: pintando cada capa de un color
+    // imposible, la única que cambiaba ese tramo era el propio `WKWebView`,
+    // que sin este ajuste usa el fondo del sistema.
+    //
+    // Mantener sincronizado con `--color-banana` de `src/index.css`: lo que
+    // sigue a este tramo es la cabecera de Inicio, y cualquier diferencia se
+    // vería como un escalón. Hay una prueba que lo vigila.
+    //
+    // OJO: el asset del `LaunchScreen` usa OTRO amarillo, `#FDC200`, que es el
+    // del icono oficial. La divergencia viene de antes y no se resuelve aquí.
+    backgroundColor: '#ffce1f',
   },
 }
 
