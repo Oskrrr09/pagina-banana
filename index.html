@@ -16,12 +16,12 @@
       name="description"
       content="Prototipo navegable de Banana Computer. Demostración conceptual con datos de ejemplo, sin sistemas reales."
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Las tipografías NO se piden a ningún servicio externo: viajan en el
+         bundle. Se importan en `src/main.tsx` desde `@fontsource`, con los
+         mismos pesos que pedía el enlace remoto anterior. Volver a poner aquí
+         una hoja de estilos de fuentes remota reintroduciría una dependencia
+         de red en cada carga, y hay una prueba que lo vigila midiendo las
+         peticiones del artefacto. -->
     <!-- Preload de la primera imagen del hero para acelerar el LCP en la home.
          La ruta va sin la base a propósito: Vite le antepone la que toque en
          cada build (`/pagina-banana/` en GitHub Pages, `/` en la app nativa).

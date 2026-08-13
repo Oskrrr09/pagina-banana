@@ -143,11 +143,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
 
   if (url.origin !== self.location.origin) {
-    // Solo las fuentes de Google. Supabase y cualquier otra API van SIEMPRE a
-    // la red: cachear respuestas de sesión o de chat daría datos falsos.
-    if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-      event.respondWith(staleWhileRevalidate(request))
-    }
+    // Nada de otros orígenes se cachea. Antes había una excepción para las
+    // fuentes de Google; ya no existe esa dependencia, las tipografías viajan
+    // en el bundle. Supabase y cualquier otra API van SIEMPRE a la red:
+    // cachear respuestas de sesión o de chat daría datos falsos.
     return
   }
 
