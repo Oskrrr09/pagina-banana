@@ -12,10 +12,14 @@ import { ProfilePage } from '../../src/pages/ProfilePage'
 // Fixture de la Inicio nativa **con sesión**, junto a la cuenta de verdad.
 //
 // Sirve para lo que la suite E2E no puede: allí no hay Supabase, así que no hay
-// sesión, y los accesos que dependen de ella —«Mis pedidos»— no llegan a
-// pintarse. Aquí se inyecta el contexto y se montan las dos pantallas en el
-// mismo router, de modo que el clic navegue de verdad y se pueda comprobar
-// dónde aterriza.
+// sesión, y lo que dependa de ella no llega a pintarse. Aquí se inyecta el
+// contexto y se montan las dos pantallas en el mismo router.
+//
+// La ruta inicial se toma del `hash` para poder entrar directamente en un
+// apartado de la cuenta. Hizo falta cuando Inicio dejó de repetir los accesos
+// que ya están en la barra inferior: el recorrido «pulsar en Inicio» dejó de
+// existir, pero **la ruta sigue teniendo que abrir el apartado que promete**, y
+// eso es lo que se conserva.
 
 const SESION_FALSA = {
   user: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', email: 'elena@example.test', is_anonymous: false },
@@ -37,7 +41,7 @@ function Fixture() {
   )
 
   return (
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={[window.location.hash.slice(1) || '/']}>
       <IdiomaProvider>
         <StoreProvider>
           <StorePreferenceProvider>
