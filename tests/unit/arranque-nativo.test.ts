@@ -83,8 +83,22 @@ describe('bootstrap del documento en la app nativa', () => {
   })
 
   it('sólo marca dentro del binario nativo', () => {
-    // Sin esta condición la web también nacería amarilla.
-    expect(html).toMatch(/window\.Capacitor[\s\S]{0,120}data-native-boot/)
+    // Sin condición, la web también nacería amarilla y con el logotipo encima.
+    //
+    // No se exige una condición concreta —`window.Capacitor` puede no existir
+    // todavía cuando el script corre en el `head`, y por eso también se mira el
+    // esquema de la URL—, pero sí que EXISTA y que sea una señal exclusiva del
+    // binario empaquetado. Lo que esta prueba impide es marcar sin preguntar.
+    const linea = html.match(/^.*setAttribute\(\s*['"]data-native-boot['"].*$/m)
+    expect(linea, 'falta el script que marca el arranque nativo').not.toBeNull()
+
+    const condicion = html.match(
+      /if\s*\(([^)]*(?:\([^)]*\))?[^)]*)\)\s*\n?\s*document\.documentElement\.setAttribute\(\s*['"]data-native-boot['"]/,
+    )
+    expect(condicion, 'el marcador se pone sin condición: la web nacería amarilla').not.toBeNull()
+    expect(condicion![1], 'la condición tiene que mirar una señal exclusiva de la app empaquetada').toMatch(
+      /window\.Capacitor|capacitor:|ionic:/,
+    )
   })
 
   it('la superficie de arranque usa el amarillo de marca', () => {
@@ -120,5 +134,55 @@ describe('bootstrap del documento en la app nativa', () => {
       app,
       'la retirada tiene que vivir dentro de `useEffect(() => { … }, [])`: en el cuerpo del render se ejecutaría antes del primer pintado',
     ).toMatch(efectoDeMontaje)
+  })
+})
+
+// ============================================================================
+// La pantalla de arranque nativa se retiene, y por eso alguien tiene que
+// retirarla.
+//
+// Entre que iOS quita la pantalla de arranque y el documento pinta, el WebView
+// enseñaba su color de fondo: amarillo, pero sin logotipo. Reteniéndola hasta
+// que React monta, el rótulo está desde que se abre la app hasta que la Home
+// está pintada.
+//
+// El precio de retenerla es que ya NO se va sola: si la llamada que la oculta
+// desapareciera, la app se quedaría clavada en la pantalla amarilla para
+// siempre. Las dos mitades del trato se comprueban juntas.
+// ============================================================================
+describe('pantalla de arranque nativa', () => {
+  const app = readFileSync(join(raiz, 'src', 'App.tsx'), 'utf8')
+
+  it('no se oculta sola', () => {
+    expect(
+      config.plugins?.SplashScreen?.launchAutoHide,
+      'con el ocultado automático, la pantalla se va antes de que el documento pinte y reaparece el amarillo sin logotipo',
+    ).toBe(false)
+  })
+
+  it('arranca con el mismo amarillo que el WebView', () => {
+    expect(config.plugins?.SplashScreen?.backgroundColor?.toLowerCase()).toBe(bananaDeCss())
+  })
+
+  it('App la oculta al montar, o la app se queda clavada', () => {
+    expect(
+      app,
+      'nadie oculta la pantalla de arranque: con `launchAutoHide: false` eso deja la app en amarillo para siempre',
+    ).toMatch(/SplashScreen\.hide\(\)/)
+
+    // Y el plugin se carga en diferido: importarlo arriba mete
+    // `@capacitor/core` en el bundle de la web, que define `window.Capacitor`
+    // en el navegador y deja a la web sin service worker.
+    expect(
+      app,
+      'el plugin no puede importarse de forma estática: define `window.Capacitor` también en la web',
+    ).not.toMatch(/^import\s.*@capacitor\/splash-screen/m)
+    expect(app, 'la carga del plugin tiene que ir en diferido').toMatch(/import\(\s*'@capacitor\/splash-screen'\s*\)/)
+
+    // Y en el mismo efecto de montaje que retira el marcador: separarlos
+    // devuelve el parpadeo que se estaba corrigiendo.
+    const juntas =
+      /useEffect\(\s*\(\s*\)\s*=>\s*\{[\s\S]*?removeAttribute\(\s*['"]data-native-boot['"]\s*\)[\s\S]*?SplashScreen\.hide\(\)[\s\S]*?\}\s*,\s*\[\s*\]\s*\)/
+    expect(app, 'la pantalla nativa y el marcador del documento tienen que retirarse en el mismo punto').toMatch(juntas)
   })
 })

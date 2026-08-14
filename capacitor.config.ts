@@ -56,6 +56,21 @@ const config: CapacitorConfig = {
     // del icono oficial. La divergencia viene de antes y no se resuelve aquí.
     backgroundColor: '#ffce1f',
   },
+  plugins: {
+    // La pantalla de arranque NO se retira sola. Entre que el sistema la
+    // quita y que el documento pinta, el WebView enseña su color de fondo:
+    // amarillo, sí, pero sin logotipo. Reteniéndola hasta que React monta, el
+    // rótulo está desde que se abre la app hasta que la Home está pintada.
+    //
+    // Quien la retira es `App`, en el mismo sitio donde quita el marcador de
+    // arranque del documento. Si esa llamada desapareciera, la pantalla se
+    // quedaría fija: hay una prueba que vigila que siga estando.
+    SplashScreen: {
+      launchAutoHide: false,
+      backgroundColor: '#ffce1f',
+      showSpinner: false,
+    },
+  },
 }
 
 export default config

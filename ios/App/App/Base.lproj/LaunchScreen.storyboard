@@ -1,10 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17132" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <!--
+  Pantalla de arranque de la app.
+
+  Antes la vista raíz ERA el `imageView` del splash cuadrado, con
+  `scaleAspectFill` y `systemBackgroundColor` de fondo. Eso daba dos
+  problemas: en pantallas alargadas el recorte se comía los lados del
+  rótulo, y en modo oscuro el fondo del sistema es NEGRO.
+
+  Ahora es una jerarquía normal —vista con el amarillo de marca y un
+  rótulo centrado con transparencia—, igual que la capa de arranque del
+  documento web (`#arranque-nativo`), para que el paso de una a otra no
+  cambie de color ni mueva el logotipo.
+
+  El amarillo es #FFCE1F, el mismo de la variable «color-banana» y el mismo que
+  `ios.backgroundColor` da al WebView.
+-->
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17105"/>
-        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -12,11 +27,23 @@
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <imageView key="view" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" id="snD-IY-ifK">
+                    <view key="view" contentMode="scaleToFill" id="Ffm-Ho-hCa">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
-                        <autoresizingMask key="autoresizingMask"/>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                    </imageView>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="wordmark" translatesAutoresizingMaskIntoConstraints="NO" id="snD-IY-ifK">
+                                <rect key="frame" x="93.5" y="308.5" width="188" height="50"/>
+                            </imageView>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
+                        <color key="backgroundColor" name="SplashBackground"/>
+                        <constraints>
+                            <constraint firstItem="snD-IY-ifK" firstAttribute="centerX" secondItem="Ffm-Ho-hCa" secondAttribute="centerX" id="c01-cX-aaa"/>
+                            <constraint firstItem="snD-IY-ifK" firstAttribute="centerY" secondItem="Ffm-Ho-hCa" secondAttribute="centerY" id="c02-cY-bbb"/>
+                            <constraint firstItem="snD-IY-ifK" firstAttribute="width" secondItem="Ffm-Ho-hCa" secondAttribute="width" multiplier="0.5" id="c03-wd-ccc"/>
+                            <constraint firstItem="snD-IY-ifK" firstAttribute="width" secondItem="snD-IY-ifK" secondAttribute="height" multiplier="21:5" id="c04-ar-ddd"/>
+                        </constraints>
+                    </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -24,9 +51,9 @@
         </scene>
     </scenes>
     <resources>
-        <image name="Splash" width="1366" height="1366"/>
-        <systemColor name="systemBackgroundColor">
-            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-        </systemColor>
+        <image name="wordmark" width="210" height="50"/>
+        <namedColor name="SplashBackground">
+            <color red="1" green="0.80800000000000005" blue="0.121" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
     </resources>
 </document>

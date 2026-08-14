@@ -100,6 +100,26 @@ html[data-native-boot] body {
   background-color: var(--color-banana);
 }
 
+/* El rótulo de marca del arranque. Sólo existe mientras está el marcador: en
+   la web y una vez montada la app, `display: none`. Se centra sobre el
+   viewport completo —no sobre el flujo— para que no dependa de que `#root`
+   tenga ya altura, que al arrancar es cero. */
+#arranque-nativo {
+  display: none;
+}
+html[data-native-boot] #arranque-nativo {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  background-color: var(--color-banana);
+}
+html[data-native-boot] #arranque-nativo svg {
+  width: min(52vw, 260px);
+  height: auto;
+}
+
 /* Dentro de la app nativa, el documento NO se desplaza.
    Se desplaza únicamente el contenido entre la barra de búsqueda y la de
    navegación, que son hermanos suyos en una columna que ocupa la pantalla.
