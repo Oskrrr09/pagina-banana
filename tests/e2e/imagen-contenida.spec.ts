@@ -68,9 +68,15 @@ const COMPARADOR = [
  * y la prueba seguiría en verde sin comprobar nada. Comprobado: favoritos,
  * comparador y buscador daban EXACTAMENTE eso, cero, hasta sembrarles estado.
  */
+// La portada de Tienda estaba aquí por su hero, cuya foto vivía en un marco de
+// proporción fija. Desde la PR #56 no hay hero y lo único que queda son tarjetas
+// con marco cuadrado, que este contador excluye a propósito: ya no hay ninguna
+// foto que pueda recortarse, así que el caso no medía nada y el mínimo —que
+// existe justo para que una prueba no pase en vacío— lo dejaba en rojo para
+// siempre. La propiedad sigue cubierta en las otras cinco superficies.
 const CASOS = [
-  { nombre: 'portada de Tienda en la app', ruta: './tienda', nativa: true, ancho: 390, minimo: 1 },
   { nombre: 'portada web', ruta: './', nativa: false, ancho: 1280, minimo: 1 },
+
   { nombre: 'ficha de modelo', ruta: './mac/macbook-air-m4', nativa: false, ancho: 390, minimo: 4 },
   { nombre: 'favoritos', ruta: './favoritos', nativa: false, ancho: 390, minimo: 1 },
   { nombre: 'comparador', ruta: './comparar', nativa: false, ancho: 1280, minimo: 2 },

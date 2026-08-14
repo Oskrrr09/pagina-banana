@@ -24,67 +24,65 @@ async function comoApp(page: Page, recientes?: string[]) {
 test.describe('portada de la tienda', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
+  // QUÉ CAMBIÓ AQUÍ, Y POR QUÉ
+  //
+  // La PR #56 retiró de Tienda el hero de producto, la rejilla «Compra por
+  // categoría», los vistos recientes y la tienda favorita. Los tres últimos
+  // porque ya viven en Inicio o en los chips de la barra; el hero porque ocupaba
+  // media pantalla, convertía el nombre de un producto en el `h1` de la sección
+  // y repetía Oportunidades.
+  //
+  // Los casos que exigían aquellas piezas no se borran: se reformulan a la
+  // propiedad que de verdad protegían —que Tienda empieza por comercio y los
+  // servicios quedan al final, y que desde Tienda se llega a una familia—. Lo
+  // que era del historial pasa a Inicio, que es donde vive ahora, y lo cubre
+  // `inicio-nativo.spec.ts`.
+
   test('empieza por producto, no por servicios corporativos', async ({ page }) => {
     await comoApp(page)
     await page.goto('./tienda')
 
-    // El primer encabezado de la portada es un producto del catálogo, y lleva
-    // a su ficha. Es la diferencia con la portada web, que abre con marca.
-    const hero = page.locator('#app-hero-titulo')
-    await expect(hero).toBeVisible()
+    const oportunidades = page.getByRole('heading', { name: 'Oportunidades' })
+    const servicios = page.getByRole('heading', { name: 'Servicios y ayuda' })
+    await expect(oportunidades).toBeVisible()
+    await expect(servicios).toBeVisible()
 
-    const comprar = page.getByRole('link', { name: 'Comprar' }).first()
-    await expect(comprar).toBeVisible()
-    await comprar.click()
-    await expect(page).toHaveURL(/\/pagina-banana\/[a-z-]+\/[a-z0-9-]+/)
+    const yProducto = (await oportunidades.boundingBox())!.y
+    const yServicios = (await servicios.boundingBox())!.y
+    expect(yServicios, 'los servicios van por debajo del producto').toBeGreaterThan(yProducto)
   })
 
-  test('los servicios quedan después del contenido comercial', async ({ page }) => {
+  test('las tarjetas de oferta llevan a la ficha de su variante', async ({ page }) => {
     await comoApp(page)
     await page.goto('./tienda')
 
-    const categorias = page.getByRole('heading', { name: 'Compra por categoría' })
-    const servicios = page.getByRole('heading', { name: 'Servicios y ayuda' })
-    await expect(categorias).toBeVisible()
-
-    const yCategorias = (await categorias.boundingBox())!.y
-    const yServicios = (await servicios.boundingBox())!.y
-    expect(yServicios, 'los servicios van por debajo del producto').toBeGreaterThan(yCategorias)
+    await page.getByRole('list', { name: 'Oportunidades' }).getByRole('link').first().click()
+    await expect(page).toHaveURL(/\/pagina-banana\/[a-z-]+\/[a-z0-9-]+\/[a-z0-9-]+/)
   })
 
   test('las categorías llevan a su familia', async ({ page }) => {
     await comoApp(page)
     await page.goto('./tienda')
 
-    await page.getByRole('link', { name: 'iPhone', exact: true }).first().click()
+    // Desde los chips de la barra, que es la única superficie de categorías
+    // desde la #56.
+    await page
+      .getByRole('navigation', { name: 'Categorías' })
+      .getByRole('link', { name: 'iPhone', exact: true })
+      .click()
     await expect(page).toHaveURL(/\/pagina-banana\/iphone$/)
   })
 
-  test('sin historial no aparece la sección de recientes', async ({ page }) => {
-    await comoApp(page)
-    await page.goto('./tienda')
-
-    await expect(page.getByRole('heading', { name: 'Continúa donde lo dejaste' })).toHaveCount(0)
-  })
-
-  test('con historial aparece y enlaza a la ficha', async ({ page }) => {
-    await comoApp(page, ['iphone/17-pro'])
-    await page.goto('./tienda')
-
-    await expect(page.getByRole('heading', { name: 'Continúa donde lo dejaste' })).toBeVisible()
-    const lista = page.getByRole('list', { name: 'Continúa donde lo dejaste' })
-    await expect(lista.getByRole('link').first()).toHaveAttribute('href', /\/iphone\/17-pro/)
-  })
-
-  test('un historial corrupto no rompe la portada', async ({ page }) => {
+  test('un historial corrupto no rompe la app', async ({ page }) => {
+    // La propiedad sigue viva, pero el historial se pinta en Inicio.
     await page.addInitScript(() => {
       ;(window as { Capacitor?: unknown }).Capacitor = {}
       localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
       localStorage.setItem('banana:recientes', 'esto no es json')
     })
-    await page.goto('./tienda')
+    await page.goto('./')
 
-    await expect(page.locator('#app-hero-titulo')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /Hola/ })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Continúa donde lo dejaste' })).toHaveCount(0)
   })
 
@@ -97,8 +95,10 @@ test.describe('portada de la tienda', () => {
     // que llegar pulsando una tarjeta.
     await expect.poll(() => page.evaluate(() => localStorage.getItem('banana:recientes'))).toContain('iphone/17-pro')
 
-    await page.goto('./tienda')
-    await expect(page.getByRole('heading', { name: 'Continúa donde lo dejaste' })).toBeVisible()
+    // El historial se pinta en Inicio, que es donde el cliente lo retoma.
+    await page.goto('./')
+    const recientes = page.getByRole('list', { name: 'Continúa donde lo dejaste' })
+    await expect(recientes.getByRole('link', { name: /iPhone 17 Pro/ })).toBeVisible()
   })
 })
 

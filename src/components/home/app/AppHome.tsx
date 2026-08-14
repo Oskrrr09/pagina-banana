@@ -1,15 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { allModels, families, getModel, variantPath } from '../../../data/products'
-import type { Model } from '../../../data/types'
-import { euro } from '../../../lib/format'
-import { useCatalogo, useIdioma } from '../../../lib/i18n'
-import { leerRecientes } from '../../../lib/recentlyViewed'
-import { getOfferVariant, tieneOferta } from '../../../lib/offers'
-import { useStorePreference } from '../../../lib/storePreference'
-import { ButtonLink } from '../../ui/Button'
+import { allModels } from '../../../data/products'
+import { useIdioma } from '../../../lib/i18n'
+import { tieneOferta } from '../../../lib/offers'
 import { Icon } from '../../ui/Icon'
-import { ProductImage } from '../../product/ProductImage'
 import { ProductCardCompact } from '../../product/ProductCardCompact'
 
 // ============================================================================
@@ -31,22 +25,84 @@ import { ProductCardCompact } from '../../product/ProductCardCompact'
 // Todo lo que se muestra sale del catálogo real. No hay promociones,
 // porcentajes ni disponibilidad inventados: cuando el dato no existe, la
 // sección no aparece.
+//
+// POR QUÉ ESTA PANTALLA ES TAN CORTA
+//
+// Lo era mucho menos, y medía 1.951 px a 390×844. Se fueron cuatro bloques, y
+// ninguno por gusto:
+//
+//   - el HERO, 430 px —el 51 % de la primera pantalla— para un solo producto
+//     elegido por ser «la oferta más cara», que no es una señal de relevancia;
+//     además convertía el nombre de ese producto en el `h1` de Tienda y repetía
+//     lo que hay tres dedos más abajo en Oportunidades;
+//   - «Compra por categoría», porque las familias ya viven en los chips de
+//     `AppTopBar`, que están SIEMPRE arriba y a un toque;
+//   - «Vistos recientemente» y «Tu tienda», que desde la PR #55 son de Inicio:
+//     ahí son «lo mío», aquí eran un eco.
+//   - «Destacados», un segundo carrusel sin criterio que explicar.
+//
+// Lo que queda es lo que sólo puede estar aquí: la oferta real del catálogo, la
+// ayuda para elegir y los servicios de compra. Nada de esto lo enseña Inicio.
 // ============================================================================
-
-/** Familias con producto de verdad, en el orden en que se ofrecen. */
-const CATEGORIAS = ['iphone', 'mac', 'ipad', 'apple-watch', 'airpods', 'accesorios'] as const
 
 export function AppHome() {
   return (
     <div className="pb-10">
-      <HeroDestacado />
-      <VistosRecientemente />
+      <Encabezado />
       <Oportunidades />
-      <PorCategoria />
-      <Destacados />
-      <TuTienda />
+      <AyudaParaElegir />
       <Servicios />
     </div>
+  )
+}
+
+/**
+ * Encabezado de la sección.
+ *
+ * El `h1` de esta pantalla es «Tienda». Antes lo era el nombre del producto del
+ * hero, así que la sección no se anunciaba en ninguna parte y la estructura del
+ * documento empezaba por un producto cualquiera.
+ */
+function Encabezado() {
+  const { t } = useIdioma()
+
+  return (
+    <header className="px-4 pt-5">
+      <h1 className="text-2xl font-extrabold text-ink">{t('appnav.store')}</h1>
+      <p className="mt-1 text-sm text-muted">{t('app.store.lead')}</p>
+    </header>
+  )
+}
+
+/**
+ * Ayuda para elegir.
+ *
+ * Una fila, no el bloque amarillo de Inicio: allí el asistente es la pieza
+ * principal y aquí es una salida para quien se ha quedado mirando el catálogo
+ * sin decidirse. Repetir el bloque grande sería la duplicación que esta pantalla
+ * viene a quitar. Lleva al asistente real; no se duplica ni una pregunta suya.
+ */
+function AyudaParaElegir() {
+  const { t } = useIdioma()
+
+  return (
+    <section aria-labelledby="tienda-ayuda" className="mt-8 px-4">
+      <Link
+        to="/elige-tu-apple"
+        className="flex min-h-14 items-center gap-3 rounded-[16px] border border-line bg-surface p-4"
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-brand text-ink">
+          <Icon name="sparkles" size={20} aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span id="tienda-ayuda" className="block font-semibold text-ink">
+            {t('home.finder.eyebrow')}
+          </span>
+          <span className="block text-sm text-muted">{t('home.finder.title')}</span>
+        </span>
+        <Icon name="chevron-right" size={18} aria-hidden="true" className="shrink-0 text-muted" />
+      </Link>
+    </section>
   )
 }
 
@@ -90,117 +146,6 @@ function Carrusel({ children, etiqueta }: { children: React.ReactNode; etiqueta:
 }
 
 /**
- * A. Hero comercial.
- *
- * Un solo producto, el más caro con oferta viva; si no hubiera ninguna oferta,
- * el primero del catálogo. Se elige por dato, no por una lista escrita a mano
- * que se quedaría desfasada al tocar el catálogo.
- */
-function HeroDestacado() {
-  const { t, intl } = useIdioma()
-  const cat = useCatalogo()
-
-  // Misma noción de oferta que el resto de la portada: `getOfferVariant`, no
-  // la primera capacidad. Si no hubiera ninguna rebaja, el más caro del
-  // catálogo.
-  const destacado = useMemo<Model | undefined>(() => {
-    const conOferta = allModels.filter(tieneOferta)
-    const candidatos = conOferta.length > 0 ? conOferta : allModels
-    return [...candidatos].sort((a, b) => b.fromPrice - a.fromPrice)[0]
-  }, [])
-
-  if (!destacado) return null
-
-  const oferta = getOfferVariant(destacado)
-  // Con oferta se enseña y se enlaza ESA variante; sin ella, la de entrada.
-  const color = oferta ? oferta.color : destacado.colors[0]
-  const destino = oferta ? variantPath(destacado, oferta.color, oferta.capacity) : variantPath(destacado)
-
-  return (
-    <section aria-labelledby="app-hero-titulo" className="px-4 pt-4">
-      <div className="overflow-hidden rounded-[20px] border border-line bg-neutral">
-        <div className="px-5 pt-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">{cat(destacado.tagline)}</p>
-          <h1 id="app-hero-titulo" className="mt-1 text-2xl font-extrabold leading-tight text-ink">
-            {cat(destacado.name)}
-          </h1>
-          <p className="mt-2 text-sm text-ink">
-            {oferta ? euro(oferta.precio, intl) : t('common.from', { precio: euro(destacado.fromPrice, intl) })}
-            {oferta && (
-              <span className="ml-2 text-sm font-semibold text-muted line-through">
-                {euro(oferta.precioAnterior, intl)}
-              </span>
-            )}
-          </p>
-        </div>
-        {/* Apaisada y no cuadrada: con el cuadrado por defecto el hero se
-            comía la pantalla entera de un móvil y el botón de comprar quedaba
-            fuera, que es justo lo contrario de lo que tiene que hacer un hero
-            comercial. Así entran imagen, precio y llamada a la acción de una
-            sola mirada. */}
-        <Link to={destino} className="mt-3 block px-5">
-          <ProductImage
-            src={color.image}
-            alt={`${cat(destacado.name)} ${color.name}`}
-            bgColor={color.imageBg}
-            pad={!color.imageBg}
-            ratio="16 / 10"
-            // Lo único de la portada por encima del pliegue.
-            priority
-          />
-        </Link>
-        <div className="p-5 pt-4">
-          <ButtonLink to={destino} size="lg" className="w-full justify-center">
-            {t('common.buy')}
-          </ButtonLink>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-/**
- * B. Continúa donde lo dejaste.
- *
- * Sale del historial del dispositivo (`lib/recentlyViewed`). Se lee una vez al
- * montar: el historial sólo cambia al visitar una ficha, y entonces se vuelve a
- * esta portada montándola de nuevo.
- *
- * Los identificadores guardados se resuelven contra el catálogo; si alguno ya
- * no existe —producto retirado, historial viejo— simplemente se cae de la
- * lista. Sin historial, la sección no se pinta.
- */
-function VistosRecientemente() {
-  const { t } = useIdioma()
-  const [modelos, setModelos] = useState<Model[]>([])
-
-  useEffect(() => {
-    const encontrados = leerRecientes()
-      .map((id) => {
-        const [familia, slug] = id.split('/')
-        return getModel(familia, slug)
-      })
-      .filter((m): m is Model => Boolean(m))
-      .slice(0, 6)
-    setModelos(encontrados)
-  }, [])
-
-  if (modelos.length === 0) return null
-
-  return (
-    <Seccion titulo={t('app.home.recent')}>
-      <Carrusel etiqueta={t('app.home.recent')}>
-        {modelos.map((m) => (
-          <li key={`${m.family}/${m.slug}`} className="snap-start">
-            <ProductCardCompact model={m} />
-          </li>
-        ))}
-      </Carrusel>
-    </Seccion>
-  )
-}
-
-/**
  * C. Oportunidades.
  *
  * Sólo productos con `previousPrice` de verdad en el catálogo. Si no hay
@@ -222,117 +167,6 @@ function Oportunidades() {
           </li>
         ))}
       </Carrusel>
-    </Seccion>
-  )
-}
-
-/** D. Compra por categoría. Rejilla de dos columnas, cómoda para el pulgar. */
-function PorCategoria() {
-  const { t } = useIdioma()
-  const cat = useCatalogo()
-
-  return (
-    <Seccion titulo={t('app.home.categories')}>
-      <ul className="grid grid-cols-2 gap-3 px-4">
-        {CATEGORIAS.map((slug) => {
-          const familia = families.find((f) => f.slug === slug)
-          if (!familia) return null
-          const muestra = allModels.find((m) => m.family === slug)
-          return (
-            <li key={slug}>
-              <Link
-                to={`/${slug}`}
-                className="flex h-full min-h-[6.5rem] flex-col justify-between rounded-[14px] border border-line bg-surface p-3 transition-colors hover:border-banana"
-              >
-                <span className="text-sm font-bold text-ink">{cat(familia.name)}</span>
-                {muestra ? (
-                  <img
-                    src={muestra.colors[0].image}
-                    alt=""
-                    aria-hidden="true"
-                    loading="lazy"
-                    className="mx-auto h-14 w-auto object-contain"
-                  />
-                ) : (
-                  <Icon name="chevron-right" className="ml-auto text-muted" />
-                )}
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </Seccion>
-  )
-}
-
-/**
- * E. Productos destacados.
- *
- * Una muestra corta, no otro catálogo entero: el objetivo es que se entre a una
- * ficha, no que se navegue aquí. Los que ya salen en oportunidades se descartan
- * para no repetir tarjetas dos secciones más abajo.
- */
-function Destacados() {
-  const { t } = useIdioma()
-  const seleccion = useMemo(() => allModels.filter((m) => !tieneOferta(m)).slice(0, 6), [])
-
-  if (seleccion.length === 0) return null
-
-  return (
-    <Seccion titulo={t('app.home.featured')} enlace="/iphone" etiquetaEnlace={t('app.home.seeAll')}>
-      <Carrusel etiqueta={t('app.home.featured')}>
-        {seleccion.map((m) => (
-          <li key={`${m.family}/${m.slug}`} className="snap-start">
-            <ProductCardCompact model={m} />
-          </li>
-        ))}
-      </Carrusel>
-    </Seccion>
-  )
-}
-
-/**
- * F. Tu tienda.
- *
- * La ventaja de Banana frente a una tienda sólo online son las tiendas
- * físicas. Aquí se enseña la favorita si la hay, y si no se ofrece elegirla.
- *
- * NO se promete recogida ni disponibilidad: el catálogo tiene existencias por
- * variante, no por tienda, así que un «recógelo hoy» sería inventado. Se enlaza
- * a la ficha de la tienda, que sí tiene datos reales de horario y dirección.
- */
-function TuTienda() {
-  const { t } = useIdioma()
-  const { favoriteStore } = useStorePreference()
-
-  return (
-    <Seccion titulo={t('app.home.yourStore')}>
-      <div className="px-4">
-        {favoriteStore ? (
-          <div className="rounded-[14px] border border-line bg-surface p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t('app.home.yourStore')}</p>
-            <p className="mt-1 text-base font-bold text-ink">Banana {favoriteStore.name}</p>
-            <p className="mt-1 text-sm text-muted">{favoriteStore.address}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <ButtonLink to={`/tiendas/${favoriteStore.slug}`} size="sm" variant="secondary">
-                {t('app.home.viewStore')}
-              </ButtonLink>
-              <ButtonLink to="/tiendas" size="sm" variant="tertiary">
-                {t('app.home.changeStore')}
-              </ButtonLink>
-            </div>
-          </div>
-        ) : (
-          <Link
-            to="/tiendas"
-            className="flex items-center gap-3 rounded-[14px] border border-dashed border-line bg-surface p-4"
-          >
-            <Icon name="map-pin" className="shrink-0 text-muted" />
-            <span className="text-sm font-semibold text-ink">{t('app.home.pickStore')}</span>
-            <Icon name="chevron-right" className="ml-auto shrink-0 text-muted" />
-          </Link>
-        )}
-      </div>
     </Seccion>
   )
 }
