@@ -35,6 +35,15 @@ import type { DbReservation } from '../../../lib/supabase'
  * la primera visita, Inicio son cuatro bloques con contenido real y ningún
  * esqueleto esperando datos que no van a llegar.
  *
+ * LA ÚNICA COSTURA PARA PRUEBAS
+ *
+ * `listarReservas` es una prop opcional que por defecto ES `listMyReservations`.
+ * No hay ninguna rama de test en el componente: producción llama exactamente a
+ * lo que llamaba. Existe porque el aviso de reserva sólo se puede demostrar con
+ * una reserva `disponible`, y eso vive en Supabase, que en las pruebas no está.
+ * La alternativa —interceptar la red— probaría una API imaginaria en vez de
+ * esta pantalla.
+ *
  * LO QUE SE FUE, Y POR QUÉ
  *
  * Las tarjetas de «Mis compras» y «Mis pedidos» y el botón final de «Tienda»:
@@ -42,11 +51,11 @@ import type { DbReservation } from '../../../lib/supabase'
  * pantalla. Repetirlos aquí ocupaba media Inicio para no llevar a ningún sitio
  * nuevo. Las rutas siguen intactas; lo que se quita es la duplicación.
  */
-export function AppCustomerHome() {
+export function AppCustomerHome({ listarReservas = listMyReservations }: { listarReservas?: ListarReservas } = {}) {
   return (
     <div className="pb-10">
       <Saludo />
-      <Avisos />
+      <Avisos listarReservas={listarReservas} />
       <EncuentraTuApple />
       <Continua />
       <Oportunidades />
@@ -170,7 +179,9 @@ function Saludo() {
  * Sin sesión no se consulta nada. Con cero avisos no se pinta nada: ni marco,
  * ni hueco reservado.
  */
-function Avisos() {
+type ListarReservas = typeof listMyReservations
+
+function Avisos({ listarReservas }: { listarReservas: ListarReservas }) {
   const { session, cliente } = useCustomerAuth()
   const [listas, setListas] = useState<DbReservation[]>([])
 
@@ -181,7 +192,7 @@ function Avisos() {
       return
     }
     let vigente = true
-    void listMyReservations(clienteId).then(({ items }) => {
+    void listarReservas(clienteId).then(({ items }) => {
       if (!vigente) return
       setListas(
         items
@@ -193,7 +204,7 @@ function Avisos() {
     return () => {
       vigente = false
     }
-  }, [session, cliente?.id])
+  }, [session, cliente?.id, listarReservas])
 
   if (listas.length === 0) return null
 

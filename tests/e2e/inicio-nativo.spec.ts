@@ -66,7 +66,13 @@ test.describe('Inicio nativo', () => {
     const primera = seccion.getByRole('listitem').first()
     await expect(primera).toContainText('iPhone 17 Pro')
 
-    await primera.getByRole('link').first().click()
+    // Un solo enlace por tarjeta: con `.first()` un segundo enlace pasaría
+    // desapercibido y la prueba seguiría verde comprobando otra cosa. El
+    // `.first()` de arriba SÍ se queda: ahí significa «la primera tarjeta del
+    // historial», que es justo lo que se quiere fijar.
+    const enlace = primera.getByRole('link')
+    await expect(enlace, 'cada tarjeta tiene exactamente un enlace de producto').toHaveCount(1)
+    await enlace.click()
     await expect(page, 'la tarjeta tiene que abrir el modelo que se vio').toHaveURL(
       /\/pagina-banana\/iphone\/17-pro(\/|$)/,
     )
@@ -95,7 +101,9 @@ test.describe('Inicio nativo', () => {
     // precio anterior de otra configuración: el descuento deja de cuadrar.
     for (let i = 0; i < cuantas; i++) {
       const tarjeta = tarjetas.nth(i)
-      const destino = await tarjeta.getByRole('link').first().getAttribute('href')
+      const enlace = tarjeta.getByRole('link')
+      await expect(enlace, 'cada tarjeta tiene exactamente un enlace de producto').toHaveCount(1)
+      const destino = await enlace.getAttribute('href')
       expect(destino, 'cada tarjeta tiene que enlazar a una variante concreta').toBeTruthy()
 
       // El importe entero con su símbolo, no dígitos sueltos: «iPhone 17 Pro»

@@ -45,3 +45,44 @@ test('con sesión, Inicio no repite los destinos de la barra inferior', async ({
   // Y lo que sí tiene que seguir habiendo: la ayuda, que no está en la barra.
   await expect(page.getByRole('link', { name: /Soporte/ })).toBeVisible()
 })
+
+// ---------------------------------------------------------------------------
+// El aviso de reserva disponible.
+//
+// Es la única señal con estado real en el servidor que Inicio interrumpe para
+// enseñar, y no se puede demostrar sin una reserva: en la suite E2E no hay
+// Supabase. El fixture inyecta la carga de reservas por la prop
+// `listarReservas`, que en producción vale `listMyReservations`.
+// ---------------------------------------------------------------------------
+
+const CON_RESERVAS = `${FIXTURE}?reservas=1`
+
+test('una reserva disponible se avisa en Inicio, y una en espera no', async ({ page }) => {
+  await page.goto(CON_RESERVAS)
+
+  const avisos = page.locator('[aria-label="Avisos"]')
+  await expect(avisos).toBeVisible()
+  await expect(avisos.getByText('Tu reserva está lista')).toBeVisible()
+
+  // Los datos son los de ESA reserva, no un texto genérico.
+  await expect(avisos).toContainText('iPhone 17 Pro')
+  await expect(avisos).toContainText('256 GB · Titanio natural')
+
+  // Y la que está en espera no se convierte en aviso: si el filtro se aflojara,
+  // aquí aparecerían dos.
+  await expect(avisos.getByRole('listitem')).toHaveCount(1)
+  await expect(avisos).not.toContainText('MacBook Air M5')
+})
+
+test('el aviso abre el apartado de reservas de la cuenta', async ({ page }) => {
+  await page.goto(CON_RESERVAS)
+
+  await page.locator('[aria-label="Avisos"]').getByRole('link').first().click()
+
+  // El fixture usa MemoryRouter, así que la URL del navegador no cambia: lo que
+  // demuestra el destino es lo que se pinta.
+  await expect(page.getByRole('heading', { name: 'Mi cuenta' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Mis reservas' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Mis reservas' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('heading', { name: 'Datos personales' })).toHaveCount(0)
+})
