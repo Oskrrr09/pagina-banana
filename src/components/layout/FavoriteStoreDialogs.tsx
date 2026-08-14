@@ -131,7 +131,15 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
   return (
     <div
       data-favorite-store-prompt
-      className="fixed bottom-0 left-0 right-0 z-[70] flex justify-center px-4 pb-5 sm:pb-8"
+      // `pointer-events-none` porque esta capa ocupa todo el ancho de la
+      // ventana y sólo se ve el panel del centro: sin esto, la banda
+      // transparente de los lados se tragaba los clicks de la página que hay
+      // debajo. Medido a 1280×720 en el asistente: el botón «Continuar», a
+      // 199 px del panel, quedaba cubierto al 100 % y `elementFromPoint`
+      // devolvía esta capa. El aviso nació como bottom sheet **no bloqueante**
+      // y así vuelve a serlo; el panel recupera el puntero con
+      // `pointer-events-auto`, que ya estaba puesto.
+      className="pointer-events-none fixed bottom-0 left-0 right-0 z-[70] flex justify-center px-4 pb-5 sm:pb-8"
       // En la app hay una barra de navegación pegada abajo: sin esto el
       // aviso la taparía por completo.
       style={isNativeApp ? { paddingBottom: `calc(1.25rem + ${ALTURA_TAB_BAR})` } : undefined}
