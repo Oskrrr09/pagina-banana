@@ -267,13 +267,25 @@ test.describe('Inicio y Tienda son dos cosas distintas', () => {
     await page.goto('./')
 
     await expect(page.getByRole('heading', { level: 1, name: /Hola/ })).toBeVisible()
-    // Dentro del contenido, no en la barra: en la barra ya lo comprueba el
-    // bloque de arriba, y aquí lo que importa es que Inicio ofrezca el acceso.
+
     const contenido = page.locator('#contenido')
-    await expect(contenido.getByRole('link', { name: /Mis compras/ })).toBeVisible()
     await expect(contenido.getByRole('link', { name: /Soporte/ })).toBeVisible()
-    // El hero comercial se mudó entero a /tienda.
+
+    // QUÉ CAMBIÓ AQUÍ, Y POR QUÉ
+    //
+    // Antes esta prueba exigía además un enlace a «Mis compras» dentro del
+    // contenido. Ese acceso **se retiró a propósito**: es una pestaña de la
+    // barra inferior, y repetirlo en Inicio ocupaba media pantalla para no
+    // llevar a ningún sitio nuevo. Que siga estando en la barra lo comprueba el
+    // bloque de arriba de este mismo fichero, y que Inicio ya no lo duplique lo
+    // vigila `inicio-nativo.spec.ts`.
+    //
+    // Lo que distingue a Inicio de Tienda no es que no enseñe producto —ahora
+    // enseña lo que estabas viendo y las rebajas reales— sino que **no es la
+    // portada comercial**: empieza por la persona y no tiene ni hero ni el
+    // escaparate por categorías.
     await expect(page.locator('#app-hero-titulo')).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Compra por categoría' })).toHaveCount(0)
   })
 
   test('Tienda conserva la portada comercial de la PR #39', async ({ page }) => {
