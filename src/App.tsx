@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { isNativeApp } from './lib/nativeApp'
 import { Layout } from './components/layout/Layout'
 import { CheckoutLayout } from './components/layout/CheckoutLayout'
 import { ChatBubble } from './components/layout/ChatBubble'
@@ -44,8 +45,28 @@ export function App() {
   // Va en `App` y no en `Layout` porque el checkout monta `CheckoutLayout`, y
   // el marcador tiene que retirarse igual. `useEffect` y no `useLayoutEffect`:
   // se quita después de que el primer árbol haya tenido ocasión de pintarse.
+  // Y con él se retira la pantalla de arranque nativa, que se configura sin
+  // ocultado automático (`launchAutoHide: false`). Van juntas a propósito: la
+  // nativa cubre desde que se abre la app hasta que el documento pinta, y el
+  // marcador cubre desde ahí hasta que React monta. Retirarlas en el mismo
+  // punto es lo que hace que el logotipo no parpadee entre una y otra.
+  //
+  // Se espera a un fotograma: `useEffect` corre tras el commit, pero el
+  // navegador todavía no ha pintado. Sin esto, la pantalla se va un instante
+  // antes de que haya Home debajo.
+  // El plugin se carga en diferido y SÓLO dentro del binario. Importarlo
+  // arriba mete `@capacitor/core` en el bundle de la web, y ese módulo define
+  // `window.Capacitor` en el navegador: con eso, `registerServiceWorker` se
+  // rinde —cree estar en la app— y la web se queda sin service worker.
+  // Medido: tres pruebas de `pwa.spec.ts` en rojo. `isNativeApp` mira esa
+  // misma variable, así que el estropicio no acababa ahí.
   useEffect(() => {
-    document.documentElement.removeAttribute('data-native-boot')
+    const frame = requestAnimationFrame(() => {
+      document.documentElement.removeAttribute('data-native-boot')
+      if (!isNativeApp) return
+      void import('@capacitor/splash-screen').then(({ SplashScreen }) => SplashScreen.hide())
+    })
+    return () => cancelAnimationFrame(frame)
   }, [])
 
   return (
