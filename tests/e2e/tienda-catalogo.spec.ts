@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 
 // ============================================================================
 // Tienda y el catálogo de familia.
@@ -105,8 +105,12 @@ test.describe('catálogo de familia', () => {
 
     // Entrar en una ficha y volver: el orden sigue puesto.
     // El enlace de la primera tarjeta, no «un enlace que diga iPhone»: en la
-    // página hay chips y botones que también lo dicen.
-    await page.locator('[data-product-card]').first().getByRole('link').first().click()
+    // página hay chips y botones que también lo dicen. Y la tarjeta tiene UN
+    // solo enlace de producto —foto y nombre van dentro del mismo—, así que se
+    // exige esa cardinalidad en vez de coger el primero de varios.
+    const enlaceProducto = page.locator('[data-product-card]').first().getByRole('link')
+    await expect(enlaceProducto, 'la tarjeta tiene un único enlace a su ficha').toHaveCount(1)
+    await enlaceProducto.click()
     await expect(page).toHaveURL(/\/iphone\/[^/]+\//)
     await page.goBack()
     await expect(page).toHaveURL(/orden=precio-asc/)
@@ -137,34 +141,98 @@ test.describe('catálogo de familia', () => {
 test.describe('comparador desde el catálogo', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
-  test('se añade desde la tarjeta y se llega al comparador', async ({ page }) => {
+  const botonComparar = (tarjeta: Locator) => tarjeta.getByRole('button', { name: /^Comparar / })
+  const llamada = (page: Page) => page.getByRole('link', { name: /Ver el comparador/ })
+
+  test('se añade desde la tarjeta y la llamada al comparador es UNA', async ({ page }) => {
     await comoApp(page)
     await page.goto('./iphone')
 
-    const primera = page
-      .locator('[data-product-card]')
-      .first()
-      .getByRole('button', { name: /^Comparar / })
+    const primera = botonComparar(page.locator('[data-product-card]').first())
     await expect(primera).toBeVisible()
     await expect(primera).toHaveAttribute('aria-pressed', 'false')
+    await expect(llamada(page), 'sin nada comparado no hay llamada').toHaveCount(0)
 
     await primera.click()
     await expect(primera, 'el botón refleja que ese modelo está en el comparador').toHaveAttribute(
       'aria-pressed',
       'true',
     )
+    await expect(llamada(page), 'con uno comparado, una sola llamada').toHaveCount(1)
 
-    // Con dos, aparece la llamada para abrirlo.
-    await page
-      .locator('[data-product-card]')
-      .nth(1)
-      .getByRole('button', { name: /^Comparar / })
-      .click()
-    const abrir = page.getByRole('link', { name: /Ver el comparador/ }).first()
-    await expect(abrir).toBeVisible()
-    await abrir.click()
+    // CARDINALIDAD DE LA LLAMADA
+    //
+    // Vivía dentro de `ProductCard`, así que con dos modelos comparados salían
+    // dos enlaces idénticos y el test los tapaba con `.first()`. Es una sola
+    // acción sobre una sola comparación: se exige que sea uno, con dos y con
+    // tres. Nada de `.first()` aquí.
+    await botonComparar(page.locator('[data-product-card]').nth(1)).click()
+    await expect(llamada(page), 'con dos comparados sigue siendo una').toHaveCount(1)
+    await expect(llamada(page)).toContainText('2')
+
+    await botonComparar(page.locator('[data-product-card]').nth(2)).click()
+    await expect(llamada(page), 'con tres comparados sigue siendo una').toHaveCount(1)
+    await expect(llamada(page)).toContainText('3')
+
+    await llamada(page).click()
     await expect(page).toHaveURL(/\/comparar\?familia=iphone/)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  })
+
+  test('la llamada desaparece al quedarse en cero y no aparece en otra familia', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./iphone')
+
+    const primera = botonComparar(page.locator('[data-product-card]').first())
+    await primera.click()
+    await expect(llamada(page)).toHaveCount(1)
+
+    // La comparación es de iPhone: en Mac no puede aparecer un resumen que
+    // hable de modelos que no están en pantalla.
+    await page.goto('./mac')
+    await expect(llamada(page), 'la comparación guardada es de otra familia').toHaveCount(0)
+
+    await page.goto('./iphone')
+    await expect(llamada(page)).toHaveCount(1)
+    await botonComparar(page.locator('[data-product-card]').first()).click()
+    await expect(llamada(page), 'al quedarse en cero, desaparece').toHaveCount(0)
+  })
+
+  test('un comparador lleno de OTRA familia no bloquea el catálogo', async ({ page }) => {
+    // EL BUG QUE ESTO VIGILA
+    //
+    // `toggleCompare` ya sabía qué hacer con una familia distinta: empezar una
+    // comparación nueva. Pero la tarjeta deshabilitaba su botón con sólo mirar
+    // `compare.length >= 3`, así que con tres iPhone guardados TODOS los
+    // botones de /mac salían muertos y esa sustitución era inalcanzable.
+    //
+    // Se siembra por la interfaz, no escribiendo `localStorage` a mano: lo que
+    // se comprueba es el store de verdad, con los items que él mismo genera.
+    await comoApp(page)
+    await page.goto('./iphone')
+    for (const i of [0, 1, 2]) {
+      await botonComparar(page.locator('[data-product-card]').nth(i)).click()
+    }
+    const iphones = await page.evaluate(() => JSON.parse(localStorage.getItem('banana:compare') ?? '[]'))
+    expect(iphones, 'el comparador queda lleno con tres iPhone').toHaveLength(3)
+    expect(new Set(iphones.map((c: { family: string }) => c.family))).toEqual(new Set(['iphone']))
+
+    await page.goto('./mac')
+    const mac = page.locator('[data-product-card]').first()
+    const boton = botonComparar(mac)
+    await expect(boton, 'un comparador lleno de iPhone no deshabilita los Mac').not.toBeDisabled()
+
+    // Qué Mac es, según lo que la tarjeta enseña.
+    const destino = await mac.getByRole('link').getAttribute('href')
+    const slugEsperado = destino!.split('/').filter(Boolean).at(-2)
+
+    await boton.click()
+    await expect(boton).toHaveAttribute('aria-pressed', 'true')
+
+    const guardado = await page.evaluate(() => JSON.parse(localStorage.getItem('banana:compare') ?? '[]'))
+    expect(guardado, 'la comparación anterior se sustituye entera').toHaveLength(1)
+    expect(guardado[0].family).toBe('mac')
+    expect(guardado[0].modelSlug).toBe(slugEsperado)
   })
 
   test('al comparador entra la MISMA variante que enseña la tarjeta', async ({ page }) => {
@@ -172,32 +240,80 @@ test.describe('comparador desde el catálogo', () => {
     // En Mac vive el caso que hace útil esta prueba: hay modelos cuya variante
     // rebajada NO es la de entrada —el MacBook Air M5 arranca en 1319 € y su
     // oferta está en la configuración de 1579 €—. Con iPhone la mutación de
-    // «coge el precio desde del modelo» pasaría desapercibida.
+    // «coge el precio del modelo» pasaría desapercibida.
+    //
+    // CÓMO SE COMPRUEBA QUE ES LA MISMA VARIANTE, Y NO SÓLO EL MISMO PRECIO
+    //
+    // La tarjeta enseña una foto, un precio y un enlace, y los tres tienen que
+    // salir de la misma configuración. El enlace es la declaración de cuál es:
+    // se sigue, y la ficha que abre dice en texto su color, su capacidad y su
+    // precio. Contra esos tres se contrasta lo que el store guardó.
+    //
+    // Así una variante cambiada se detecta aunque algún número coincida por
+    // azar: tendrían que coincidir los tres a la vez.
     await page.goto('./mac')
 
     const conOferta = page.locator('[data-product-card]').filter({ hasText: '%' })
     const cuantas = await conOferta.count()
     expect(cuantas, 'sin ofertas la prueba no comprueba nada').toBeGreaterThan(0)
 
-    const euros = (s: string) => Number(s.replace(/[^\d,]/g, '').replace(',', '.'))
-
     for (let i = 0; i < cuantas; i++) {
       const tarjeta = conOferta.nth(i)
-      const texto = (await tarjeta.innerText()).replace(/\s+/g, ' ')
-      const precio = (texto.match(/\d+(?:[.,]\d+)*\s?€/g) ?? [])[0]
-      expect(precio, 'la tarjeta con oferta enseña un precio').toBeTruthy()
+      const nombre = (await tarjeta.locator('h3').innerText()).trim()
+      const enlace = tarjeta.getByRole('link')
+      await expect(enlace, 'la tarjeta tiene un único enlace a su ficha').toHaveCount(1)
+      const destino = (await enlace.getAttribute('href'))!
+      const precioEnTarjeta = ((await tarjeta.innerText()).replace(/\s+/g, ' ').match(/\d+(?:[.,]\d+)*\s?€/g) ?? [])[0]
+      expect(precioEnTarjeta, 'la tarjeta con oferta enseña un precio').toBeTruthy()
 
-      await tarjeta.getByRole('button', { name: /^Comparar / }).click()
+      await botonComparar(tarjeta).click()
       const guardado = await page.evaluate(() => JSON.parse(localStorage.getItem('banana:compare') ?? '[]'))
       const anadido = guardado[guardado.length - 1]
 
+      // La ficha a la que apunta la tarjeta: la variante que declara enseñar.
+      await page.goto(destino)
+      const enLaFicha = (await page.getByRole('main').innerText()).replace(/\s+/g, ' ')
+
+      expect(
+        enLaFicha,
+        `${nombre}: el comparador guardó el color «${anadido.color}», que no es el de la variante enlazada`,
+      ).toContain(`Color: ${anadido.color}`)
+      // La ficha reparte la configuración en dos rótulos —«Tamaño» y
+      // «Capacidad»— y el store la guarda entera en un campo. Se comprueban las
+      // dos mitades contra lo que la ficha dice, no contra una constante:
+      // así un MacBook de 15" o de 512 GB en el comparador se vería.
+      const rotulo = async (prefijo: string) => {
+        const p = page.getByText(new RegExp(`^${prefijo}: `))
+        if ((await p.count()) === 0) return null
+        return (await p.innerText()).slice(prefijo.length + 2).trim()
+      }
+      const capacidadFicha = await rotulo('Capacidad')
+      const tamanoFicha = await rotulo('Tamaño')
+      expect(capacidadFicha, 'la ficha declara su capacidad').toBeTruthy()
+      expect(
+        anadido.capacity.endsWith(capacidadFicha!),
+        `${nombre}: el comparador guardó «${anadido.capacity}» y la variante enlazada es «${capacidadFicha}»`,
+      ).toBe(true)
+      if (tamanoFicha) {
+        expect(
+          anadido.capacity.startsWith(tamanoFicha),
+          `${nombre}: el comparador guardó «${anadido.capacity}» y la variante enlazada mide «${tamanoFicha}»`,
+        ).toBe(true)
+      }
+      expect(
+        enLaFicha,
+        `${nombre}: el comparador guardó ${anadido.price}, y la tarjeta enseñaba ${precioEnTarjeta}`,
+      ).toContain(precioEnTarjeta!)
+
+      const euros = (t: string) => Number(t.replace(/[^\d,]/g, '').replace(',', '.'))
       expect(
         anadido.price,
-        `el comparador recibió ${anadido.price} y la tarjeta enseñaba ${precio}: no es la misma variante`,
-      ).toBe(euros(precio!))
+        `${nombre}: el comparador recibió ${anadido.price} y la tarjeta enseñaba ${precioEnTarjeta}`,
+      ).toBe(euros(precioEnTarjeta!))
 
       // Se retira para no toparse con el máximo de tres.
-      await tarjeta.getByRole('button', { name: /^Comparar / }).click()
+      await page.goto('./mac')
+      await botonComparar(conOferta.nth(i)).click()
     }
   })
 
@@ -205,10 +321,7 @@ test.describe('comparador desde el catálogo', () => {
     await comoApp(page)
     await page.goto('./iphone')
 
-    const boton = page
-      .locator('[data-product-card]')
-      .first()
-      .getByRole('button', { name: /^Comparar / })
+    const boton = botonComparar(page.locator('[data-product-card]').first())
     await boton.click()
     await expect(boton).toHaveAttribute('aria-pressed', 'true')
     await boton.click()

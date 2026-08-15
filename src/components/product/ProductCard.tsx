@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { Model } from '../../data/types'
 import { euro } from '../../lib/format'
-import { useStore } from '../../lib/store'
+import { MAX_COMPARE, useStore } from '../../lib/store'
 import { ProductImage } from './ProductImage'
 import { ProvisionalBadge, OfferBadge } from '../ui/Tag'
 import { Icon } from '../ui/Icon'
@@ -38,10 +38,17 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
   //
   // El identificador es el mismo que usa la ficha —familia/modelo/color/
   // capacidad—, así que añadir aquí y abrir la ficha después no duplica.
+  //
+  // EL «LLENO» ES POR FAMILIA, NO POR LONGITUD
+  //
+  // El comparador guarda una familia a la vez: al añadir uno de otra familia,
+  // `toggleCompare` empieza una comparación nueva con él. Bloquear el botón
+  // mirando sólo `compare.length >= 3` dejaba inservible el catálogo entero:
+  // con tres iPhone guardados, TODOS los botones de /mac salían deshabilitados
+  // y no había forma de llegar a esa sustitución que el store ya sabe hacer.
   const compareId = `${model.family}/${model.slug}/${color.color}/${capacity.capacity}`
   const comparando = isComparing(compareId)
-  const comparadorLleno = compare.length >= 3 && !comparando
-  const enComparacion = compare.filter((c) => c.family === model.family).length
+  const comparadorLleno = compare.length >= MAX_COMPARE && compare[0].family === model.family && !comparando
 
   if (loading) {
     return (
@@ -140,14 +147,10 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
         {comparando ? t('compare.added') : t('product.addToCompare')}
       </button>
       {comparadorLleno && <p className="mt-1 text-xs text-muted">{t('compare.full')}</p>}
-      {comparando && enComparacion > 1 && (
-        <Link
-          to={`/comparar?familia=${model.family}`}
-          className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-ink underline underline-offset-2"
-        >
-          {t('compare.see', { n: String(enComparacion) })}
-        </Link>
-      )}
+      {/* La llamada a abrir el comparador NO vive aquí: es del listado.
+          Pintándola dentro de cada tarjeta seleccionada aparecían dos enlaces
+          idénticos con dos modelos comparados, y tres con tres. El catálogo la
+          pinta una sola vez —ver `CatalogoFiltrable` en FamilyPage—. */}
     </div>
   )
 }

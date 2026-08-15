@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useIdioma } from '../lib/i18n'
+import { useStore } from '../lib/store'
 import { Container } from '../components/ui/Container'
 import { ProductCard } from '../components/product/ProductCard'
 import { Button, ButtonLink } from '../components/ui/Button'
@@ -150,6 +151,19 @@ function CatalogoFiltrable({ models }: { models: Model[] }) {
   const filtros = useMemo(() => leerFiltrosDeUrl(params), [params])
   const visibles = useMemo(() => aplicarFiltros(models, filtros), [models, filtros])
 
+  // LA LLAMADA AL COMPARADOR ES DEL LISTADO, NO DE CADA TARJETA
+  //
+  // Estaba dentro de `ProductCard`, así que con dos modelos comparados se
+  // pintaban dos enlaces idénticos y con tres, tres. Es una sola acción sobre
+  // una sola comparación: se pinta una vez, aquí.
+  //
+  // Se cuenta sólo lo de ESTA familia. El comparador guarda una familia a la
+  // vez, y enseñar «3 modelos» en /mac porque hay tres iPhone guardados sería
+  // un resumen falso de lo que hay en pantalla.
+  const { compare } = useStore()
+  const familia = models[0]?.family
+  const enComparacion = compare.filter((c) => c.family === familia).length
+
   const cambiar = (siguiente: FiltrosCatalogo) => {
     setParams(escribirFiltrosEnUrl(siguiente), { replace: true })
   }
@@ -157,6 +171,17 @@ function CatalogoFiltrable({ models }: { models: Model[] }) {
   return (
     <>
       <CatalogFilters filtros={filtros} onCambiar={cambiar} totalVisible={visibles.length} totalSin={models.length} />
+      {enComparacion > 0 && (
+        <div className="mb-5 flex justify-center">
+          <Link
+            to={`/comparar?familia=${familia}`}
+            className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-ink bg-surface px-4 text-sm font-semibold text-ink"
+          >
+            <Icon name="compare" size={16} aria-hidden="true" />
+            {t('compare.see', { n: String(enComparacion) })}
+          </Link>
+        </div>
+      )}
       {visibles.length > 0 ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {visibles.map((m) => (

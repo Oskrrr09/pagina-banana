@@ -95,7 +95,7 @@ interface StoreState {
 
 const StoreContext = createContext<StoreState | null>(null)
 
-const MAX_COMPARE = 3
+export const MAX_COMPARE = 3
 export const INSURANCE_PRICE = 8.99
 
 function usePersistent<T>(key: string, initial: T): [T, React.Dispatch<React.SetStateAction<T>>] {
