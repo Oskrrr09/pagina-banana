@@ -1,18 +1,22 @@
 import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { useCatalogo, useIdioma } from '../lib/i18n'
+import { useIdioma } from '../lib/i18n'
+import { useStore } from '../lib/store'
 import { Container } from '../components/ui/Container'
 import { ProductCard } from '../components/product/ProductCard'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
-import { ProductImage } from '../components/product/ProductImage'
-import { OfferBadge, ProvisionalBadge } from '../components/ui/Tag'
-import { getFamilyModels, familyInfo, variantPath } from '../data/products'
+import { getFamilyModels, familyInfo } from '../data/products'
 import type { Family, Model } from '../data/types'
-import { euro } from '../lib/format'
 import { NotFound } from './NotFound'
 import { CatalogFilters } from '../components/product/CatalogFilters'
-import { aplicarFiltros, escribirFiltrosEnUrl, leerFiltrosDeUrl, type FiltrosCatalogo } from '../lib/catalogFilters'
+import {
+  aplicarFiltros,
+  escribirFiltrosEnUrl,
+  FILTROS_VACIOS,
+  leerFiltrosDeUrl,
+  type FiltrosCatalogo,
+} from '../lib/catalogFilters'
 
 // Página de familia genérica (§4.5): encabezado, modelos y acceso al
 // comparador. Sirve para las familias sin escaparate propio —hoy AirPods—.
@@ -91,121 +95,41 @@ export function FamilyPage() {
 }
 
 function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[] }) {
-  const { t, intl } = useIdioma()
-  const cat = useCatalogo()
-  const offerModels = models.filter((model) =>
-    model.colors.some((color) => color.capacities.some((capacity) => capacity.previousPrice != null)),
-  )
+  const { t } = useIdioma()
 
+  // POR QUÉ ESTA PÁGINA ES AHORA TAN CORTA POR ARRIBA
+  //
+  // Antes había, en este orden: encabezado, un carrusel con TODOS los modelos,
+  // un escaparate a pantalla completa de «Ofertas destacadas» con su degradado,
+  // el botón de comparar y, sólo entonces, el catálogo con sus filtros. Medido
+  // a 390×844: 5,2 pantallas, y los filtros aparecían pasadas dos.
+  //
+  // Se recorría el mismo catálogo dos veces con dos lenguajes distintos, y las
+  // ofertas ya salen en las tarjetas de la rejilla —`ProductCard` pinta precio,
+  // precio anterior y porcentaje—, así que el escaparate no añadía dato alguno.
+  //
+  // Queda encabezado, acceso a comparar y catálogo. Nada se pierde: los mismos
+  // modelos y las mismas ofertas están abajo, filtrables y ordenables.
   return (
     <>
       <section className="border-b border-line bg-neutral">
-        <Container className="py-8 md:py-12">
+        <Container className="py-8 md:py-10">
           <div className="text-center">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">Catálogo Banana</p>
-            <h1 className="mt-2 text-4xl font-extrabold text-ink sm:text-5xl">
+            <h1 className="mt-2 text-3xl font-extrabold text-ink sm:text-4xl">
               {t('catalog.buyA', { familia: family.name })}
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-muted">{t('catalog.chooseModel')}</p>
           </div>
-
-          <nav aria-label={`Modelos de ${family.name}`} className="mt-8 overflow-x-auto no-scrollbar pb-2">
-            <ul className="flex w-max min-w-full gap-3 justify-start lg:justify-center">
-              {models.map((model) => (
-                <li key={model.slug} className="w-32 shrink-0">
-                  <Link
-                    to={variantPath(model)}
-                    className="group flex flex-col items-center rounded-[16px] border border-transparent px-3 py-3 text-center transition-[background-color,border-color,transform] hover:-translate-y-1 hover:border-line hover:bg-surface"
-                  >
-                    <span className="grid aspect-square w-full place-items-center overflow-hidden rounded-[12px] bg-surface p-2">
-                      <img
-                        src={model.colors[0].image}
-                        alt=""
-                        width={128}
-                        height={128}
-                        loading="lazy"
-                        decoding="async"
-                        className="block h-full w-full object-contain object-center transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </span>
-                    <span className="mt-2 text-sm font-semibold leading-tight text-ink">{cat(model.name)}</span>
-                    <span className="mt-1 text-xs text-muted">
-                      {t('common.from', { precio: euro(model.fromPrice, intl) })}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </Container>
-      </section>
-
-      <section className="bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] py-12 md:py-16">
-        <Container>
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-danger">Oportunidades</p>
-            <h2 className="mt-2 text-3xl font-extrabold text-ink sm:text-5xl">
-              {t('catalog.featuredIn', { familia: family.name })}
-            </h2>
-            <p className="mt-3 text-muted">{t('family.demoPrices')}</p>
-          </div>
-
-          <div className="mx-auto mt-10 grid max-w-5xl gap-5 sm:grid-cols-2">
-            {(offerModels.length > 0 ? offerModels : models.slice(0, 4)).map((model) => {
-              const firstColor = model.colors[0]
-              const offer =
-                firstColor.capacities.find((capacity) => capacity.previousPrice != null) ?? firstColor.capacities[0]
-
-              return (
-                <Link
-                  key={model.slug}
-                  to={variantPath(model, firstColor, offer)}
-                  className="group relative overflow-hidden rounded-[20px] border border-line bg-surface/55 p-6 shadow-[var(--shadow-rest)] backdrop-blur-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <OfferBadge>{t('common.offer')}</OfferBadge>
-                      <h3 className="mt-3 text-2xl font-extrabold text-ink">{cat(model.name)}</h3>
-                      <p className="mt-1 text-sm text-muted">{cat(model.tagline)}</p>
-                    </div>
-                    <Icon
-                      name="arrow-right"
-                      className="shrink-0 text-ink transition-transform group-hover:translate-x-1"
-                    />
-                  </div>
-                  <div className="mt-5 grid items-end gap-4 sm:grid-cols-[1fr_1.2fr]">
-                    <div>
-                      {offer.previousPrice && (
-                        <p className="text-sm text-muted line-through">{euro(offer.previousPrice)}</p>
-                      )}
-                      <p className="text-3xl font-extrabold text-danger">{euro(offer.price)}</p>
-                      <div className="mt-2">
-                        <ProvisionalBadge />
-                      </div>
-                    </div>
-                    <ProductImage
-                      src={firstColor.image}
-                      alt={`${cat(model.name)} ${firstColor.name}`}
-                      ratio="1 / 1"
-                      bgColor={firstColor.imageBg}
-                      pad={!firstColor.imageBg}
-                    />
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-
-          <div className="mt-10 flex justify-center">
-            <ButtonLink to={`/comparar?familia=${family.slug}`} variant="secondary" size="lg">
+          <div className="mt-6 flex justify-center">
+            <ButtonLink to={`/comparar?familia=${family.slug}`} variant="secondary">
               <Icon name="compare" size={18} /> Comparar modelos de {family.name}
             </ButtonLink>
           </div>
         </Container>
       </section>
 
-      <Container className="py-10">
-        <h2 className="mb-6 text-2xl font-extrabold text-ink">Catálogo completo {family.name}</h2>
+      <Container className="py-8">
         <CatalogoFiltrable models={models} />
       </Container>
     </>
@@ -227,6 +151,19 @@ function CatalogoFiltrable({ models }: { models: Model[] }) {
   const filtros = useMemo(() => leerFiltrosDeUrl(params), [params])
   const visibles = useMemo(() => aplicarFiltros(models, filtros), [models, filtros])
 
+  // LA LLAMADA AL COMPARADOR ES DEL LISTADO, NO DE CADA TARJETA
+  //
+  // Estaba dentro de `ProductCard`, así que con dos modelos comparados se
+  // pintaban dos enlaces idénticos y con tres, tres. Es una sola acción sobre
+  // una sola comparación: se pinta una vez, aquí.
+  //
+  // Se cuenta sólo lo de ESTA familia. El comparador guarda una familia a la
+  // vez, y enseñar «3 modelos» en /mac porque hay tres iPhone guardados sería
+  // un resumen falso de lo que hay en pantalla.
+  const { compare } = useStore()
+  const familia = models[0]?.family
+  const enComparacion = compare.filter((c) => c.family === familia).length
+
   const cambiar = (siguiente: FiltrosCatalogo) => {
     setParams(escribirFiltrosEnUrl(siguiente), { replace: true })
   }
@@ -234,6 +171,17 @@ function CatalogoFiltrable({ models }: { models: Model[] }) {
   return (
     <>
       <CatalogFilters filtros={filtros} onCambiar={cambiar} totalVisible={visibles.length} totalSin={models.length} />
+      {enComparacion > 0 && (
+        <div className="mb-5 flex justify-center">
+          <Link
+            to={`/comparar?familia=${familia}`}
+            className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-ink bg-surface px-4 text-sm font-semibold text-ink"
+          >
+            <Icon name="compare" size={16} aria-hidden="true" />
+            {t('compare.see', { n: String(enComparacion) })}
+          </Link>
+        </div>
+      )}
       {visibles.length > 0 ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {visibles.map((m) => (
@@ -241,7 +189,24 @@ function CatalogoFiltrable({ models }: { models: Model[] }) {
           ))}
         </div>
       ) : (
-        <p className="py-10 text-center text-muted">{t('catalog.noResults')}</p>
+        // ESTADO SIN RESULTADOS
+        //
+        // Antes sólo decía que no había coincidencias y dejaba a la persona
+        // ahí parada. Ahora ofrece las dos salidas que existen de verdad:
+        // deshacer los filtros —sin tocarlos por su cuenta— y el asistente, que
+        // es literalmente para cuando no se sabe qué elegir. No se enseña
+        // ningún producto que no cumpla el filtro.
+        <div role="region" aria-label={t('catalog.noResults')} className="py-10 text-center">
+          <p className="text-muted">{t('catalog.noResults')}</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
+            <Button variant="secondary" onClick={() => cambiar(FILTROS_VACIOS)}>
+              {t('catalog.clearFilters')}
+            </Button>
+            <ButtonLink to="/elige-tu-apple" variant="secondary">
+              {t('home.finder.title')}
+            </ButtonLink>
+          </div>
+        </div>
       )}
     </>
   )

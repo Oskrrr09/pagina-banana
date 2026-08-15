@@ -288,12 +288,22 @@ test.describe('Inicio y Tienda son dos cosas distintas', () => {
     await expect(page.getByRole('heading', { name: 'Compra por categoría' })).toHaveCount(0)
   })
 
-  test('Tienda conserva la portada comercial de la PR #39', async ({ page }) => {
+  test('Tienda sigue siendo la superficie comercial, y distinta de Inicio', async ({ page }) => {
+    // La #56 retiró de Tienda el hero y la rejilla de categorías que esta
+    // prueba usaba como seña de identidad: el hero porque convertía el nombre de
+    // un producto en el encabezado de la sección, la rejilla porque las
+    // categorías ya están a un toque en los chips de la barra.
+    //
+    // La propiedad que protegía sigue viva y es la del par de arriba: Inicio y
+    // Tienda no son la misma pantalla. Se comprueba con lo que sí distingue hoy
+    // a Tienda —encabezado propio y escaparate de producto— y con lo que Inicio
+    // tiene y Tienda no.
     await comoApp(page)
     await page.goto('./tienda')
 
-    await expect(page.locator('#app-hero-titulo')).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Compra por categoría' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tienda')
+    await expect(page.getByRole('heading', { name: 'Oportunidades' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Hola/ }), 'el saludo es de Inicio').toHaveCount(0)
   })
 
   test('en la web, /tienda no duplica la portada', async ({ page }) => {

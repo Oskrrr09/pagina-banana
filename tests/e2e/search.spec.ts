@@ -51,7 +51,12 @@ test('AirPods: sin IDs duplicados entre secciones', async ({ page }) => {
   await search(page, 'AirPods')
   // Cada tarjeta CompactSearchCard/ProductCard tiene texto único. Verificamos
   // que ningún nombre de item aparece más de una vez.
-  const cards = await page.locator('h3, [class*="text-ink"][class*="font-semibold"]').allTextContents()
+  // Se excluyen botones y enlaces: el selector es por clases y desde la PR #56
+  // las tarjetas del catálogo llevan un botón «Comparar …» que las comparte, así
+  // que sin esto se contaban controles como si fueran nombres de producto.
+  const cards = await page
+    .locator('h3, [class*="text-ink"][class*="font-semibold"]:not(button):not(a)')
+    .allTextContents()
   // Filtramos strings poco informativos.
   const names = cards.filter((s) => s.length > 2 && s.length < 60)
   const dupes = names.filter((n, i) => names.indexOf(n) !== i)
