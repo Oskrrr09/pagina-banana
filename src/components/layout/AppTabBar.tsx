@@ -18,11 +18,13 @@ import { seccionActiva } from '../../lib/appSections'
  * quién soy y mis ajustes. Cada pestaña responde a una pregunta distinta, y
  * ninguna de las cuatro se solapa con otra.
  *
- * Se llama **«Mis compras»** y no «Productos» ni «Dispositivos» a propósito:
- * «Productos» se lee como catálogo —justo lo que hay en la pestaña de al
- * lado— y «Dispositivos» como una categoría de la tienda. Lo que hay dentro no
- * es un catálogo: es lo que ya te pertenece, y el rótulo tiene que decirlo sin
- * que haga falta entrar.
+ * La pestaña se llama **«Compras»**: es el territorio —todo lo que ya compraste,
+ * dispositivos y accesorios— y no promete una lista concreta. La pantalla que
+ * abre se llama «Mis productos» porque sólo enseña dispositivos; el detalle de
+ * cada compra, accesorios incluidos, está en Mis pedidos.
+ *
+ * Antes la pestaña decía «Mis compras» y la pantalla también, y eso era
+ * ambiguo: quien sólo hubiera comprado accesorios veía «Mis compras» vacío.
  *
  * QUÉ SALIÓ, Y ADÓNDE
  *
@@ -102,9 +104,9 @@ function Tab({ to, icon, clave, activa }: { to: string; icon: string; clave: Cla
         >
           <Icon name={icon} size={20} aria-hidden="true" />
         </span>
-        {/* `Mis compras` es la etiqueta más larga y tiene que caber entera a
-            320 px: con cuatro pestañas cada una dispone de 80 px, y a 11 px
-            con el interletrado apretado sobra sitio. Se deja en una línea
+        {/* `Mis compras` era la etiqueta más larga y marcaba el límite; con
+            `Compras` sobra aún más sitio. A 320 px, con cuatro pestañas, cada
+            una dispone de 80 px. Se deja en una línea
             —`whitespace-nowrap`— para que no se parta en dos y descuadre la
             altura de la barra respecto a las demás. */}
         <span

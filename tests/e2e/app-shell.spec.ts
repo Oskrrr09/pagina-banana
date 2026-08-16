@@ -30,7 +30,7 @@ test.describe('interfaz de la app nativa', () => {
     // la PR #41; el carrito subió a la barra de arriba y «Explorar» y
     // «Favoritos» dejaron de ocupar sitio permanente.
     const etiquetas = await barra.locator('li').allInnerTexts()
-    expect(etiquetas.map((t) => t.trim())).toEqual(['Inicio', 'Tienda', 'Mis compras', 'Cuenta'])
+    expect(etiquetas.map((t) => t.trim())).toEqual(['Inicio', 'Tienda', 'Compras', 'Cuenta'])
 
     // El pie de página es un mapa del sitio; dentro de una app sobra.
     await expect(page.getByRole('contentinfo')).toHaveCount(0)
@@ -123,7 +123,7 @@ test.describe('interfaz de la app nativa', () => {
     await page.goto('./')
 
     // Desde la PR #41 el carrito vive ARRIBA, no abajo: salió de la barra
-    // inferior para dejar sitio a «Mis compras». Sigue valiendo lo de no
+    // inferior para dejar sitio a «Compras». Sigue valiendo lo de no
     // repetir un mismo destino dos veces en pantalla, sólo que al revés.
     await expect(page.getByRole('banner').getByRole('link', { name: 'Carrito (2)' })).toBeVisible()
 
@@ -203,7 +203,7 @@ test.describe('interfaz de la app nativa', () => {
 
     // Filtros rápidos por familia, con las categorías reales del catálogo.
     // Van dentro del contenido, no de la cabecera: ver la prueba siguiente.
-    // Y sólo en Tienda: encima de «Mis compras» o de «Cuenta» no aparecen.
+    // Y sólo en Tienda: encima de «Compras» o de «Cuenta» no aparecen.
     const categorias = page.getByRole('navigation', { name: 'Categorías' })
     await expect(categorias.getByRole('link', { name: 'iPhone' })).toBeVisible()
     await expect(categorias.getByRole('link', { name: 'Accesorios' })).toBeVisible()

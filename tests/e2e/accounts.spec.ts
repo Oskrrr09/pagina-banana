@@ -30,11 +30,11 @@ test('/mis-productos existe como ruta propia y no enseña nada sin sesión', asy
   // resuelve en la aplicación de verdad —y no se la come `/:family`— y que el
   // guardia de sesión aguanta.
   //
-  // La ruta se llama `/mis-productos` y la pantalla, «Mis compras»: cambiar la
+  // La ruta se llama `/mis-productos` y la pantalla, «Mis productos»: cambiar la
   // URL sólo para que casara con el rótulo no le habría ahorrado nada a nadie.
   await page.goto('./mis-productos')
 
-  await expect(page.getByRole('heading', { name: 'Mis compras' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Mis productos' })).toBeVisible()
   await expect(page.getByRole('link', { name: /Ver producto/ })).toHaveCount(0)
 
   const redirigido = /\/login/.test(page.url())
