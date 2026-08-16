@@ -206,7 +206,14 @@ test('desde aquí se llega a Mis pedidos, que es donde están los accesorios', a
   await expect(tarjetas(page)).toHaveCount(0)
   await expect(page.getByText('No hay dispositivos en tus compras')).toBeVisible()
 
+  // DOS accesos, y son dos a propósito: uno en la cabecera y otro dentro del
+  // estado vacío, que es donde está mirando quien no tiene dispositivos. Se
+  // exige la cardinalidad ANTES de pulsar: con `.first()` a secas, perder uno
+  // de los dos dejaba el test en verde porque el otro seguía respondiendo.
   const aPedidos = page.getByRole('link', { name: 'Ver mis pedidos' })
+  await expect(aPedidos, 'cabecera y estado vacío ofrecen la salida a Mis pedidos').toHaveCount(2)
+  // Ya protegida la cardinalidad, pulsar uno de dos destinos idénticos es
+  // deliberado y no esconde nada.
   await aPedidos.first().click()
   await expect(page).toHaveURL(/\/cuenta\?apartado=pedidos/)
   // Y el accesorio sí está allí: la compra no se ha perdido, sólo no es un
