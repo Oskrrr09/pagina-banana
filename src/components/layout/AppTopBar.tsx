@@ -6,7 +6,7 @@ import { Logo } from './Logo'
 import { HeaderSearch } from '../search/HeaderSearch'
 import { useStore } from '../../lib/store'
 import { useT } from '../../lib/i18n'
-import { contextoDe, muestraCarrito, muestraChipsDeCategoria, seccionActiva } from '../../lib/appSections'
+import { contextoDe, muestraCarrito, muestraChipsDeCategoria } from '../../lib/appSections'
 
 /**
  * Barra superior de la aplicación nativa.
@@ -38,19 +38,6 @@ export function AppTopBar() {
 
   const comercial = contextoDe(pathname) === 'comercial'
 
-  /**
-   * ¿La barra va en amarillo Banana?
-   *
-   * En Tienda y en Inicio sí; en el área personal —Mis compras, Cuenta— no.
-   *
-   * Color y contexto dejan de ser lo mismo a propósito: **Inicio sigue siendo
-   * `neutro`**, así que no le entran los chips de categoría ni el buscador
-   * grande. Lo único que comparte con Tienda es la superficie de marca. Se
-   * decide con las funciones que ya clasifican las rutas, para no abrir una
-   * segunda lista que se desincronice.
-   */
-  const barraAmarilla = comercial || seccionActiva(pathname) === 'inicio'
-
   return (
     <>
       <header
@@ -58,21 +45,27 @@ export function AppTopBar() {
         // ocupa la pantalla, y quien se desplaza es el contenido de en medio.
         // En iOS los elementos fijos se recolocan al terminar el gesto, no
         // durante, y por eso parecían despegarse al arrastrar.
-        // EL COLOR: MARCA ARRIBA, SUPERFICIE CLARA EN LO PERSONAL
+        // EL COLOR: AMARILLO BANANA, SIEMPRE
         //
-        // **Inicio y Tienda van en amarillo Banana**; **Mis compras y Cuenta**
-        // conservan la superficie clara. Inicio recupera el amarillo de marca
-        // porque es la puerta de entrada a la aplicación y así la cabecera se
-        // ve como una sola superficie con la barra de estado.
+        // Antes el color dependía del contexto: amarillo en Tienda y en Inicio,
+        // superficie clara en Mis productos y Cuenta, y —sin que nadie lo
+        // decidiera— también blanca en soporte, tiendas, servicio técnico,
+        // login, registro y el 404, que son `neutro`. Así, abrir la aplicación y
+        // moverse por ella era ver la cabecera cambiar de color diez veces.
         //
-        // Esto cambia la regla anterior —que dejaba claro también Inicio—, pero
-        // no el motivo de fondo: lo que separa Inicio de Tienda sigue siendo la
-        // composición, marca y dos botones compactos frente a buscador grande y
-        // chips. El área personal sí se distingue por color.
+        // La marca no es un contexto. Lo que separa Inicio de Tienda sigue
+        // siendo la COMPOSICIÓN —logotipo y botones compactos frente a buscador
+        // grande y chips—, que es lo de abajo en este mismo componente, y eso no
+        // cambia. Lo que se retira es la distinción por color.
+        //
+        // Además el `paddingTop` de esta misma cabecera es el que reserva el
+        // hueco de la barra de estado en el móvil: al pintarla siempre de
+        // amarillo desaparece la franja blanca que quedaba encima en todas las
+        // pantallas personales y neutras.
         //
         // La barra inferior sigue siendo azul en toda la app: ésa no distingue
         // contextos, los enmarca.
-        className={`z-40 shrink-0 ${barraAmarilla ? 'bg-banana' : 'border-b border-line bg-surface'}`}
+        className="z-40 shrink-0 bg-banana"
         data-app-topbar={comercial ? 'comercial' : 'cliente'}
         // El WebView llega al borde de la pantalla: sin esto la barra queda
         // debajo de la Dynamic Island y del reloj.

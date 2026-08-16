@@ -134,43 +134,29 @@ test.describe('barra superior', () => {
     }
   })
 
-  test('Inicio y Tienda llevan la superficie de marca; el área personal, la clara', async ({ page }) => {
-    // LA REGLA DE COLOR, SUELTA DE LA COMPOSICIÓN
+  test('el amarillo de Inicio y el de Tienda salen del mismo token', async ({ page }) => {
+    // QUÉ CAMBIÓ AQUÍ
     //
-    // Inicio comparte el amarillo con Tienda —es la puerta de entrada, y en la
-    // app nativa esa superficie se continúa con la barra de estado— pero sigue
-    // siendo contexto `cliente`: ni chips ni buscador grande. El área personal
-    // sí se distingue por color.
+    // Esta prueba exigía además que el área personal —Mis productos, Cuenta—
+    // se quedara en superficie clara. **Esa regla ya no existe**: desde la PR
+    // #58 la barra de Banana es amarilla en todas las pantallas de cliente,
+    // porque el color no distinguía contextos, distinguía descuidos —soporte,
+    // tiendas, login y el 404 estaban en blanco por ser `neutro`, sin que nadie
+    // lo hubiera decidido—. El contrato nuevo, con sus quince superficies y el
+    // checkout, vive en `tests/e2e/barra-banana.spec.ts`.
     //
-    // Lo que esta prueba NO puede demostrar: que en iOS el amarillo llegue
-    // hasta el borde superior por detrás de la Dynamic Island. Aquí no hay
-    // barra de estado y `env(safe-area-inset-top)` vale cero; eso se comprueba
-    // en el simulador. Aquí se fija la decisión de CSS, que es la que un
-    // cambio de código puede romper sin que nadie lo vea.
+    // Lo que sigue siendo cierto, y por eso se conserva: que el amarillo salga
+    // de un único token y no de dos parecidos. Y lo de siempre: aquí no se
+    // puede demostrar que en iOS llegue hasta el borde por detrás de la Dynamic
+    // Island; `env(safe-area-inset-top)` vale cero en el navegador.
     await comoApp(page)
 
-    for (const ruta of ['./', './tienda']) {
-      await page.goto(ruta)
-      await expect(page.locator('[data-app-topbar]'), `${ruta} debería llevar la marca`).toHaveCSS(
-        'background-color',
-        BANANA,
-      )
-    }
-
-    for (const ruta of ['./mis-productos', './cuenta']) {
-      await page.goto(ruta)
-      await expect(page.locator('[data-app-topbar]'), `${ruta} debería quedarse en superficie clara`).not.toHaveCSS(
-        'background-color',
-        BANANA,
-      )
-    }
-
-    // Y el amarillo de Inicio es el MISMO que el de Tienda, no uno parecido.
     await page.goto('./')
     const inicio = await page.locator('[data-app-topbar]').evaluate((el) => getComputedStyle(el).backgroundColor)
     await page.goto('./tienda')
     const tienda = await page.locator('[data-app-topbar]').evaluate((el) => getComputedStyle(el).backgroundColor)
     expect(inicio, 'los dos amarillos deben salir del mismo token').toBe(tienda)
+    expect(inicio, 'y ese token es el amarillo de marca').toBe(BANANA)
   })
 
   test('los dos buscadores abren el mismo diálogo y devuelven el foco a su botón', async ({ page }) => {

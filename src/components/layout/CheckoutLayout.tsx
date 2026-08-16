@@ -18,7 +18,15 @@ export function CheckoutLayout() {
         Saltar al contenido
       </a>
 
-      <header className="border-b border-black/10 bg-checkout">
+      {/* La cabecera va en amarillo Banana como la del resto de la aplicación.
+          Antes usaba `--color-checkout`, el amarillo pálido del flujo de pago, y
+          era la única pantalla de cliente con otra barra.
+
+          El `paddingTop` reserva el hueco de la barra de estado en el móvil:
+          este layout vive fuera del armazón de la app —no monta `AppTopBar`—,
+          así que sin él la cabecera quedaría bajo el reloj. El FONDO de la
+          página sigue siendo el suyo: aquí sólo cambia la barra. */}
+      <header className="border-b border-black/10 bg-banana" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <Container className="flex min-h-16 items-center justify-between gap-4 py-2">
           <Logo />
           <div className="flex items-center gap-3 sm:gap-5">
