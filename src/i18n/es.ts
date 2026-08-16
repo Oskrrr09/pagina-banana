@@ -330,6 +330,11 @@ export const es = {
 
   'checkout.secure': 'Compra segura',
   'checkout.backToCart': 'Volver al carrito',
+  'checkout.saveToAccount': 'Guarda esta compra en tu cuenta',
+  'checkout.saveToAccountBody': 'Identifícate y este pedido quedará guardado: podrás verlo desde cualquier dispositivo.',
+  'checkout.savedToAccount': 'Esta compra ya está guardada en tu cuenta.',
+  'checkout.signIn': 'Iniciar sesión',
+  'checkout.createAccount': 'Crear cuenta',
   'checkout.demoOrderBody': 'No se cobra ni se envía nada; los datos se guardan solo en tu navegador.',
   'checkout.fullName': 'Nombre y apellidos',
   'checkout.address': 'Dirección',

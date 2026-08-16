@@ -4,6 +4,7 @@
 // componentes ya consumen únicamente la interfaz pública de este módulo.
 
 import type { CartLine } from './store'
+import { nuevoIdDePedido } from './orderId'
 
 export interface DemoOrderLine {
   id: string
@@ -74,9 +75,12 @@ function writeAll(all: Record<string, DemoOrder>) {
 }
 
 function generateId() {
-  // Formato BC-XXXXXX. El prefijo evita colisionar con IDs reales de la web
-  // oficial y deja claro que es una demostración.
-  return 'BC-' + Math.floor(100000 + Math.random() * 899999)
+  // Formato `BC-` + 12 hexadecimales, con aleatoriedad criptográfica. Ver
+  // `lib/orderId.ts`: el formato anterior tenía 900.000 valores posibles para
+  // lo que es la CLAVE PRIMARIA de `pedidos`, y desde que ese identificador es
+  // la entrada de la reconciliación de una compra invitada, un choque
+  // significa una compra que no se puede recuperar.
+  return nuevoIdDePedido()
 }
 
 /**

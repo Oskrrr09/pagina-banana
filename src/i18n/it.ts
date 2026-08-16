@@ -302,6 +302,11 @@ export const it: Diccionario = {
 
   'checkout.secure': 'Acquisto sicuro',
   'checkout.backToCart': 'Torna al carrello',
+  'checkout.saveToAccount': 'Salva questo acquisto nel tuo account',
+  'checkout.saveToAccountBody': 'Accedi e questo ordine resterà salvato: lo ritroverai da qualsiasi dispositivo.',
+  'checkout.savedToAccount': 'Questo acquisto è già salvato nel tuo account.',
+  'checkout.signIn': 'Accedi',
+  'checkout.createAccount': 'Crea un account',
   'checkout.demoOrderBody': 'Non viene addebitato né spedito nulla; i dati restano solo nel tuo browser.',
   'checkout.fullName': 'Nome e cognome',
   'checkout.address': 'Indirizzo',

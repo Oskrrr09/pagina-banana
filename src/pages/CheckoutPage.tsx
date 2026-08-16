@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useColorName, useT, type ClaveTexto } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
-import { Button } from '../components/ui/Button'
+import { Button, ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
 import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
@@ -12,6 +12,7 @@ import { ISLAS, useCheckoutState, formatAddressLine } from '../lib/checkoutState
 import { useCustomerAuth } from '../lib/customerAuth'
 import { createReservationsFromCart, isReservationLine } from '../lib/reservations'
 import { mirrorOrderToSupabase } from '../lib/orderSync'
+import { guardarPendiente, listarPendientes } from '../lib/pendingGuestOrders'
 import { demoOrderRepository, type DemoOrder } from '../lib/demoOrderRepository'
 import { productImage } from '../data/products'
 import { stores, getStore } from '../data/stores'
@@ -155,6 +156,19 @@ export function CheckoutPage() {
       if (hasPurchases) {
         await mirrorOrderToSupabase(clienteId, order)
       }
+    } else if (hasPurchases) {
+      // SIN CUENTA: la compra se guarda para poder recuperarla después.
+      //
+      // Queda en `localStorage`, no en la sesión de la pestaña, porque quien
+      // compra sin identificarse puede registrarse mañana. Cuando aparezca una
+      // cuenta permanente, `recuperarComprasInvitadas` la escribirá en
+      // `pedidos` a su nombre. Ver `lib/pendingGuestOrders.ts`.
+      //
+      // Sólo lo comprado: las RESERVAS de un invitado no entran aquí. Necesitan
+      // sesión para existir —las crea un RPC que exige cuenta permanente— y su
+      // cola de espera la fija el pago, así que reconstruirlas después sería
+      // inventarle a alguien un puesto que no compró.
+      guardarPendiente(order)
     }
 
     setConfirmedOrder(order)
@@ -387,6 +401,8 @@ export function CheckoutPage() {
                 </div>
               </div>
 
+              <GuardarEnLaCuenta pedidoId={confirmedOrder.id} />
+
               {confirmedOrder.lines.some((l) => l.reservation) && (
                 <div className="mt-6 rounded-[12px] border border-line bg-neutral p-5 text-sm">
                   <p className="font-semibold text-ink">{t('checkout.waitingList')}</p>
@@ -616,5 +632,68 @@ function Field({
       {children}
       {error && <span className="mt-1 block text-xs text-danger">{error}</span>}
     </label>
+  )
+}
+
+/**
+ * «Guarda esta compra en tu cuenta», en la pantalla de confirmación.
+ *
+ * Sólo aparece cuando esta compra está DE VERDAD esperando —es decir, cuando
+ * sigue en la cola de pendientes—, no por el mero hecho de no haber sesión. Así
+ * deja de anunciarse en cuanto la reconciliación la ha guardado, sin que haya
+ * que avisar a esta pantalla desde ningún sitio: basta con volver a mirar la
+ * cola cuando cambia la sesión.
+ *
+ * No bloquea nada. La compra ya está hecha en el contexto demostrativo; esto es
+ * una salida, no un trámite. Y usa el `?redirect=` que login y registro ya
+ * entienden, en vez de inventar un segundo sistema de vuelta.
+ */
+function GuardarEnLaCuenta({ pedidoId }: { pedidoId: string }) {
+  const t = useT()
+  const { session } = useCustomerAuth()
+  const [pendiente, setPendiente] = useState(() => listarPendientes().some((p) => p.order.id === pedidoId))
+
+  useEffect(() => {
+    // Al aparecer una cuenta, la reconciliación corre en `customerAuth`. Aquí
+    // sólo se vuelve a leer la cola para dejar de prometer algo ya cumplido.
+    let vivo = true
+    const mirar = () => {
+      if (vivo) setPendiente(listarPendientes().some((p) => p.order.id === pedidoId))
+    }
+    mirar()
+    const id = window.setInterval(mirar, 400)
+    const parar = window.setTimeout(() => window.clearInterval(id), 5000)
+    return () => {
+      vivo = false
+      window.clearInterval(id)
+      window.clearTimeout(parar)
+    }
+  }, [pedidoId, session])
+
+  if (!pendiente) {
+    // Ya está en la cuenta: se dice, y se deja de ofrecer guardarla.
+    if (session) {
+      return (
+        <p className="mt-6 rounded-[12px] border border-line bg-neutral p-4 text-center text-sm text-ink">
+          {t('checkout.savedToAccount')}
+        </p>
+      )
+    }
+    return null
+  }
+
+  return (
+    <div className="mt-6 rounded-[12px] border border-line bg-neutral p-5 text-sm">
+      <p className="font-semibold text-ink">{t('checkout.saveToAccount')}</p>
+      <p className="mt-1 text-muted">{t('checkout.saveToAccountBody')}</p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <ButtonLink to={`/login?redirect=${encodeURIComponent('/checkout/3')}`} variant="secondary">
+          {t('checkout.signIn')}
+        </ButtonLink>
+        <ButtonLink to={`/registro?redirect=${encodeURIComponent('/checkout/3')}`} variant="secondary">
+          {t('checkout.createAccount')}
+        </ButtonLink>
+      </div>
+    </div>
   )
 }

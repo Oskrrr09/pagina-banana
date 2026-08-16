@@ -302,6 +302,11 @@ export const de: Diccionario = {
 
   'checkout.secure': 'Sicherer Einkauf',
   'checkout.backToCart': 'Zurück zum Warenkorb',
+  'checkout.saveToAccount': 'Sichere diesen Kauf in deinem Konto',
+  'checkout.saveToAccountBody': 'Melde dich an und diese Bestellung bleibt gespeichert: Du findest sie auf jedem Gerät.',
+  'checkout.savedToAccount': 'Dieser Kauf ist bereits in deinem Konto gespeichert.',
+  'checkout.signIn': 'Anmelden',
+  'checkout.createAccount': 'Konto erstellen',
   'checkout.demoOrderBody': 'Es wird nichts abgebucht und nichts versendet; die Daten bleiben nur in deinem Browser.',
   'checkout.fullName': 'Vor- und Nachname',
   'checkout.address': 'Adresse',

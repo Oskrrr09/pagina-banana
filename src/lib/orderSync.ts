@@ -1,5 +1,7 @@
 import { supabase, type DbOrder, type DbOrderLine } from './supabase'
 import { INSURANCE_MONTHLY, type DemoOrder, type DemoOrderLine } from './demoOrderRepository'
+import { nuevoIdDePedido } from './orderId'
+import { consumir, listarPendientes, reclamar, renombrar } from './pendingGuestOrders'
 
 // Espejo de los pedidos demostrativos en Supabase.
 //
@@ -111,4 +113,139 @@ export async function listMyOrders(clienteId: string): Promise<{ orders: DbOrder
     .order('created_at', { ascending: false })
   if (error) return { orders: [], error: error.message }
   return { orders: (data ?? []) as DbOrder[], error: null }
+}
+
+// ============================================================================
+// RECUPERAR UNA COMPRA HECHA SIN CUENTA
+//
+// Quien compra sin identificarse deja su pedido en la cola de
+// `pendingGuestOrders`. Cuando aparece una cuenta permanente —al iniciar
+// sesión, al registrarse, o al restaurar la sesión en una recarga— esa compra
+// se escribe en `pedidos` a su nombre.
+//
+// EL DUEÑO LO PONE EL SERVIDOR, NO EL NAVEGADOR
+//
+// `cliente_id` sale SIEMPRE del uid de la sesión en curso; nunca del pedido
+// guardado ni de nada que venga del almacenamiento local. Y aunque alguien
+// manipulara esto, la política `cliente crea sus pedidos` exige
+// `cliente_id = auth.uid()` en su `with check`: el servidor rechazaría la fila.
+//
+// POR QUÉ NO HAY `upsert`
+//
+// Sería lo cómodo para la idempotencia, pero `pedidos` no lo admite: la tabla
+// concede a `authenticated` sólo `select, insert` —ni siquiera existe el
+// privilegio de UPDATE— y no hay política de UPDATE. Un `on conflict do update`
+// fallaría por permisos. La idempotencia se resuelve con lectura, inserción y
+// tratamiento explícito del conflicto.
+// ============================================================================
+
+/** Código de PostgreSQL para violación de clave única. */
+const CONFLICTO = '23505'
+
+/** Cuántas veces se reintenta cuando el identificador choca con uno ajeno. */
+const MAX_REINTENTOS_DE_ID = 3
+
+export type ResultadoSincronizacion = 'sincronizado' | 'ya-estaba' | 'error'
+
+/**
+ * Cómo terminó, y con qué identificador quedó el pedido.
+ *
+ * El `id` importa porque puede haber cambiado por el camino: si el original
+ * chocaba con un pedido ajeno, la compra se queda con uno nuevo, y es ÉSE el
+ * que hay que retirar de la cola.
+ */
+export interface Sincronizacion {
+  resultado: ResultadoSincronizacion
+  id: string
+}
+
+/**
+ * ¿Este pedido ya está en la tabla a nombre de esta cuenta?
+ *
+ * La consulta va bajo RLS, así que sólo puede devolver filas propias: si
+ * encuentra algo, es de quien pregunta. Esa es justamente la propiedad que hace
+ * que sirva para distinguir «ya lo subí yo» de «ese id es de otro».
+ */
+async function yaEsMio(id: string): Promise<boolean> {
+  const { data } = await supabase!.from('pedidos').select('id').eq('id', id).maybeSingle()
+  return Boolean(data)
+}
+
+/**
+ * Escribe una compra pendiente a nombre de la cuenta indicada.
+ *
+ * Es seguro llamarla dos veces, incluso a la vez: dos reconciliaciones que
+ * compitan acaban con UNA fila. La que pierde recibe el conflicto de clave,
+ * vuelve a preguntar, se encuentra el pedido ya suyo y termina bien.
+ */
+export async function sincronizarPendiente(clienteId: string, order: DemoOrder): Promise<Sincronizacion> {
+  let id = order.id
+  if (!supabase) return { resultado: 'error', id }
+
+  for (let intento = 0; intento < MAX_REINTENTOS_DE_ID; intento++) {
+    if (await yaEsMio(id)) return { resultado: 'ya-estaba', id }
+
+    const fila = construirFilaDePedido(clienteId, { ...order, id })
+    // Un pedido sin nada comprado —sólo reservas— no genera fila, y eso no es
+    // un error: se da por resuelto para que salga de la cola.
+    if (!fila) return { resultado: 'ya-estaba', id }
+
+    const { error } = await supabase.from('pedidos').insert(fila)
+    if (!error) return { resultado: 'sincronizado', id }
+
+    if (error.code !== CONFLICTO) {
+      console.error('[orderSync] no se pudo recuperar la compra invitada', error)
+      return { resultado: 'error', id }
+    }
+
+    // Hubo conflicto de clave. Dos posibilidades, y se distinguen preguntando:
+    //
+    //  · el pedido es AHORA mío  → otra reconciliación mía ganó la carrera, y
+    //    esto es un éxito idempotente, no un fallo;
+    //  · no lo veo               → ese identificador pertenece a un pedido
+    //    ajeno. No se intenta tocar: se le da a ESTA compra un identificador
+    //    nuevo y se reintenta.
+    if (await yaEsMio(id)) return { resultado: 'ya-estaba', id }
+
+    const siguiente = nuevoIdDePedido()
+    renombrar(id, siguiente)
+    id = siguiente
+  }
+
+  console.error('[orderSync] el identificador siguió chocando tras varios intentos')
+  return { resultado: 'error', id }
+}
+
+/** Evita que dos disparos simultáneos hagan el mismo trabajo dos veces. */
+let enCurso: Promise<number> | null = null
+
+/**
+ * Sube a la cuenta todas las compras pendientes que le correspondan.
+ *
+ * Devuelve cuántas quedaron guardadas. Es idempotente y se puede llamar desde
+ * más de un sitio —inicio de sesión, alta, restauración de sesión— sin
+ * coordinar a los llamantes: mientras hay una ejecución viva, la siguiente se
+ * engancha a ella en vez de empezar otra.
+ */
+export function recuperarComprasInvitadas(clienteId: string): Promise<number> {
+  if (enCurso) return enCurso
+  enCurso = (async () => {
+    let guardadas = 0
+    for (const pendiente of listarPendientes()) {
+      // Reclamar antes de intentar nada. Si ya lo tenía pedido otra cuenta, esta
+      // compra no es de quien está preguntando y se queda donde está.
+      if (!reclamar(pendiente.order.id, clienteId)) continue
+
+      const { resultado, id } = await sincronizarPendiente(clienteId, pendiente.order)
+      if (resultado === 'error') continue
+      // Sólo aquí, con el servidor confirmando, se retira de la cola. Por el
+      // identificador FINAL: si hubo que renombrarlo, el de la cola es ése.
+      consumir(id)
+      if (resultado === 'sincronizado') guardadas++
+    }
+    return guardadas
+  })().finally(() => {
+    enCurso = null
+  })
+  return enCurso
 }
