@@ -40,7 +40,7 @@ test.describe('barra inferior', () => {
 
     const pestañas = page.locator('[data-app-tab-bar] a')
     await expect(pestañas).toHaveCount(4)
-    await expect(pestañas).toHaveText(['Inicio', 'Tienda', 'Mis compras', 'Cuenta'])
+    await expect(pestañas).toHaveText(['Inicio', 'Tienda', 'Compras', 'Cuenta'])
   })
 
   test('ya no hay pestaña de Carrito, Favoritos ni Explorar', async ({ page }) => {
@@ -57,7 +57,7 @@ test.describe('barra inferior', () => {
     await comoApp(page)
     await page.goto('./')
 
-    await page.locator('[data-app-tab-bar]').getByRole('link', { name: 'Mis compras' }).click()
+    await page.locator('[data-app-tab-bar]').getByRole('link', { name: 'Compras' }).click()
     await expect(page).toHaveURL(/\/pagina-banana\/mis-productos/)
 
     await page.locator('[data-app-tab-bar]').getByRole('link', { name: 'Tienda' }).click()
@@ -65,7 +65,7 @@ test.describe('barra inferior', () => {
   })
 
   test('la etiqueta más larga cabe entera a 320 px', async ({ page }) => {
-    // «Mis compras» es la más larga y no se abrevia. Con cuatro pestañas cada
+    // La más larga no se abrevia. Con cuatro pestañas cada
     // una dispone de 80 px; el fallo que se vigila es que el texto se salga de
     // su pestaña, no que la barra desborde.
     await comoApp(page)
@@ -74,11 +74,11 @@ test.describe('barra inferior', () => {
 
     const barra = page.locator('[data-app-tab-bar]')
     const cajaBarra = (await barra.boundingBox())!
-    const compras = barra.getByRole('link', { name: 'Mis compras' })
+    const compras = barra.getByRole('link', { name: 'Compras' })
     const cajaTexto = (await compras.locator('span').last().boundingBox())!
 
     expect(cajaTexto.width, 'la etiqueta no cabe en su pestaña').toBeLessThanOrEqual(cajaBarra.width / 4)
-    await expect(compras).toHaveText('Mis compras')
+    await expect(compras).toHaveText('Compras')
   })
 
   test('marca la pestaña correcta, y ninguna cuando no toca', async ({ page }) => {
@@ -89,7 +89,7 @@ test.describe('barra inferior', () => {
     await expect(barra.getByRole('link', { name: 'Tienda' })).toHaveAttribute('aria-current', 'page')
 
     await page.goto('./mis-productos')
-    await expect(barra.getByRole('link', { name: 'Mis compras' })).toHaveAttribute('aria-current', 'page')
+    await expect(barra.getByRole('link', { name: 'Compras' })).toHaveAttribute('aria-current', 'page')
 
     // Soporte no es ninguna de las cuatro: mejor ninguna marcada que mentir.
     await page.goto('./soporte')
