@@ -59,16 +59,57 @@ function apartadoDeLaUrl(valor: string | null): Apartado {
   return encontrado ? encontrado.id : 'datos'
 }
 
+/** ¿La URL pide algo que no es un apartado? */
+function apartadoInvalido(valor: string | null): boolean {
+  return valor !== null && !APARTADOS.some((a) => a.id === valor)
+}
+
+/**
+ * La dirección de un apartado, conservando el resto de la URL.
+ *
+ * «Datos personales» es el estado canónico de `/cuenta`, así que su enlace
+ * **quita** el parámetro en vez de escribir `?apartado=datos`. Llegar con ese
+ * valor explícito sigue siendo válido —hay enlaces por ahí—, pero no es lo que
+ * la aplicación genera.
+ *
+ * Se parte de los parámetros actuales y se toca **sólo** `apartado`: si alguien
+ * llega con algo más en la URL, no se lo borramos por el camino.
+ */
+function urlDelApartado(id: Apartado, params: URLSearchParams): string {
+  const siguientes = new URLSearchParams(params)
+  if (id === 'datos') siguientes.delete('apartado')
+  else siguientes.set('apartado', id)
+  const cadena = siguientes.toString()
+  return cadena ? `/cuenta?${cadena}` : '/cuenta'
+}
+
 export function ProfilePage() {
   const { session, cliente, loading, signOut } = useCustomerAuth()
   const navigate = useNavigate()
   const t = useT()
   const [params] = useSearchParams()
-  // Sólo como valor inicial: a partir de ahí manda el menú. Sincronizarlo con
-  // la URL en cada cambio obligaría a escribir el parámetro al pulsar cada
-  // apartado, que es la reestructuración que aquí no toca hacer.
-  const [apartado, setApartado] = useState<Apartado>(() => apartadoDeLaUrl(params.get('apartado')))
+  // LA URL ES LA FUENTE DE VERDAD, Y NO UNA COPIA
+  //
+  // Antes esto era un `useState` sembrado desde la URL, y a partir de ahí
+  // mandaba el menú. Con eso, `/cuenta?apartado=pedidos` abría Pedidos, se
+  // pulsaba Reservas, la pantalla cambiaba… y la URL seguía diciendo
+  // `pedidos`. Copiar el enlace daba otro sitio, Atrás no volvía al apartado
+  // anterior y el enlace profundo dejaba de ser cierto tras el primer clic.
+  //
+  // Ahora el apartado se DERIVA de la URL en cada render. No hay estado que
+  // pueda desincronizarse, así que Atrás y Adelante funcionan sin que este
+  // componente sepa nada de historial: los gestiona el router.
+  const apartado = apartadoDeLaUrl(params.get('apartado'))
   const [cerrandoSesion, setCerrandoSesion] = useState(false)
+
+  // Un `?apartado=banana` abre Datos personales, que es lo razonable. Pero
+  // dejar el parámetro puesto haría que la URL siguiera prometiendo algo que la
+  // pantalla no enseña, así que se limpia — con `replace`, para no meter una
+  // entrada de historial que nadie ha pedido.
+  const invalido = apartadoInvalido(params.get('apartado'))
+  useEffect(() => {
+    if (invalido) navigate(urlDelApartado('datos', params), { replace: true })
+  }, [invalido, navigate, params])
   const [errorCierre, setErrorCierre] = useState<string | null>(null)
 
   if (!supabaseEnabled) {
@@ -111,10 +152,21 @@ export function ProfilePage() {
 
   return (
     <Container className="py-12">
-      <div className="flex flex-wrap items-start gap-4">
-        <div className="min-w-0 flex-1">
+      {/* EL CORREO NO COMPITE POR EL ANCHO
+          En móvil el bloque de identidad y «Cerrar sesión» se repartían la
+          misma fila, y un correo largo acababa partido en tres o cuatro
+          líneas. Ahora en móvil van en columna —el correo dispone del ancho
+          entero— y a partir de `sm` vuelven a la disposición horizontal de
+          siempre.
+
+          El correo NO se trunca: es lo que dice con qué cuenta estás dentro, y
+          esconderlo para que quepa sería resolver el hueco equivocado. Se
+          permite partir por cualquier punto para que un dominio largo no
+          desborde. */}
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start">
+        <div className="min-w-0 w-full sm:flex-1">
           <h1 className="text-2xl font-bold text-ink">Mi cuenta</h1>
-          <p className="mt-1 break-words text-sm text-muted">{session.user.email}</p>
+          <p className="mt-1 text-sm text-muted [overflow-wrap:anywhere]">{session.user.email}</p>
         </div>
         <Button
           variant="secondary"
@@ -185,7 +237,7 @@ export function ProfilePage() {
           límite, así que en vez de desplazarse dentro de su caja empujaba la
           página. */}
       <div className="mt-10 grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)] [&>*]:min-w-0">
-        <ProfileNav active={apartado} onChange={setApartado} />
+        <ProfileNav active={apartado} params={params} />
         <div>
           {apartado === 'datos' && <PersonalDataSection />}
           {apartado === 'envio' && <AddressSection which="envio" title="Dirección de envío" />}
@@ -212,25 +264,94 @@ export function ProfilePage() {
  * móvil se convierte en una fila de pestañas desplazable, para no comerse
  * la pantalla antes de llegar al contenido.
  */
-function ProfileNav({ active, onChange }: { active: Apartado; onChange: (next: Apartado) => void }) {
+function ProfileNav({ active, params }: { active: Apartado; params: URLSearchParams }) {
+  const carril = useRef<HTMLUListElement>(null)
+  const activo = useRef<HTMLAnchorElement>(null)
+
+  // EL APARTADO ACTIVO TIENE QUE VERSE
+  //
+  // En móvil los siete apartados viven en una fila desplazable de ~1.088 px.
+  // Abrir `/cuenta?apartado=favoritos` enseñaba Favoritos con su botón fuera
+  // del área visible: la pantalla decía una cosa y el menú parecía estar en
+  // otra.
+  //
+  // Se ajusta `scrollLeft` del carril y nada más. `scrollIntoView` habría
+  // servido, pero también desplaza la PÁGINA en vertical para acercar el
+  // elemento, y aquí no hay ninguna razón para mover la vista de quien acaba de
+  // llegar.
+  //
+  // Corre en cada cambio de apartado, así que cubre la carga inicial, el clic,
+  // Atrás y Adelante por igual: todos pasan por un `active` distinto.
+  useEffect(() => {
+    const acercar = () => {
+      const caja = carril.current
+      const el = activo.current
+      if (!caja || !el) return
+      // En escritorio la lista es una columna sin desplazamiento horizontal.
+      if (caja.scrollWidth <= caja.clientWidth) return
+
+      // Se comparan cajas reales y no `offsetLeft`: éste se mide contra el
+      // ancestro POSICIONADO más cercano, que aquí no es el carril, así que
+      // daba una distancia que no correspondía a lo que hay que desplazar. Se
+      // vio con el último apartado, que seguía recortado por la derecha.
+      const marco = caja.getBoundingClientRect()
+      const item = el.getBoundingClientRect()
+      if (item.left < marco.left) {
+        caja.scrollLeft -= marco.left - item.left
+      } else if (item.right > marco.right) {
+        caja.scrollLeft += item.right - marco.right
+      }
+    }
+
+    acercar()
+
+    // Y otra vez cuando el ancho de los rótulos pueda haber cambiado.
+    //
+    // Las tipografías se cargan con la aplicación, y hasta que llegan el
+    // navegador mide con la de reserva: los siete rótulos ocupan menos, el
+    // desplazamiento calculado se queda corto y el apartado activo vuelve a
+    // salirse al reflujo. Medido: siete píxeles de recorte a 390.
+    //
+    // El `resize` cubre girar el teléfono y redimensionar la ventana, que
+    // cambian el ancho visible del carril.
+    let vivo = true
+    void document.fonts?.ready.then(() => {
+      if (vivo) acercar()
+    })
+    window.addEventListener('resize', acercar)
+    return () => {
+      vivo = false
+      window.removeEventListener('resize', acercar)
+    }
+  }, [active])
+
   return (
     <nav aria-label="Apartados de mi cuenta" className="lg:sticky lg:top-24 lg:self-start">
-      <ul className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
+      <ul ref={carril} className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
         {APARTADOS.map((item) => {
           const selected = item.id === active
           return (
             <li key={item.id} className="shrink-0 lg:shrink">
-              <button
-                type="button"
-                onClick={() => onChange(item.id)}
+              {/* ENLACES DE VERDAD, NO BOTONES QUE SIMULAN NAVEGAR
+                  Cada apartado tiene ya una URL propia y copiable, así que un
+                  enlace es lo que es: se puede abrir en otra pestaña, se puede
+                  compartir, y el historial lo gestiona el router.
+
+                  `replace` en el que ya está activo: volver a pulsarlo no debe
+                  añadir una entrada idéntica que luego obligue a un Atrás de
+                  más para salir de la pantalla. */}
+              <Link
+                to={urlDelApartado(item.id, params)}
+                replace={selected}
+                ref={selected ? activo : undefined}
                 aria-current={selected ? 'page' : undefined}
                 className={
-                  'w-full cursor-pointer whitespace-nowrap rounded-[12px] px-4 py-2.5 text-left text-sm font-medium transition-colors lg:whitespace-normal ' +
+                  'flex min-h-11 w-full items-center whitespace-nowrap rounded-[12px] px-4 py-2.5 text-left text-sm font-medium transition-colors lg:whitespace-normal ' +
                   (selected ? 'bg-ink text-white' : 'text-ink hover:bg-neutral')
                 }
               >
                 {item.label}
-              </button>
+              </Link>
             </li>
           )
         })}
