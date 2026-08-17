@@ -117,6 +117,71 @@ test.describe('catálogo de familia', () => {
     await expect(page.getByRole('combobox', { name: 'Ordenar' })).toHaveValue('precio-asc')
   })
 
+  test('abrir una ficha que ya es canónica no reemplaza su entrada de historial', async ({ page }) => {
+    // POR QUÉ EXISTE ESTA PRUEBA
+    //
+    // El CI post-merge de la PR #60 —run `32066518376`— dejó el caso de arriba
+    // en FLAKY: tras `goBack()` la aplicación seguía en la ficha durante todo el
+    // tiempo de espera. No fue que el filtro tardara en reaparecer; fue que no
+    // se volvió.
+    //
+    // El mecanismo: `ProductCard` enlaza ya a la ruta canónica de la variante,
+    // así que al pulsar se APILA esa entrada. Y `VariantPage`, al montar,
+    // recalculaba `variantPath` y hacía `navigate(..., { replace: true })`
+    // **aunque la URL ya fuera exactamente ésa**. Ese reemplazo no aporta
+    // ningún estado nuevo y, al ejecutarse después del `click`, puede coincidir
+    // con un `history.back()` inmediato.
+    //
+    // Esta prueba no depende de que la carrera ocurra: observa el mecanismo. Se
+    // instrumenta `history.replaceState` sin impedirlo, y se exige que entrar en
+    // una URL que YA es canónica no genere ningún reemplazo hacia sí misma.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __reemplazos: string[] }
+      w.__reemplazos = []
+      const original = history.replaceState.bind(history)
+      history.replaceState = ((estado: unknown, titulo: string, url?: string | URL | null) => {
+        w.__reemplazos.push(String(url ?? location.pathname + location.search))
+        return original(estado, titulo, url as string)
+      }) as typeof history.replaceState
+    })
+
+    await comoApp(page)
+    await page.goto('./iphone')
+    await page.getByRole('combobox', { name: 'Ordenar' }).selectOption('precio-asc')
+    await expect(page).toHaveURL(/orden=precio-asc/)
+
+    // Los reemplazos del catálogo son deliberados —los filtros no deben apilar
+    // una entrada por cada toque—, así que se descartan: lo que se mide es lo
+    // que ocurre al entrar en la ficha.
+    await page.evaluate(() => {
+      ;(window as unknown as { __reemplazos: string[] }).__reemplazos = []
+    })
+
+    const enlaceProducto = page.locator('[data-product-card]').first().getByRole('link')
+    await expect(enlaceProducto).toHaveCount(1)
+    const destino = await enlaceProducto.getAttribute('href')
+    await enlaceProducto.click()
+
+    // Primero una señal semántica de que la ficha está montada y pintada…
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page).toHaveURL(new RegExp(`${destino!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`))
+    // …y después dos fotogramas. Los efectos de React corren tras el pintado,
+    // así que si el rótulo ya está en pantalla y han pasado dos `rAF`, el efecto
+    // de la ficha ha tenido su oportunidad. No es una espera «a ver si pasa»:
+    // es el punto a partir del cual el reemplazo, si existiera, ya se habría
+    // registrado.
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    )
+
+    const reemplazos = await page.evaluate(() => (window as unknown as { __reemplazos: string[] }).__reemplazos)
+    const redundantes = reemplazos.filter((u) => u.endsWith(destino!))
+    expect(
+      redundantes,
+      `entrar en ${destino} generó ${redundantes.length} reemplazo(s) de su propia entrada: ${JSON.stringify(reemplazos)}`,
+    ).toHaveLength(0)
+  })
+
   test('sin resultados ofrece salidas reales', async ({ page }) => {
     await comoApp(page)
     // Combinación imposible: el iPhone más barato pasa de 500 €.
