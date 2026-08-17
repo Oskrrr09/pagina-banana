@@ -94,6 +94,31 @@ async function comprarComoInvitado(page: Page) {
   return pendientes[0].order.id as string
 }
 
+/** Recorre el checkout con la sesión ya iniciada. */
+async function comprarConSesion(page: Page) {
+  await page.goto('./iphone/17-pro/256gb-plata')
+  await page
+    .getByRole('button', { name: /Añadir a la cesta|Añadir al carrito/i })
+    .first()
+    .click()
+  await page.goto('./checkout/1')
+  // La cuenta de prueba se crea por la vía de servicio y no tiene ficha de
+  // cliente, así que el checkout no prerrellena nada: se escribe como siempre.
+  await page.getByLabel('Nombre y apellidos').fill('Compradora Con Sesión')
+  await page.getByLabel('Email').fill(`consesion-${RUN}@example.test`)
+  await page.getByLabel('Dirección').fill('Calle de Prueba 1')
+  await page
+    .getByRole('button', { name: /Continuar|Siguiente/i })
+    .first()
+    .click()
+  await expect(page).toHaveURL(/\/checkout\/2/, { timeout: 15_000 })
+  await page
+    .getByRole('button', { name: /Confirmar|Pagar/i })
+    .first()
+    .click()
+  await expect(page).toHaveURL(/\/checkout\/3/, { timeout: 20_000 })
+}
+
 /** Inicia sesión por la interfaz, que es como lo haría una persona. */
 async function identificarse(page: Page, email: string, password: string) {
   await page.goto('./login')
@@ -423,4 +448,150 @@ test('el dueño lo pone la sesión, no el pedido guardado', async ({ page }) => 
   const deA = await pedidosDe(a.uid)
   expect(deA, 'la compra es de quien tiene la sesión').toHaveLength(1)
   expect(deA[0].id).toBe(pedidoId)
+})
+
+test('un fallo de LECTURA no convierte el reintento en un segundo pedido', async ({ page }) => {
+  // EL FALLO QUE ESTO VIGILA
+  //
+  // Comprobar «¿este pedido ya es mío?» sólo puede responder dos cosas si se
+  // mira el dato y se ignora el error: hay fila, o no la hay. Pero hay una
+  // tercera —no se pudo leer— y confundirla con «no la hay» tenía consecuencia:
+  // tras un conflicto de clave, un corte de red se habría interpretado como
+  // «ese identificador es de otra persona», y la respuesta a eso es renombrar la
+  // compra e insertarla otra vez. Un corte de red duplicaba el pedido.
+  //
+  // El montaje reproduce el estado real que lo provoca: la fila YA está escrita
+  // —el insert anterior salió bien y la aplicación cayó antes de vaciar la
+  // cola— y las lecturas fallan.
+  const a = await cuenta('lectura')
+  await comoNavegador(page)
+  const pedidoId = await comprarComoInvitado(page)
+
+  // La fila ya existe, a nombre de A.
+  const { error } = await servicio().from('pedidos').insert({
+    id: pedidoId,
+    cliente_id: a.uid,
+    created_at: new Date().toISOString(),
+    delivery: 'envio',
+    payment_method: 'tarjeta',
+    products_total: 1229,
+    insurance_total: 0,
+    insured_units: 0,
+    lines: [],
+    status: 'demo',
+  })
+  expect(error, 'el montaje debe poder escribir la fila previa').toBeNull()
+
+  // Las LECTURAS de pedidos fallan; las escrituras se dejan pasar, que es lo que
+  // hace peligroso el caso.
+  //
+  // Se cuentan las escrituras, y ésa es la aserción exacta: sin poder leer, el
+  // código NO debe escribir. Contar filas al final no serviría —ya hay una, así
+  // que una comprobación de «hay una» acierta al primer intento y nunca llega a
+  // ver la segunda—. Se comprobó: con esa versión la contramutación seguía en
+  // verde.
+  let escrituras = 0
+  page.on('request', (r) => {
+    if (r.method() === 'POST' && r.url().includes('/rest/v1/pedidos')) escrituras++
+  })
+  // Se responde 500 a las lecturas en vez de cortar la conexión: es la forma en
+  // que llega un fallo de PostgREST o de RLS, y la que devuelve `{ error }` en
+  // lugar de lanzar. Con un `abort`, el cliente lanza y el `insert` no se
+  // alcanza nunca —lo comprobé, y la contramutación se quedaba en verde por ese
+  // motivo, no porque el código estuviera bien—.
+  await page.route('**/rest/v1/pedidos*', (ruta) =>
+    ruta.request().method() === 'GET'
+      ? ruta.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"caída"}' })
+      : ruta.continue(),
+  )
+  await identificarse(page, a.email, a.password)
+
+  // Se espera a que la reconciliación haya HECHO algo: reclamar la compra, o
+  // escribir. La condición incluye las dos porque un código roto puede llegar a
+  // escribir y vaciar la cola, y si sólo se vigilara el reclamo, la espera
+  // fallaría por el motivo equivocado y el mensaje no diría lo que pasó.
+  await expect
+    .poll(
+      async () => {
+        const reclamo = await page.evaluate(
+          () => JSON.parse(localStorage.getItem('banana:pending-guest-orders') ?? '[]')[0]?.claimedBy,
+        )
+        return Boolean(reclamo) || escrituras > 0
+      },
+      { timeout: 15_000, message: 'la reconciliación debe haberlo intentado' },
+    )
+    .toBe(true)
+
+  expect(escrituras, 'sin poder leer, no se escribe a ciegas').toBe(0)
+  expect(await pedidosDe(a.uid), 'y sigue habiendo un solo pedido').toHaveLength(1)
+
+  const pendiente = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('banana:pending-guest-orders') ?? '[]')[0],
+  )
+  expect(pendiente, 'sin poder confirmar, la compra sigue en la cola').toBeTruthy()
+  expect(pendiente.claimedBy, 'reclamada por quien lo intentó').toBe(a.uid)
+  expect(pendiente.order.id, 'y conserva su identificador: no se renombra a ciegas').toBe(pedidoId)
+  expect(pendiente.claimedBy, 'reclamada por quien lo intentó').toBe(a.uid)
+
+  // Restaurada la lectura, el reintento reconoce que la fila ya es suya.
+  await page.unroute('**/rest/v1/pedidos*')
+  await page.reload()
+  await esperarReconciliacion(page)
+
+  const filas = await pedidosDe(a.uid)
+  expect(filas, 'sigue habiendo exactamente una').toHaveLength(1)
+  expect(filas[0].id, 'y es la de siempre').toBe(pedidoId)
+})
+
+test('una sincronización lenta acaba retirando el aviso de la confirmación', async ({ page }) => {
+  // El aviso se refrescaba con un sondeo que se cortaba a los cinco segundos:
+  // una sincronización más lenta terminaba bien y dejaba en pantalla un aviso
+  // que ya no era cierto. Ahora la cola avisa cuando cambia.
+  const a = await cuenta('lenta')
+  await comoNavegador(page)
+  await comprarComoInvitado(page)
+  await expect(page.getByText('Guarda esta compra en tu cuenta')).toBeVisible()
+
+  // Se retrasa la escritura MÁS de cinco segundos, y luego se deja pasar.
+  await page.route('**/rest/v1/pedidos*', async (ruta) => {
+    if (ruta.request().method() === 'POST') await new Promise((resolve) => setTimeout(resolve, 7000))
+    await ruta.continue()
+  })
+
+  // Sin recargar y sin cambiar de sesión: se inicia sesión desde la propia
+  // confirmación, que es el camino que ofrece la pantalla.
+  await page.getByRole('link', { name: 'Iniciar sesión' }).click()
+  await page.locator('input[type="email"]').first().fill(a.email)
+  await page.locator('input[type="password"]').first().fill(a.password)
+  await page.locator('form').first().getByRole('button').first().click()
+  // Se aterriza en la confirmación por el `?redirect=`, sin recargar a mano: un
+  // `goto` aquí cancelaría el POST en vuelo y falsearía la espera.
+  await expect(page).toHaveURL(/\/checkout\/3/, { timeout: 20_000 })
+
+  await expect(page.getByText('Guarda esta compra en tu cuenta'), 'el aviso desaparece al guardarse').toHaveCount(0, {
+    timeout: 30_000,
+  })
+  expect(await pedidosDe(a.uid)).toHaveLength(1)
+})
+
+test('con la sesión abierta y el espejo caído, la confirmación no dice que se guardó', async ({ page }) => {
+  // Una compra hecha CON sesión no entra en la cola: se escribe en el checkout.
+  // Si esa escritura falla, el checkout ignora el error a propósito para no
+  // bloquear la confirmación. La pantalla se quedaba entonces sin pendiente y
+  // con sesión, que era justo el estado que leía como éxito.
+  const a = await cuenta('espejo')
+  await comoNavegador(page)
+  await identificarse(page, a.email, a.password)
+
+  await page.route('**/rest/v1/pedidos*', (ruta) =>
+    ruta.request().method() === 'POST' ? ruta.abort('failed') : ruta.continue(),
+  )
+  await comprarConSesion(page)
+
+  expect(await pedidosDe(a.uid), 'el espejo falló, no hay pedido').toHaveLength(0)
+  await expect(page.getByText(/ya está guardada en tu cuenta/i), 'no se puede afirmar lo que no ocurrió').toHaveCount(0)
+  await expect(
+    page.getByText(/Guarda esta compra en tu cuenta/),
+    'ni ofrecer guardar lo que no está en la cola',
+  ).toHaveCount(0)
 })

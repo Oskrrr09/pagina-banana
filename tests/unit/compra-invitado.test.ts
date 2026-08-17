@@ -153,15 +153,43 @@ describe('la cola de compras pendientes', () => {
     expect(reclamar('BC-AAAAAAAAAAAA', 'uid-B')).toBe(false)
   })
 
-  it('renombrar conserva el reclamo', () => {
-    // Pasa cuando el identificador chocó con un pedido ajeno: la compra se
-    // queda con uno nuevo, pero sigue siendo de quien la estaba reclamando.
+  it('renombrar cambia el candidato, no la identidad local', () => {
+    // POR QUÉ IMPORTA
+    //
+    // El identificador del pedido puede cambiar —si choca con uno ajeno—, pero
+    // la entrada de la cola tiene que seguir siendo LA MISMA: la pantalla de
+    // confirmación la observa, y si el renombrado la convirtiera en otra,
+    // dejaría de encontrarla y daría la compra por terminada cuando el nuevo
+    // intento todavía puede fallar.
     guardarPendiente(pedido('BC-AAAAAAAAAAAA'))
     reclamar('BC-AAAAAAAAAAAA', 'uid-A')
     renombrar('BC-AAAAAAAAAAAA', 'BC-BBBBBBBBBBBB')
+
     const [p] = listarPendientes()
-    expect(p.order.id).toBe('BC-BBBBBBBBBBBB')
+    expect(p.clave, 'la identidad local no cambia').toBe('BC-AAAAAAAAAAAA')
+    expect(p.order.id, 'el candidato para `pedidos` sí').toBe('BC-BBBBBBBBBBBB')
     expect(p.claimedBy, 'el dueño no cambia porque cambie el número').toBe('uid-A')
+
+    // Y se sigue encontrando —y sólo se retira— por la clave de siempre.
+    expect(reclamar('BC-AAAAAAAAAAAA', 'uid-A'), 'sigue localizable por su clave').toBe(true)
+    consumir('BC-BBBBBBBBBBBB')
+    expect(hayPendientes(), 'el candidato nuevo no sirve para retirarla').toBe(true)
+    consumir('BC-AAAAAAAAAAAA')
+    expect(hayPendientes()).toBe(false)
+  })
+
+  it('avisa cuando cambia, para que nadie tenga que sondear con un plazo', () => {
+    // Un sondeo de duración fija deja el mensaje antiguo en pantalla si la
+    // sincronización tarda más que el plazo. Con el aviso, la interfaz reacciona
+    // cuando de verdad pasa.
+    const avisos: string[] = []
+    const escuchar = () => avisos.push('cambio')
+    vi.stubGlobal('window', { dispatchEvent: escuchar })
+
+    guardarPendiente(pedido('BC-AAAAAAAAAAAA'))
+    renombrar('BC-AAAAAAAAAAAA', 'BC-BBBBBBBBBBBB')
+    consumir('BC-AAAAAAAAAAAA')
+    expect(avisos.length, 'guardar, renombrar y consumir avisan').toBe(3)
   })
 
   it('un almacenamiento corrupto no rompe la aplicación', () => {

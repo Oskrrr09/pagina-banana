@@ -156,19 +156,46 @@ export type ResultadoSincronizacion = 'sincronizado' | 'ya-estaba' | 'error'
  */
 export interface Sincronizacion {
   resultado: ResultadoSincronizacion
+  /** Identificador con el que quedó el pedido; puede no ser el de partida. */
   id: string
 }
 
 /**
- * ¿Este pedido ya está en la tabla a nombre de esta cuenta?
+ * ¿De quién es este pedido, si es que existe?
  *
- * La consulta va bajo RLS, así que sólo puede devolver filas propias: si
- * encuentra algo, es de quien pregunta. Esa es justamente la propiedad que hace
- * que sirva para distinguir «ya lo subí yo» de «ese id es de otro».
+ * TRES RESPUESTAS, NO DOS
+ *
+ * La consulta va bajo RLS, así que sólo devuelve filas propias. Pero eso hace
+ * que «no hay fila» y «no pude leer» se parezcan mucho, y **no significan lo
+ * mismo**:
+ *
+ *  · `mio`     — la lectura fue bien y la fila está: la subí yo.
+ *  · `ausente` — la lectura fue bien y no hay nada visible para mí.
+ *  · `error`   — no se pudo leer. **No se sabe nada.**
+ *
+ * Colapsar `error` en `ausente` tenía una consecuencia grave: tras un conflicto
+ * de clave, un fallo de red se habría interpretado como «ese identificador es de
+ * otra persona», y la respuesta a eso es renombrar la compra e insertarla otra
+ * vez. Es decir, un corte de red podía **duplicar el pedido**.
  */
-async function yaEsMio(id: string): Promise<boolean> {
-  const { data } = await supabase!.from('pedidos').select('id').eq('id', id).maybeSingle()
-  return Boolean(data)
+type Propiedad = 'mio' | 'ausente' | 'error'
+
+async function deQuienEs(id: string): Promise<Propiedad> {
+  // El `try` no sobra: una consulta puede fallar de dos maneras distintas. Un
+  // 500 de PostgREST o un error de RLS llegan como `{ error }`; una petición
+  // cortada por la red LANZA. Las dos son el mismo desconocimiento, y las dos
+  // tienen que responder `error` — no `ausente`.
+  try {
+    const { data, error } = await supabase!.from('pedidos').select('id').eq('id', id).maybeSingle()
+    if (error) {
+      console.error('[orderSync] no se pudo comprobar si el pedido ya existe', error)
+      return 'error'
+    }
+    return data ? 'mio' : 'ausente'
+  } catch (fallo) {
+    console.error('[orderSync] no se pudo comprobar si el pedido ya existe', fallo)
+    return 'error'
+  }
 }
 
 /**
@@ -178,12 +205,21 @@ async function yaEsMio(id: string): Promise<boolean> {
  * compitan acaban con UNA fila. La que pierde recibe el conflicto de clave,
  * vuelve a preguntar, se encuentra el pedido ya suyo y termina bien.
  */
-export async function sincronizarPendiente(clienteId: string, order: DemoOrder): Promise<Sincronizacion> {
+export async function sincronizarPendiente(
+  clienteId: string,
+  clave: string,
+  order: DemoOrder,
+): Promise<Sincronizacion> {
   let id = order.id
   if (!supabase) return { resultado: 'error', id }
 
   for (let intento = 0; intento < MAX_REINTENTOS_DE_ID; intento++) {
-    if (await yaEsMio(id)) return { resultado: 'ya-estaba', id }
+    const antes = await deQuienEs(id)
+    if (antes === 'mio') return { resultado: 'ya-estaba', id }
+    // Sin saber si la fila existe no se inserta a ciegas: podría estar ya
+    // escrita de un intento anterior. La compra se queda en la cola y se
+    // reintenta cuando esta misma cuenta vuelva a aparecer.
+    if (antes === 'error') return { resultado: 'error', id }
 
     const fila = construirFilaDePedido(clienteId, { ...order, id })
     // Un pedido sin nada comprado —sólo reservas— no genera fila, y eso no es
@@ -198,17 +234,22 @@ export async function sincronizarPendiente(clienteId: string, order: DemoOrder):
       return { resultado: 'error', id }
     }
 
-    // Hubo conflicto de clave. Dos posibilidades, y se distinguen preguntando:
+    // Hubo conflicto de clave. TRES posibilidades, y se distinguen preguntando:
     //
     //  · el pedido es AHORA mío  → otra reconciliación mía ganó la carrera, y
     //    esto es un éxito idempotente, no un fallo;
-    //  · no lo veo               → ese identificador pertenece a un pedido
-    //    ajeno. No se intenta tocar: se le da a ESTA compra un identificador
-    //    nuevo y se reintenta.
-    if (await yaEsMio(id)) return { resultado: 'ya-estaba', id }
+    //  · ausente                 → la lectura fue bien y no lo veo, así que ese
+    //    identificador pertenece a un pedido ajeno. No se intenta tocar: se le
+    //    da a ESTA compra un identificador nuevo y se reintenta;
+    //  · error                   → no se sabe. Renombrar aquí sería duplicar la
+    //    compra si la fila anterior era mía y no pude leerla. Se conserva el
+    //    identificador y la cola, y se reintenta más tarde.
+    const despues = await deQuienEs(id)
+    if (despues === 'mio') return { resultado: 'ya-estaba', id }
+    if (despues === 'error') return { resultado: 'error', id }
 
     const siguiente = nuevoIdDePedido()
-    renombrar(id, siguiente)
+    renombrar(clave, siguiente)
     id = siguiente
   }
 
@@ -234,13 +275,14 @@ export function recuperarComprasInvitadas(clienteId: string): Promise<number> {
     for (const pendiente of listarPendientes()) {
       // Reclamar antes de intentar nada. Si ya lo tenía pedido otra cuenta, esta
       // compra no es de quien está preguntando y se queda donde está.
-      if (!reclamar(pendiente.order.id, clienteId)) continue
+      if (!reclamar(pendiente.clave, clienteId)) continue
 
-      const { resultado, id } = await sincronizarPendiente(clienteId, pendiente.order)
+      const { resultado } = await sincronizarPendiente(clienteId, pendiente.clave, pendiente.order)
       if (resultado === 'error') continue
-      // Sólo aquí, con el servidor confirmando, se retira de la cola. Por el
-      // identificador FINAL: si hubo que renombrarlo, el de la cola es ése.
-      consumir(id)
+      // Sólo aquí, con el servidor confirmando, se retira de la cola. Por su
+      // CLAVE, que no cambia aunque el identificador del pedido sí lo haya
+      // hecho.
+      consumir(pendiente.clave)
       if (resultado === 'sincronizado') guardadas++
     }
     return guardadas

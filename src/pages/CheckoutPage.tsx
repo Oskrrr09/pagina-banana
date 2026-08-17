@@ -12,7 +12,12 @@ import { ISLAS, useCheckoutState, formatAddressLine } from '../lib/checkoutState
 import { useCustomerAuth } from '../lib/customerAuth'
 import { createReservationsFromCart, isReservationLine } from '../lib/reservations'
 import { mirrorOrderToSupabase } from '../lib/orderSync'
-import { guardarPendiente, listarPendientes } from '../lib/pendingGuestOrders'
+import {
+  EVENTO_PENDIENTES,
+  guardarPendiente,
+  listarPendientes,
+  type PendingGuestOrder,
+} from '../lib/pendingGuestOrders'
 import { demoOrderRepository, type DemoOrder } from '../lib/demoOrderRepository'
 import { productImage } from '../data/products'
 import { stores, getStore } from '../data/stores'
@@ -638,62 +643,74 @@ function Field({
 /**
  * «Guarda esta compra en tu cuenta», en la pantalla de confirmación.
  *
- * Sólo aparece cuando esta compra está DE VERDAD esperando —es decir, cuando
- * sigue en la cola de pendientes—, no por el mero hecho de no haber sesión. Así
- * deja de anunciarse en cuanto la reconciliación la ha guardado, sin que haya
- * que avisar a esta pantalla desde ningún sitio: basta con volver a mirar la
- * cola cuando cambia la sesión.
+ * QUÉ PUEDE AFIRMAR ESTA PANTALLA, Y QUÉ NO
  *
- * No bloquea nada. La compra ya está hecha en el contexto demostrativo; esto es
- * una salida, no un trámite. Y usa el `?redirect=` que login y registro ya
- * entienden, en vez de inventar un segundo sistema de vuelta.
+ * Puede afirmar que una compra **está esperando**: eso lo sabe, porque la ve en
+ * la cola. Lo que NO puede afirmar es que se haya guardado, y aquí estuvo el
+ * error: la primera versión deducía «ya está en tu cuenta» de *no hay
+ * pendiente + hay sesión*, y esa inferencia es falsa.
+ *
+ * Una compra hecha CON la sesión ya iniciada no entra nunca en la cola —se
+ * escribe en el propio checkout—, y si esa escritura falla, el checkout
+ * **ignora el error a propósito** para no bloquear la confirmación. Resultado:
+ * sin pendiente y con sesión, es decir, exactamente el estado que se leía como
+ * éxito. La pantalla habría dicho «guardada» de una compra que no llegó a
+ * guardarse.
+ *
+ * Así que ya no se dice. Mientras la compra esté esperando se ofrece guardarla;
+ * cuando deja de estar en la cola, el bloque desaparece y no se sustituye por
+ * ninguna promesa. Quien quiera comprobarlo tiene Mis pedidos, que lee del
+ * servidor.
+ *
+ * Y no se sondea con un plazo: el módulo de la cola avisa cuando cambia. Un
+ * sondeo de cinco segundos dejaba el mensaje antiguo en pantalla si la
+ * sincronización tardaba más.
  */
 function GuardarEnLaCuenta({ pedidoId }: { pedidoId: string }) {
   const t = useT()
   const { session } = useCustomerAuth()
-  const [pendiente, setPendiente] = useState(() => listarPendientes().some((p) => p.order.id === pedidoId))
+  const [pendiente, setPendiente] = useState<PendingGuestOrder | null>(null)
 
   useEffect(() => {
-    // Al aparecer una cuenta, la reconciliación corre en `customerAuth`. Aquí
-    // sólo se vuelve a leer la cola para dejar de prometer algo ya cumplido.
-    let vivo = true
-    const mirar = () => {
-      if (vivo) setPendiente(listarPendientes().some((p) => p.order.id === pedidoId))
-    }
+    // Se busca por CLAVE, que no cambia. El identificador del pedido sí puede
+    // cambiar si choca con uno ajeno, y buscar por él haría desaparecer el
+    // bloque justo cuando la compra sigue sin estar guardada.
+    const mirar = () => setPendiente(listarPendientes().find((p) => p.clave === pedidoId) ?? null)
     mirar()
-    const id = window.setInterval(mirar, 400)
-    const parar = window.setTimeout(() => window.clearInterval(id), 5000)
+    window.addEventListener(EVENTO_PENDIENTES, mirar)
+    // `storage` cubre lo que ocurra en otra pestaña; el evento propio, lo de
+    // ésta. Entre los dos no hace falta ningún temporizador.
+    window.addEventListener('storage', mirar)
     return () => {
-      vivo = false
-      window.clearInterval(id)
-      window.clearTimeout(parar)
+      window.removeEventListener(EVENTO_PENDIENTES, mirar)
+      window.removeEventListener('storage', mirar)
     }
-  }, [pedidoId, session])
+  }, [pedidoId])
 
-  if (!pendiente) {
-    // Ya está en la cuenta: se dice, y se deja de ofrecer guardarla.
-    if (session) {
-      return (
-        <p className="mt-6 rounded-[12px] border border-line bg-neutral p-4 text-center text-sm text-ink">
-          {t('checkout.savedToAccount')}
-        </p>
-      )
-    }
-    return null
-  }
+  if (!pendiente) return null
+
+  // Con sesión abierta no se ofrece identificarse: ya está identificada. Que la
+  // compra siga en la cola significa que la sincronización no ha terminado —o
+  // falló y se reintentará—, y eso es lo que se dice.
+  const conSesion = Boolean(session)
+  const deOtraCuenta = Boolean(pendiente.claimedBy && session && pendiente.claimedBy !== session.user.id)
 
   return (
     <div className="mt-6 rounded-[12px] border border-line bg-neutral p-5 text-sm">
       <p className="font-semibold text-ink">{t('checkout.saveToAccount')}</p>
-      <p className="mt-1 text-muted">{t('checkout.saveToAccountBody')}</p>
-      <div className="mt-4 flex flex-wrap gap-3">
-        <ButtonLink to={`/login?redirect=${encodeURIComponent('/checkout/3')}`} variant="secondary">
-          {t('checkout.signIn')}
-        </ButtonLink>
-        <ButtonLink to={`/registro?redirect=${encodeURIComponent('/checkout/3')}`} variant="secondary">
-          {t('checkout.createAccount')}
-        </ButtonLink>
-      </div>
+      <p className="mt-1 text-muted">
+        {conSesion && !deOtraCuenta ? t('checkout.savePending') : t('checkout.saveToAccountBody')}
+      </p>
+      {!conSesion && (
+        <div className="mt-4 flex flex-wrap gap-3">
+          <ButtonLink to={`/login?redirect=${encodeURIComponent('/checkout/3')}`} variant="secondary">
+            {t('checkout.signIn')}
+          </ButtonLink>
+          <ButtonLink to={`/registro?redirect=${encodeURIComponent('/checkout/3')}`} variant="secondary">
+            {t('checkout.createAccount')}
+          </ButtonLink>
+        </div>
+      )}
     </div>
   )
 }
