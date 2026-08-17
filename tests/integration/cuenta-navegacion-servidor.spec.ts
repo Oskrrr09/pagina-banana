@@ -410,4 +410,90 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
     await expect(page.getByText(/No se pudieron cargar las reservas/i), 'fallo').toBeVisible({ timeout: 15_000 })
     await expect(page.getByText(/No tienes ninguna reserva/i), 'un error no puede parecer un vacío').toHaveCount(0)
   })
+  test('Pedidos enseña la carga mientras la lectura sigue pendiente', async ({ page }) => {
+    // UNA PETICIÓN DE VERDAD EN VUELO, NO UNA ESPERA A OJO
+    //
+    // El GET de `pedidos` se retiene con una señal que esta prueba controla:
+    // mientras no se suelte, la respuesta no llega y la sección tiene que estar
+    // enseñando su estado de carga. Así el «Cargando…» se observa por existir,
+    // no porque hayamos acertado con un tiempo.
+    const a = await cuenta('carga-pedidos')
+    await identificarse(page, a.email, a.password)
+
+    let soltar = () => {}
+    const retenida = new Promise<void>((resolve) => {
+      soltar = resolve
+    })
+    await page.route('**/rest/v1/pedidos*', async (ruta) => {
+      if (ruta.request().method() !== 'GET') return ruta.continue()
+      await retenida
+      await ruta.continue()
+    })
+
+    await page.goto('./cuenta?apartado=pedidos')
+    const seccionPedidos = page.locator('section').filter({ has: seccion(page, 'Mis pedidos') })
+    await expect(seccionPedidos.getByText('Cargando…'), 'con la lectura en vuelo, se anuncia la carga').toBeVisible()
+
+    soltar()
+    await expect(seccionPedidos.getByText('Cargando…'), 'y desaparece al llegar la respuesta').toHaveCount(0, {
+      timeout: 15_000,
+    })
+    await expect(page.getByText(/Todavía no has hecho ningún pedido/i)).toBeVisible()
+  })
+
+  test('Reservas enseña la carga mientras su lectura sigue pendiente', async ({ page }) => {
+    const a = await cuenta('carga-reservas')
+    await identificarse(page, a.email, a.password)
+
+    let soltar = () => {}
+    const retenida = new Promise<void>((resolve) => {
+      soltar = resolve
+    })
+    await page.route('**/rest/v1/reservas*', async (ruta) => {
+      if (ruta.request().method() !== 'GET') return ruta.continue()
+      await retenida
+      await ruta.continue()
+    })
+
+    await page.goto('./cuenta?apartado=reservas')
+    // Se busca DENTRO de la sección: el armazón tiene su propio estado de carga
+    // de sesión, y confundirlos daría un verde que no dice nada.
+    const seccionReservas = page.locator('section').filter({ has: seccion(page, 'Mis reservas') })
+    await expect(seccionReservas.getByText('Cargando…')).toBeVisible()
+
+    soltar()
+    await expect(seccionReservas.getByText('Cargando…')).toHaveCount(0, { timeout: 15_000 })
+    await expect(page.getByText(/No tienes ninguna reserva/i)).toBeVisible()
+  })
+
+  test('una reserva real se muestra entrando directamente por el enlace profundo', async ({ page }) => {
+    const a = await cuenta('reserva-datos')
+    // Montaje con la vía de servicio; la LECTURA la hace el navegador con su
+    // sesión, atravesando la política `cliente lee sus reservas`.
+    const { error } = await servicio().from('reservas').insert({
+      cliente_id: a.uid,
+      family: 'iphone',
+      model_slug: '17-pro',
+      variant_label: 'Plata · 1TB',
+      model_name: 'iPhone 17 Pro',
+      price: 1729,
+      estado: 'en-espera',
+    })
+    expect(error, 'la reserva de montaje debe poder sembrarse').toBeNull()
+
+    await identificarse(page, a.email, a.password)
+    await page.goto('./cuenta?apartado=reservas')
+
+    await expect(seccion(page, 'Mis reservas')).toBeVisible()
+    await expect(activo(page)).toHaveText('Mis reservas')
+    await expect(page).toHaveURL(/apartado=reservas/)
+
+    const tarjeta = page.locator('li').filter({ hasText: 'iPhone 17 Pro' })
+    await expect(tarjeta, 'una sola reserva').toHaveCount(1)
+    await expect(tarjeta.getByText('Plata · 1TB')).toBeVisible()
+    await expect(tarjeta.getByText(/En lista de espera/)).toBeVisible()
+    // Es la única en cola para esa variante, así que su puesto es determinista.
+    await expect(tarjeta.getByText(/Posición 1/)).toBeVisible()
+    await expect(page.getByText(/No tienes ninguna reserva/i), 'con datos no se enseña el vacío').toHaveCount(0)
+  })
 })
