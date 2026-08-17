@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useColorName, useT, type ClaveTexto } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
-import { Button } from '../components/ui/Button'
+import { Button, ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
 import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
@@ -12,6 +12,12 @@ import { ISLAS, useCheckoutState, formatAddressLine } from '../lib/checkoutState
 import { useCustomerAuth } from '../lib/customerAuth'
 import { createReservationsFromCart, isReservationLine } from '../lib/reservations'
 import { mirrorOrderToSupabase } from '../lib/orderSync'
+import {
+  EVENTO_PENDIENTES,
+  guardarPendiente,
+  listarPendientes,
+  type PendingGuestOrder,
+} from '../lib/pendingGuestOrders'
 import { demoOrderRepository, type DemoOrder } from '../lib/demoOrderRepository'
 import { productImage } from '../data/products'
 import { stores, getStore } from '../data/stores'
@@ -155,6 +161,19 @@ export function CheckoutPage() {
       if (hasPurchases) {
         await mirrorOrderToSupabase(clienteId, order)
       }
+    } else if (hasPurchases) {
+      // SIN CUENTA: la compra se guarda para poder recuperarla después.
+      //
+      // Queda en `localStorage`, no en la sesión de la pestaña, porque quien
+      // compra sin identificarse puede registrarse mañana. Cuando aparezca una
+      // cuenta permanente, `recuperarComprasInvitadas` la escribirá en
+      // `pedidos` a su nombre. Ver `lib/pendingGuestOrders.ts`.
+      //
+      // Sólo lo comprado: las RESERVAS de un invitado no entran aquí. Necesitan
+      // sesión para existir —las crea un RPC que exige cuenta permanente— y su
+      // cola de espera la fija el pago, así que reconstruirlas después sería
+      // inventarle a alguien un puesto que no compró.
+      guardarPendiente(order)
     }
 
     setConfirmedOrder(order)
@@ -387,6 +406,8 @@ export function CheckoutPage() {
                 </div>
               </div>
 
+              <GuardarEnLaCuenta pedidoId={confirmedOrder.id} />
+
               {confirmedOrder.lines.some((l) => l.reservation) && (
                 <div className="mt-6 rounded-[12px] border border-line bg-neutral p-5 text-sm">
                   <p className="font-semibold text-ink">{t('checkout.waitingList')}</p>
@@ -616,5 +637,80 @@ function Field({
       {children}
       {error && <span className="mt-1 block text-xs text-danger">{error}</span>}
     </label>
+  )
+}
+
+/**
+ * «Guarda esta compra en tu cuenta», en la pantalla de confirmación.
+ *
+ * QUÉ PUEDE AFIRMAR ESTA PANTALLA, Y QUÉ NO
+ *
+ * Puede afirmar que una compra **está esperando**: eso lo sabe, porque la ve en
+ * la cola. Lo que NO puede afirmar es que se haya guardado, y aquí estuvo el
+ * error: la primera versión deducía «ya está en tu cuenta» de *no hay
+ * pendiente + hay sesión*, y esa inferencia es falsa.
+ *
+ * Una compra hecha CON la sesión ya iniciada no entra nunca en la cola —se
+ * escribe en el propio checkout—, y si esa escritura falla, el checkout
+ * **ignora el error a propósito** para no bloquear la confirmación. Resultado:
+ * sin pendiente y con sesión, es decir, exactamente el estado que se leía como
+ * éxito. La pantalla habría dicho «guardada» de una compra que no llegó a
+ * guardarse.
+ *
+ * Así que ya no se dice. Mientras la compra esté esperando se ofrece guardarla;
+ * cuando deja de estar en la cola, el bloque desaparece y no se sustituye por
+ * ninguna promesa. Quien quiera comprobarlo tiene Mis pedidos, que lee del
+ * servidor.
+ *
+ * Y no se sondea con un plazo: el módulo de la cola avisa cuando cambia. Un
+ * sondeo de cinco segundos dejaba el mensaje antiguo en pantalla si la
+ * sincronización tardaba más.
+ */
+function GuardarEnLaCuenta({ pedidoId }: { pedidoId: string }) {
+  const t = useT()
+  const { session } = useCustomerAuth()
+  const [pendiente, setPendiente] = useState<PendingGuestOrder | null>(null)
+
+  useEffect(() => {
+    // Se busca por CLAVE, que no cambia. El identificador del pedido sí puede
+    // cambiar si choca con uno ajeno, y buscar por él haría desaparecer el
+    // bloque justo cuando la compra sigue sin estar guardada.
+    const mirar = () => setPendiente(listarPendientes().find((p) => p.clave === pedidoId) ?? null)
+    mirar()
+    window.addEventListener(EVENTO_PENDIENTES, mirar)
+    // `storage` cubre lo que ocurra en otra pestaña; el evento propio, lo de
+    // ésta. Entre los dos no hace falta ningún temporizador.
+    window.addEventListener('storage', mirar)
+    return () => {
+      window.removeEventListener(EVENTO_PENDIENTES, mirar)
+      window.removeEventListener('storage', mirar)
+    }
+  }, [pedidoId])
+
+  if (!pendiente) return null
+
+  // Con sesión abierta no se ofrece identificarse: ya está identificada. Que la
+  // compra siga en la cola significa que la sincronización no ha terminado —o
+  // falló y se reintentará—, y eso es lo que se dice.
+  const conSesion = Boolean(session)
+  const deOtraCuenta = Boolean(pendiente.claimedBy && session && pendiente.claimedBy !== session.user.id)
+
+  return (
+    <div className="mt-6 rounded-[12px] border border-line bg-neutral p-5 text-sm">
+      <p className="font-semibold text-ink">{t('checkout.saveToAccount')}</p>
+      <p className="mt-1 text-muted">
+        {conSesion && !deOtraCuenta ? t('checkout.savePending') : t('checkout.saveToAccountBody')}
+      </p>
+      {!conSesion && (
+        <div className="mt-4 flex flex-wrap gap-3">
+          <ButtonLink to={`/login?redirect=${encodeURIComponent('/checkout/3')}`} variant="secondary">
+            {t('checkout.signIn')}
+          </ButtonLink>
+          <ButtonLink to={`/registro?redirect=${encodeURIComponent('/checkout/3')}`} variant="secondary">
+            {t('checkout.createAccount')}
+          </ButtonLink>
+        </div>
+      )}
+    </div>
   )
 }

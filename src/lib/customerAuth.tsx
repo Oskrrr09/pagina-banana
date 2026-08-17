@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, type DbAddress, type DbCustomer } from './supabase'
+import { recuperarComprasInvitadas } from './orderSync'
 import { notificarCierreSesionCliente } from './accountSession'
 
 // Sesión del CLIENTE de la tienda — Fase 2.
@@ -163,6 +164,28 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
   const userId = session?.user.id ?? null
   const userEmail = session?.user.email ?? null
+
+  // RECUPERAR LAS COMPRAS HECHAS SIN CUENTA
+  //
+  // Un solo sitio, y colgado de `userId`, que es lo que hace que esto sea
+  // correcto y no una lista de llamadas repartidas por la aplicación:
+  //
+  //  · `userId` sale de `session`, y `session` ya es `null` para una sesión
+  //    ANÓNIMA —la que abre el chat—. Así que una sesión anónima nunca dispara
+  //    la reconciliación, sin necesidad de una comprobación aparte que pudiera
+  //    desincronizarse de la de arriba.
+  //  · cubre las cuatro puertas por las que puede aparecer una cuenta: iniciar
+  //    sesión, registrarse, restaurar la sesión al recargar y volver a entrar
+  //    con la sesión ya abierta. Todas terminan poniendo un `userId`.
+  //  · `recuperarComprasInvitadas` es idempotente y se protege sola de dos
+  //    llamadas simultáneas, así que un render de más no cuesta nada.
+  //
+  // Si falla —sin red, Supabase caído—, la compra sigue en la cola y volverá a
+  // intentarse la próxima vez que aparezca esta misma cuenta.
+  useEffect(() => {
+    if (!supabase || !userId) return
+    void recuperarComprasInvitadas(userId)
+  }, [userId])
 
   const loadProfile = useCallback(async () => {
     // `userId` ya es null en una sesión anónima, porque sale de `session` y no

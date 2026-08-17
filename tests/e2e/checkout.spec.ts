@@ -45,7 +45,13 @@ test('un pedido demostrativo completo genera número y sobrevive a recarga', asy
 
   await page.getByRole('button', { name: 'Confirmar pedido' }).click()
   await expect(page).toHaveURL(/\/checkout\/3$/, { timeout: 5_000 })
-  const idLocator = page.getByText(/BC-\d{6}/)
+  // El identificador dejó de ser `BC-` + seis cifras en la PR #59: ese espacio
+  // era de 900.000 valores para lo que es la clave primaria de `pedidos`, y
+  // desde que sirve para recuperar una compra invitada, un choque significa una
+  // compra que no se puede reclamar. Aquí se acepta cualquiera de los dos
+  // formatos —el nuevo y el antiguo, que sigue existiendo en la tabla—: lo que
+  // esta prueba protege es que el número se enseñe y sobreviva a la recarga.
+  const idLocator = page.getByText(/BC-([0-9A-F]{12}|\d{6})/)
   await expect(idLocator).toBeVisible()
   const orderText = await idLocator.textContent()
 

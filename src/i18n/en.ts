@@ -302,6 +302,11 @@ export const en: Diccionario = {
 
   'checkout.secure': 'Secure purchase',
   'checkout.backToCart': 'Back to basket',
+  'checkout.saveToAccount': 'Save this purchase to your account',
+  'checkout.saveToAccountBody': 'Sign in and this order will be kept: you will find it from any device.',
+  'checkout.savePending': 'It will be saved to your account as soon as possible; if something fails, it retries.',
+  'checkout.signIn': 'Sign in',
+  'checkout.createAccount': 'Create account',
   'checkout.demoOrderBody': 'Nothing is charged or shipped; the data is stored only in your browser.',
   'checkout.fullName': 'Full name',
   'checkout.address': 'Address',
