@@ -31,7 +31,10 @@ test('la ruta con apartado abre Mis pedidos, no Datos personales', async ({ page
   await expect(page.getByRole('heading', { name: 'Mi cuenta' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Mis pedidos' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Datos personales' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Mis pedidos' })).toHaveAttribute('aria-current', 'page')
+  // El menú de apartados son ENLACES desde la PR #60: cada apartado tiene su
+  // propia URL, así que un enlace es lo que es. La propiedad que esta línea
+  // protege —que el apartado abierto queda marcado— no cambia.
+  await expect(page.getByRole('link', { name: 'Mis pedidos' })).toHaveAttribute('aria-current', 'page')
 })
 
 test('con sesión, Inicio no repite los destinos de la barra inferior', async ({ page }) => {
@@ -83,6 +86,9 @@ test('el aviso abre el apartado de reservas de la cuenta', async ({ page }) => {
   // demuestra el destino es lo que se pinta.
   await expect(page.getByRole('heading', { name: 'Mi cuenta' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Mis reservas' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Mis reservas' })).toHaveAttribute('aria-current', 'page')
+  // El menú de apartados son ENLACES desde la PR #60: cada apartado tiene su
+  // propia URL, así que un enlace es lo que es. La propiedad que esta línea
+  // protege —que el apartado abierto queda marcado— no cambia.
+  await expect(page.getByRole('link', { name: 'Mis reservas' })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByRole('heading', { name: 'Datos personales' })).toHaveCount(0)
 })

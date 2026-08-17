@@ -98,7 +98,10 @@ test('`?apartado=pedidos` abre Mis pedidos', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Mis pedidos' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Datos personales' })).toHaveCount(0)
   // Y el menú lo refleja, no sólo el contenido.
-  await expect(page.getByRole('button', { name: 'Mis pedidos' })).toHaveAttribute('aria-current', 'page')
+  // El menú de apartados son ENLACES desde la PR #60: cada apartado tiene su
+  // propia URL, así que un enlace es lo que es. La propiedad que esta línea
+  // protege —que el apartado abierto queda marcado— no cambia.
+  await expect(page.getByRole('link', { name: 'Mis pedidos' })).toHaveAttribute('aria-current', 'page')
 })
 
 test('vale para cualquier apartado real', async ({ page }) => {
