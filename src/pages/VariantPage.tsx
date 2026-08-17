@@ -144,13 +144,36 @@ export function VariantPage() {
   }, [model])
 
   // Actualiza la URL al cambiar de variante, sin recargar (§9.3)
+  //
+  // SÓLO SI LA URL NO ES YA LA DE ESTA VARIANTE
+  //
+  // Antes el reemplazo era incondicional, así que al abrir una ficha **desde una
+  // tarjeta del catálogo** —que ya enlaza a la ruta canónica— la aplicación
+  // apilaba esa entrada y acto seguido la reemplazaba por sí misma. Ese
+  // reemplazo no aporta ningún estado: la URL de destino y la de origen son la
+  // misma cadena.
+  //
+  // No era inofensivo. Corre en un efecto, es decir después del pintado, y
+  // puede coincidir con un `history.back()` inmediato. El CI post-merge de la
+  // PR #60 —run `32066518376`— dejó constancia de una ejecución en la que Atrás
+  // no devolvía al catálogo: la aplicación se quedaba en la ficha. La prueba de
+  // `tienda-catalogo.spec.ts` que observa `history.replaceState` demuestra el
+  // reemplazo de forma determinista, sin depender de que la carrera ocurra.
+  //
+  // La comparación es contra `location.pathname` a secas porque el router monta
+  // con `basename`, y tanto `useLocation().pathname` como `variantPath()` van
+  // SIN él: los dos son rutas de aplicación. Ninguno lleva barra final.
+  //
+  // Cambiar de color, capacidad o tamaño sigue reemplazando como siempre: ahí
+  // el destino sí es distinto del sitio en el que se está.
   useEffect(() => {
     if (family && model && color && capacity) {
       const selectedCapacity =
         color.capacities.find((candidate) => candidate.capacity === capacity) ?? color.capacities[0]
-      navigate(variantPath(model, color, selectedCapacity), { replace: true })
+      const destino = variantPath(model, color, selectedCapacity)
+      if (location.pathname !== destino) navigate(destino, { replace: true })
     }
-  }, [family, model, color, capacity, navigate])
+  }, [family, model, color, capacity, navigate, location.pathname])
 
   if (!family || !model || !color || !current) return <NotFound />
 
