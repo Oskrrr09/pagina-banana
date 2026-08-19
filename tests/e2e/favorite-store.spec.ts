@@ -678,3 +678,96 @@ test('en la app la lista expandida se cierra con Escape a 320×568', async ({ pa
   const barra = await page.locator('[data-app-tab-bar]').boundingBox()
   expect(barra!.y + barra!.height, 'la barra vuelve a apoyarse en el borde inferior').toBeLessThanOrEqual(569)
 })
+
+// ---------------------------------------------------------------------------
+// APARECER NO PUEDE MOVER A LA PERSONA DE SITIO
+//
+// Regresión de esta misma PR, encontrada al revisarla. `focus()` arrastra el
+// elemento al viewport si está fuera. Mientras el aviso flotaba pegado a la
+// ventana eso no podía pasar: siempre estaba en pantalla. Al pasar a ocupar su
+// banda —en la web, antes de `main`— puede quedar muy por encima de lo que se
+// está leyendo, y tomar el foco devolvía la página arriba del todo. Medido
+// dejando que el desplazamiento se asiente, con `html { scroll-behavior:
+// smooth }` animando además el tirón:
+//
+//   /  390×844 · scrollY 2100 → 0
+//   / 1280×800 · scrollY 2100 → 0
+//
+// Lo que se comprueba aquí es lo que la persona nota: que lo que está mirando
+// no se mueva. No se mira `scrollY` a secas porque el navegador lo ajusta a
+// propósito al insertarse la banda por encima —anclaje de desplazamiento—, y
+// ese ajuste es justo lo que mantiene la vista quieta.
+// ---------------------------------------------------------------------------
+for (const ventana of [
+  { width: 390, height: 844 },
+  { width: 1280, height: 800 },
+]) {
+  test(`el aviso no mueve la página al aparecer con alguien desplazado a ${ventana.width}×${ventana.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(ventana)
+    await page.goto('./')
+
+    // Desplazarse ANTES de que aparezca, con la rueda: un gesto, no una llamada.
+    await page.mouse.move(ventana.width / 2, ventana.height / 2)
+    for (let i = 0; i < 8; i++) await page.mouse.wheel(0, 300)
+    await esperarAQueSeAsiente(page)
+
+    // Se toma como referencia lo que hay en el centro de la pantalla: si al
+    // aparecer el aviso eso sigue donde estaba, la persona no ha notado nada.
+    const antes = await page.evaluate(
+      ([w, h]) => {
+        const referencia = document.elementFromPoint(w / 2, h / 2)!
+        ;(window as unknown as { __referencia?: Element }).__referencia = referencia
+        return { top: Math.round(referencia.getBoundingClientRect().top), y: Math.round(window.scrollY) }
+      },
+      [ventana.width, ventana.height],
+    )
+    expect(antes.y, 'la prueba necesita estar lejos del principio de la página').toBeGreaterThan(600)
+
+    await expect(page.locator('[data-favorite-store-prompt]')).toBeVisible({ timeout: 5000 })
+    await esperarAQueSeAsiente(page)
+
+    const despues = await page.evaluate(() => {
+      const referencia = (window as unknown as { __referencia: Element }).__referencia
+      const activo = document.activeElement
+      return {
+        top: Math.round(referencia.getBoundingClientRect().top),
+        y: Math.round(window.scrollY),
+        focoEnElAviso: Boolean(activo?.closest('[data-favorite-store-prompt]')),
+      }
+    })
+
+    expect(
+      Math.abs(despues.top - antes.top),
+      `lo que estaba en el centro se movió de ${antes.top} a ${despues.top} (scrollY ${antes.y} → ${despues.y})`,
+    ).toBeLessThanOrEqual(8)
+
+    expect(despues.focoEnElAviso, 'el aviso no puede reclamar el foco estando fuera de la vista').toBe(false)
+
+    // Y sigue siendo alcanzable: está ahí arriba, esperando.
+    await expect(page.locator('[data-favorite-store-prompt]')).toHaveCount(1)
+  })
+}
+
+test('el aviso sí toma el foco cuando aparece a la vista', async ({ page }) => {
+  // El contrapeso del caso anterior: quitar el foco del todo también lo pasaría.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('./')
+  await expect(page.locator('[data-favorite-store-prompt]')).toBeVisible({ timeout: 5000 })
+  await esperarAQueSeAsiente(page)
+
+  const estado = await page.evaluate(() => {
+    const activo = document.activeElement
+    const boton = document.querySelector('[data-favorite-store-prompt] button[aria-label^="Cerrar"]')!
+    const caja = boton.getBoundingClientRect()
+    return {
+      focoEnElBoton: activo === boton,
+      aLaVista: caja.bottom > 0 && caja.top < window.innerHeight,
+      y: Math.round(window.scrollY),
+    }
+  })
+  expect(estado.aLaVista, 'a esta altura el aviso tiene que estar a la vista').toBe(true)
+  expect(estado.focoEnElBoton, 'estando a la vista, el aviso sí reclama el foco').toBe(true)
+  expect(estado.y, 'y no ha hecho falta mover la página').toBe(0)
+})

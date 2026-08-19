@@ -158,9 +158,46 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const [showList, setShowList] = useState(false)
 
+  // EL FOCO SÓLO SE TOMA SI EL AVISO ESTÁ A LA VISTA
+  //
+  // `focus()` arrastra el elemento al viewport si está fuera. Mientras el aviso
+  // flotaba pegado a la ventana eso no podía pasar: siempre estaba en pantalla.
+  // Al pasar a ocupar su banda —en la web, antes de `main`— sí puede quedar muy
+  // por encima de lo que la persona está leyendo, y entonces tomar el foco se
+  // la lleva de vuelta arriba. Medido con la rueda, dejando que el
+  // desplazamiento se asiente:
+  //
+  //   /  390×844 · scrollY 2100 → 0
+  //   / 1280×800 · scrollY 2100 → 0
+  //
+  // Y con `html { scroll-behavior: smooth }` el tirón además se anima, así que
+  // se ve como si la página se moviera sola.
+  //
+  // Se comprobó también el caso en que el aviso sale con retraso porque estaba
+  // esperando a que se cerrase un modal. Allí la página sí se mueve, pero no por
+  // esto: medido con el aviso descartado de antemano —sin aviso ninguno— el
+  // salto es el mismo al píxel y el foco acaba igual en el botón que abrió la
+  // guía. Es su propia restauración de foco, y no se toca aquí.
+  //
+  // No se arregla con `preventScroll`: eso dejaría el foco en un botón que no
+  // se ve, que es peor para quien navega con teclado. Lo que se corrige es la
+  // decisión: el aviso reclama el foco cuando está delante de la persona, y no
+  // cuando está fuera de su vista. Ahí se queda quieto y espera; sigue siendo
+  // alcanzable con el tabulador y sigue cerrándose con Escape.
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
-    const focusFrame = window.requestAnimationFrame(() => closeBtnRef.current?.focus())
+    // Sólo se devuelve el foco si antes se llegó a tomar. Devolverlo sin
+    // haberlo tomado movería a la persona desde donde esté ahora.
+    let tomado = false
+    const focusFrame = window.requestAnimationFrame(() => {
+      const boton = closeBtnRef.current
+      if (!boton) return
+      const caja = boton.getBoundingClientRect()
+      const aLaVista = caja.bottom > 0 && caja.top < window.innerHeight
+      if (!aLaVista) return
+      boton.focus()
+      tomado = true
+    })
 
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -172,7 +209,7 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
     return () => {
       window.cancelAnimationFrame(focusFrame)
       document.removeEventListener('keydown', onKey)
-      previous?.focus?.()
+      if (tomado) previous?.focus?.()
     }
   }, [onLater])
 
