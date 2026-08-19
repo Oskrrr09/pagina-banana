@@ -294,9 +294,9 @@ test('el aviso no aparece encima de un diálogo modal ni le roba el foco', async
 })
 
 // ---------------------------------------------------------------------------
-// El aviso no puede tragarse los clicks de la página que hay debajo.
+// EL CONTRATO DE LA #53, REAPUNTADO POR LA #62
 //
-// De dónde sale: investigando el intermitente histórico de
+// De dónde salió: investigando el intermitente histórico de
 // `apple-finder.spec.ts` se midió que la capa del aviso —`fixed`, de ancho
 // completo, 221 px de alto— cubría el botón «Continuar» del asistente **al
 // 100 %** a 1280×720 y a 1366×768, aunque el panel visible quedase a 199 px de
@@ -304,110 +304,87 @@ test('el aviso no aparece encima de un diálogo modal ni le roba el foco', async
 // del botón, y una pulsación real no cambiaba de pregunta. El teclado, en
 // cambio, sí podía enfocarlo: dos modos de entrada en contradicción.
 //
-// A 1440×900 no había solape, así que no se versiona como caso: no protegería
-// nada.
+// Aquellos dos casos colocaban a propósito un CTA DEBAJO de la banda fija para
+// demostrar que la zona transparente no capturaba el puntero. La #62 elimina
+// por construcción esa superposición —el aviso ya no flota en ninguna de las
+// dos superficies—, así que esa precondición ya no representa una situación
+// posible y mantenerla habría exigido conservar el solape a propósito.
+//
+// Lo que se protege ahora es el CONTRATO, no la maqueta que lo originó:
+//   - ningún punto visible de un interactivo ajeno lo recibe el aviso
+//     (los casos de geometría de más abajo, en las dos superficies);
+//   - una pulsación física sobre un control de la página funciona sin cerrar
+//     antes el aviso;
+//   - el propio aviso sigue respondiendo a pulsaciones físicas;
+//   - no es modal: ni `aria-modal`, ni fondo que cubra la página, ni trampa de
+//     foco.
 // ---------------------------------------------------------------------------
 for (const ventana of [
   { width: 1280, height: 720 },
   { width: 1366, height: 768 },
 ]) {
-  test(`con el aviso abierto se puede pulsar el CTA que queda debajo a ${ventana.width}×${ventana.height}`, async ({
+  test(`el aviso responde a pulsaciones físicas sin volverse modal a ${ventana.width}×${ventana.height}`, async ({
     page,
   }) => {
     await page.setViewportSize(ventana)
-    await page.goto('./elige-tu-apple')
-    await page.getByRole('button', { name: 'Empezar' }).click()
-    await page.getByRole('radio', { name: 'iPhone' }).click()
-    await page.getByRole('radio', { name: 'Fotografía y vídeo' }).click()
-    await page.getByRole('button', { name: /^Siguiente/ }).click()
-    await page.getByRole('radio', { name: 'Grande' }).click()
-    await page.getByRole('button', { name: /^Siguiente/ }).click()
-    await page.getByRole('radio', { name: 'Cámara' }).click()
-
-    // El aviso aparece a los ~800 ms de la primera visita.
+    await page.goto('./')
     const aviso = page.locator('[data-favorite-store-prompt]')
     await expect(aviso).toBeVisible({ timeout: 5000 })
 
-    const cta = page.getByRole('button', { name: /Continuar|Siguiente/ })
+    // NO ES MODAL: sin `aria-modal`, sin fondo que cubra la página y sin
+    // atrapar el foco. Es lo que permite que la página siga siendo usable.
+    const panel = page.getByRole('dialog', { name: /¿Cuál es tu tienda Banana habitual\?/ })
+    await expect(panel).toHaveAttribute('aria-modal', 'false')
+    await expect(page.locator('[aria-modal="true"]')).toHaveCount(0)
 
-    // Colocar el CTA dentro de la banda del aviso, que es donde se midió el
-    // fallo. Se hace con la rueda del ratón —desplazamiento físico— en vez de
-    // `window.scrollTo`, para no salirse de lo que haría una persona.
-    const desplazamiento = await page.evaluate(() => {
-      const boton = [...document.querySelectorAll('button')].find((b) =>
-        /^Continuar|^Siguiente/.test((b.textContent || '').trim()),
-      )!
-      const capa = document.querySelector('[data-favorite-store-prompt]')!.getBoundingClientRect()
-      // Objetivo: el centro del botón, a un tercio de la banda desde arriba.
-      const destinoEnPantalla = capa.top + capa.height / 3
-      const centroActual = boton.getBoundingClientRect().top + boton.getBoundingClientRect().height / 2
-      return Math.round(centroActual - destinoEnPantalla)
-    })
-    await page.mouse.move(ventana.width / 2, 200)
-    await page.mouse.wheel(0, desplazamiento)
-    // Esperar a que el desplazamiento se asiente, sin tiempos fijos.
-    await expect
-      .poll(
-        async () => {
-          const a = await page.evaluate(() => Math.round(window.scrollY))
-          await page.evaluate(
-            () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-          )
-          const b = await page.evaluate(() => Math.round(window.scrollY))
-          return a === b
-        },
-        { timeout: 5000 },
-      )
-      .toBe(true)
-
-    const caja = await cta.boundingBox()
-    expect(caja, 'sin caja del CTA no hay nada que medir').not.toBeNull()
-
-    // La precondición que hace útil el caso: el CTA está dentro de la banda del
-    // aviso y fuera del panel visible. Si dejara de solaparse, la prueba no
-    // estaría comprobando nada y hay que saberlo.
-    const situacion = await page.evaluate((c) => {
+    const tapa = await page.evaluate(() => {
       const capa = document.querySelector('[data-favorite-store-prompt]')!
-      const panel = capa.querySelector('[role="dialog"]')!
-      const rc = capa.getBoundingClientRect()
-      const rp = panel.getBoundingClientRect()
-      const centro = { x: c!.x + c!.width / 2, y: c!.y + c!.height / 2 }
-      const solapaLaCapa = centro.y >= rc.top && centro.y <= rc.bottom
-      const solapaElPanel = centro.x >= rp.left && centro.x <= rp.right && solapaLaCapa
-      return { solapaLaCapa, solapaElPanel }
-    }, caja)
-    expect(situacion.solapaLaCapa, 'el CTA debe caer dentro de la banda del aviso').toBe(true)
-    expect(situacion.solapaElPanel, 'el CTA no debe caer bajo el panel visible').toBe(false)
+      // ¿Algo del aviso cubre la ventana entera haciendo de fondo?
+      return [...capa.querySelectorAll('*'), capa].some((el) => {
+        const r = el.getBoundingClientRect()
+        return r.width >= window.innerWidth * 0.9 && r.height >= window.innerHeight * 0.9
+      })
+    })
+    expect(tapa, 'el aviso no puede desplegar un fondo que cubra la página').toBe(false)
 
-    // Hit-testing real: quien recibe el punto es el botón o algo suyo.
-    const alcanzable = await page.evaluate((c) => {
-      const boton = [...document.querySelectorAll('button')].find((b) =>
-        /^Continuar|^Siguiente/.test((b.textContent || '').trim()),
-      )
-      const enElPunto = document.elementFromPoint(c!.x + c!.width / 2, c!.y + c!.height / 2)
-      return {
-        esElCta: Boolean(boton && enElPunto && (enElPunto === boton || boton.contains(enElPunto))),
-        recibe: enElPunto?.closest('[data-favorite-store-prompt]') ? 'el aviso' : (enElPunto?.tagName ?? 'nadie'),
-      }
-    }, caja)
-    expect(alcanzable.esElCta, `el punto del CTA lo recibe ${alcanzable.recibe}`).toBe(true)
+    // El foco arranca en el botón de cerrar; tabulando se puede salir del
+    // aviso. Si estuviera atrapado, daría vueltas dentro para siempre.
+    let salio = false
+    for (let i = 0; i < 6 && !salio; i++) {
+      await page.keyboard.press('Tab')
+      salio = await page.evaluate(() => !document.activeElement?.closest('[data-favorite-store-prompt]'))
+    }
+    expect(salio, 'el foco tiene que poder salir del aviso con el tabulador').toBe(true)
 
-    // Y la pulsación real avanza de pregunta.
-    await pulsarConElRaton(page, caja!)
-    await expect(
-      page.getByRole('heading', { name: /¿Qué presupuesto orientativo tienes/ }),
-      'la pulsación física sobre el CTA debe avanzar a la pregunta de presupuesto',
-    ).toBeVisible()
+    // Y EL AVISO SIGUE SIENDO PULSABLE: es el contrapeso del arreglo contrario
+    // —dejarlo sin puntero— que también pasaría las pruebas de geometría.
+    const elegir = page.getByRole('button', { name: 'Elegir tienda', exact: true })
+    await pulsarConElRaton(page, (await elegir.boundingBox())!)
+    const primera = panel.getByRole('button', { name: /Banana Triana/ })
+    await expect(primera, 'la pulsación física sobre «Elegir tienda» debe abrir la lista').toBeVisible()
 
-    // El arreglo contrario —dejar todo el aviso sin puntero— también pasaría
-    // lo anterior, así que el panel tiene que seguir siendo pulsable.
-    const cerrar = page.getByRole('button', { name: /Ahora no/i })
-    const cajaCerrar = await cerrar.boundingBox()
-    expect(cajaCerrar, 'sin caja del botón del panel no hay nada que medir').not.toBeNull()
-    await pulsarConElRaton(page, cajaCerrar!)
-    await expect(aviso, 'el panel del aviso debe seguir siendo interactivo').toHaveCount(0)
+    await pulsarConElRaton(page, (await primera.boundingBox())!)
+    await expect(aviso, 'elegir tienda con una pulsación física debe cerrar el aviso').toHaveCount(0)
+    expect(await page.evaluate(() => localStorage.getItem('banana:favorite-store'))).toBe('triana')
   })
 }
+
+test('«Ahora no» responde a una pulsación física y no deja rastro personal', async ({ page }) => {
+  await page.goto('./')
+  const aviso = page.locator('[data-favorite-store-prompt]')
+  await expect(aviso).toBeVisible({ timeout: 5000 })
+
+  const ahoraNo = page.getByRole('button', { name: /Ahora no/i })
+  await pulsarConElRaton(page, (await ahoraNo.boundingBox())!)
+  await expect(aviso, 'el panel del aviso debe seguir siendo interactivo').toHaveCount(0)
+
+  const guardado = await page.evaluate(() => ({
+    prompt: localStorage.getItem('banana:favorite-store-prompt'),
+    fav: localStorage.getItem('banana:favorite-store'),
+  }))
+  expect(guardado.prompt).toBe('dismissed')
+  expect(guardado.fav).toBeNull()
+})
 
 // ---------------------------------------------------------------------------
 // El PANEL VISIBLE tampoco puede colocarse encima del contenido.
@@ -421,17 +398,26 @@ for (const ventana of [
 //   app 375×812 · panel 492→728 · «Ver más», dos tarjetas y sus dos favoritos
 //   app 390×844 · panel 524→760 · dos tarjetas y sus dos favoritos
 //
-// Y al final del documento había interactivos que NO se despejaban por mucho
-// que se desplazara, porque el aviso viaja con el borde inferior de la ventana:
+// En la web pasaba lo mismo en la PRIMERA VISTA, sin desplazar nada:
+//
+//   web  390×844 · panel 588→824 · los cuatro puntos del carrusel del hero
+//   web 1280×800 · panel 580→768 · los cuatro puntos del carrusel del hero
+//
+// Y estaba comprobado que el toque se perdía: con el aviso abierto, pulsar el
+// punto del tercer slide no cambiaba de slide; descartando el aviso, el mismo
+// punto sí lo cambiaba.
+//
+// Y al final del documento había además interactivos que NO se despejaban por
+// mucho que se desplazara, porque el aviso viajaba con el borde de la ventana:
 //
 //   web 1280×800 al fondo · «Plan Renove», «Seguimiento de pedido», «Servicio técnico»
 //   web  320×568 al fondo · dos preguntas del acordeón
 //   app  390×844 al fondo · «Soporte» y «Chatea con Bananito»
 //
-// Son dos propiedades distintas y se prueban por separado:
-//   - en la app el aviso ocupa su propia banda, así que NUNCA hay solape;
-//   - en la web sigue siendo una hoja pegada al borde, y lo que se garantiza es
-//     que la banda que ocupa queda reservada: nada se queda debajo sin salida.
+// La propiedad es una sola y vale para las dos superficies: con el aviso
+// abierto, ningún interactivo VISIBLE tiene su punto de acción secuestrado. Se
+// comprueba en la primera vista y también al final del documento, que era donde
+// el fallo no tenía salida.
 // ---------------------------------------------------------------------------
 for (const ventana of [
   { width: 320, height: 568 },
@@ -504,33 +490,191 @@ test('en la app se puede pulsar el CTA de Inicio con el aviso abierto a 320×568
 
 for (const ventana of [
   { width: 320, height: 568 },
+  { width: 375, height: 812 },
   { width: 390, height: 844 },
   { width: 1280, height: 800 },
   { width: 1440, height: 900 },
 ]) {
-  test(`en la web el aviso reserva su banda y no deja nada sin salida a ${ventana.width}×${ventana.height}`, async ({
-    page,
-  }) => {
+  test(`en la web el aviso no se pone delante de Inicio a ${ventana.width}×${ventana.height}`, async ({ page }) => {
     await page.setViewportSize(ventana)
     await page.goto('./')
     await expect(page.locator('[data-favorite-store-prompt]')).toBeVisible({ timeout: 5000 })
+    await esperarAQueSeAsiente(page)
 
-    // Al final del documento: si algo sigue debajo del aviso aquí, ya no hay
-    // ningún desplazamiento que lo despeje.
+    // PRIMERA VISTA, sin desplazar nada: es donde se perdían los toques sobre
+    // los puntos del carrusel del hero.
+    const arriba = await radiografiaDelAviso(page)
+    expect(arriba, 'sin aviso en pantalla no hay nada que medir').not.toBeNull()
+    expect(arriba!.altoPanel, 'el aviso tiene que ocupar una banda real').toBeGreaterThan(120)
+    expect(arriba!.visibles, 'Inicio tiene que ofrecer interactivos a la vista').toBeGreaterThan(3)
+    expect(
+      arriba!.secuestrados,
+      `en la primera vista el aviso se queda el punto de acción de: ${arriba!.secuestrados.join(' · ')}`,
+    ).toEqual([])
+
+    // Y al final del documento, que era el caso sin salida: ahí ya no queda
+    // ningún desplazamiento que despeje lo que hubiera quedado debajo.
     await page.evaluate(() => {
       const raiz = document.scrollingElement ?? document.documentElement
       raiz.scrollTop = raiz.scrollHeight
     })
     await esperarAQueSeAsiente(page)
 
-    const radiografia = await radiografiaDelAviso(page)
-    expect(radiografia, 'sin aviso en pantalla no hay nada que medir').not.toBeNull()
-    expect(radiografia!.altoPanel, 'el aviso tiene que ocupar una banda real').toBeGreaterThan(120)
-    expect(radiografia!.visibles, 'el final de la página tiene que ofrecer interactivos').toBeGreaterThan(0)
-
-    expect(
-      radiografia!.secuestrados,
-      `al final del documento el aviso se queda: ${radiografia!.secuestrados.join(' · ')}`,
-    ).toEqual([])
+    const abajo = await radiografiaDelAviso(page)
+    expect(abajo!.visibles, 'el final de la página tiene que ofrecer interactivos').toBeGreaterThan(0)
+    expect(abajo!.secuestrados, `al final del documento el aviso se queda: ${abajo!.secuestrados.join(' · ')}`).toEqual(
+      [],
+    )
   })
 }
+
+test('en la web se puede pulsar un control de la página con el aviso abierto', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('./')
+  const aviso = page.locator('[data-favorite-store-prompt]')
+  await expect(aviso).toBeVisible({ timeout: 5000 })
+
+  // El punto del tercer slide: uno de los que se midieron secuestrados, y el
+  // que se comprobó que no respondía a la pulsación.
+  const punto = page.locator('[aria-label^="Ir al slide 3"]')
+  await punto.scrollIntoViewIfNeeded()
+  await esperarAQueSeAsiente(page)
+
+  // El aviso sigue abierto y ya no viaja con la ventana: comprobamos que quien
+  // recibe el punto es el control, no él.
+  await expect(aviso, 'el aviso no puede haberse cerrado solo').toHaveCount(1)
+  const caja = await punto.boundingBox()
+  const quienRecibe = await page.evaluate((c) => {
+    const enElPunto = document.elementFromPoint(c!.x + c!.width / 2, c!.y + c!.height / 2)
+    if (enElPunto?.closest('[data-favorite-store-prompt]')) return 'el aviso'
+    return enElPunto?.closest('[aria-label^="Ir al slide"]') ? 'el control' : (enElPunto?.tagName ?? 'nadie')
+  }, caja)
+  expect(quienRecibe, 'el punto del control no puede recibirlo el aviso').toBe('el control')
+
+  // Y la pulsación física cambia de slide de verdad, sin cerrar antes el aviso.
+  await pulsarConElRaton(page, caja!)
+  await expect(punto, 'la pulsación física debe activar el tercer slide').toHaveAttribute('aria-current', 'true')
+  await expect(aviso, 'el aviso sigue abierto: no se cierra al tocar fuera').toHaveCount(1)
+})
+
+// ---------------------------------------------------------------------------
+// EL ESTADO EXPANDIDO, QUE ES DONDE EL AVISO PESA DE VERDAD
+//
+// Al pulsar «Elegir tienda» el panel pasa a llevar cinco fichas de tienda. Con
+// el aviso ya integrado en la columna de la app, medido a 320×568 sin techo:
+//
+//   aviso  64→995 (931 px de alto)
+//   main   64→64  (cero: el contenido desaparecía)
+//   barra  995→1059, fuera de una ventana de 568
+//
+// Y no había forma de alcanzarla: en la app `html` y `body` llevan
+// `overflow: hidden`, así que ningún gesto desplaza el documento. `body` tenía
+// 1059 px de `scrollHeight` sobre 568 de `clientHeight` y aun así era
+// inmovible; sólo un `scrollIntoView` por código llegaba, que es justo lo que un
+// dedo no puede hacer.
+//
+// Por eso la lista se desplaza SOLA aquí: con la rueda encima de ella, nunca
+// con `scrollIntoViewIfNeeded`, que enmascararía exactamente este fallo.
+// ---------------------------------------------------------------------------
+test('en la app la lista de tiendas expandida cabe y se recorre entera a 320×568', async ({ page }) => {
+  await simularApp(page)
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.goto('./')
+  const aviso = page.locator('[data-favorite-store-prompt]')
+  await expect(aviso).toBeVisible({ timeout: 5000 })
+
+  await pulsarConElRaton(page, (await page.getByRole('button', { name: 'Elegir tienda', exact: true }).boundingBox())!)
+  const fichas = page.locator('[data-favorite-store-prompt] li button')
+  await expect(fichas).toHaveCount(5)
+  await esperarAQueSeAsiente(page)
+
+  const marco = await page.evaluate(() => {
+    const caja = (sel: string) => {
+      const r = document.querySelector(sel)!.getBoundingClientRect()
+      return { top: Math.round(r.top), bottom: Math.round(r.bottom) }
+    }
+    const barra = caja('[data-app-tab-bar]')
+    const lista = document.querySelector('[data-favorite-store-prompt] ul')!
+    const principal = document.querySelector('main')!
+    return {
+      ventana: window.innerHeight,
+      barra,
+      barraDentro: barra.top >= 0 && barra.bottom <= window.innerHeight,
+      // El punto de la barra lo tiene que recibir la barra, no el aviso.
+      barraAlcanzable: Boolean(
+        document.elementFromPoint(window.innerWidth / 2, barra.top + 10)?.closest('[data-app-tab-bar]'),
+      ),
+      recorridoDeLaLista: lista.scrollHeight - lista.clientHeight,
+      mainSigueSiendoElScroll: getComputedStyle(principal).overflowY === 'auto' && principal.clientHeight > 0,
+      documentoQuieto:
+        (document.scrollingElement ?? document.documentElement).scrollHeight - document.documentElement.clientHeight,
+      desbordeHorizontal:
+        (document.scrollingElement ?? document.documentElement).scrollWidth - document.documentElement.clientWidth,
+    }
+  })
+
+  expect(
+    marco.barraDentro,
+    `la barra de pestañas quedó en ${marco.barra.top}→${marco.barra.bottom} de ${marco.ventana}`,
+  ).toBe(true)
+  expect(marco.barraAlcanzable, 'el punto de la barra de pestañas no puede recibirlo el aviso').toBe(true)
+  expect(marco.recorridoDeLaLista, 'la lista tiene que poder desplazarse dentro de sí misma').toBeGreaterThan(0)
+  expect(marco.mainSigueSiendoElScroll, 'main tiene que seguir siendo el scroll del contenido, con sitio').toBe(true)
+  expect(marco.documentoQuieto, 'el documento nativo no se desplaza').toBe(0)
+  expect(marco.desbordeHorizontal, 'sin scroll horizontal').toBeLessThanOrEqual(1)
+
+  // La primera ficha se alcanza sin tocar nada.
+  const primera = fichas.first()
+  const cajaPrimera = await primera.boundingBox()
+  const recibePrimera = await page.evaluate((c) => {
+    const en = document.elementFromPoint(c!.x + c!.width / 2, c!.y + c!.height / 2)
+    return Boolean(en?.closest('[data-favorite-store-prompt] li button'))
+  }, cajaPrimera)
+  expect(recibePrimera, 'la primera ficha tiene que estar a la vista y recibir su punto').toBe(true)
+
+  // Y la última, desplazando la lista con la rueda: un gesto, no una llamada.
+  const cajaLista = (await page.locator('[data-favorite-store-prompt] ul').boundingBox())!
+  await page.mouse.move(cajaLista.x + cajaLista.width / 2, cajaLista.y + cajaLista.height / 2)
+  await expect
+    .poll(
+      async () => {
+        await page.mouse.wheel(0, 200)
+        const c = await fichas.last().boundingBox()
+        if (!c) return false
+        return page.evaluate((caja) => {
+          const en = document.elementFromPoint(caja!.x + caja!.width / 2, caja!.y + caja!.height / 2)
+          return Boolean(en?.closest('[data-favorite-store-prompt] li button'))
+        }, c)
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+
+  await pulsarConElRaton(page, (await fichas.last().boundingBox())!)
+  await expect(aviso, 'elegir la última tienda cierra el aviso').toHaveCount(0)
+  const guardado = await page.evaluate(() => ({
+    fav: localStorage.getItem('banana:favorite-store'),
+    personales: Object.keys(localStorage).some((k) => /email|coords|location|user/i.test(k)),
+  }))
+  expect(guardado.fav, 'se guarda el slug de la última tienda').toBe('safari')
+  expect(guardado.personales, 'no se guarda ningún dato personal').toBe(false)
+})
+
+test('en la app la lista expandida se cierra con Escape a 320×568', async ({ page }) => {
+  await simularApp(page)
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.goto('./')
+  const aviso = page.locator('[data-favorite-store-prompt]')
+  await expect(aviso).toBeVisible({ timeout: 5000 })
+
+  await pulsarConElRaton(page, (await page.getByRole('button', { name: 'Elegir tienda', exact: true }).boundingBox())!)
+  await expect(page.locator('[data-favorite-store-prompt] li button')).toHaveCount(5)
+
+  await page.keyboard.press('Escape')
+  await expect(aviso, 'Escape cierra el aviso también con la lista abierta').toHaveCount(0)
+  expect(await page.evaluate(() => localStorage.getItem('banana:favorite-store'))).toBeNull()
+
+  // La barra de pestañas sigue en su sitio después de cerrarse.
+  const barra = await page.locator('[data-app-tab-bar]').boundingBox()
+  expect(barra!.y + barra!.height, 'la barra vuelve a apoyarse en el borde inferior').toBeLessThanOrEqual(569)
+})

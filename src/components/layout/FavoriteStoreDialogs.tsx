@@ -14,45 +14,52 @@ import { ALTURA_TAB_BAR } from './AppTabBar'
 // Nunca se muestra dentro de /checkout/* para no interferir con la compra.
 // El estado de "cerrado" persiste en banana:favorite-store-prompt.
 //
-// EL AVISO OCUPA SITIO; NO SE PONE DELANTE
+// EL AVISO OCUPA SITIO; NO SE PONE DELANTE DE NADA
 //
 // La #53 arregló que la CAPA exterior —de ancho completo y transparente— se
-// tragara los clicks a los lados del panel. Quedaba la otra mitad del mismo
-// problema: el PANEL, que es opaco y mide 448 × 237, se colocaba encima del
-// contenido. Medido en la primera visita, con `elementFromPoint` en el centro
-// de cada interactivo: a 320 px se quedaba el CTA del asistente, y a 375 y 390
-// dos tarjetas de producto con sus botones de favorito. Al final del documento
-// había además interactivos que no se despejaban por mucho que se desplazara,
-// porque el aviso viaja pegado al borde inferior de la ventana.
+// tragara los clicks a los lados del panel, y la dejó `pointer-events-none`.
+// Quedaba la otra mitad del mismo problema: el PANEL, que es opaco y mide
+// 448 × 237, seguía colocándose delante del contenido. Medido en la primera
+// visita, con `elementFromPoint` en el centro de cada interactivo visible:
 //
-// El arreglo no toca los punteros: el panel tiene que seguir siendo pulsable, y
-// dejarlo sin ellos habría inutilizado «Elegir tienda», «Ahora no» y cerrar.
-// Lo que cambia es la GEOMETRÍA, y de forma distinta en cada sitio porque las
-// dos superficies no se desplazan igual:
+//   app  320×568 · el CTA «Empezar» del asistente
+//   app  375×812 · «Ver más», dos tarjetas de producto y sus dos favoritos
+//   app  390×844 · dos tarjetas de producto y sus dos favoritos
+//   web  390×844 · los cuatro puntos del carrusel del hero
+//   web 1280×800 · los cuatro puntos del carrusel del hero
 //
-//   - EN LA APP la pantalla es una columna de altura fija en la que sólo se
-//     desplaza el contenido. Ahí el aviso deja de flotar y pasa a ser un
-//     hermano más entre el contenido y la barra de pestañas: el contenido se
-//     encoge y no queda sitio físico donde uno pueda taparse con el otro. Es lo
-//     mismo que ya se hizo con las dos barras, y por el mismo motivo de más:
-//     en WKWebView los `position: fixed` se recolocan al TERMINAR el gesto, así
-//     que arrastrando parecían despegarse (ver `src/index.css`).
+// Y estaba comprobado que el toque se perdía: con el aviso abierto, pulsar el
+// punto del tercer slide no cambiaba de slide; descartando el aviso, el mismo
+// punto sí cambiaba.
 //
-//   - EN LA WEB manda el desplazamiento del documento y el aviso sigue siendo
-//     una hoja pegada al borde inferior, que es lo que arregló la #53 y no se
-//     toca. Lo que se añade es que la banda que ocupa quede RESERVADA: publica
-//     su altura y el Layout la reserva por abajo, de modo que todo el contenido
-//     se puede desplazar hasta salir de debajo. Sin eso, el final de la página
-//     —enlaces del pie incluidos— se quedaba debajo sin salida posible.
-
-/**
- * Variable donde el aviso publica cuánto ocupa, para que el Layout de la web
- * reserve esa banda por abajo. Vale 0 mientras no hay aviso.
- *
- * Es el contrato entre los dos: el que mide es quien sabe su alto, y el que
- * reserva no tiene por qué conocer su maquetación.
- */
-export const VARIABLE_BANDA = '--alto-aviso-tienda'
+// EL ARREGLO NO TOCA LOS PUNTEROS
+//
+// El panel tiene que seguir siendo pulsable: dejarlo sin puntero habría
+// inutilizado «Elegir tienda», «Ahora no», cerrar y la lista de tiendas, que es
+// el arreglo contrario al problema. Lo que cambia es la GEOMETRÍA: el aviso
+// deja de flotar y pasa a ocupar su propia banda, así que no queda sitio
+// físico donde uno pueda taparse con el otro.
+//
+//   - EN LA APP es un hermano de la columna, entre el contenido y la barra de
+//     pestañas. Es lo mismo que ya se hizo con las dos barras, y por el motivo
+//     de más de que en WKWebView los `position: fixed` se recolocan al TERMINAR
+//     el gesto, así que arrastrando parecían despegarse (ver `src/index.css`).
+//
+//   - EN LA WEB es una banda entre la cabecera y el contenido, como
+//     `TranslationNotice`, que es el patrón que la web ya usa para avisar sin
+//     bloquear. Se probó a dejarlo flotando y reservar su alto por abajo: eso
+//     sólo evitaba que el FINAL del documento quedara atrapado, y a media
+//     página el panel seguía comiéndose los toques.
+//
+// CAMBIO OBSERVABLE QUE ESTO TRAE
+//
+// Al aparecer, el aviso ya no se superpone: empuja. En la web el contenido baja
+// lo que mide la banda, y en la app el contenido disponible se encoge. Es la
+// contrapartida de que nada quede debajo, y es deliberada.
+//
+// Esta geometría deja sin objeto la superposición que originó la #53 —ya no hay
+// banda fija delante del contenido—, pero su contrato funcional sigue vivo y
+// probado: el aviso nunca captura el puntero de nada que no sea suyo.
 
 export function FavoriteStoreDialogs() {
   const t = useT()
@@ -148,36 +155,8 @@ export function FavoriteStoreDialogs() {
 function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) => void; onLater: () => void }) {
   const t = useT()
   const panelRef = useRef<HTMLDivElement>(null)
-  const bandaRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const [showList, setShowList] = useState(false)
-
-  // Publica cuánto ocupa la hoja para que el Layout reserve esa banda por
-  // abajo. Sólo en la web: en la app el aviso ya ocupa su sitio en la columna
-  // y no hay nada que reservar.
-  //
-  // Se mide en vez de escribirse a mano porque el alto real cambia —el texto se
-  // reparte en más líneas al estrechar, y al pulsar «Elegir tienda» aparece la
-  // lista de tiendas y crece de golpe—. Un número fijo se habría quedado corto
-  // justo cuando más tapa.
-  useEffect(() => {
-    if (isNativeApp) return
-    const banda = bandaRef.current
-    if (!banda) return
-
-    const publicar = () => {
-      const alto = Math.ceil(banda.getBoundingClientRect().height)
-      document.documentElement.style.setProperty(VARIABLE_BANDA, `${alto}px`)
-    }
-    publicar()
-
-    const observador = new ResizeObserver(publicar)
-    observador.observe(banda)
-    return () => {
-      observador.disconnect()
-      document.documentElement.style.removeProperty(VARIABLE_BANDA)
-    }
-  }, [])
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
@@ -199,26 +178,35 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
 
   return (
     <div
-      ref={bandaRef}
       data-favorite-store-prompt
+      // `pointer-events-none` en la banda y `pointer-events-auto` en el panel:
+      // es el contrato que fijó la #53 y no se toca. La banda ocupa todo el
+      // ancho y sólo se ve el panel del centro, así que sus lados transparentes
+      // no pueden capturar nada. Ya no hay contenido debajo que proteger, pero
+      // el invariante se conserva porque no cuesta nada y sigue probado.
       className={
         isNativeApp
-          ? // En la app es un hermano más de la columna: ocupa su banda entre el
-            // contenido y la barra de pestañas. `shrink-0` para que la columna
-            // le respete el alto en vez de aplastarlo cuando el contenido pide
-            // sitio. No hace falta apartarse de la barra: está debajo.
-            'shrink-0 flex justify-center px-4 pb-3 pt-2'
-          : // En la web sigue siendo la hoja pegada al borde inferior.
+          ? // Hermano de la columna, entre el contenido y la barra de pestañas.
+            // `shrink-0` para que la columna le respete el alto en vez de
+            // aplastarlo cuando el contenido pide sitio.
             //
-            // `pointer-events-none` porque esta capa ocupa todo el ancho de la
-            // ventana y sólo se ve el panel del centro: sin esto, la banda
-            // transparente de los lados se tragaba los clicks de la página que
-            // hay debajo. Medido a 1280×720 en el asistente: el botón
-            // «Continuar», a 199 px del panel, quedaba cubierto al 100 % y
-            // `elementFromPoint` devolvía esta capa. El aviso nació como bottom
-            // sheet **no bloqueante** y así vuelve a serlo; el panel recupera el
-            // puntero con `pointer-events-auto`, que ya estaba puesto.
-            'pointer-events-none fixed bottom-0 left-0 right-0 z-[70] flex justify-center px-4 pb-5 sm:pb-8'
+            // EL TECHO NO ES DECORATIVO
+            //
+            // Al pulsar «Elegir tienda» el panel pasa a tener cinco fichas de
+            // tienda. Medido a 320×568 sin techo: el aviso crecía a 931 px,
+            // `main` se quedaba en 0 y la barra de pestañas terminaba en
+            // 995→1059, fuera de una ventana de 568. Y no había forma de
+            // alcanzarla: en la app `html` y `body` llevan `overflow: hidden`,
+            // así que ningún gesto desplaza el documento.
+            //
+            // Con el techo, lo que crece es la lista, que se desplaza dentro de
+            // sí misma. La barra de pestañas no se mueve nunca y `main` conserva
+            // sitio.
+            'pointer-events-none flex max-h-[55dvh] min-h-0 shrink-0 justify-center px-4 pb-3 pt-2'
+          : // Banda entre la cabecera y el contenido. No lleva techo: aquí manda
+            // el desplazamiento del documento, así que una lista larga alarga la
+            // página y se alcanza desplazándose, como cualquier otra cosa.
+            'pointer-events-none flex justify-center px-4 pb-4 pt-3'
       }
     >
       <div
@@ -227,9 +215,12 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
         aria-modal="false"
         aria-labelledby="fav-store-title"
         aria-describedby="fav-store-desc"
-        className="pointer-events-auto w-full max-w-md rounded-[16px] border border-line bg-surface p-5 shadow-[var(--shadow-raised)]"
+        // `flex flex-col` con `max-h-full`: el encabezado manda su alto y la
+        // lista se queda con lo que sobra. Sin esto el techo de la banda
+        // recortaría el panel por abajo en vez de darle scroll a la lista.
+        className="pointer-events-auto flex max-h-full w-full max-w-md flex-col rounded-[16px] border border-line bg-surface p-5 shadow-[var(--shadow-raised)]"
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex shrink-0 items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">{t('favStore.kicker')}</p>
             <h2 id="fav-store-title" className="mt-1 text-lg font-bold text-ink">
@@ -251,7 +242,7 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
         </div>
 
         {!showList ? (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex shrink-0 flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setShowList(true)}
@@ -268,7 +259,11 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
             </button>
           </div>
         ) : (
-          <ul className="mt-4 space-y-2">
+          // La lista es lo único que crece, así que es lo único que se
+          // desplaza. `min-h-0` porque un hijo flexible no se encoge por
+          // debajo de su contenido sin él, y `overscroll-contain` para que al
+          // llegar al final el gesto no siga arrastrando lo de detrás.
+          <ul className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
             {stores.map((store) => {
               const today = getTodayHours(store)
               return (
