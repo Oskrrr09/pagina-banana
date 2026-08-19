@@ -730,18 +730,39 @@ for (const ventana of [
 
     const despues = await page.evaluate(() => {
       const referencia = (window as unknown as { __referencia: Element }).__referencia
+      const caja = referencia.getBoundingClientRect()
       const activo = document.activeElement
       return {
-        top: Math.round(referencia.getBoundingClientRect().top),
+        top: Math.round(caja.top),
         y: Math.round(window.scrollY),
+        sigueEnPantalla: caja.bottom > 0 && caja.top < window.innerHeight,
         focoEnElAviso: Boolean(activo?.closest('[data-favorite-store-prompt]')),
       }
     })
 
+    // LO QUE SE EXIGE ES UNA PROPIEDAD, NO UN NÚMERO AFINADO
+    //
+    // La referencia se mueve unos pocos píxeles y eso es del navegador: al
+    // insertarse la banda por encima, el anclaje de desplazamiento recoloca la
+    // página eligiendo SU propia ancla, que no tiene por qué ser la que mide
+    // esta prueba. Medido: 0 px a 390×844 y 3-4 px a 1280×800 en local, 10 px
+    // en CI. Un umbral ajustado a la cifra de una máquina se cae en la otra
+    // —pasó: 10 contra un tope de 8—, así que no se afina el número: se exige
+    // lo que la persona nota.
+    //
+    // Con el fallo, la referencia acababa a 2608 px de una ventana de 844: no
+    // es que se moviera un poco, es que desaparecía de la pantalla.
+    expect(
+      despues.sigueEnPantalla,
+      `lo que se estaba mirando salió de la pantalla: de ${antes.top} a ${despues.top} (scrollY ${antes.y} → ${despues.y})`,
+    ).toBe(true)
+
+    // Y ni siquiera se desplaza un cuarto de pantalla, que es la diferencia
+    // entre «no me he movido» y «me han llevado a otra parte de la página».
     expect(
       Math.abs(despues.top - antes.top),
       `lo que estaba en el centro se movió de ${antes.top} a ${despues.top} (scrollY ${antes.y} → ${despues.y})`,
-    ).toBeLessThanOrEqual(8)
+    ).toBeLessThan(ventana.height / 4)
 
     expect(despues.focoEnElAviso, 'el aviso no puede reclamar el foco estando fuera de la vista').toBe(false)
 
