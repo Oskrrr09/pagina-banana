@@ -42,6 +42,17 @@ export function Layout() {
       {/* Solo se pinta fuera del castellano; en la app nunca, porque allí no
           hay más idioma que el castellano. */}
       <TranslationNotice />
+      {/* EL AVISO DE TIENDA, EN LA WEB, AQUÍ
+
+          Ocupa su propia banda entre la cabecera y el contenido —el mismo sitio
+          y el mismo patrón que `TranslationNotice`—, así que no se pone delante
+          de nada. Estaba pegado al borde inferior de la ventana y allí se comía
+          los toques de lo que cayera en su franja: en Inicio, los puntos del
+          carrusel del hero a 390 y a 1280.
+
+          Va después del aviso de traducción para quedar pegado al contenido,
+          que es lo que el aviso propone mirar. */}
+      {!isNativeApp && <FavoriteStoreDialogs />}
       <main
         id="contenido"
         ref={contenidoRef}
@@ -66,9 +77,20 @@ export function Layout() {
       </main>
       {/* El pie de página es un mapa del sitio: en la web orienta, pero
           dentro de una app, donde la navegación vive abajo en la barra,
-          sobra y alarga cada pantalla. */}
-      {isNativeApp ? <AppTabBar /> : <Footer />}
-      <FavoriteStoreDialogs />
+          sobra y alarga cada pantalla.
+
+          En la app el aviso va AQUÍ, no arriba: la pantalla es una columna de
+          altura fija y ponerlo entre el contenido y la barra de pestañas hace
+          que `main` se encoja, que es lo que evita el solape. Arriba habría
+          empujado la barra de pestañas fuera de la ventana. */}
+      {isNativeApp ? (
+        <>
+          <FavoriteStoreDialogs />
+          <AppTabBar />
+        </>
+      ) : (
+        <Footer />
+      )}
     </div>
   )
 }
