@@ -719,7 +719,15 @@ for (const ventana of [
       ([w, h]) => {
         const referencia = document.elementFromPoint(w / 2, h / 2)!
         ;(window as unknown as { __referencia?: Element }).__referencia = referencia
-        return { top: Math.round(referencia.getBoundingClientRect().top), y: Math.round(window.scrollY) }
+        return {
+          top: Math.round(referencia.getBoundingClientRect().top),
+          // El contenido entero, que es lo que la banda empuja. Se mide aparte
+          // porque la referencia del centro es la que toque, y en la portada
+          // puede caer dentro de un bloque con animación de entrada: sus
+          // décimas de píxel no son del aviso y no deben contaminar la cota.
+          contenido: document.querySelector('main')!.getBoundingClientRect().top,
+          y: Math.round(window.scrollY),
+        }
       },
       [ventana.width, ventana.height],
     )
@@ -731,24 +739,21 @@ for (const ventana of [
     const despues = await page.evaluate(() => {
       const referencia = (window as unknown as { __referencia: Element }).__referencia
       const caja = referencia.getBoundingClientRect()
+      const banda = document.querySelector('[data-favorite-store-prompt]')!.getBoundingClientRect()
       const activo = document.activeElement
       return {
         top: Math.round(caja.top),
+        contenido: document.querySelector('main')!.getBoundingClientRect().top,
         y: Math.round(window.scrollY),
         sigueEnPantalla: caja.bottom > 0 && caja.top < window.innerHeight,
+        // La banda EXTERIOR, que es la que entra en el flujo y empuja: incluye
+        // sus paddings. El panel de dentro mide menos y no serviría de cota.
+        altoBanda: banda.height,
         focoEnElAviso: Boolean(activo?.closest('[data-favorite-store-prompt]')),
       }
     })
 
     // LO QUE SE EXIGE ES UNA PROPIEDAD, NO UN NÚMERO AFINADO
-    //
-    // La referencia se mueve unos pocos píxeles y eso es del navegador: al
-    // insertarse la banda por encima, el anclaje de desplazamiento recoloca la
-    // página eligiendo SU propia ancla, que no tiene por qué ser la que mide
-    // esta prueba. Medido: 0 px a 390×844 y 3-4 px a 1280×800 en local, 10 px
-    // en CI. Un umbral ajustado a la cifra de una máquina se cae en la otra
-    // —pasó: 10 contra un tope de 8—, así que no se afina el número: se exige
-    // lo que la persona nota.
     //
     // Con el fallo, la referencia acababa a 2608 px de una ventana de 844: no
     // es que se moviera un poco, es que desaparecía de la pantalla.
@@ -757,12 +762,24 @@ for (const ventana of [
       `lo que se estaba mirando salió de la pantalla: de ${antes.top} a ${despues.top} (scrollY ${antes.y} → ${despues.y})`,
     ).toBe(true)
 
-    // Y ni siquiera se desplaza un cuarto de pantalla, que es la diferencia
-    // entre «no me he movido» y «me han llevado a otra parte de la página».
+    // Y el contenido no cede más sitio del que la propia banda acaba de ocupar.
+    //
+    // Cuánto se mueve depende de si el navegador aplica anclaje de
+    // desplazamiento, y eso no es determinista: cuando lo aplica sube `scrollY`
+    // el alto de la banda y no se ve moverse nada; cuando no lo aplica,
+    // `scrollY` se queda quieto y el contenido baja justo una banda —256 px
+    // medidos en CI con una banda de ~265—. Las dos cosas son correctas y en
+    // ninguna se cede un píxel de más.
+    //
+    // La cota sale del alto real de la banda. Un cuarto de pantalla —lo que
+    // había antes— era MÁS ESTRICTO que el propio mecanismo: 211 px de tope
+    // contra una banda de 265, así que la prueba era intermitente por
+    // construcción.
+    const cedido = Math.abs(despues.contenido - antes.contenido)
     expect(
-      Math.abs(despues.top - antes.top),
-      `lo que estaba en el centro se movió de ${antes.top} a ${despues.top} (scrollY ${antes.y} → ${despues.y})`,
-    ).toBeLessThan(ventana.height / 4)
+      cedido,
+      `el contenido cedió ${cedido.toFixed(1)} px, más que la banda insertada (${despues.altoBanda.toFixed(1)} px), con scrollY ${antes.y} → ${despues.y}`,
+    ).toBeLessThanOrEqual(despues.altoBanda + 1)
 
     expect(despues.focoEnElAviso, 'el aviso no puede reclamar el foco estando fuera de la vista').toBe(false)
 
