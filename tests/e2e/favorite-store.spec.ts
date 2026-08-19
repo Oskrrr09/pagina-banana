@@ -30,6 +30,112 @@ async function pulsarConElRaton(page: Page, caja: { x: number; y: number; width:
   await page.mouse.up()
 }
 
+/**
+ * Interactivos VISIBLES de la página cuyo punto de acción se lo queda el aviso.
+ *
+ * Devuelve además cuántos interactivos visibles hay en total, porque una lista
+ * de secuestrados vacía sólo significa algo si había alguien a quien secuestrar:
+ * sin ese contador, la comprobación pasaría igual en una página en blanco.
+ *
+ * Mide con `document.elementFromPoint`, que es el hit-testing de verdad del
+ * navegador. Un elemento se considera secuestrado cuando su punto central —el
+ * sitio al que va un dedo— lo recibe algo de dentro del aviso.
+ */
+async function radiografiaDelAviso(page: Page) {
+  return page.evaluate(() => {
+    const capa = document.querySelector('[data-favorite-store-prompt]')
+    if (!capa) return null
+    const panel = capa.querySelector('[role="dialog"]')!
+    const rectPanel = panel.getBoundingClientRect()
+
+    /**
+     * El trozo del elemento que de verdad se ve.
+     *
+     * `getBoundingClientRect()` no basta: dentro de la app el contenido vive en
+     * un `main` con `overflow-y-auto` y los carriles horizontales recortan a su
+     * vez, así que una tarjeta desplazada fuera de su contenedor sigue
+     * devolviendo un rectángulo dentro de la ventana aunque no se vea ni un
+     * píxel de ella. Midiendo sin recortar, esas tarjetas invisibles contaban
+     * como tapadas y el resultado no significaba nada.
+     */
+    function trozoVisible(el: Element) {
+      const r = el.getBoundingClientRect()
+      let { top, left, right, bottom } = r
+      for (let padre = el.parentElement; padre; padre = padre.parentElement) {
+        const estilo = getComputedStyle(padre)
+        if (estilo.overflow === 'visible' && estilo.overflowX === 'visible' && estilo.overflowY === 'visible') continue
+        const rp = padre.getBoundingClientRect()
+        top = Math.max(top, rp.top)
+        left = Math.max(left, rp.left)
+        right = Math.min(right, rp.right)
+        bottom = Math.min(bottom, rp.bottom)
+      }
+      top = Math.max(top, 0)
+      left = Math.max(left, 0)
+      right = Math.min(right, window.innerWidth)
+      bottom = Math.min(bottom, window.innerHeight)
+      return { top, left, right, bottom, ancho: right - left, alto: bottom - top }
+    }
+
+    const seleccionable = 'a[href], button, input, select, textarea, [role="button"], [role="radio"], [role="tab"]'
+    const secuestrados: string[] = []
+    let visibles = 0
+
+    for (const el of document.querySelectorAll(seleccionable)) {
+      if (capa.contains(el)) continue
+      const estilo = getComputedStyle(el)
+      if (estilo.visibility === 'hidden' || estilo.display === 'none') continue
+      const trozo = trozoVisible(el)
+      // Un par de píxeles de asomo no son un objetivo: nadie los toca.
+      if (trozo.ancho <= 2 || trozo.alto <= 2) continue
+      visibles++
+      const x = trozo.left + trozo.ancho / 2
+      const y = trozo.top + trozo.alto / 2
+      const enElPunto = document.elementFromPoint(x, y)
+      if (enElPunto?.closest('[data-favorite-store-prompt]')) {
+        secuestrados.push(
+          (el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 44),
+        )
+      }
+    }
+
+    const rectMain = document.querySelector('main')!.getBoundingClientRect()
+    return {
+      secuestrados,
+      visibles,
+      altoPanel: Math.round(rectPanel.height),
+      topPanel: Math.round(rectPanel.top),
+      fondoDelMain: Math.round(rectMain.bottom),
+    }
+  })
+}
+
+/** Simula el binario igual que el resto de la suite: Capacitor inyectado antes del bundle. */
+async function simularApp(page: Page) {
+  await page.addInitScript(() => {
+    ;(window as unknown as { Capacitor?: unknown }).Capacitor = {}
+  })
+}
+
+/** Deja quieto el desplazamiento sin tiempos fijos. */
+async function esperarAQueSeAsiente(page: Page) {
+  await expect
+    .poll(
+      async () => {
+        const antes = await page.evaluate(() =>
+          Math.round(window.scrollY + (document.querySelector('main')?.scrollTop ?? 0)),
+        )
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+        const despues = await page.evaluate(() =>
+          Math.round(window.scrollY + (document.querySelector('main')?.scrollTop ?? 0)),
+        )
+        return antes === despues
+      },
+      { timeout: 5000 },
+    )
+    .toBe(true)
+}
+
 test('el bottom sheet aparece en la primera visita sin bloquear la navegación', async ({ page }) => {
   await ensureFreshVisit(page)
   await page.goto('./')
@@ -300,5 +406,131 @@ for (const ventana of [
     expect(cajaCerrar, 'sin caja del botón del panel no hay nada que medir').not.toBeNull()
     await pulsarConElRaton(page, cajaCerrar!)
     await expect(aviso, 'el panel del aviso debe seguir siendo interactivo').toHaveCount(0)
+  })
+}
+
+// ---------------------------------------------------------------------------
+// El PANEL VISIBLE tampoco puede colocarse encima del contenido.
+//
+// La #53 arregló la banda transparente de la capa exterior. Quedaba la otra
+// mitad: el panel opaco, de 448 px de ancho y 237 de alto, se ponía delante de
+// Inicio. Medido sobre `c0cce5c`, primera visita, `elementFromPoint` en el
+// centro de cada interactivo:
+//
+//   app 320×568 · panel 248→484 (42 % del alto) · «Empezar» secuestrado
+//   app 375×812 · panel 492→728 · «Ver más», dos tarjetas y sus dos favoritos
+//   app 390×844 · panel 524→760 · dos tarjetas y sus dos favoritos
+//
+// Y al final del documento había interactivos que NO se despejaban por mucho
+// que se desplazara, porque el aviso viaja con el borde inferior de la ventana:
+//
+//   web 1280×800 al fondo · «Plan Renove», «Seguimiento de pedido», «Servicio técnico»
+//   web  320×568 al fondo · dos preguntas del acordeón
+//   app  390×844 al fondo · «Soporte» y «Chatea con Bananito»
+//
+// Son dos propiedades distintas y se prueban por separado:
+//   - en la app el aviso ocupa su propia banda, así que NUNCA hay solape;
+//   - en la web sigue siendo una hoja pegada al borde, y lo que se garantiza es
+//     que la banda que ocupa queda reservada: nada se queda debajo sin salida.
+// ---------------------------------------------------------------------------
+for (const ventana of [
+  { width: 320, height: 568 },
+  { width: 375, height: 812 },
+  { width: 390, height: 844 },
+]) {
+  test(`en la app el aviso no se pone delante de Inicio a ${ventana.width}×${ventana.height}`, async ({ page }) => {
+    await simularApp(page)
+    await page.setViewportSize(ventana)
+    await page.goto('./')
+    await expect(page.locator('[data-favorite-store-prompt]')).toBeVisible({ timeout: 5000 })
+    await esperarAQueSeAsiente(page)
+
+    const radiografia = await radiografiaDelAviso(page)
+    expect(radiografia, 'sin aviso en pantalla no hay nada que medir').not.toBeNull()
+
+    // Precondiciones. Sin ellas la comprobación de abajo pasaría también con el
+    // aviso cerrado o con una portada vacía, que es justo lo que no queremos.
+    expect(radiografia!.altoPanel, 'el aviso tiene que ocupar una banda real').toBeGreaterThan(120)
+    expect(radiografia!.visibles, 'Inicio tiene que ofrecer interactivos a la vista').toBeGreaterThan(3)
+
+    // La propiedad: el contenido termina donde empieza el aviso, así que no
+    // queda sitio físico donde uno pueda taparse con el otro.
+    expect(
+      radiografia!.fondoDelMain,
+      `el contenido llega hasta ${radiografia!.fondoDelMain} y el aviso empieza en ${radiografia!.topPanel}`,
+    ).toBeLessThanOrEqual(radiografia!.topPanel + 1)
+
+    expect(
+      radiografia!.secuestrados,
+      `el aviso se queda el punto de acción de: ${radiografia!.secuestrados.join(' · ')}`,
+    ).toEqual([])
+  })
+}
+
+test('en la app se puede pulsar el CTA de Inicio con el aviso abierto a 320×568', async ({ page }) => {
+  await simularApp(page)
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.goto('./')
+  await expect(page.locator('[data-favorite-store-prompt]')).toBeVisible({ timeout: 5000 })
+
+  // El CTA del asistente: el que se midió secuestrado a esta anchura.
+  const cta = page.getByRole('link', { name: 'Empezar' })
+  await cta.scrollIntoViewIfNeeded()
+  await esperarAQueSeAsiente(page)
+
+  const caja = await cta.boundingBox()
+  expect(caja, 'sin caja del CTA no hay nada que medir').not.toBeNull()
+
+  // Hit-testing real antes de tocar nada: quién recibe el punto central.
+  const quienRecibe = await page.evaluate((c) => {
+    const enElPunto = document.elementFromPoint(c!.x + c!.width / 2, c!.y + c!.height / 2)
+    if (enElPunto?.closest('[data-favorite-store-prompt]')) return 'el aviso'
+    return enElPunto?.closest('a[href]') ? 'el CTA' : (enElPunto?.tagName ?? 'nadie')
+  }, caja)
+  expect(quienRecibe, 'el punto del CTA no puede recibirlo el aviso').toBe('el CTA')
+
+  // Y la pulsación física navega de verdad.
+  await pulsarConElRaton(page, caja!)
+  await expect(page).toHaveURL(/\/elige-tu-apple$/)
+
+  // El contrapeso de siempre: dejar el aviso sin puntero también pasaría lo
+  // anterior, así que su panel tiene que seguir respondiendo.
+  const cerrar = page.getByRole('button', { name: /Ahora no/i })
+  const cajaCerrar = await cerrar.boundingBox()
+  expect(cajaCerrar, 'sin caja del botón del panel no hay nada que medir').not.toBeNull()
+  await pulsarConElRaton(page, cajaCerrar!)
+  await expect(page.locator('[data-favorite-store-prompt]')).toHaveCount(0)
+})
+
+for (const ventana of [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 1280, height: 800 },
+  { width: 1440, height: 900 },
+]) {
+  test(`en la web el aviso reserva su banda y no deja nada sin salida a ${ventana.width}×${ventana.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(ventana)
+    await page.goto('./')
+    await expect(page.locator('[data-favorite-store-prompt]')).toBeVisible({ timeout: 5000 })
+
+    // Al final del documento: si algo sigue debajo del aviso aquí, ya no hay
+    // ningún desplazamiento que lo despeje.
+    await page.evaluate(() => {
+      const raiz = document.scrollingElement ?? document.documentElement
+      raiz.scrollTop = raiz.scrollHeight
+    })
+    await esperarAQueSeAsiente(page)
+
+    const radiografia = await radiografiaDelAviso(page)
+    expect(radiografia, 'sin aviso en pantalla no hay nada que medir').not.toBeNull()
+    expect(radiografia!.altoPanel, 'el aviso tiene que ocupar una banda real').toBeGreaterThan(120)
+    expect(radiografia!.visibles, 'el final de la página tiene que ofrecer interactivos').toBeGreaterThan(0)
+
+    expect(
+      radiografia!.secuestrados,
+      `al final del documento el aviso se queda: ${radiografia!.secuestrados.join(' · ')}`,
+    ).toEqual([])
   })
 }

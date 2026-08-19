@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
-import { FavoriteStoreDialogs } from './FavoriteStoreDialogs'
+import { FavoriteStoreDialogs, VARIABLE_BANDA } from './FavoriteStoreDialogs'
 import { AppTabBar } from './AppTabBar'
 import { AppCategoryChips, AppTopBar } from './AppTopBar'
 import { TranslationNotice } from './TranslationNotice'
@@ -29,7 +29,23 @@ export function Layout() {
   }, [pathname, hash])
 
   return (
-    <div className={isNativeApp ? 'flex h-[100dvh] flex-col' : 'flex min-h-screen flex-col'}>
+    <div
+      className={isNativeApp ? 'flex h-[100dvh] flex-col' : 'flex min-h-screen flex-col'}
+      // RESERVA PARA EL AVISO DE TIENDA (sólo en la web)
+      //
+      // Ahí el aviso es una hoja pegada al borde inferior de la ventana, así que
+      // viaja con ella: lo que caiga en su banda se queda debajo por mucho que
+      // se desplace la página. Se midió al final del documento, que es el caso
+      // sin salida —ya no queda desplazamiento que lo despeje—: a 1280×800 se
+      // quedaba «Plan Renove», «Seguimiento de pedido» y «Servicio técnico» del
+      // pie, y a 320×568 dos preguntas del acordeón.
+      //
+      // Reservando su alto por abajo, el documento crece justo lo que el aviso
+      // ocupa y todo se puede sacar de debajo desplazándose. En la app la
+      // variable no existe —el aviso es un hermano de esta misma columna y ya
+      // ocupa su sitio—, y el valor de respaldo deja esto en cero.
+      style={isNativeApp ? undefined : { paddingBottom: `var(${VARIABLE_BANDA}, 0px)` }}
+    >
       <a
         href="#contenido"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[200] focus:rounded-[8px] focus:bg-brand focus:px-4 focus:py-2 focus:text-ink"
@@ -66,9 +82,26 @@ export function Layout() {
       </main>
       {/* El pie de página es un mapa del sitio: en la web orienta, pero
           dentro de una app, donde la navegación vive abajo en la barra,
-          sobra y alarga cada pantalla. */}
-      {isNativeApp ? <AppTabBar /> : <Footer />}
-      <FavoriteStoreDialogs />
+          sobra y alarga cada pantalla.
+
+          EL AVISO DE TIENDA VA EN DISTINTO SITIO SEGÚN DÓNDE ESTEMOS
+
+          En la app es un hermano de esta columna, entre el contenido y la barra
+          de pestañas: al abrirse, `main` se encoge y el aviso nunca se pone
+          delante de nada. En la web sigue siendo una hoja pegada al borde
+          inferior —el comportamiento que fijó la #53— y va al final, con su
+          banda reservada arriba por el `paddingBottom` de este mismo div. */}
+      {isNativeApp ? (
+        <>
+          <FavoriteStoreDialogs />
+          <AppTabBar />
+        </>
+      ) : (
+        <>
+          <Footer />
+          <FavoriteStoreDialogs />
+        </>
+      )}
     </div>
   )
 }

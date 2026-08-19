@@ -13,6 +13,47 @@ import { ALTURA_TAB_BAR } from './AppTabBar'
 //   - un mensaje de confirmación discreto tras elegirla.
 // Nunca se muestra dentro de /checkout/* para no interferir con la compra.
 // El estado de "cerrado" persiste en banana:favorite-store-prompt.
+//
+// EL AVISO OCUPA SITIO; NO SE PONE DELANTE
+//
+// La #53 arregló que la CAPA exterior —de ancho completo y transparente— se
+// tragara los clicks a los lados del panel. Quedaba la otra mitad del mismo
+// problema: el PANEL, que es opaco y mide 448 × 237, se colocaba encima del
+// contenido. Medido en la primera visita, con `elementFromPoint` en el centro
+// de cada interactivo: a 320 px se quedaba el CTA del asistente, y a 375 y 390
+// dos tarjetas de producto con sus botones de favorito. Al final del documento
+// había además interactivos que no se despejaban por mucho que se desplazara,
+// porque el aviso viaja pegado al borde inferior de la ventana.
+//
+// El arreglo no toca los punteros: el panel tiene que seguir siendo pulsable, y
+// dejarlo sin ellos habría inutilizado «Elegir tienda», «Ahora no» y cerrar.
+// Lo que cambia es la GEOMETRÍA, y de forma distinta en cada sitio porque las
+// dos superficies no se desplazan igual:
+//
+//   - EN LA APP la pantalla es una columna de altura fija en la que sólo se
+//     desplaza el contenido. Ahí el aviso deja de flotar y pasa a ser un
+//     hermano más entre el contenido y la barra de pestañas: el contenido se
+//     encoge y no queda sitio físico donde uno pueda taparse con el otro. Es lo
+//     mismo que ya se hizo con las dos barras, y por el mismo motivo de más:
+//     en WKWebView los `position: fixed` se recolocan al TERMINAR el gesto, así
+//     que arrastrando parecían despegarse (ver `src/index.css`).
+//
+//   - EN LA WEB manda el desplazamiento del documento y el aviso sigue siendo
+//     una hoja pegada al borde inferior, que es lo que arregló la #53 y no se
+//     toca. Lo que se añade es que la banda que ocupa quede RESERVADA: publica
+//     su altura y el Layout la reserva por abajo, de modo que todo el contenido
+//     se puede desplazar hasta salir de debajo. Sin eso, el final de la página
+//     —enlaces del pie incluidos— se quedaba debajo sin salida posible.
+
+/**
+ * Variable donde el aviso publica cuánto ocupa, para que el Layout de la web
+ * reserve esa banda por abajo. Vale 0 mientras no hay aviso.
+ *
+ * Es el contrato entre los dos: el que mide es quien sabe su alto, y el que
+ * reserva no tiene por qué conocer su maquetación.
+ */
+export const VARIABLE_BANDA = '--alto-aviso-tienda'
+
 export function FavoriteStoreDialogs() {
   const t = useT()
   const { favoriteSlug, favoriteStore, promptDismissed, setFavorite, dismissPrompt } = useStorePreference()
@@ -107,8 +148,36 @@ export function FavoriteStoreDialogs() {
 function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) => void; onLater: () => void }) {
   const t = useT()
   const panelRef = useRef<HTMLDivElement>(null)
+  const bandaRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const [showList, setShowList] = useState(false)
+
+  // Publica cuánto ocupa la hoja para que el Layout reserve esa banda por
+  // abajo. Sólo en la web: en la app el aviso ya ocupa su sitio en la columna
+  // y no hay nada que reservar.
+  //
+  // Se mide en vez de escribirse a mano porque el alto real cambia —el texto se
+  // reparte en más líneas al estrechar, y al pulsar «Elegir tienda» aparece la
+  // lista de tiendas y crece de golpe—. Un número fijo se habría quedado corto
+  // justo cuando más tapa.
+  useEffect(() => {
+    if (isNativeApp) return
+    const banda = bandaRef.current
+    if (!banda) return
+
+    const publicar = () => {
+      const alto = Math.ceil(banda.getBoundingClientRect().height)
+      document.documentElement.style.setProperty(VARIABLE_BANDA, `${alto}px`)
+    }
+    publicar()
+
+    const observador = new ResizeObserver(publicar)
+    observador.observe(banda)
+    return () => {
+      observador.disconnect()
+      document.documentElement.style.removeProperty(VARIABLE_BANDA)
+    }
+  }, [])
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
@@ -130,19 +199,27 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
 
   return (
     <div
+      ref={bandaRef}
       data-favorite-store-prompt
-      // `pointer-events-none` porque esta capa ocupa todo el ancho de la
-      // ventana y sólo se ve el panel del centro: sin esto, la banda
-      // transparente de los lados se tragaba los clicks de la página que hay
-      // debajo. Medido a 1280×720 en el asistente: el botón «Continuar», a
-      // 199 px del panel, quedaba cubierto al 100 % y `elementFromPoint`
-      // devolvía esta capa. El aviso nació como bottom sheet **no bloqueante**
-      // y así vuelve a serlo; el panel recupera el puntero con
-      // `pointer-events-auto`, que ya estaba puesto.
-      className="pointer-events-none fixed bottom-0 left-0 right-0 z-[70] flex justify-center px-4 pb-5 sm:pb-8"
-      // En la app hay una barra de navegación pegada abajo: sin esto el
-      // aviso la taparía por completo.
-      style={isNativeApp ? { paddingBottom: `calc(1.25rem + ${ALTURA_TAB_BAR})` } : undefined}
+      className={
+        isNativeApp
+          ? // En la app es un hermano más de la columna: ocupa su banda entre el
+            // contenido y la barra de pestañas. `shrink-0` para que la columna
+            // le respete el alto en vez de aplastarlo cuando el contenido pide
+            // sitio. No hace falta apartarse de la barra: está debajo.
+            'shrink-0 flex justify-center px-4 pb-3 pt-2'
+          : // En la web sigue siendo la hoja pegada al borde inferior.
+            //
+            // `pointer-events-none` porque esta capa ocupa todo el ancho de la
+            // ventana y sólo se ve el panel del centro: sin esto, la banda
+            // transparente de los lados se tragaba los clicks de la página que
+            // hay debajo. Medido a 1280×720 en el asistente: el botón
+            // «Continuar», a 199 px del panel, quedaba cubierto al 100 % y
+            // `elementFromPoint` devolvía esta capa. El aviso nació como bottom
+            // sheet **no bloqueante** y así vuelve a serlo; el panel recupera el
+            // puntero con `pointer-events-auto`, que ya estaba puesto.
+            'pointer-events-none fixed bottom-0 left-0 right-0 z-[70] flex justify-center px-4 pb-5 sm:pb-8'
+      }
     >
       <div
         ref={panelRef}
