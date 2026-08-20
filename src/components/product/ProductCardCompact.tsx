@@ -98,9 +98,23 @@ export function ProductCardCompact({ model }: { model: Model }) {
           pad={false}
           className={color.imageBg ? 'rounded-none' : 'rounded-none bg-transparent'}
         />
+        {/* LA GEOMETRÍA NO DEPENDE DEL PRODUCTO QUE CAIGA DENTRO
+            Las dos zonas de texto cambiaban de alto según el modelo, y en un
+            carril eso dejaba las tarjetas terminando a alturas distintas.
+            Medido a 390×844 antes de reservar: «MacBook Air M4» 244,75 px,
+            «iPhone 17 Pro Max» 220,75 y «Apple Watch Ultra 3» 239,5.
+            Se suman dos diferencias independientes: 18,75 px por la segunda
+            línea del nombre y 24 px por el precio anterior de una oferta.
+            Así que cada zona reserva de antemano su caso más alto y el
+            contenido ya sólo decide qué se lee, no cuánto ocupa. */}
         <div className="flex flex-1 flex-col px-3 pb-3 pt-1">
-          <h3 className="line-clamp-2 text-[15px] font-semibold leading-tight text-ink">{cat(model.name)}</h3>
-          <div className="mt-auto pt-2">
+          {/* Dos líneas siempre: 15 px × 1,25 × 2 = 37,5, redondeado a 38. */}
+          <h3 className="line-clamp-2 min-h-[2.375rem] text-[15px] font-semibold leading-tight text-ink">
+            {cat(model.name)}
+          </h3>
+          {/* El caso más alto es el de oferta —precio y precio anterior—, que
+              mide 50 px con su `pt-2` incluido. */}
+          <div className="mt-auto min-h-[3.125rem] pt-2">
             {oferta ? (
               <>
                 {/* Los dos precios son de la MISMA variante: la ofertada. */}

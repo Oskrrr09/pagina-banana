@@ -151,6 +151,57 @@ test.describe('Inicio nativo', () => {
     ).toHaveCount(0)
   })
 
+  // --------------------------------------------------------------------------
+  // Las tarjetas de un carril terminan a la misma altura.
+  //
+  // La tarjeta compacta crecía con lo que le tocara dentro: el nombre ocupa una
+  // o dos líneas según el modelo, y la zona de precio lleva una línea sin
+  // oferta y dos con ella. Medido a 390×844 antes de reservar el sitio:
+  // «MacBook Air M4» 244,75 px, «iPhone 17 Pro Max» 220,75 y
+  // «Apple Watch Ultra 3» 239,5. Tres alturas en un mismo carril.
+  //
+  // El historial se siembra con esos tres a propósito: cubre nombre de una
+  // línea, nombre de dos y oferta frente a sin oferta. Se compara la altura
+  // ENTRE tarjetas y no contra un número: la altura correcta la decide la
+  // composición, y fijarla aquí convertiría cualquier ajuste tipográfico en un
+  // fallo falso.
+  // --------------------------------------------------------------------------
+  for (const ventana of [
+    { width: 390, height: 844 },
+    { width: 320, height: 568 },
+  ]) {
+    test(`las tarjetas del carril miden lo mismo a ${ventana.width}×${ventana.height}`, async ({ page }) => {
+      await page.setViewportSize(ventana)
+      await comoApp(page, ['apple-watch/watch-ultra-3', 'iphone/17-pro-max', 'mac/macbook-air-m4'])
+      await page.goto('./')
+
+      const carril = page.getByRole('list', { name: CONTINUA })
+      await expect(carril).toBeVisible()
+
+      const medidas = await carril.evaluate((ul) =>
+        [...ul.querySelectorAll('article')].map((a) => ({
+          nombre: (a.querySelector('h3')?.textContent ?? '').trim(),
+          alto: Math.round(a.getBoundingClientRect().height * 100) / 100,
+          conOferta: Boolean(a.querySelector('[class*="bg-danger"]')),
+        })),
+      )
+
+      // Sin mezcla, la comprobación de abajo no significaría nada: pasaría
+      // igual con tres tarjetas idénticas.
+      expect(medidas.length, 'el carril necesita varias tarjetas para comparar').toBeGreaterThanOrEqual(3)
+      expect(
+        new Set(medidas.map((m) => m.conOferta)).size,
+        'el carril tiene que mezclar una tarjeta con oferta y otra sin ella',
+      ).toBe(2)
+
+      const alturas = [...new Set(medidas.map((m) => m.alto))]
+      expect(
+        alturas.length,
+        `las tarjetas terminan a alturas distintas: ${medidas.map((m) => `${m.nombre}=${m.alto}`).join(' · ')}`,
+      ).toBe(1)
+    })
+  }
+
   test('Encuentra tu Apple abre el asistente de verdad', async ({ page }) => {
     await comoApp(page)
     await page.goto('./')
