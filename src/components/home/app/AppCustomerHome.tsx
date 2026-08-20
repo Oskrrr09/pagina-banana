@@ -14,6 +14,9 @@ import { allModels, getModel } from '../../../data/products'
 import type { Model } from '../../../data/types'
 import type { DbReservation } from '../../../lib/supabase'
 
+/** El mismo asset que usan el chat y el panel de agentes. */
+const BANANITO = `${import.meta.env.BASE_URL}img/chat/bananito-square.png`
+
 /**
  * Inicio de la aplicación nativa: **qué me interesa ahora**.
  *
@@ -52,8 +55,18 @@ import type { DbReservation } from '../../../lib/supabase'
  * nuevo. Las rutas siguen intactas; lo que se quita es la duplicación.
  */
 export function AppCustomerHome({ listarReservas = listMyReservations }: { listarReservas?: ListarReservas } = {}) {
+  // EL FONDO ES GRIS Y LAS PIEZAS SON BLANCAS
+  //
+  // Antes todo era blanco sobre blanco y lo único que separaba una cosa de otra
+  // era un borde de 1 px, repetido bloque tras bloque. Con el fondo en neutro,
+  // cada pieza se agrupa por SUPERFICIE: se pueden retirar casi todos los
+  // bordes sin que nada se despegue, y la mitad inferior deja de leerse como
+  // una lista de ajustes.
+  //
+  // El gris vive aquí y no en `main` a propósito: sólo cambia Inicio, no el
+  // resto de pantallas de la aplicación.
   return (
-    <div className="pb-10">
+    <div className="min-h-full bg-neutral pb-10">
       <Saludo />
       <Avisos listarReservas={listarReservas} />
       <EncuentraTuApple />
@@ -65,22 +78,51 @@ export function AppCustomerHome({ listarReservas = listMyReservations }: { lista
   )
 }
 
-/** Envoltorio de sección, con el mismo ritmo vertical que usa `/tienda`. */
+/**
+ * Superficie blanca sobre el fondo neutro.
+ *
+ * Ni borde ni sombra: sobre gris, el blanco ya se separa solo. Cambiar los diez
+ * bordes por diez sombras habría sido el mismo dibujo con otra tinta y habría
+ * dejado la pantalla con aire de panel de control.
+ *
+ * La elevación queda reservada para el producto —`ProductCardCompact` trae la
+ * suya—, así que en esta pantalla lo único que levanta es lo que se vende.
+ */
+const TARJETA = 'rounded-[16px] bg-surface'
+
+/**
+ * Respuesta al pulsar de las piezas que llevan a algún sitio.
+ *
+ * Un 1 % con `transform`, que no reordena nada, y desactivada con
+ * `prefers-reduced-motion`. No hay animación de entrada ni de ruta.
+ */
+const PULSABLE =
+  'transition-transform duration-100 ease-out active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100'
+
+/**
+ * Envoltorio de sección.
+ *
+ * `banda` pinta la sección sobre un fondo de marca muy claro y a sangre. Es lo
+ * que separa de un vistazo lo comercial —Oportunidades— de lo personal
+ * —Continúa—, sin tener que duplicar la tarjeta de producto.
+ */
 function Seccion({
   titulo,
   enlace,
   etiquetaEnlace,
   children,
+  banda = false,
 }: {
   titulo: string
   enlace?: string
   etiquetaEnlace?: string
   children: React.ReactNode
+  banda?: boolean
 }) {
   return (
-    <section className="mt-8">
+    <section className={banda ? 'mt-8 bg-brand-050 py-6' : 'mt-8'}>
       <div className="flex items-baseline justify-between gap-3 px-4">
-        <h2 className="text-lg font-bold text-ink">{titulo}</h2>
+        <h2 className="text-xl font-extrabold text-ink">{titulo}</h2>
         {enlace && (
           // `min-h-11` y el margen negativo: el enlace se ve como texto pero se
           // toca como un control de 44 px, sin separarse de la línea del título.
@@ -128,21 +170,21 @@ function Saludo() {
 
   if (!session) {
     return (
-      <header className="px-4 pt-5">
-        <h1 className="text-2xl font-extrabold text-ink">Hola</h1>
-        <p className="mt-1 text-sm text-muted">
+      <header className="px-4 pt-6">
+        <h1 className="font-display text-[28px] font-extrabold leading-none text-ink">Hola</h1>
+        <p className="mt-2 max-w-[19rem] text-[15px] leading-snug text-muted">
           Identifícate y tendrás aquí tus compras, tus pedidos y el soporte de cada producto.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
             to="/login"
-            className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 text-sm font-bold text-white"
+            className={`inline-flex min-h-11 items-center rounded-full bg-ink px-5 text-sm font-bold text-white ${PULSABLE}`}
           >
             Iniciar sesión
           </Link>
           <Link
             to="/registro"
-            className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold text-ink"
+            className={`inline-flex min-h-11 items-center rounded-full bg-surface px-5 text-sm font-semibold text-ink ${PULSABLE}`}
           >
             Crear cuenta
           </Link>
@@ -152,12 +194,14 @@ function Saludo() {
   }
 
   return (
-    <header className="flex items-start justify-between gap-4 px-4 pt-5">
-      <h1 className="min-w-0 text-2xl font-extrabold text-ink">{primerNombre ? `Hola, ${primerNombre}` : 'Hola'}</h1>
+    <header className="flex items-start justify-between gap-4 px-4 pt-6">
+      <h1 className="min-w-0 font-display text-[28px] font-extrabold leading-none text-ink">
+        {primerNombre ? `Hola, ${primerNombre}` : 'Hola'}
+      </h1>
       <Link
         to="/cuenta"
         aria-label="Tu cuenta"
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-neutral text-ink"
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface text-ink ${PULSABLE}`}
       >
         <Icon name="user" size={20} aria-hidden="true" />
       </Link>
@@ -246,20 +290,32 @@ function EncuentraTuApple() {
   const t = useT()
 
   return (
+    // COMPACTA, NO ESCONDIDA
+    //
+    // Antes eran cuatro filas apiladas —rótulo, título, párrafo y botón— que se
+    // comían casi un tercio de la primera pantalla y a 320 px la llenaban
+    // entera. Ahora el título y la llamada comparten fila, así que el botón
+    // deja de costar su propia altura, y el cuerpo baja a 13 px.
+    //
+    // Sigue siendo el único bloque con el amarillo de marca a sangre, y sobre
+    // el fondo gris destaca más que antes sobre el blanco. Se encoge su altura,
+    // no su presencia.
     <section aria-labelledby="inicio-finder" className="mt-6 px-4">
-      <div className="rounded-[20px] bg-brand p-5 text-ink">
+      <div className="rounded-[20px] bg-brand px-5 py-4 text-ink">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/70">{t('home.finder.eyebrow')}</p>
-        <h2 id="inicio-finder" className="mt-1 font-display text-2xl font-extrabold leading-tight">
-          {t('home.finder.title')}
-        </h2>
-        <p className="mt-2 text-sm text-ink/80">{t('home.finder.body')}</p>
-        <Link
-          to="/elige-tu-apple"
-          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-ink px-5 text-sm font-bold text-white"
-        >
-          {t('common.start')}
-          <Icon name="arrow-right" size={16} aria-hidden="true" />
-        </Link>
+        <div className="mt-1 flex items-center gap-3">
+          <h2 id="inicio-finder" className="min-w-0 flex-1 font-display text-[20px] font-extrabold leading-tight">
+            {t('home.finder.title')}
+          </h2>
+          <Link
+            to="/elige-tu-apple"
+            className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-ink px-5 text-sm font-bold text-white ${PULSABLE}`}
+          >
+            {t('common.start')}
+            <Icon name="arrow-right" size={16} aria-hidden="true" />
+          </Link>
+        </div>
+        <p className="mt-2 text-[13px] leading-snug text-ink/80">{t('home.finder.body')}</p>
       </div>
     </section>
   )
@@ -321,7 +377,10 @@ function Oportunidades() {
   if (enOferta.length === 0) return null
 
   return (
-    <Seccion titulo={t('app.home.deals')} enlace="/tienda" etiquetaEnlace="Ver más">
+    // La banda de marca muy clara es lo único que distingue esta sección de
+    // «Continúa»: misma tarjeta, mismo carril, pero una se lee comercial y la
+    // otra personal sin necesidad de un segundo componente de producto.
+    <Seccion titulo={t('app.home.deals')} enlace="/tienda" etiquetaEnlace="Ver más" banda>
       <Carrusel etiqueta={t('app.home.deals')}>
         {enOferta.map((m) => (
           <li key={`${m.family}/${m.slug}`} className="snap-start">
@@ -348,11 +407,8 @@ function TuTienda() {
   if (!favoriteStore) {
     return (
       <section className="mt-8 px-4">
-        <Link
-          to="/tiendas"
-          className="flex min-h-14 items-center gap-3 rounded-[16px] border border-line bg-surface p-4"
-        >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-neutral text-ink">
+        <Link to="/tiendas" className={`flex min-h-14 items-center gap-3 p-4 ${TARJETA} ${PULSABLE}`}>
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-050 text-ink">
             <Icon name="store" size={20} aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
@@ -366,17 +422,27 @@ function TuTienda() {
   }
 
   return (
+    // UN SITIO, NO UNA FILA
+    //
+    // La misma información de antes —nombre, dirección y el estado que calcula
+    // `StoreStatus`— pero compuesta como una ficha: el rótulo de tienda en un
+    // círculo de marca, el nombre con peso de título y la llamada separada por
+    // una línea. Ni un dato nuevo: no hay horarios, ni distancia, ni servicios
+    // inventados.
     <Seccion titulo={t('app.home.yourStore')}>
       <div className="px-4">
-        <Link to={`/tiendas/${favoriteStore.slug}`} className="block rounded-[16px] border border-line bg-surface p-4">
-          <span className="flex items-start justify-between gap-3">
-            <span className="min-w-0">
-              <span className="block font-semibold text-ink">{favoriteStore.name}</span>
-              <span className="block truncate text-sm text-muted">{favoriteStore.address}</span>
+        <Link to={`/tiendas/${favoriteStore.slug}`} className={`block p-4 ${TARJETA} ${PULSABLE}`}>
+          <span className="flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-050 text-ink">
+              <Icon name="store" size={20} aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[17px] font-bold leading-tight text-ink">{favoriteStore.name}</span>
+              <span className="mt-0.5 block truncate text-sm text-muted">{favoriteStore.address}</span>
             </span>
             <StoreStatus store={favoriteStore} className="shrink-0" />
           </span>
-          <span className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-ink">
+          <span className="mt-3 flex min-h-11 items-center gap-1 border-t border-line pt-3 text-sm font-semibold text-ink">
             Ver la tienda
             <Icon name="chevron-right" size={16} aria-hidden="true" />
           </span>
@@ -395,40 +461,54 @@ function TuTienda() {
  */
 function Ayuda() {
   return (
+    // DOS COSAS DISTINTAS, NO DOS FILAS CLONADAS
+    //
+    // Antes eran dos tarjetas idénticas —icono gris, título, detalle, galón—,
+    // y esa repetición era lo que hacía que el final de Inicio se leyera como
+    // la pantalla de Ajustes del sistema.
+    //
+    // Ahora tienen papeles distintos y se ven distintas: Bananito es la pieza
+    // cálida, con su cara y el amarillo de marca; Soporte es la fila
+    // utilitaria, más pequeña y sin adornos. Los destinos, el `openChat` y los
+    // textos son los mismos.
     <section aria-labelledby="inicio-ayuda" className="mt-8 px-4">
-      <h2 id="inicio-ayuda" className="text-lg font-bold text-ink">
+      <h2 id="inicio-ayuda" className="text-xl font-extrabold text-ink">
         ¿Necesitas ayuda?
       </h2>
       <ul className="mt-3 grid gap-3">
         <li>
-          <Link to="/soporte" className={CLASES_ACCESO}>
-            <Contenido icono="chat" titulo="Soporte" detalle="Ayuda, guías y servicio técnico" />
-          </Link>
+          <button
+            type="button"
+            onClick={openChat}
+            className={`flex w-full items-center gap-4 rounded-[16px] bg-brand-050 p-4 text-left ${PULSABLE}`}
+          >
+            {/* El mismo Bananito que ya usan el chat y el panel de agentes: es
+                un asset de la marca que existe, no una ilustración nueva.
+                Decorativo, así que `alt` vacío; lo nombra el texto de al lado. */}
+            <img src={BANANITO} alt="" width={112} height={112} className="h-14 w-14 shrink-0 object-contain" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[17px] font-bold leading-tight text-ink">Chatea con Bananito</span>
+              <span className="mt-0.5 block text-sm text-ink/70">Te respondemos en el momento</span>
+            </span>
+            <Icon name="chevron-right" size={18} aria-hidden="true" className="shrink-0 text-ink/60" />
+          </button>
         </li>
         <li>
-          <button type="button" onClick={openChat} className={CLASES_ACCESO}>
-            <Contenido icono="chat" titulo="Chatea con Bananito" detalle="Te respondemos en el momento" />
-          </button>
+          <Link
+            to="/soporte"
+            className={`flex w-full min-h-14 items-center gap-3 p-4 text-left ${TARJETA} ${PULSABLE}`}
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-neutral text-muted">
+              <Icon name="wrench" size={18} aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-ink">Soporte</span>
+              <span className="block text-sm text-muted">Ayuda, guías y servicio técnico</span>
+            </span>
+            <Icon name="chevron-right" size={18} aria-hidden="true" className="shrink-0 text-muted" />
+          </Link>
         </li>
       </ul>
     </section>
-  )
-}
-
-const CLASES_ACCESO =
-  'flex w-full min-h-14 items-center gap-3 rounded-[16px] border border-line bg-surface p-4 text-left'
-
-function Contenido({ icono, titulo, detalle }: { icono: string; titulo: string; detalle: string }) {
-  return (
-    <>
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-neutral text-ink">
-        <Icon name={icono} size={20} aria-hidden="true" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold text-ink">{titulo}</span>
-        <span className="block text-sm text-muted">{detalle}</span>
-      </span>
-      <Icon name="chevron-right" size={18} aria-hidden="true" className="shrink-0 text-muted" />
-    </>
   )
 }
