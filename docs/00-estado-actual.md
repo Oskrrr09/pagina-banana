@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-07
+actualizado: 2026-08-21
 ---
 
 # Estado actual
@@ -11,6 +11,52 @@ actualizado: 2026-08-07
 > checkout simulado, servicios, Plan Renove, tiendas, soporte y **chat en
 > tiempo real con Supabase + panel de agentes** (Fase 1 desplegada el
 > 2026-07-30). No hay integración comercial real ni motor de pago.
+
+## La app nativa gana identidad visual (2026-08-19 a 2026-08-20)
+
+> [!warning]
+> Este documento se había quedado en el 2026-08-07. Desde entonces se han
+> fusionado las PR #39 a #66 y **sólo las cinco últimas están descritas aquí**;
+> las veintitrés intermedias siguen sin recoger. El hueco está anotado en
+> [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
+> Hasta cerrarlo, git y GitHub son la única descripción completa del producto.
+
+`main` está en `5bdee61f`. Las cinco últimas entregas forman el tramo de
+trabajo centrado en la aplicación nativa —la #62 alcanza también a la web—.
+Ninguna toca datos, catálogo, Supabase ni dependencias.
+
+**El aviso de tienda favorita ya no se come los toques de Inicio** (PR #62,
+`144294d8`). Flotaba sobre el contenido y las tarjetas que quedaban debajo no
+recibían el toque. Ahora ocupa una banda propia dentro del flujo —en la app y
+en la web—, con la lista desplazándose por dentro cuando no cabe, y el foco
+inicial sólo se toma si el botón de cerrar está a la vista. La PR #63
+(`763b9a71`) corrigió después la prueba que vigila ese desplazamiento. Detalle
+en [[02-decisiones#D-070 — El aviso de tienda favorita ocupa banda, no flota]].
+
+**El producto pesa más que su marco** (PR #64, `3bb99a91`). `ProductCardCompact`
+tenía tres marcos concéntricos —borde de tarjeta, caja gris de la imagen y aire
+propio del producto— y el aparato quedaba reducido a unos 90 px de 152. La
+tarjeta ya no se dibuja: se separa del fondo con la sombra más discreta del
+sistema y la foto ocupa el ancho completo.
+
+**Inicio tiene jerarquía y color de marca** (PR #65, `096a3bf8`). El área de
+contenido era **90,1 % blanco y gris**; el azul, 7,2 % de pantalla, caía al
+**0,1 %** en el contenido porque sólo estaba en la barra de pestañas. Ahora hay
+saludo con tipografía de display, secciones en banda amarilla y una tarjeta con
+Bananito. Es Inicio de la app, no una copia de `/tienda`.
+
+**Las tarjetas de un carril terminan a la misma altura** (PR #66, `5bdee61f`).
+Antes medían 244,75, 220,75 y 239,5 px según el modelo que cayera dentro, por
+dos diferencias independientes: la segunda línea del nombre (18,75 px) y el
+precio anterior de una oferta (24 px). Cada zona reserva de antemano su caso más
+alto. El contrato verificado es la igualdad relativa, no una altura concreta;
+ver [[02-decisiones#D-072 — La geometría de la tarjeta no depende del producto]].
+
+Verificación tras fusionar: la ejecución de CI sobre `main` de la PR #66
+(`32425136106`) terminó en verde con 452 pruebas —451 aprobadas, 1 omitida
+esperada, 0 fallos, 0 reintentos, 0 inestables—, 24/24 en el panel de agentes,
+35/35 en preferencias, 36 + 60 + 5 contra Supabase y despliegue de Pages
+correcto. La de la PR #65 (`32417548643`) fue igualmente limpia con 450.
 
 ## Auditoría de seguridad en curso (2026-08-02 a 2026-08-06)
 

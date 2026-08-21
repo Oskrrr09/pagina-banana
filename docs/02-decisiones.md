@@ -1,6 +1,6 @@
 ---
 tipo: decisiones
-actualizado: 2026-08-07
+actualizado: 2026-08-21
 ---
 
 # Decisiones
@@ -1371,6 +1371,103 @@ No atribuye motivaciones que el repositorio no documenta.
   aplica, el campo cabe y la prueba pasa con el fallo presente. Comprobado.
 - Evidencia: `tests/e2e/carrito-movil.spec.ts`. Contraprueba: con el arreglo
   revertido la prueba falla con 17 px; con `Desktop Chrome`, pasa.
+
+## D-070 — El aviso de tienda favorita ocupa banda, no flota
+
+- Fecha: 2026-08-19. PR #62 (`144294d8`) y PR #63 (`763b9a71`).
+- Estado: vigente.
+- Problema: el aviso se pintaba flotando sobre el contenido. Lo que quedaba
+  debajo se veía pero no se podía tocar: el toque lo recibía el aviso. Medido
+  con `document.elementFromPoint` y `page.mouse` —no con `locator.click()`, que
+  desplaza el objetivo y esconde justo este defecto—, había tarjetas de Inicio
+  visibles e inalcanzables.
+- Decisión: el aviso deja de flotar y ocupa **una banda propia dentro del
+  flujo**, en la app y en la web. Lo que hay debajo baja, se ve entero y se
+  puede tocar. La banda se limita a `max-h-[55dvh]` y la lista de tiendas se
+  desplaza por dentro.
+- **El tope de altura no es cosmético.** Con la lista de tiendas desplegada a
+  320×568 el aviso llegaba a 931 px, `main` quedaba en 0 y la barra de pestañas
+  caía fuera de la ventana, irrecuperable porque `html` y `body` llevan
+  `overflow: hidden` en la app.
+- **El foco inicial sólo se toma si el botón de cerrar está a la vista.** Antes
+  se tomaba siempre, y al ocupar el aviso el flujo eso arrastraba la página
+  hasta arriba —observado: `scrollY` de 2100 a 0—. Se resolvió comprobando la
+  visibilidad real del botón, **no** añadiendo `preventScroll` a ciegas: eso
+  habría dejado el foco en un elemento fuera de pantalla.
+- **Las dos pruebas de la PR #53 se reorientaron, no se debilitaron.** Estaban
+  escritas contra una precondición geométrica —que el CTA cayera dentro de la
+  banda del aviso—, que sólo tenía sentido mientras el aviso flotaba. Protegen
+  comportamiento, no `position: fixed`, y se reescribieron como tal.
+- La PR #63 corrige la cota de esa prueba: el desplazamiento admisible se deriva
+  de la **altura real de la banda** (`[data-favorite-store-prompt]`) en vez de
+  un número fijo, y se mide sobre `main`. Una cota absoluta de 8 px producía
+  fallos intermitentes —observados 10 px y 256 px frente a 211—, en parte porque
+  el anclaje de desplazamiento no es determinista y en parte porque la
+  referencia anterior estaba animada.
+- Evidencia: `src/components/layout/FavoriteStoreDialogs.tsx`,
+  `src/components/layout/Layout.tsx`, `tests/e2e/favorite-store.spec.ts`.
+- Consecuencia: en la web el aviso se pinta después de `TranslationNotice` y
+  antes de `<main>`; en la app, junto a `AppTabBar`.
+
+## D-071 — En la app manda el producto, no el contenedor
+
+- Fecha: 2026-08-20. PR #64 (`3bb99a91`) y PR #65 (`096a3bf8`).
+- Estado: vigente. Dirección visual aceptada; no deshacer sin sustituirla.
+- Problema medido, no impresión: en el área de contenido de la app el **90,1 %**
+  de los píxeles eran blanco o gris, y el azul de marca —7,2 % de la pantalla
+  completa— caía al **0,1 %** dentro del contenido, porque sólo estaba en la
+  barra de pestañas. Y en `ProductCardCompact` había tres marcos concéntricos:
+  a 390×844, tarjeta de 152 px, caja de imagen de 126 y un iPhone de unos 90.
+  El envoltorio pesaba más que lo que se vende.
+- Dirección, en una frase: **«Apple Store móvil, pero más cálida, cercana y
+  reconociblemente Banana.»** Y el principio que la resume: **la app no necesita
+  más decoración; necesita que el producto tenga más presencia.**
+- Decisión, en cuatro reglas: **producto por encima de contenedor**, **imagen
+  por encima de marco**, **jerarquía por encima de decoración** y **respuesta
+  táctil por encima de animación**.
+  - La tarjeta no se dibuja: sin borde, separada del fondo sólo por
+    `--shadow-rest`, con la foto a ancho completo y sin relleno propio —el
+    recorte de estos PNG ya trae su aire—.
+  - El descuento es etiqueta redonda, no cartel. El corazón conserva sus 44 px.
+  - Al pulsar, la tarjeta cede un 2 % con `transform`, que no reordena nada y no
+    mueve el carril. Con `prefers-reduced-motion` no se aplica.
+  - En Inicio: saludo con tipografía de display, secciones que pueden ir en
+    banda amarilla (`bg-brand-050`) y una tarjeta con Bananito.
+- **Sustituir bordes por sombras no es la decisión.** Un primer intento cambió
+  diez bordes por diez sombras: es el mismo contorno con otro nombre y vuelve a
+  dibujar el marco que sobra. Se retiró.
+- **Inicio no se convierte en una copia de `/tienda`.** Sigue respondiendo a «mi
+  relación con Banana», según [[02-decisiones#D-068]].
+- Evidencia: `src/components/product/ProductCardCompact.tsx`,
+  `src/components/home/app/AppCustomerHome.tsx`, tokens de `src/index.css`.
+- Comprobación de alcance: normalizando el archivo de la tarjeta —sin
+  `className`, comentarios ni espacios— la PR #64 sólo cambia
+  `pad={!color.imageBg}` por `pad={false}` y un `<div>` envolvente. El resto es
+  presentación.
+
+## D-072 — La geometría de la tarjeta no depende del producto
+
+- Fecha: 2026-08-20. PR #66 (`5bdee61f`).
+- Estado: vigente.
+- Problema: en un mismo carril las tarjetas terminaban a alturas distintas.
+  Medido a 390×844: «MacBook Air M4» 244,75 px, «Apple Watch Ultra 3» 239,5 e
+  «iPhone 17 Pro Max» 220,75. Son dos diferencias independientes que se suman:
+  18,75 px por la segunda línea del nombre y 24 px por el precio anterior de una
+  oferta.
+- Decisión: **cada zona de texto reserva de antemano su caso más alto** —nombre
+  a dos líneas (`min-h-[2.375rem]`), bloque de precio con su caso de oferta
+  (`min-h-[3.125rem]`)— y el contenido decide qué se lee, no cuánto ocupa.
+  Resultado: 264 px en los tres casos.
+- **264 px no es el contrato.** El contrato es «estas tarjetas miden lo mismo»,
+  no «esta tarjeta mide N píxeles»: lo segundo se rompería con cualquier ajuste
+  legítimo de tipografía o espaciado. Las pruebas comprueban que el conjunto de
+  alturas de un carril tiene un solo elemento, con una precondición explícita de
+  que la muestra mezcle títulos largos y cortos, con y sin oferta.
+- Descartado por principio: condicionar la altura al `slug` o a la familia,
+  mantener listas de excepciones, rellenar con espacios según el nombre,
+  duplicar el precio o insertar texto invisible semánticamente incorrecto.
+- Evidencia: `src/components/product/ProductCardCompact.tsx`,
+  `tests/e2e/inicio-nativo.spec.ts`.
 
 ## Cómo añadir una decisión
 
