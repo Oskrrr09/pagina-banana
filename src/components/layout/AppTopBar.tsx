@@ -7,6 +7,7 @@ import { HeaderSearch } from '../search/HeaderSearch'
 import { useStore } from '../../lib/store'
 import { useT } from '../../lib/i18n'
 import { contextoDe, muestraCarrito, muestraChipsDeCategoria } from '../../lib/appSections'
+import { useAppBack } from '../../lib/useAppBack'
 
 /**
  * Barra superior de la aplicación nativa.
@@ -28,6 +29,12 @@ import { contextoDe, muestraCarrito, muestraChipsDeCategoria } from '../../lib/a
  *
  * Cuál toca lo decide `contextoDe`, en `lib/appSections.ts`, que es también
  * quien decide la pestaña activa y los chips: una sola fuente para las tres.
+ *
+ * EN LAS SECUNDARIAS, ADEMÁS, UN «VOLVER»
+ *
+ * En iPhone no hay retroceso del sistema, así que las pantallas que no son
+ * raíz de pestaña necesitan el suyo. Va a la izquierda de la fila que ya
+ * existe —no hay segunda cabecera— y quién lo lleva lo decide `useAppBack`.
  */
 export function AppTopBar() {
   const [searchOpen, setSearchOpen] = useState(false)
@@ -35,6 +42,7 @@ export function AppTopBar() {
   // el foco vuelve por construcción al botón que abrió, sea cual sea.
   const searchButtonRef = useRef<HTMLButtonElement>(null)
   const { pathname } = useLocation()
+  const atras = useAppBack()
 
   const comercial = contextoDe(pathname) === 'comercial'
 
@@ -72,6 +80,7 @@ export function AppTopBar() {
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="flex items-center gap-2 px-4 pb-2.5 pt-2.5">
+          {atras && <BotonVolver onClick={atras.volver} />}
           {comercial ? (
             <BuscadorProminente onOpen={() => setSearchOpen(true)} botonRef={searchButtonRef} />
           ) : (
@@ -97,6 +106,32 @@ export function AppTopBar() {
         </div>
       )}
     </>
+  )
+}
+
+/**
+ * El control de vuelta de las pantallas secundarias.
+ *
+ * Sólo icono: el rótulo «Atrás» competiría por el ancho justo donde menos
+ * sobra, a 320 px y con el buscador al lado. El nombre accesible lo pone
+ * `aria-label`, así que quien navega con lector de pantalla sí lo oye.
+ *
+ * Mismo cuerpo que el buscador compacto y el carrito —44 px de lado, redondo,
+ * tinta sobre el amarillo—: es un botón más de la barra, no un elemento nuevo
+ * que haya que aprender. El galón sale de `chevron-right` girado, que es como
+ * ya se dibuja el «Volver al carrito» del checkout; no hace falta otro icono.
+ */
+function BotonVolver({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Volver"
+      data-app-back
+      className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink"
+    >
+      <Icon name="chevron-right" size={22} aria-hidden="true" className="rotate-180" />
+    </button>
   )
 }
 
