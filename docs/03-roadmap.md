@@ -361,8 +361,8 @@ larga.
 
 ## 8. Navegación «Atrás» en la app nativa
 
-Siguiente entrega prevista (PR #67), acordada el 2026-08-21 y **no iniciada**.
-Es una dirección, no un compromiso de alcance ni de fecha.
+Siguiente entrega prevista, todavía sin PR abierta: acordada el 2026-08-21 y
+**no iniciada**. Es una dirección, no un compromiso de alcance ni de fecha.
 
 En la app, las pantallas secundarias no ofrecen una vuelta atrás propia. Las
 cuatro raíces de la barra —Inicio (`/`), Tienda (`/tienda`), Compras

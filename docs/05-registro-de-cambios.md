@@ -16,9 +16,10 @@ autores, diffs y marcas de tiempo.
 
 ## 2026-08-19 a 2026-08-20 — La app nativa deja de parecer una web comprimida
 
-Cinco PR seguidas sobre la aplicación nativa. Ninguna toca datos, catálogo,
-Supabase, dependencias ni flujos de compra. Todas se integraron con *merge
-commit*, con los cuatro checks en verde, sin `--admin` y sin borrar la rama.
+Cinco PR seguidas del tramo de trabajo centrado en la aplicación nativa; la #62
+alcanza también a la web. Ninguna toca datos, catálogo, Supabase, dependencias
+ni flujos de compra. Todas se integraron con *merge commit*, con los cuatro
+checks en verde, sin `--admin` y sin borrar la rama.
 
 - **PR #62** (`144294d8`, 2026-08-19) — «El aviso de tienda favorita deja de
   comerse los toques de Inicio». El aviso deja de flotar y ocupa banda propia en

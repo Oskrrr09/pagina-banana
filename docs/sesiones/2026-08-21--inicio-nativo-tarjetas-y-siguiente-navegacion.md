@@ -21,8 +21,9 @@ porque sólo estaba en la barra de pestañas.
 
 ## Trabajo realizado
 
-Cinco PR, todas de la app y ninguna con efecto sobre datos, catálogo, Supabase,
-dependencias ni flujos de compra.
+Cinco PR que cierran este tramo de trabajo, centrado en la app nativa —la #62
+alcanza también a la web—, y ninguna con efecto sobre datos, catálogo,
+Supabase, dependencias ni flujos de compra.
 
 | PR | Merge | Qué entrega |
 | --- | --- | --- |
@@ -71,9 +72,9 @@ PR ya está en `main`.
 
 ## Siguiente paso
 
-**PR #67 — «Atrás» en las pantallas secundarias de la app.** No iniciada. Las
-condiciones acordadas y el inventario previo que hace falta están en
-[[03-roadmap#8. Navegación «Atrás» en la app nativa]].
+**Siguiente entrega — «Atrás» en las pantallas secundarias de la app.** Sin PR
+abierta y no iniciada. Las condiciones acordadas y el inventario previo que
+hace falta están en [[03-roadmap#8. Navegación «Atrás» en la app nativa]].
 
 Antes o después de eso, dos deudas que esta sesión deja anotadas:
 

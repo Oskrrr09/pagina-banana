@@ -21,8 +21,9 @@ actualizado: 2026-08-21
 > [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
 > Hasta cerrarlo, git y GitHub son la única descripción completa del producto.
 
-`main` está en `5bdee61f`. Las cinco últimas entregas son de la aplicación
-nativa. Ninguna toca datos, catálogo, Supabase ni dependencias.
+`main` está en `5bdee61f`. Las cinco últimas entregas forman el tramo de
+trabajo centrado en la aplicación nativa —la #62 alcanza también a la web—.
+Ninguna toca datos, catálogo, Supabase ni dependencias.
 
 **El aviso de tienda favorita ya no se come los toques de Inicio** (PR #62,
 `144294d8`). Flotaba sobre el contenido y las tarjetas que quedaban debajo no
