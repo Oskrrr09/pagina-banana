@@ -1,6 +1,6 @@
 ---
 tipo: problemas
-actualizado: 2026-08-06
+actualizado: 2026-08-21
 ---
 
 # Problemas pendientes
@@ -882,3 +882,51 @@ forman el backlog verificable.
   intenta además subir `text/plain` y una ruta anidada.
 - Pendiente: ejecutar el caso contra Supabase local o dedicado. Sigue dentro
   del bloqueo general SEC-RLS-001.
+
+## DOC-002 — La documentación viva va veintitrés PR por detrás
+
+- Estado: **abierto** desde el 2026-08-21.
+- Impacto: medio. No afecta al producto; afecta a quien retome el trabajo.
+- Evidencia: la última actualización de `00-estado-actual`, `02-decisiones` y
+  `05-registro-de-cambios` es del 2026-08-07 (PR #38). Entre esa fecha y hoy se
+  han fusionado veintiocho PR, de la #39 a la #66. Esta sesión documenta las
+  cinco últimas (#62 a #66); **las veintitrés intermedias (#39 a #61) no están
+  recogidas en ningún documento**.
+- Qué falta, según `gh pr list`: navegación de la app (#39, #41, #56), «Mis
+  productos» y pedidos (#40, #57), diseño y barras (#43, #49, #58), arranque
+  nativo (#50, #54), tipografías sin Google Fonts (#52), aviso de tienda (#51,
+  #53), Inicio nativo (#55), chat y panel (#47, #48), cuenta e identidad (#59,
+  #60), atrás desde ficha (#61) e integridad de pruebas (#44, #45, #46, #42).
+- Riesgo: mientras dure, git y GitHub son la única descripción completa del
+  producto, y cualquier lectura de `docs/` anterior al 2026-08-19 puede estar
+  describiendo un comportamiento que ya cambió.
+- Siguiente paso: recorrer esas PR por orden y volcar lo que sea decisión
+  —no lo que sea diff— en `02-decisiones`, resumiendo el resto en
+  `05-registro-de-cambios`.
+
+## UX-062 — Hallazgos abiertos de la auditoría del 2026-08-19
+
+- Estado: **abiertos**, ninguno abordado.
+- Origen: auditoría de sólo lectura del 2026-08-19 sobre `main` (estado
+  posterior a la PR #61), hecha para elegir el siguiente cambio por impacto
+  real. Se recogieron nueve hallazgos; el primero (A62-01, el aviso de tienda
+  favorita tapando Inicio) se resolvió en la PR #62 y está en
+  [[02-decisiones#D-070 — El aviso de tienda favorita ocupa banda, no flota]].
+  Quedan ocho:
+  - **A62-02** — el checkout duplica su propio texto.
+  - **A62-03** — `/cuenta` no está traducida.
+  - **A62-04** — queda texto obsoleto de «sesión iniciada».
+  - **A62-05** — el parámetro `?apartado=` se pierde al pasar por el login, así
+    que el enlace profundo de D-068 no sobrevive a identificarse.
+  - **A62-06** — en la confirmación hay dos «Atrás» que no llevan a ninguna
+    parte.
+  - **A62-07** — un error de Supabase se muestra al cliente con texto de
+    desarrollador.
+  - **A62-08** — accesibilidad del componente `Field` del checkout.
+  - **A62-09** — ante un fallo duro de red, el error tarda entre 4 y 8 segundos
+    en aparecer.
+- Cautela: los ocho se observaron en esa fecha y **no se han vuelto a
+  comprobar** después de las PR #62 a #66. Reverificar antes de abrir trabajo
+  sobre cualquiera de ellos.
+- Fuera de esta lista, siguen pendientes y ya conocidos: `pedidos.status`
+  siempre vale `'demo'` y la tienda de recogida no se persiste.

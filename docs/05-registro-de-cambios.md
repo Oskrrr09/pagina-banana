@@ -1,12 +1,55 @@
 ---
 tipo: cambios
-actualizado: 2026-08-07
+actualizado: 2026-08-21
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+> [!warning]
+> Este registro salta del 2026-08-07 al 2026-08-19. Las PR #39 a #61 —fusionadas
+> entre esas dos fechas— no están recogidas aquí ni en el resto de la
+> documentación viva. Ver
+> [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
+
+## 2026-08-19 a 2026-08-20 — La app nativa deja de parecer una web comprimida
+
+Cinco PR seguidas sobre la aplicación nativa. Ninguna toca datos, catálogo,
+Supabase, dependencias ni flujos de compra. Todas se integraron con *merge
+commit*, con los cuatro checks en verde, sin `--admin` y sin borrar la rama.
+
+- **PR #62** (`144294d8`, 2026-08-19) — «El aviso de tienda favorita deja de
+  comerse los toques de Inicio». El aviso deja de flotar y ocupa banda propia en
+  la app y en la web, con tope de `55dvh` y desplazamiento interno de la lista.
+  El foco inicial sólo se toma si el botón de cerrar está a la vista. Las dos
+  pruebas de la PR #53 se reorientaron a comportamiento. Ver
+  [[02-decisiones#D-070 — El aviso de tienda favorita ocupa banda, no flota]].
+- **PR #63** (`763b9a71`, 2026-08-19) — «El test del aviso mide el
+  desplazamiento contra su propia banda». Corrige un intermitente aparecido tras
+  fusionar la #62: la cota pasa de un número fijo a derivarse de la altura real
+  de `[data-favorite-store-prompt]`, medida sobre `main`.
+- **PR #64** (`3bb99a91`, 2026-08-20) — «La tarjeta de producto da protagonismo
+  al dispositivo». `ProductCardCompact` pierde borde y caja gris; la foto ocupa
+  el ancho completo. Cambio presentacional: normalizado el archivo, la única
+  diferencia funcional es `pad={!color.imageBg}` → `pad={false}`.
+- **PR #65** (`096a3bf8`, 2026-08-20) — «Inicio gana jerarquía e identidad
+  Banana». Saludo con tipografía de display, secciones en banda amarilla y
+  tarjeta con Bananito. Antes, el área de contenido era 90,1 % blanco y gris y
+  el azul de marca bajaba al 0,1 %. CI posterior (`32417548643`): 450 pruebas,
+  449 aprobadas, 1 omitida esperada, 0 fallos, 0 inestables.
+- **PR #66** (`5bdee61f`, 2026-08-20) — «Las tarjetas compactas mantienen la
+  misma altura». Cada zona de texto reserva su caso más alto: de 244,75 / 220,75
+  / 239,5 px a 264 en los tres casos. Las dos pruebas nuevas comprueban igualdad
+  relativa, nunca una altura absoluta. CI posterior (`32425136106`): 452
+  pruebas, 451 aprobadas, 1 omitida, 0 fallos, 0 reintentos, 0 inestables;
+  24/24 en el panel de agentes, 35/35 en preferencias, 36 + 60 + 5 contra
+  Supabase y Pages desplegado. Ver
+  [[02-decisiones#D-072 — La geometría de la tarjeta no depende del producto]].
+
+La dirección visual de las #64 y #65 queda recogida en
+[[02-decisiones#D-071 — En la app manda el producto, no el contenedor]].
 
 ## 2026-08-07 — Transferencia del repositorio y protección de `main`
 

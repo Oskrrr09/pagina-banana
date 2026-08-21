@@ -1,6 +1,6 @@
 ---
 tipo: roadmap
-actualizado: 2026-08-06
+actualizado: 2026-08-21
 ---
 
 # Roadmap
@@ -358,3 +358,37 @@ distintas en vez de una, ver
 Descartada expresamente: IA ejecutándose en el navegador del
 visitante (WebLLM). Inviable en móvil, primera carga demasiado
 larga.
+
+## 8. Navegación «Atrás» en la app nativa
+
+Siguiente entrega prevista (PR #67), acordada el 2026-08-21 y **no iniciada**.
+Es una dirección, no un compromiso de alcance ni de fecha.
+
+En la app, las pantallas secundarias no ofrecen una vuelta atrás propia. Las
+cuatro raíces de la barra —Inicio (`/`), Tienda (`/tienda`), Compras
+(`/mis-productos`) y Cuenta (`/cuenta`)— **no deben** mostrarla: allí no hay
+«atrás», hay pestañas.
+
+Antes de escribir nada hace falta inventariar las rutas secundarias reales:
+ficha de producto, categorías, favoritos, comparador, carrito, Finder, tienda
+física, soporte, servicio técnico y los apartados de Cuenta. Ese inventario
+tiene que clasificar cada ruta como raíz, secundaria o fuera del armazón de la
+app, y revisar `AppTopBar` y el router antes de decidir dónde vive la regla.
+Dónde se implementa no está decidido.
+
+Condiciones que ya se dan por acordadas:
+
+- Nada de `navigate(-1)` a ciegas. Se usa el historial cuando es válido y, si no
+  lo es, un destino lógico por pantalla —una ficha abierta en frío vuelve a
+  Tienda, no a ninguna parte—.
+- Objetivo táctil de 44 px, galón o flecha a la izquierda, área segura
+  respetada, nombre accesible, `focus-visible` y `prefers-reduced-motion`.
+- No romper Android ni duplicar la navegación del sistema.
+- Comprobar enlace profundo, recarga y entrada directa, a 320×568 y 390×844.
+
+## 9. Rematar la identidad visual fuera de la app
+
+`Inicio` de la web sigue con la presentación anterior: la revisión visual del
+2026-08-20 se aplicó sólo a las superficies nativas. Queda decidir si la web
+adopta la misma dirección de [[02-decisiones#D-071]] o mantiene deliberadamente
+un registro corporativo distinto. Sin decidir; no hay trabajo comprometido.
