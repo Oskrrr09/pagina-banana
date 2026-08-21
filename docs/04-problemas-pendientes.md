@@ -930,3 +930,23 @@ forman el backlog verificable.
   sobre cualquiera de ellos.
 - Fuera de esta lista, siguen pendientes y ya conocidos: `pedidos.status`
   siempre vale `'demo'` y la tienda de recogida no se persiste.
+
+## UI-002 — La barra de compra de la ficha se sale por la derecha a 320 px
+
+- Estado: **abierto** desde el 2026-08-21.
+- Impacto: medio. Sólo en la aplicación nativa y sólo a 320 px de ancho, pero
+  ahí recorta el botón principal de compra.
+- **Es deuda preexistente.** Se observó revisando la PR #68 y se reprodujo
+  después contra `main` en `d6e6e9ee`; la PR #68 no lo introdujo, no toca
+  `VariantPage` y no lo modifica. No tiene nada que ver con la navegación
+  «Atrás».
+- Evidencia, medida en `/iphone/17-pro/256gb-plata` a 320×568 con el armazón
+  nativo: la barra fija inferior mide `scrollWidth` 339 sobre `clientWidth` 320
+  —**19 px de exceso**—. Sus tres hijos van en 16→75 el precio, 83→200 «Al
+  carrito» y **208→339 «Comprar»**, que es el que queda cortado.
+- **No lo detectan las pruebas de desbordamiento** que ya existen: el armazón
+  recorta, así que `document.documentElement.scrollWidth` sigue valiendo 320 y
+  la comprobación habitual pasa. Hay que medir la barra, no el documento.
+- No aparece en la web: fuera del binario esa barra fija no se monta.
+- Pendiente: decidir cómo cede el ancho —envolver, acortar el rótulo o repartir
+  de otro modo— sin bajar de los 44 px de objetivo táctil.

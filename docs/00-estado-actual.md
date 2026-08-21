@@ -12,6 +12,46 @@ actualizado: 2026-08-21
 > tiempo real con Supabase + panel de agentes** (Fase 1 desplegada el
 > 2026-07-30). No hay integración comercial real ni motor de pago.
 
+## La app nativa ya sabe volver (2026-08-21)
+
+`main` está en `d6e6e9ee`. La **PR #68** está fusionada y con la ejecución de CI
+posterior en verde: las pantallas secundarias de la aplicación nativa tienen por
+fin un control **«Volver»** visible, que es lo que faltaba desde que iOS no
+ofrece retroceso del sistema.
+
+Cómo se comporta, que son dos cosas y no una:
+
+- **Con historial propio manda el historial.** Si React Router ha apilado una
+  entrada anterior, se retrocede de verdad, y por eso el catálogo vuelve con sus
+  filtros puestos y la búsqueda con su término intacto.
+- **Sin historial propio —enlace profundo, entrada directa— se usa un destino
+  semántico** con `replace`: una ficha abierta en frío vuelve al catálogo de su
+  familia, el detalle de una tienda a `/tiendas`, el comparador a la familia que
+  estaba comparando. Nunca un `navigate(-1)` a ciegas, que ahí saldría de la
+  aplicación.
+
+**Las raíces no lo llevan**: `/`, `/tienda`, `/mis-productos` y `/cuenta`, más
+`/login`, que es el destino de la pestaña «Cuenta» mientras no hay sesión. Allí
+no hay «atrás», hay pestañas.
+
+La regla vive en `src/lib/appBack.ts` —función pura, sin React ni `window`— y
+`src/lib/useAppBack.ts` es la única pieza que lee `window.history.state`.
+`AppTopBar` sólo pinta el botón: 44×44, `aria-label="Volver"`, primero de la
+fila, sin segunda cabecera. Comprobado a **320×568 y 390×844** en las dos
+variantes de la barra. **La web no cambia**: sigue montando `Header` y no lleva
+este control. Detalle en
+[[02-decisiones#D-073 — «Volver» usa el historial cuando existe y un destino semántico cuando no]].
+
+Fuera del armazón nativo y por tanto sin este control: `/checkout/:step`,
+`/agente` y `/agente/login`. Android sigue delegando en el historial del
+WebView; no se añadió `@capacitor/app` ni ningún listener del botón físico.
+
+Verificación tras fusionar: la ejecución sobre `main` (`32533459831`, intento 1)
+terminó en verde —464 pruebas E2E con 463 aprobadas y 1 omitida esperada, 0
+fallos, 0 reintentos, 0 inestables—, 353 unitarias, 24/24 en el panel de
+agentes, 35/35 en preferencias, 36 + 60 + 5 contra Supabase y **GitHub Pages
+ejecutado de verdad y desplegado** sobre `d6e6e9ee`.
+
 ## La app nativa gana identidad visual (2026-08-19 a 2026-08-20)
 
 > [!warning]

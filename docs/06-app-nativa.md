@@ -1,6 +1,6 @@
 ---
 tipo: guia
-actualizado: 2026-08-04
+actualizado: 2026-08-21
 ---
 
 # Aplicación nativa de la tienda (iOS y Android)
@@ -80,6 +80,32 @@ verificación Android completa.
 **Ambas con interfaz propia de app**: barra de navegación inferior, sin pie
 de página, y el chat dentro de "Contacta con nosotros" en el menú
 ([[02-decisiones#D-042 — La app nativa usa la navegación de una app, no la de la web]]).
+
+**Cómo se navega hacia atrás dentro del armazón** (desde la PR #68, 2026-08-21):
+
+- `AppTabBar` tiene cuatro raíces —`/`, `/tienda`, `/mis-productos` y
+  `/cuenta`—. Ninguna muestra el control «Volver», ni tampoco `/login`, que es
+  el destino de la pestaña «Cuenta» mientras no hay sesión.
+- El resto de pantallas del armazón sí lo muestran, en `AppTopBar`: un botón de
+  44×44 con `aria-label="Volver"`, primero de la fila, sin segunda cabecera.
+- **Primero el historial real**: si React Router tiene una entrada anterior
+  apilada se retrocede de verdad, y así vuelven los filtros del catálogo y el
+  término de la búsqueda.
+- **Si no lo hay** —enlace profundo o entrada directa— se navega al destino
+  lógico de esa pantalla con `replace`, nunca `navigate(-1)` a ciegas.
+- `/checkout/:step`, `/agente` y `/agente/login` quedan **fuera del armazón**:
+  no montan `AppTopBar` y conservan su propia navegación.
+- **No hay listener del botón físico de Android ni `@capacitor/app`.** El
+  bridge sigue delegando en el historial del WebView, que es la misma pila que
+  usa el control visible.
+- La web no cambia: fuera del binario se monta `Header` y no existe este botón.
+
+Detalle y razones en
+[[02-decisiones#D-073 — «Volver» usa el historial cuando existe y un destino semántico cuando no]].
+La PR #68 se verificó con pruebas unitarias, E2E, CI y revisión visual a
+320×568 y 390×844: **no se recompiló ningún binario nativo**, así que las
+verificaciones de Android e iOS descritas arriba siguen siendo las últimas
+completas.
 
 **Publicar** —firmar, subir y pasar revisión— sigue pendiente en ambas, y
 depende de lo del bloque anterior, no del código.

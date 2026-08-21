@@ -359,32 +359,35 @@ Descartada expresamente: IA ejecutándose en el navegador del
 visitante (WebLLM). Inviable en móvil, primera carga demasiado
 larga.
 
-## 8. Navegación «Atrás» en la app nativa
+## 8. Navegación «Atrás» en la app nativa — COMPLETADA
 
-Siguiente entrega prevista, todavía sin PR abierta: acordada el 2026-08-21 y
-**no iniciada**. Es una dirección, no un compromiso de alcance ni de fecha.
+Entregada en la **PR #68** (`d6e6e9ee`, 2026-08-21) y con la ejecución de CI
+posterior en verde, Pages incluido.
 
-En la app, las pantallas secundarias no ofrecen una vuelta atrás propia. Las
-cuatro raíces de la barra —Inicio (`/`), Tienda (`/tienda`), Compras
-(`/mis-productos`) y Cuenta (`/cuenta`)— **no deben** mostrarla: allí no hay
-«atrás», hay pestañas.
+Las pantallas secundarias del armazón nativo llevan un control «Volver» en
+`AppTopBar`. Con historial propio se retrocede de verdad —el catálogo vuelve
+con sus filtros y la búsqueda con su término—; sin él se va a un destino
+semántico con `replace`. Las cuatro raíces de la barra —Inicio (`/`), Tienda
+(`/tienda`), Compras (`/mis-productos`) y Cuenta (`/cuenta`)— no lo llevan, ni
+`/login`, que es la pestaña «Cuenta» sin sesión. Ver
+[[02-decisiones#D-073 — «Volver» usa el historial cuando existe y un destino semántico cuando no]].
 
-Antes de escribir nada hace falta inventariar las rutas secundarias reales:
-ficha de producto, categorías, favoritos, comparador, carrito, Finder, tienda
-física, soporte, servicio técnico y los apartados de Cuenta. Ese inventario
-tiene que clasificar cada ruta como raíz, secundaria o fuera del armazón de la
-app, y revisar `AppTopBar` y el router antes de decidir dónde vive la regla.
-Dónde se implementa no está decidido.
+El inventario previo de rutas —clasificar cada una como raíz, secundaria o
+fuera del armazón, y revisar `AppTopBar` y el router antes de decidir dónde
+vivía la regla— **se hizo** el 2026-08-21 y es lo que fijó el mapa de destinos.
+La regla acabó en `src/lib/appBack.ts` como función pura.
 
-Condiciones que ya se dan por acordadas:
+Las condiciones acordadas quedaron **resueltas y verificadas**:
 
-- Nada de `navigate(-1)` a ciegas. Se usa el historial cuando es válido y, si no
-  lo es, un destino lógico por pantalla —una ficha abierta en frío vuelve a
-  Tienda, no a ninguna parte—.
-- Objetivo táctil de 44 px, galón o flecha a la izquierda, área segura
-  respetada, nombre accesible, `focus-visible` y `prefers-reduced-motion`.
-- No romper Android ni duplicar la navegación del sistema.
-- Comprobar enlace profundo, recarga y entrada directa, a 320×568 y 390×844.
+- Ningún `navigate(-1)` a ciegas: el historial se usa cuando el router tiene una
+  entrada anterior apilada y, si no, cada pantalla tiene su destino lógico.
+- Objetivo táctil de 44 px, galón a la izquierda, área segura intacta, nombre
+  accesible «Volver» y `focus-visible`; sin animación nueva, así que
+  `prefers-reduced-motion` no necesitó lógica.
+- Android no se rompe ni se duplica: el bridge sigue delegando en el historial
+  del WebView, que es la misma pila.
+- Enlace profundo, entrada directa y las dos anchuras —320×568 y 390×844— están
+  cubiertos por `tests/e2e/app-atras.spec.ts`.
 
 ## 9. Rematar la identidad visual fuera de la app
 
