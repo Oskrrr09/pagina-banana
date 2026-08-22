@@ -151,7 +151,7 @@ function EnlaceAPedidos({ className = '' }: { className?: string }) {
 
   return (
     <Link
-      to="/cuenta?apartado=pedidos"
+      to="/cuenta/pedidos"
       className={`inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line bg-surface px-4 text-sm font-semibold text-ink hover:border-ink/30 ${className}`}
     >
       <Icon name="credit-card" size={16} aria-hidden="true" />

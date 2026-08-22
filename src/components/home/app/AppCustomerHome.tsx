@@ -258,7 +258,7 @@ function Avisos({ listarReservas }: { listarReservas: ListarReservas }) {
         {listas.map((reserva) => (
           <li key={reserva.id}>
             <Link
-              to="/cuenta?apartado=reservas"
+              to="/cuenta/reservas"
               className="flex min-h-14 items-center gap-3 rounded-[16px] border border-brand bg-brand-050 p-4"
             >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-brand text-ink">

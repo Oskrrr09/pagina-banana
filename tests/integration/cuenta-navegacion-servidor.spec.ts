@@ -12,6 +12,14 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 // enlace daba otro sitio, Atrás no volvía al apartado anterior y el enlace
 // profundo dejaba de ser cierto en cuanto se tocaba el menú.
 //
+// DESDE LA NAVEGACIÓN NATIVA, ADEMÁS, CADA APARTADO ES UNA RUTA
+//
+// `?apartado=` tenía un techo: el armazón decide si una pantalla lleva
+// «Volver» mirando el PATHNAME, así que `/cuenta?apartado=pedidos` era
+// `/cuenta` —una raíz de pestaña— y nunca podía ofrecer retroceso. Ahora cada
+// apartado tiene su segmento y la gramática es la misma en web y en la
+// aplicación. La antigua sigue entrando y se normaliza con `replace`.
+//
 // POR QUÉ ESTO ES INTEGRACIÓN Y NO E2E DE NAVEGADOR
 //
 // `/cuenta` no se monta sin Supabase configurado —enseña su pantalla de «esto
@@ -139,7 +147,7 @@ test.describe('la URL manda', () => {
     await identificarse(page, a.email, a.password)
 
     for (const { id, label, titulo } of APARTADOS) {
-      await page.goto(id === 'datos' ? './cuenta' : `./cuenta?apartado=${id}`)
+      await page.goto(`./cuenta/${id}`)
       await expect(seccion(page, titulo), id).toBeVisible()
       await expect(activo(page), id).toHaveText(label)
     }
@@ -149,42 +157,36 @@ test.describe('la URL manda', () => {
     // ÉSTE ES EL FALLO QUE MOTIVÓ LA PR.
     const a = await cuenta('url')
     await identificarse(page, a.email, a.password)
-    await page.goto('./cuenta?apartado=pedidos')
-    await expect(page).toHaveURL(/apartado=pedidos/)
+    await page.goto('./cuenta/pedidos')
+    await expect(page).toHaveURL(/\/cuenta\/pedidos$/)
 
     await menu(page).getByRole('link', { name: 'Mis reservas' }).click()
     await expect(seccion(page, 'Mis reservas')).toBeVisible()
-    await expect(page, 'la URL sigue a la pantalla').toHaveURL(/apartado=reservas/)
-    await expect(page).not.toHaveURL(/apartado=pedidos/)
+    await expect(page, 'la URL sigue a la pantalla').toHaveURL(/\/cuenta\/reservas$/)
+    await expect(page).not.toHaveURL(/\/cuenta\/pedidos$/)
   })
 
-  test('Datos personales es el estado canónico de /cuenta', async ({ page }) => {
+  test('Datos personales tiene ruta propia, y /cuenta la enseña igual', async ({ page }) => {
     const a = await cuenta('canonica')
     await identificarse(page, a.email, a.password)
-    await page.goto('./cuenta?apartado=reservas')
-    await menu(page).getByRole('link', { name: 'Datos personales' }).click()
 
-    await expect(seccion(page, 'Datos personales')).toBeVisible()
-    // Se quita el parámetro en vez de escribir `?apartado=datos`.
-    await expect(page).toHaveURL(/\/cuenta$/)
-  })
-
-  test('llegar con ?apartado=datos explícito sigue siendo válido', async ({ page }) => {
-    // La aplicación ya no genera esa URL —Datos es el estado canónico de
-    // `/cuenta`—, pero hay enlaces por ahí y no se rompen.
-    const a = await cuenta('datos-explicito')
-    await identificarse(page, a.email, a.password)
-    await page.goto('./cuenta?apartado=datos')
-
+    // `/cuenta` sin más sigue abriendo Datos: es la entrada del área.
+    await page.goto('./cuenta')
     await expect(seccion(page, 'Datos personales')).toBeVisible()
     await expect(activo(page)).toHaveText('Datos personales')
-    await expect(page, 'no se reescribe: es una dirección válida').toHaveURL(/apartado=datos/)
+
+    // Y pulsarlo desde otro apartado escribe su dirección, como los demás: una
+    // sola gramática para los siete en vez de una excepción para uno.
+    await page.goto('./cuenta/reservas')
+    await menu(page).getByRole('link', { name: 'Datos personales' }).click()
+    await expect(seccion(page, 'Datos personales')).toBeVisible()
+    await expect(page).toHaveURL(/\/cuenta\/datos$/)
   })
 
-  test('un apartado que no existe abre Datos y limpia la URL', async ({ page }) => {
+  test('un apartado que no existe vuelve a la cuenta y limpia la URL', async ({ page }) => {
     const a = await cuenta('invalido')
     await identificarse(page, a.email, a.password)
-    await page.goto('./cuenta?apartado=banana')
+    await page.goto('./cuenta/banana')
 
     await expect(seccion(page, 'Datos personales')).toBeVisible()
     await expect(page, 'la URL deja de prometer algo que no se enseña').toHaveURL(/\/cuenta$/)
@@ -193,11 +195,64 @@ test.describe('la URL manda', () => {
   test('el resto de la URL no se pierde por el camino', async ({ page }) => {
     const a = await cuenta('otros-params')
     await identificarse(page, a.email, a.password)
-    await page.goto('./cuenta?apartado=pedidos&utm=campania')
+    await page.goto('./cuenta/pedidos?utm=campania')
     await menu(page).getByRole('link', { name: 'Mis reservas' }).click()
 
-    await expect(page).toHaveURL(/apartado=reservas/)
-    await expect(page, 'sólo se toca `apartado`').toHaveURL(/utm=campania/)
+    await expect(page).toHaveURL(/\/cuenta\/reservas/)
+    await expect(page, 'lo que no es nuestro se conserva').toHaveURL(/utm=campania/)
+  })
+})
+
+// ============================================================================
+// LA GRAMÁTICA ANTIGUA SIGUE ENTRANDO.
+//
+// `?apartado=` fue la dirección de un apartado durante varias versiones: hay
+// enlaces por ahí y no se rompen. Se traduce a la subruta con `replace`, que es
+// lo que impide que quede una entrada de historial obligando a un Atrás de más.
+// ============================================================================
+test.describe('compatibilidad con ?apartado=', () => {
+  test('cada apartado antiguo aterriza en su subruta', async ({ page }) => {
+    const a = await cuenta('legacy')
+    await identificarse(page, a.email, a.password)
+
+    for (const { id, titulo } of APARTADOS) {
+      await page.goto(`./cuenta?apartado=${id}`)
+      await expect(page, id).toHaveURL(new RegExp(`/cuenta/${id}$`))
+      await expect(seccion(page, titulo), id).toBeVisible()
+    }
+  })
+
+  test('un apartado inventado aterriza en la raíz', async ({ page }) => {
+    const a = await cuenta('legacy-invalido')
+    await identificarse(page, a.email, a.password)
+    await page.goto('./cuenta?apartado=banana')
+
+    await expect(page).toHaveURL(/\/cuenta$/)
+    await expect(seccion(page, 'Datos personales')).toBeVisible()
+  })
+
+  test('el resto de la consulta viaja con la traducción', async ({ page }) => {
+    const a = await cuenta('legacy-params')
+    await identificarse(page, a.email, a.password)
+    await page.goto('./cuenta?apartado=pedidos&utm=campania')
+
+    await expect(page).toHaveURL(/\/cuenta\/pedidos/)
+    await expect(page, 'sólo se traduce `apartado`').toHaveURL(/utm=campania/)
+  })
+
+  test('la traducción NO deja una entrada de historial de más', async ({ page }) => {
+    // Sin `replace`, salir de la pantalla exigiría dos Atrás: uno para deshacer
+    // la traducción y otro para irse de verdad.
+    const a = await cuenta('legacy-historial')
+    await identificarse(page, a.email, a.password)
+    await page.goto('./cuenta')
+    await expect(seccion(page, 'Datos personales')).toBeVisible()
+
+    await page.goto('./cuenta?apartado=pedidos')
+    await expect(page).toHaveURL(/\/cuenta\/pedidos$/)
+
+    await page.goBack()
+    await expect(page, 'un solo Atrás devuelve a la raíz').toHaveURL(/\/cuenta$/)
   })
 })
 
@@ -205,32 +260,32 @@ test.describe('Atrás y Adelante', () => {
   test('el historial recorre los apartados', async ({ page }) => {
     const a = await cuenta('historial')
     await identificarse(page, a.email, a.password)
-    await page.goto('./cuenta?apartado=pedidos')
+    await page.goto('./cuenta/pedidos')
     await expect(seccion(page, 'Mis pedidos')).toBeVisible()
     await expect(activo(page)).toHaveText('Mis pedidos')
 
     await menu(page).getByRole('link', { name: 'Mis reservas' }).click()
     await expect(seccion(page, 'Mis reservas')).toBeVisible()
-    await expect(page).toHaveURL(/apartado=reservas/)
+    await expect(page).toHaveURL(/\/cuenta\/reservas$/)
 
     await menu(page).getByRole('link', { name: 'Favoritos y tienda' }).click()
     await expect(seccion(page, 'Favoritos y tienda')).toBeVisible()
-    await expect(page).toHaveURL(/apartado=favoritos/)
+    await expect(page).toHaveURL(/\/cuenta\/favoritos$/)
 
     await page.goBack()
     await expect(seccion(page, 'Mis reservas')).toBeVisible()
     await expect(activo(page)).toHaveText('Mis reservas')
-    await expect(page).toHaveURL(/apartado=reservas/)
+    await expect(page).toHaveURL(/\/cuenta\/reservas$/)
 
     await page.goBack()
     await expect(seccion(page, 'Mis pedidos')).toBeVisible()
     await expect(activo(page)).toHaveText('Mis pedidos')
-    await expect(page).toHaveURL(/apartado=pedidos/)
+    await expect(page).toHaveURL(/\/cuenta\/pedidos$/)
 
     await page.goForward()
     await expect(seccion(page, 'Mis reservas')).toBeVisible()
     await expect(activo(page)).toHaveText('Mis reservas')
-    await expect(page).toHaveURL(/apartado=reservas/)
+    await expect(page).toHaveURL(/\/cuenta\/reservas$/)
   })
 
   test('volver a pulsar el apartado activo no añade una entrada', async ({ page }) => {
@@ -240,12 +295,12 @@ test.describe('Atrás y Adelante', () => {
     await identificarse(page, a.email, a.password)
     await page.goto('./cuenta')
     await menu(page).getByRole('link', { name: 'Mis pedidos' }).click()
-    await expect(page).toHaveURL(/apartado=pedidos/)
+    await expect(page).toHaveURL(/\/cuenta\/pedidos$/)
 
     const pedidos = menu(page).getByRole('link', { name: 'Mis pedidos' })
     await pedidos.click()
     await pedidos.click()
-    await expect(page).toHaveURL(/apartado=pedidos/)
+    await expect(page).toHaveURL(/\/cuenta\/pedidos$/)
 
     // Un solo Atrás devuelve a Datos, no tres.
     await page.goBack()
@@ -267,7 +322,7 @@ test.describe('el menú en móvil', () => {
       await identificarse(page, a.email, a.password)
 
       for (const { id, label } of APARTADOS) {
-        await page.goto(id === 'datos' ? './cuenta' : `./cuenta?apartado=${id}`)
+        await page.goto(`./cuenta/${id}`)
         const enlace = activo(page)
         await expect(enlace, id).toHaveText(label)
 
@@ -355,17 +410,17 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
     await identificarse(page, a.email, a.password)
 
     // Sin pasar antes por Datos personales.
-    await page.goto('./cuenta?apartado=pedidos')
+    await page.goto('./cuenta/pedidos')
     await expect(seccion(page, 'Mis pedidos')).toBeVisible()
     await expect(page.getByText(id)).toBeVisible()
     await expect(activo(page)).toHaveText('Mis pedidos')
-    await expect(page).toHaveURL(/apartado=pedidos/)
+    await expect(page).toHaveURL(/\/cuenta\/pedidos$/)
   })
 
   test('sin pedidos se dice que no los hay, y no parece un error', async ({ page }) => {
     const a = await cuenta('vacio-pedidos')
     await identificarse(page, a.email, a.password)
-    await page.goto('./cuenta?apartado=pedidos')
+    await page.goto('./cuenta/pedidos')
 
     await expect(seccion(page, 'Mis pedidos')).toBeVisible()
     await expect(page.getByText(/Todavía no has hecho ningún pedido/i)).toBeVisible()
@@ -384,7 +439,7 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
         ? ruta.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"caída"}' })
         : ruta.continue(),
     )
-    await page.goto('./cuenta?apartado=pedidos')
+    await page.goto('./cuenta/pedidos')
 
     await expect(page.getByText(/No se pudieron cargar los pedidos/i)).toBeVisible({ timeout: 15_000 })
     await expect(
@@ -397,7 +452,7 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
     const a = await cuenta('reservas')
     await identificarse(page, a.email, a.password)
 
-    await page.goto('./cuenta?apartado=reservas')
+    await page.goto('./cuenta/reservas')
     await expect(seccion(page, 'Mis reservas')).toBeVisible()
     await expect(page.getByText(/No tienes ninguna reserva/i), 'vacío').toBeVisible()
 
@@ -406,7 +461,7 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
         ? ruta.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"caída"}' })
         : ruta.continue(),
     )
-    await page.goto('./cuenta?apartado=reservas')
+    await page.goto('./cuenta/reservas')
     await expect(page.getByText(/No se pudieron cargar las reservas/i), 'fallo').toBeVisible({ timeout: 15_000 })
     await expect(page.getByText(/No tienes ninguna reserva/i), 'un error no puede parecer un vacío').toHaveCount(0)
   })
@@ -430,7 +485,7 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
       await ruta.continue()
     })
 
-    await page.goto('./cuenta?apartado=pedidos')
+    await page.goto('./cuenta/pedidos')
     const seccionPedidos = page.locator('section').filter({ has: seccion(page, 'Mis pedidos') })
     await expect(seccionPedidos.getByText('Cargando…'), 'con la lectura en vuelo, se anuncia la carga').toBeVisible()
 
@@ -455,7 +510,7 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
       await ruta.continue()
     })
 
-    await page.goto('./cuenta?apartado=reservas')
+    await page.goto('./cuenta/reservas')
     // Se busca DENTRO de la sección: el armazón tiene su propio estado de carga
     // de sesión, y confundirlos daría un verde que no dice nada.
     const seccionReservas = page.locator('section').filter({ has: seccion(page, 'Mis reservas') })
@@ -482,11 +537,11 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
     expect(error, 'la reserva de montaje debe poder sembrarse').toBeNull()
 
     await identificarse(page, a.email, a.password)
-    await page.goto('./cuenta?apartado=reservas')
+    await page.goto('./cuenta/reservas')
 
     await expect(seccion(page, 'Mis reservas')).toBeVisible()
     await expect(activo(page)).toHaveText('Mis reservas')
-    await expect(page).toHaveURL(/apartado=reservas/)
+    await expect(page).toHaveURL(/\/cuenta\/reservas$/)
 
     const tarjeta = page.locator('li').filter({ hasText: 'iPhone 17 Pro' })
     await expect(tarjeta, 'una sola reserva').toHaveCount(1)
@@ -495,5 +550,201 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
     // Es la única en cola para esa variante, así que su puesto es determinista.
     await expect(tarjeta.getByText(/Posición 1/)).toBeVisible()
     await expect(page.getByText(/No tienes ninguna reserva/i), 'con datos no se enseña el vacío').toHaveCount(0)
+  })
+})
+
+// ============================================================================
+// Y LO MISMO DENTRO DEL BINARIO, QUE ES OTRA PANTALLA.
+//
+// En la aplicación `/cuenta` deja de ser «la web con un menú» y pasa a ser una
+// lista vertical: cada apartado es una pantalla con su «Volver». Se prueba aquí
+// y no en `tests/e2e/` porque `/cuenta` no se monta sin Supabase configurado, y
+// el build de las suites de navegador corre a propósito sin credenciales.
+//
+// Capacitor se simula igual que en el resto de la suite: `window.Capacitor`
+// antes del bundle, el mismo camino de código que en el WebView.
+// ============================================================================
+test.describe('la cuenta dentro de la aplicación', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  async function comoApp(page: Page) {
+    await page.addInitScript(() => {
+      ;(window as { Capacitor?: unknown }).Capacitor = {}
+      localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
+    })
+  }
+
+  /** Las ocho entradas de la lista, con el destino que debe llevar cada una. */
+  const ENTRADAS = [
+    { nombre: 'Mis pedidos', destino: '/cuenta/pedidos' },
+    { nombre: 'Mis reservas', destino: '/cuenta/reservas' },
+    { nombre: 'Datos personales', destino: '/cuenta/datos' },
+    { nombre: 'Dirección de envío', destino: '/cuenta/envio' },
+    { nombre: 'Dirección de facturación', destino: '/cuenta/facturacion' },
+    // Favoritos y Tienda habitual salen del área: llevar a una pantalla
+    // intermedia cuyo único contenido son estos dos enlaces no aportaba nada.
+    { nombre: 'Favoritos', destino: '/favoritos' },
+    { nombre: 'Tienda habitual', destino: '/tiendas' },
+    { nombre: 'Descuento educativo', destino: '/cuenta/descuento' },
+  ] as const
+
+  test('la raíz es una lista vertical, sin carril y sin «Volver»', async ({ page }) => {
+    await comoApp(page)
+    const a = await cuenta('nativa-raiz')
+    await identificarse(page, a.email, a.password)
+    await page.goto('./cuenta')
+
+    // Lo que se retira: el menú desplazable medía 1104 px dentro de 350, así
+    // que enseñaba dos de siete apartados.
+    await expect(menu(page), 'la aplicación ya no monta el carril').toHaveCount(0)
+    // `/cuenta` es raíz de pestaña: allí no hay «atrás», hay pestañas.
+    await expect(page.locator('[data-app-back]'), 'la raíz no lleva control de vuelta').toHaveCount(0)
+    await expect(page.locator('[data-app-tab-bar]'), 'la barra inferior sigue ahí').toHaveCount(1)
+
+    for (const { nombre, destino } of ENTRADAS) {
+      const fila = page.getByRole('link', { name: new RegExp(`^${nombre}`) })
+      await expect(fila, nombre).toHaveCount(1)
+      await expect(fila, nombre).toHaveAttribute('href', new RegExp(`${destino}$`))
+    }
+  })
+
+  test('las filas se descubren bajando, no arrastrando de lado', async ({ page }) => {
+    await comoApp(page)
+    const a = await cuenta('nativa-scroll')
+    await identificarse(page, a.email, a.password)
+
+    for (const ancho of [320, 390]) {
+      await page.setViewportSize({ width: ancho, height: 844 })
+      await page.goto('./cuenta')
+      await expect(page.getByRole('link', { name: /^Mis pedidos/ })).toBeVisible()
+
+      const medida = await page.evaluate(() => {
+        const de = document.documentElement
+        const guardado = de.style.overflowX
+        de.style.overflowX = 'visible'
+        const documento = de.scrollWidth - de.clientWidth
+        de.style.overflowX = guardado
+        const contenido = document.querySelector('#contenido')!
+        return {
+          documento,
+          lateral: contenido.scrollWidth - contenido.clientWidth,
+          vertical: contenido.scrollHeight > contenido.clientHeight,
+        }
+      })
+      expect(medida.documento, `el documento no desborda a ${ancho}`).toBeLessThanOrEqual(2)
+      expect(medida.lateral, `no hay desplazamiento lateral a ${ancho}`).toBeLessThanOrEqual(2)
+      expect(medida.vertical, `la lista se recorre en vertical a ${ancho}`).toBe(true)
+
+      // Y las ocho llegan al objetivo táctil, no sólo las que caben de entrada.
+      for (const { nombre } of ENTRADAS) {
+        const caja = await page.getByRole('link', { name: new RegExp(`^${nombre}`) }).boundingBox()
+        expect(caja!.height, `«${nombre}» a ${ancho} px mide ${caja!.height}`).toBeGreaterThanOrEqual(44)
+      }
+    }
+  })
+
+  test('entrar en un apartado da pantalla propia, «Volver» y pestaña', async ({ page }) => {
+    await comoApp(page)
+    const a = await cuenta('nativa-entrar')
+    await identificarse(page, a.email, a.password)
+    await page.goto('./cuenta')
+
+    await page.getByRole('link', { name: /^Mis pedidos/ }).click()
+    await expect(page).toHaveURL(/\/cuenta\/pedidos$/)
+
+    // El título de la pantalla es UNO. Antes el chip activo decía «Mis
+    // pedidos» y el encabezado de debajo lo repetía.
+    await expect(page.getByRole('heading', { level: 1, name: 'Mis pedidos' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Mis pedidos' }), 'sin título duplicado').toHaveCount(1)
+
+    await expect(page.locator('[data-app-back]'), 'la secundaria sí lleva «Volver»').toHaveCount(1)
+    await expect(page.locator('[data-app-tab-bar]'), 'la barra inferior no se esconde').toHaveCount(1)
+    const activa = page.locator('[data-app-tab-bar] [aria-current]')
+    await expect(activa, 'la pestaña Cuenta sigue marcada').toContainText('Cuenta')
+
+    // Y vuelve a la lista.
+    await page.locator('[data-app-back]').click()
+    await expect(page).toHaveURL(/\/cuenta$/)
+    await expect(page.getByRole('link', { name: /^Mis reservas/ })).toBeVisible()
+  })
+
+  test('en frío, «Volver» lleva a la cuenta y no a la portada', async ({ page }) => {
+    // Sin historial propio el control usa el destino semántico. Antes de esta
+    // PR `/cuenta/pedidos` no era ninguna ruta y ese destino era `/`.
+    await comoApp(page)
+    const a = await cuenta('nativa-frio')
+    await identificarse(page, a.email, a.password)
+
+    await page.goto('./cuenta/reservas')
+    await expect(page.getByRole('heading', { level: 1, name: 'Mis reservas' })).toBeVisible()
+    await expect(page.locator('[data-app-back]')).toHaveCount(1)
+
+    await page.locator('[data-app-back]').click()
+    await expect(page).toHaveURL(/\/cuenta$/)
+  })
+
+  test('recargar un apartado se queda en ese apartado', async ({ page }) => {
+    await comoApp(page)
+    const a = await cuenta('nativa-reload')
+    await identificarse(page, a.email, a.password)
+    await page.goto('./cuenta/descuento')
+    await expect(page.getByRole('heading', { level: 1, name: 'Descuento educativo' })).toBeVisible()
+
+    await page.reload()
+    await expect(page).toHaveURL(/\/cuenta\/descuento$/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Descuento educativo' })).toBeVisible()
+  })
+
+  test('`/cuenta/favoritos` sigue existiendo aunque no sea una fila', async ({ page }) => {
+    // No aparece en la lista —sus dos enlaces están sueltos en Preferencias—
+    // pero la dirección no se rompe: hay enlaces antiguos y la web la usa.
+    await comoApp(page)
+    const a = await cuenta('nativa-favoritos')
+    await identificarse(page, a.email, a.password)
+    await page.goto('./cuenta/favoritos')
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Favoritos y tienda' })).toBeVisible()
+    await expect(page.locator('[data-app-back]')).toHaveCount(1)
+  })
+
+  test('cerrar sesión vive al final y conserva su contrato', async ({ page }) => {
+    await comoApp(page)
+    const a = await cuenta('nativa-logout')
+    await identificarse(page, a.email, a.password)
+    await page.goto('./cuenta')
+
+    // Está DESPUÉS de la última fila de navegación, no compitiendo con ellas:
+    // antes el botón era lo primero que se veía al abrir la cuenta.
+    const ultimaFila = page.getByRole('link', { name: /^Descuento educativo/ })
+    const boton = page.getByRole('button', { name: 'Cerrar sesión' })
+    await expect(ultimaFila).toBeVisible()
+    await expect(boton).toBeVisible()
+    const cajaFila = await ultimaFila.boundingBox()
+    const cajaBoton = await boton.boundingBox()
+    expect(cajaBoton!.y, 'cerrar sesión va por debajo de las secciones').toBeGreaterThan(cajaFila!.y)
+
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click()
+    await expect(page, 'se navega a la portada al confirmarse el cierre').toHaveURL(/\/pagina-banana\/$/, {
+      timeout: 20_000,
+    })
+    // `replace`: Atrás no devuelve a una cuenta que ya no tiene sesión.
+    await page.goBack()
+    await expect(page).not.toHaveURL(/\/cuenta$/)
+  })
+
+  test('un enlace profundo sin sesión conserva su destino tras identificarse', async ({ page }) => {
+    await comoApp(page)
+    const a = await cuenta('nativa-deep')
+
+    // Sin sesión: el guardia manda a identificarse SIN perder a dónde iba.
+    await page.goto('./cuenta/pedidos')
+    await expect(page).toHaveURL(/\/login\?redirect=%2Fcuenta%2Fpedidos/)
+
+    await page.locator('input[type="email"]').first().fill(a.email)
+    await page.locator('input[type="password"]').first().fill(a.password)
+    await page.locator('form').first().getByRole('button').first().click()
+
+    await expect(page, 'vuelve al apartado que se pidió', { timeout: 20_000 }).toHaveURL(/\/cuenta\/pedidos$/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Mis pedidos' })).toBeVisible()
   })
 })

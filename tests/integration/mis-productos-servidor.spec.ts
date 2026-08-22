@@ -215,7 +215,7 @@ test('desde aquí se llega a Mis pedidos, que es donde están los accesorios', a
   // Ya protegida la cardinalidad, pulsar uno de dos destinos idénticos es
   // deliberado y no esconde nada.
   await aPedidos.first().click()
-  await expect(page).toHaveURL(/\/cuenta\?apartado=pedidos/)
+  await expect(page).toHaveURL(/\/cuenta\/pedidos$/)
   // Y el accesorio sí está allí: la compra no se ha perdido, sólo no es un
   // dispositivo.
   await expect(page.getByText('Cargador MagSafe · 1 m')).toBeVisible()

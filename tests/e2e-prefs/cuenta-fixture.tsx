@@ -82,6 +82,10 @@ function Fixture() {
               <Sonda />
               <Routes>
                 <Route path="/cuenta" element={<ProfilePage />} />
+                {/* Los apartados tienen ruta propia desde la navegación
+                    nativa. Sin ella la traducción de `?apartado=` no tendría a
+                    dónde ir y el fixture mediría otra cosa que la aplicación. */}
+                <Route path="/cuenta/:apartado" element={<ProfilePage />} />
                 <Route path="/" element={<h1>Portada</h1>} />
                 <Route path="/login" element={<h1>Acceso</h1>} />
               </Routes>
