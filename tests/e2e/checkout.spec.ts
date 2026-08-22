@@ -1,25 +1,5 @@
 import { test, expect } from '@playwright/test'
-
-// Añade un iPhone al carrito visitando la variante directamente y usando la
-// API expuesta por la app (localStorage). Es más estable que perseguir botones
-// que dependen del scroll y de las cantidades.
-async function seedCart(page: import('@playwright/test').Page) {
-  await page.addInitScript(() => {
-    const line = {
-      id: 'iphone/17-pro/plata/256GB',
-      modelSlug: '17-pro',
-      family: 'iphone',
-      name: 'iPhone 17 Pro',
-      color: 'Plata',
-      capacity: '256GB',
-      price: 1229,
-      previousPrice: null,
-      qty: 1,
-      insured: false,
-    }
-    localStorage.setItem('banana:cart', JSON.stringify([line]))
-  })
-}
+import { sembrarCarrito } from './checkout-helpers'
 
 test('abrir /checkout/3 sin pedido redirige al carrito o catálogo', async ({ page }) => {
   await page.goto('./checkout/3')
@@ -27,13 +7,13 @@ test('abrir /checkout/3 sin pedido redirige al carrito o catálogo', async ({ pa
 })
 
 test('abrir /checkout/2 sin completar el paso 1 redirige al paso 1', async ({ page }) => {
-  await seedCart(page)
+  await sembrarCarrito(page)
   await page.goto('./checkout/2')
   await expect(page).toHaveURL(/\/checkout\/1$/)
 })
 
 test('un pedido demostrativo completo genera número y sobrevive a recarga', async ({ page }) => {
-  await seedCart(page)
+  await sembrarCarrito(page)
   await page.goto('./checkout/1')
 
   await page.getByLabel('Nombre y apellidos').fill('Elena R.')
@@ -61,7 +41,7 @@ test('un pedido demostrativo completo genera número y sobrevive a recarga', asy
 })
 
 test('el chat flotante no aparece en el checkout', async ({ page }) => {
-  await seedCart(page)
+  await sembrarCarrito(page)
   await page.goto('./checkout/1')
   await expect(page.getByRole('button', { name: /información del chat/i })).toHaveCount(0)
 })

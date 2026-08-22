@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { llegarAlPaso } from './checkout-helpers'
 
 // ============================================================================
 // LA BARRA DE BANANA ES AMARILLA EN TODA LA APLICACIÓN.
@@ -110,12 +111,36 @@ test.describe('checkout', () => {
 
   // El checkout vive en su propio layout, fuera del armazón de la app: no monta
   // `AppTopBar`, así que su cabecera es otra y hay que comprobarla aparte.
-  for (const paso of ['1', '2', '3']) {
+  //
+  // SE ENTRA POR EL FLUJO, NO POR LA URL
+  //
+  // Los tres pasos están guardados. El 3 exige un pedido demostrativo y, si no
+  // existe, `CheckoutPage` hace `<Navigate replace />`; el 2 exige el paso 1
+  // válido; y los dos primeros sin carrito pintan el estado vacío, que es otra
+  // pantalla. Un `goto('./checkout/3')` a secas no llevaba al paso 3: llevaba a
+  // un redirect en curso, y medir el color mientras el nodo se desmonta devuelve
+  // cadena vacía. Eso fue el intermitente del CI de la PR #70 (run
+  // `32591398519`): `Expected "rgb(255, 206, 31)" · Received ""`.
+  //
+  // El redirect es correcto y lo sigue comprobando `checkout.spec.ts`. Lo que
+  // estaba mal era entrar aquí sin cumplir la precondición de la pantalla que
+  // se quiere medir. `llegarAlPaso` la cumple y confirma que se llegó.
+  for (const paso of [1, 2, 3] as const) {
     test(`el paso ${paso} tiene la cabecera amarilla y conserva su fondo`, async ({ page }) => {
       await comoApp(page)
-      await page.goto(`./checkout/${paso}`)
+      await llegarAlPaso(page, paso)
 
-      const cabecera = page.locator('header').first()
+      // La pantalla es la del paso, y sigue siéndolo: si hubiera un redirect en
+      // marcha, esto ya no se cumpliría.
+      await expect(page, `se mide el paso ${paso}, no su redirección`).toHaveURL(new RegExp(`/checkout/${paso}$`))
+      await expect(page.locator('#contenido-checkout'), 'el armazón del checkout está montado').toBeVisible()
+
+      // `CheckoutLayout` monta UNA cabecera y no `AppTopBar`. Afirmar la
+      // cardinalidad antes de medir evita el `.first()` que antes podía caer
+      // sobre la cabecera de otra pantalla tras una redirección.
+      const cabecera = page.locator('header')
+      await expect(cabecera, 'el checkout monta una sola cabecera').toHaveCount(1)
+
       const color = await cabecera.evaluate((el) => getComputedStyle(el).backgroundColor)
       expect(color, `la cabecera del paso ${paso} debe ser el amarillo de marca`).toBe(BANANA)
 
@@ -135,11 +160,10 @@ test.describe('checkout', () => {
 
   test('el amarillo pálido del pago no vuelve a la cabecera', async ({ page }) => {
     await comoApp(page)
-    await page.goto('./checkout/1')
-    const color = await page
-      .locator('header')
-      .first()
-      .evaluate((el) => getComputedStyle(el).backgroundColor)
+    await llegarAlPaso(page, 1)
+    const cabecera = page.locator('header')
+    await expect(cabecera, 'el checkout monta una sola cabecera').toHaveCount(1)
+    const color = await cabecera.evaluate((el) => getComputedStyle(el).backgroundColor)
     expect(color, 'la cabecera no puede usar --color-checkout').not.toBe(CHECKOUT)
   })
 })
