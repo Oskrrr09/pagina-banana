@@ -14,10 +14,10 @@ actualizado: 2026-08-21
 
 ## La app nativa ya sabe volver (2026-08-21)
 
-`main` está en `d6e6e9ee`. La **PR #68** está fusionada y con la ejecución de CI
-posterior en verde: las pantallas secundarias de la aplicación nativa tienen por
-fin un control **«Volver»** visible, que es lo que faltaba desde que iOS no
-ofrece retroceso del sistema.
+El cierre funcional de la **PR #68** quedó integrado en `main` mediante
+`d6e6e9ee`, con la ejecución de CI posterior en verde: las pantallas secundarias
+de la aplicación nativa tienen por fin un control **«Volver»** visible, que es
+lo que faltaba desde que iOS no ofrece retroceso del sistema.
 
 Cómo se comporta, que son dos cosas y no una:
 

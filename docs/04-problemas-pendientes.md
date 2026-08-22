@@ -934,8 +934,8 @@ forman el backlog verificable.
 ## UI-002 — La barra de compra de la ficha se sale por la derecha a 320 px
 
 - Estado: **abierto** desde el 2026-08-21.
-- Impacto: medio. Sólo en la aplicación nativa y sólo a 320 px de ancho, pero
-  ahí recorta el botón principal de compra.
+- Impacto: medio. En la aplicación nativa, reproducido a 320 px de ancho, donde
+  recorta el botón principal de compra.
 - **Es deuda preexistente.** Se observó revisando la PR #68 y se reprodujo
   después contra `main` en `d6e6e9ee`; la PR #68 no lo introdujo, no toca
   `VariantPage` y no lo modifica. No tiene nada que ver con la navegación
