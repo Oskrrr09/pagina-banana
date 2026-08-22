@@ -14,6 +14,42 @@ autores, diffs y marcas de tiempo.
 > documentación viva. Ver
 > [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
 
+## 2026-08-22 — La barra de compra de la ficha cabe en un móvil estrecho
+
+**UI-002.** A 320 px la barra fija inferior de `VariantPage` medía **339 px de
+contenido en 320 de ancho** y «Comprar» quedaba cortado. Deuda preexistente,
+observada revisando la PR #68 y reproducida contra `main` en `2a69349f`.
+
+**La causa no era la que parecía.** El mecanismo para ceder ancho existía pero
+estaba muerto: las tres llamadas de la barra pedían `px-3`/`px-4` en `className`
+y recibían igualmente los 32 px por lado del tamaño `lg`, porque entre dos
+utilidades de la misma propiedad decide el orden de la hoja de estilos. A 320 px
+el padding de los dos botones ocupaba **128 px** frente a **140,58** de texto.
+
+**Y tampoco era un defecto sólo nativo.** La barra es `lg:hidden`, no
+`isNativeApp`: la web móvil monta la misma y desbordaba igual, 339/320. La ficha
+del problema decía lo contrario y queda corregida.
+
+`Button` separa el padding horizontal del tamaño y admite `paddingX`, que lo
+sustituye en vez de competir con él —ver
+[[02-decisiones#D-074 — El padding horizontal de un botón se sustituye, no se pisa]]—;
+los tres botones de la barra comparten `px-3 min-[360px]:px-5 sm:px-8`. Nada se
+recorta, se esconde, se abrevia ni se escala: a 320 px «Comprar» termina 16 px
+dentro de la barra, «Al carrito» pasa de dos líneas a una, el precio anterior
+deja de envolverse y los controles siguen midiendo 52 px de alto. Desde `sm` los
+botones vuelven a su tamaño original.
+
+Vigilado por diez casos nuevos en `tests/e2e/app-shopping.spec.ts` —dos anchos ×
+cinco estados, contratos relativos con 2 px de tolerancia—, con contraprueba:
+tres se ponen rojos contra `2a69349f` y los otros siete siguen verdes porque esos
+estados sí cabían. `anchos.spec.ts` no lo veía ni lo verá: mide el documento y
+`#contenido`, y esta barra es `position: fixed`.
+
+Verificación local: 468 E2E aprobadas y 1 omitida esperada en Chromium y móvil
+contra el artefacto de `build:test`, 353 unitarias, `typecheck`, Prettier y
+ESLint con 0 errores. Los 25 avisos de ESLint y el aviso de fragmentos por
+encima de 500 kB son preexistentes y ajenos a este cambio.
+
 ## 2026-08-21 — «Volver» en las pantallas secundarias de la app nativa
 
 **PR #68** — «Añade navegación Atrás a las pantallas secundarias nativas».
