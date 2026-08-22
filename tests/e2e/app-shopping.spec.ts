@@ -151,6 +151,176 @@ test.describe('barra de compra y navegación inferior', () => {
   })
 })
 
+// ============================================================================
+// La barra de compra CABE en la pantalla, y se mide LA BARRA.
+//
+// POR QUÉ NO SIRVE LO QUE YA HABÍA
+//
+// `anchos.spec.ts` mide `documentElement` y `#contenido`. Esta barra es
+// `position: fixed`: no cuelga de `#contenido` y el armazón la recorta, así que
+// las dos medidas siguen valiendo lo mismo que el viewport mientras «Comprar»
+// se sale por la derecha. Medido en `main` (`2a69349f`) a 320×568:
+// `documentElement` 320/320, `#contenido` 320/320 y la barra 339/320. Un fallo
+// visible que las dos comprobaciones habituales aprueban.
+//
+// De ahí UI-002. Aquí se mide la barra y sus hijos, que es donde está.
+//
+// QUÉ SE AFIRMA, Y POR QUÉ ASÍ
+//
+// Contratos relativos, nunca posiciones ni anchos de diseño: un `x === 208`
+// convertiría cualquier retoque tipográfico en un rojo falso. Se comprueba que
+// la barra no desborda, que cada hijo queda dentro de ella, que no se pisan
+// entre sí y que conservan el objetivo táctil. La tolerancia de 2 px es la
+// misma que usa `anchos.spec.ts`, y por el mismo motivo: el subpíxel.
+// ============================================================================
+
+const TOLERANCIA_CTA = 2
+const OBJETIVO_TACTIL = 44
+
+/** Deja la barra de compra a la vista y esperada a que el muelle se asiente. */
+async function barraDeCompra(page: Page) {
+  // En la app el que se desplaza es `#contenido`, no la ventana.
+  await page.locator('#contenido').evaluate((el) => el.scrollTo({ top: 4000 }))
+  const barra = page.locator('[data-buy-bar]')
+  await expect(barra).toBeVisible()
+  // Entra con una animación de muelle; medir antes de que pare devuelve la
+  // posición de salida. Se espera a que la caja deje de moverse.
+  let previa = ''
+  await expect
+    .poll(async () => {
+      const caja = JSON.stringify(await barra.boundingBox())
+      const quieta = caja === previa
+      previa = caja
+      return quieta
+    })
+    .toBe(true)
+  return barra
+}
+
+/** Geometría real de la barra y de sus hijos directos. */
+async function geometriaCta(page: Page) {
+  return page.evaluate(() => {
+    const barra = document.querySelector('[data-buy-bar]') as HTMLElement
+    const fila = barra.firstElementChild as HTMLElement
+    const caja = barra.getBoundingClientRect()
+    const hijos = [...fila.children].map((el) => {
+      const c = el.getBoundingClientRect()
+      return {
+        nombre:
+          (el as HTMLElement).innerText.replace(/\s+/g, ' ').trim() || el.getAttribute('aria-label') || el.tagName,
+        interactivo: el.tagName === 'BUTTON' || !!el.querySelector('button'),
+        left: c.left,
+        right: c.right,
+        height: c.height,
+      }
+    })
+    return {
+      exceso: barra.scrollWidth - barra.clientWidth,
+      left: caja.left,
+      right: caja.right,
+      hijos,
+      viewport: window.innerWidth,
+    }
+  })
+}
+
+/** Las tres afirmaciones de UI-002, aplicadas a un estado concreto. */
+function laCtaCabe(geo: Awaited<ReturnType<typeof geometriaCta>>, contexto: string) {
+  expect(geo.exceso, `${contexto}: la barra de compra desborda ${geo.exceso}px`).toBeLessThanOrEqual(TOLERANCIA_CTA)
+  expect(geo.right, `${contexto}: la barra se sale del viewport`).toBeLessThanOrEqual(geo.viewport + TOLERANCIA_CTA)
+
+  let anterior: (typeof geo.hijos)[number] | null = null
+  for (const hijo of geo.hijos) {
+    expect(hijo.left, `${contexto}: "${hijo.nombre}" empieza fuera de la barra`).toBeGreaterThanOrEqual(
+      geo.left - TOLERANCIA_CTA,
+    )
+    expect(hijo.right, `${contexto}: "${hijo.nombre}" termina fuera de la barra`).toBeLessThanOrEqual(
+      geo.right + TOLERANCIA_CTA,
+    )
+    if (anterior) {
+      expect(hijo.left, `${contexto}: "${hijo.nombre}" se pisa con "${anterior.nombre}"`).toBeGreaterThanOrEqual(
+        anterior.right - TOLERANCIA_CTA,
+      )
+    }
+    if (hijo.interactivo) {
+      expect(hijo.height, `${contexto}: "${hijo.nombre}" baja del objetivo táctil`).toBeGreaterThanOrEqual(
+        OBJETIVO_TACTIL,
+      )
+    }
+    anterior = hijo
+  }
+}
+
+test.describe('la barra de compra cabe en la pantalla', () => {
+  // 320 es el móvil más estrecho que se soporta; 390 es el iPhone de
+  // referencia. El defecto sólo aparecía en el primero, pero el segundo no
+  // tenía ni un píxel de sobra, así que se vigilan los dos.
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+  ]) {
+    test.describe(`a ${viewport.width}×${viewport.height}`, () => {
+      test.use({ viewport })
+
+      // El estado que rompía: precio + «Al carrito» + «Comprar». La oferta se
+      // elige a propósito porque añade la línea del precio anterior.
+      test('con «Al carrito» y «Comprar» @all', async ({ page }) => {
+        await comoApp(page)
+        await page.goto('./iphone/17-pro/256gb-plata')
+        await barraDeCompra(page)
+        laCtaCabe(await geometriaCta(page), `${viewport.width}px · Al carrito + Comprar`)
+      })
+
+      // Mismo estado sin oferta: demuestra que el precio anterior no era la
+      // causa, y que la solución no depende de que exista.
+      test('sin precio anterior @all', async ({ page }) => {
+        await comoApp(page)
+        await page.goto('./iphone/17-pro/512gb-plata')
+        await barraDeCompra(page)
+        laCtaCabe(await geometriaCta(page), `${viewport.width}px · sin oferta`)
+      })
+
+      // Con el producto ya en el carrito, «Al carrito» deja paso al control de
+      // cantidad, que no encoge. Cabía por 3,6 px: entra aquí para que ninguna
+      // corrección del estado anterior se lo lleve por delante.
+      test('con el control de cantidad @all', async ({ page }) => {
+        await comoApp(page)
+        await page.goto('./iphone/17-pro/256gb-plata')
+        await page.getByRole('button', { name: 'Añadir al carrito' }).first().click()
+        await barraDeCompra(page)
+        laCtaCabe(await geometriaCta(page), `${viewport.width}px · control de cantidad`)
+      })
+
+      // Una variante agotada no se compra, se reserva: un solo botón.
+      test('con «Reservar» @all', async ({ page }) => {
+        await comoApp(page)
+        await page.goto('./iphone/17-pro/1tb-azul')
+        await barraDeCompra(page)
+        laCtaCabe(await geometriaCta(page), `${viewport.width}px · Reservar`)
+      })
+
+      // Y en el navegador móvil, que monta LA MISMA barra.
+      //
+      // UI-002 se anotó como defecto exclusivo de la aplicación —«fuera del
+      // binario esa barra fija no se monta»—, y no era cierto: la barra es
+      // `lg:hidden`, no `isNativeApp`, y lo único que cambia entre los dos
+      // armazones es de qué se cuelga por abajo (D-066). Medido sobre `main`
+      // (`2a69349f`) a 320 px sin Capacitor: 339/320, los mismos 19 px y el
+      // mismo «Comprar» cortado. Se vigilan los dos.
+      test('también en el navegador móvil @all', async ({ page }) => {
+        await page.addInitScript(() => localStorage.setItem('banana:favorite-store-prompt', 'dismissed'))
+        await page.goto('./iphone/17-pro/256gb-plata')
+        // Aquí el que se desplaza es el documento, no `#contenido`.
+        await page.mouse.wheel(0, 4000)
+        const barra = page.locator('[data-buy-bar]')
+        await expect(barra).toBeVisible()
+        await expect(page.locator('[data-app-tab-bar]'), 'esto es la web').toHaveCount(0)
+        laCtaCabe(await geometriaCta(page), `${viewport.width}px · web móvil`)
+      })
+    })
+  }
+})
+
 test.describe('filtros del catálogo', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 

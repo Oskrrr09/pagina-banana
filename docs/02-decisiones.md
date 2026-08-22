@@ -1532,6 +1532,38 @@ No atribuye motivaciones que el repositorio no documenta.
   `tests/e2e/app-atras.spec.ts` (12 pruebas: raíces, historial, entrada en
   frío, la trampa del `replace`, 320×568, 390×844, teclado y la web sin botón).
 
+## D-074 — El padding horizontal de un botón se sustituye, no se pisa
+
+- Fecha: 2026-08-22. UI-002.
+- Estado: vigente.
+- Problema: `Button` metía el padding horizontal dentro de la cadena de clases
+  del tamaño (`lg: 'h-13 px-8 …'`). Una llamada que necesitara otro pasaba
+  `className="px-3"` y **no pasaba nada**: `px-3` y `px-8` son la misma
+  propiedad con la misma especificidad, así que gana la que Tailwind emita más
+  tarde en la hoja, no la que se escriba después en el atributo. Las tres únicas
+  llamadas del repositorio que lo intentaban —las tres de la barra de compra de
+  `VariantPage`— recibían 64 px de padding por botón sin enterarse. De ahí
+  UI-002.
+- Decisión: el padding horizontal vive en su propio mapa `paddingsX`, y la
+  propiedad `paddingX` lo **reemplaza**. Nunca se pisa una clase con otra de la
+  misma propiedad: o se sustituye, o se deja la del tamaño.
+- Alcance: no cambia nada para quien no la usa. Las otras ocho llamadas con
+  `size="lg"` y todas las `sm`/`md` reciben exactamente las mismas clases que
+  antes, porque el valor por defecto de `paddingsX` es el que ya estaba dentro de
+  `sizes`.
+- Corolario, que es lo que hace esto útil más allá del botón: **una clase de
+  utilidad no es un override.** Si dos utilidades tocan la misma propiedad, el
+  resultado no lo decide el código que las escribe. Cuando haga falta variar una
+  propiedad por llamada, hay que sacarla a un punto de sustitución explícito.
+- Consecuencia buscada en la barra de compra: los tres botones comparten
+  `PADDING_CTA = 'px-3 min-[360px]:px-5 sm:px-8'`, tres tramos medidos y no
+  intuidos. Desde `sm` se recupera el `px-8` original.
+- Evidencia: `src/components/ui/Button.tsx`, `src/pages/VariantPage.tsx` y los
+  10 casos de `tests/e2e/app-shopping.spec.ts` («la barra de compra cabe en la
+  pantalla»), con contraprueba: tres de ellos se ponen rojos contra `2a69349f`.
+  Detalle numérico en
+  [[04-problemas-pendientes#UI-002 — La barra de compra de la ficha se sale por la derecha a 320 px]].
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

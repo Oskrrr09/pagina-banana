@@ -23,6 +23,21 @@ import { ALTURA_TAB_BAR } from '../components/layout/AppTabBar'
 import { useCustomerAuth } from '../lib/customerAuth'
 import { NotFound } from './NotFound'
 
+// Padding horizontal de los botones de la barra de compra fija.
+//
+// Tres tramos, y cada uno sale de una medición, no de una intuición:
+//
+// - hasta 359 px la barra vive al límite —a 320 quedan 288 px de caja para
+//   214 px de texto—, así que el aire lateral baja a 12 px por lado y sobran
+//   ~10 px;
+// - de 360 a 639 hay sitio para 20 px y los botones recuperan cuerpo;
+// - desde `sm` sobra de largo y se vuelve al `px-8` del tamaño `lg`, que es lo
+//   que se ve hoy en cuanto la pantalla da de sí.
+//
+// No se pasa por `className`: ahí competiría con el `px-8` del tamaño y
+// perdería. Ver la nota de `Button`.
+const PADDING_CTA = 'px-3 min-[360px]:px-5 sm:px-8'
+
 const TABS = ['Características', 'Comparar', 'Plan Renove', 'Garantía', 'Accesorios', 'FAQ'] as const
 
 // Los rótulos de las pestañas son además el identificador del estado, así que
@@ -590,6 +605,20 @@ export function VariantPage() {
             data-buy-bar
             className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur-md lg:hidden"
           >
+            {/*
+              El padding de los botones se declara aquí y no se hereda del
+              tamaño `lg`.
+
+              A 320 px la caja de contenido de esta fila son 288 px y el texto
+              de los tres elementos ocupa 214: con los 128 px de padding que
+              trae `lg` para dos botones, hacían falta 342 y «Comprar» se salía
+              19 px por la derecha (UI-002). El padding pesaba más que el texto.
+
+              Se cede ancho donde no cuesta nada —el aire lateral de los
+              botones— y no donde sí: los rótulos se leen enteros, el objetivo
+              táctil sigue en 52 px de alto y el precio no se toca. A partir de
+              `sm` sobra sitio y se recupera el `px-8` de siempre.
+            */}
             <div className="flex items-center gap-2 px-4 py-3">
               <div>
                 <p className="text-lg font-bold leading-none text-ink">{euro(current.price, intl)}</p>
@@ -600,7 +629,7 @@ export function VariantPage() {
                 )}
               </div>
               {needsReservation ? (
-                <Button size="lg" onClick={reserve} className="ml-auto px-4">
+                <Button size="lg" onClick={reserve} paddingX={PADDING_CTA} className="ml-auto">
                   Reservar
                 </Button>
               ) : (
@@ -615,11 +644,17 @@ export function VariantPage() {
                       className="ml-auto"
                     />
                   ) : (
-                    <Button size="lg" variant="secondary" onClick={addAndContinue} className="ml-auto px-3">
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      onClick={addAndContinue}
+                      paddingX={PADDING_CTA}
+                      className="ml-auto"
+                    >
                       Al carrito
                     </Button>
                   )}
-                  <Button size="lg" onClick={buyNow} className="px-4">
+                  <Button size="lg" onClick={buyNow} paddingX={PADDING_CTA}>
                     {t('common.buy')}
                   </Button>
                 </>

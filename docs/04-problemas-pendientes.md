@@ -933,7 +933,7 @@ forman el backlog verificable.
 
 ## UI-002 — La barra de compra de la ficha se sale por la derecha a 320 px
 
-- Estado: **abierto** desde el 2026-08-21.
+- Estado: **resuelto** el 2026-08-22 (abierto desde el 2026-08-21).
 - Impacto: medio. En la aplicación nativa, reproducido a 320 px de ancho, donde
   recorta el botón principal de compra.
 - **Es deuda preexistente.** Se observó revisando la PR #68 y se reprodujo
@@ -947,6 +947,89 @@ forman el backlog verificable.
 - **No lo detectan las pruebas de desbordamiento** que ya existen: el armazón
   recorta, así que `document.documentElement.scrollWidth` sigue valiendo 320 y
   la comprobación habitual pasa. Hay que medir la barra, no el documento.
-- No aparece en la web: fuera del binario esa barra fija no se monta.
-- Pendiente: decidir cómo cede el ancho —envolver, acortar el rótulo o repartir
-  de otro modo— sin bajar de los 44 px de objetivo táctil.
+- ~~No aparece en la web: fuera del binario esa barra fija no se monta.~~
+  **Esto era falso, y se corrige aquí.** La barra es `lg:hidden`, no
+  `isNativeApp`: la web móvil monta exactamente la misma, y lo único que cambia
+  entre los dos armazones es de qué se cuelga por abajo (D-066). Medido sobre
+  `main` en `2a69349f` a 320 px **sin Capacitor**: `339` sobre `320`, los mismos
+  19 px y el mismo «Comprar» cortado. UI-002 era un defecto de la ficha en
+  móvil, no de la aplicación.
+
+### La causa, medida
+
+El desbordamiento no venía de que faltara un mecanismo para ceder ancho, sino de
+que **el que había estaba muerto**. Las tres llamadas de la barra pedían
+`px-3`/`px-4` en `className` y recibían los 32 px por lado del tamaño `lg`:
+`px-3` y `px-8` son la misma propiedad con la misma especificidad, así que
+decide el orden de la hoja de estilos y no el del atributo. Medido: `padding-inline`
+**64 px por botón**.
+
+Descomposición a 320 px, con el texto en una sola línea:
+
+| Concepto | px |
+| --- | --- |
+| Caja de contenido de la fila (`320 − px-4`) | 288 |
+| Separaciones (`2 × gap-2`) | −16 |
+| **Disponible para los tres elementos** | **272** |
+| Texto del bloque de precio | 73,55 |
+| Texto de «Al carrito» | 72,91 |
+| Texto de «Comprar» | 67,67 |
+| **Padding horizontal de los dos botones** | **128** |
+| **Necesario** | **342,13** |
+
+El padding pesaba más que el texto: 128 px frente a 140,58. Con `min-width: auto`
+en los ítems flex, «Comprar» —una sola palabra— no puede encoger por debajo de su
+`min-content`, así que el sobrante salía entero por la derecha.
+
+El estado afectado era **precio + «Al carrito» + «Comprar»**, con y sin oferta.
+La línea del precio anterior **no** era la causa: a 320 px envolvía y el bloque
+medía lo mismo (58,7 px) en los dos casos. Con el control de cantidad cabía por
+3,6 px y con «Reservar» sobraba sitio.
+
+### La corrección
+
+- `src/components/ui/Button.tsx` — el padding horizontal sale de `sizes` y pasa
+  a `paddingsX`, con una propiedad `paddingX` que lo **sustituye** en vez de
+  competir con él. Quien no la usa recibe exactamente las mismas clases que
+  antes. Ver [[02-decisiones#D-074 — El padding horizontal de un botón se sustituye, no se pisa]].
+- `src/pages/VariantPage.tsx` — los tres botones de la barra comparten
+  `PADDING_CTA = 'px-3 min-[360px]:px-5 sm:px-8'`. Tres tramos medidos: 12 px por
+  lado hasta 359, 20 px hasta 639 y, desde `sm`, el `px-8` de siempre.
+- No se recorta, ni se esconde, ni se abrevia, ni se escala: los rótulos se leen
+  enteros y el objetivo táctil sigue en **52 px** de alto.
+
+### Evidencia del arreglo
+
+Medido en `/iphone/17-pro/256gb-plata` con el armazón nativo:
+
+| Medida | Antes | Después |
+| --- | --- | --- |
+| Barra a 320 px (`scrollWidth`/`clientWidth`) | 339 / 320 — **+19** | 320 / 320 — **0** |
+| Borde derecho de «Comprar» a 320 px | 339,4 (**19,4 fuera**) | 304 (**16 dentro**) |
+| «Al carrito» a 320 px | 117 px, rótulo en dos líneas | 96,9 px, rótulo en una |
+| Bloque de precio a 320 px | 58,7 × 50 (el «antes» envuelto) | 73,5 × 34 (una línea) |
+| Barra a 390 px | 390 / 390, holgura 0 | 390 / 390, holgura 47,9 |
+| Alto de los controles | 52 px | 52 px |
+
+Comprobado además en los dos armazones a 320, 359, 360, 390, 430, 639, 640, 768 y
+1023 px: `exceso 0` en todos, y a partir de 640 los botones vuelven a medir
+exactamente lo de antes (136,9 y 131,7 px). D-066 intacto: en la app el borde
+inferior de la barra sigue coincidiendo con el superior de `AppTabBar`, y en la
+web sigue pegada al borde de la ventana.
+
+### Qué lo vigila
+
+`tests/e2e/app-shopping.spec.ts`, describe «la barra de compra cabe en la
+pantalla»: 10 casos —320×568 y 390×844 × cinco estados: «Al carrito» + «Comprar»,
+sin oferta, control de cantidad, «Reservar» y web móvil—. Contratos relativos con
+2 px de tolerancia: la barra no desborda, cada hijo queda dentro de ella, no se
+pisan entre sí y los interactivos conservan 44 px.
+
+**Contraprueba hecha**: con `Button.tsx` y `VariantPage.tsx` revertidos a
+`2a69349f`, tres de los diez se ponen rojos —los tres a 320 px, con
+`la barra de compra desborda 19px`— y los siete restantes siguen verdes porque
+esos estados sí cabían. La prueba sabe ponerse roja y por la razón correcta.
+
+**No lo detectaban las pruebas anteriores**, y sigue siendo así por diseño:
+`anchos.spec.ts` mide `documentElement` y `#contenido`, y esta barra es
+`position: fixed` —no cuelga de `#contenido` y el armazón la recorta—.

@@ -21,9 +21,28 @@ const variants: Record<Variant, string> = {
 }
 
 const sizes: Record<Size, string> = {
-  sm: 'h-9 px-4 text-sm',
-  md: 'h-11 px-6 text-[15px]',
-  lg: 'h-13 px-8 text-base min-h-[48px]',
+  sm: 'h-9 text-sm',
+  md: 'h-11 text-[15px]',
+  lg: 'h-13 text-base min-h-[48px]',
+}
+
+// El padding horizontal sale del tamaño, pero vive aparte para poder
+// sustituirlo.
+//
+// POR QUÉ NO BASTA CON PASARLO EN `className`
+//
+// `px-3` y `px-8` son la misma propiedad con la misma especificidad: gana la
+// que Tailwind emita más tarde en la hoja, no la que se escriba después en el
+// atributo. Con `sizes` incluyendo `px-8`, tres llamadas de la barra de compra
+// pedían `px-3`/`px-4` y recibían 32 px por lado igualmente —medido: 64 px de
+// padding por botón—. Eran overrides muertos, y ahí nació UI-002.
+//
+// Separándolo, quien necesita otro padding lo sustituye en vez de competir con
+// él, y quien no pasa nada recibe exactamente lo de siempre.
+const paddingsX: Record<Size, string> = {
+  sm: 'px-4',
+  md: 'px-6',
+  lg: 'px-8',
 }
 
 interface CommonProps {
@@ -31,19 +50,22 @@ interface CommonProps {
   size?: Size
   children: ReactNode
   className?: string
+  /** Sustituye el padding horizontal del tamaño. Admite variantes responsive. */
+  paddingX?: string
 }
 
 export function Button({
   variant = 'primary',
   size = 'md',
   className = '',
+  paddingX,
   children,
   ...rest
 }: CommonProps & ButtonHTMLAttributes<HTMLButtonElement>) {
   const cls =
     variant === 'tertiary'
       ? `${base} ${variants[variant]} ${className}`
-      : `${base} ${variants[variant]} ${sizes[size]} ${className}`
+      : `${base} ${variants[variant]} ${sizes[size]} ${paddingX ?? paddingsX[size]} ${className}`
   return (
     <button className={cls} {...rest}>
       {children}
@@ -55,13 +77,14 @@ export function ButtonLink({
   variant = 'primary',
   size = 'md',
   className = '',
+  paddingX,
   to,
   children,
 }: CommonProps & { to: string }) {
   const cls =
     variant === 'tertiary'
       ? `${base} ${variants[variant]} ${className}`
-      : `${base} ${variants[variant]} ${sizes[size]} ${className}`
+      : `${base} ${variants[variant]} ${sizes[size]} ${paddingX ?? paddingsX[size]} ${className}`
   return (
     <Link to={to} className={cls}>
       {children}
