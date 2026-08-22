@@ -1469,6 +1469,69 @@ No atribuye motivaciones que el repositorio no documenta.
 - Evidencia: `src/components/product/ProductCardCompact.tsx`,
   `tests/e2e/inicio-nativo.spec.ts`.
 
+## D-073 — «Volver» usa el historial cuando existe y un destino semántico cuando no
+
+- Fecha: 2026-08-21. PR #68 (`d6e6e9ee`).
+- Estado: vigente.
+- Problema: en iPhone no hay retroceso del sistema y las pantallas secundarias
+  de la aplicación no ofrecían ninguna forma visible de volver. La barra
+  superior no tenía control alguno; la única salida era cambiar de pestaña.
+- **Las raíces no llevan control.** `/`, `/tienda`, `/mis-productos` y
+  `/cuenta` son las cuatro raíces de `AppTabBar`, y `/login` se trata como
+  raíz-equivalente porque es el destino de la pestaña «Cuenta» mientras no hay
+  sesión. Allí no hay «atrás», hay pestañas. Que `/login` sea raíz **por ruta y
+  no por sesión** mantiene la regla pura: con sesión esa pantalla ni se pinta,
+  porque `LoginPage` redirige con `replace` antes.
+- **Las secundarias sí**: las dieciocho restantes del armazón —registro; las
+  tres del catálogo (`/:family`, `/:family/:model` y la variante); accesorios y
+  su ficha; búsqueda, comparador, favoritos, carrito y Finder; tiendas y el
+  detalle de una tienda; soporte, servicio técnico, servicios y Plan Renove; y
+  la ruta comodín—.
+- **Con historial propio manda el historial**: si el router tiene una entrada
+  anterior apilada, `navigate(-1)`. Es lo que devuelve el catálogo con sus
+  filtros y la búsqueda con su término, sin que este módulo tenga que saber
+  nada de ellos.
+- **Sin historial propio, destino semántico con `replace`**: la ficha vuelve al
+  catálogo de su familia, `/tiendas/:slug` a `/tiendas`, `/comparar?familia=`
+  a esa familia si existe, `/registro` a `/login` conservando un `redirect`
+  interno seguro. Se usa `replace` para no dejar detrás una entrada que
+  devolvería justo a donde se acaba de salir.
+- **Cómo se sabe si hay algo detrás.** React Router numera sus entradas en
+  `window.history.state.idx` y sube de uno en uno con cada navegación que
+  apila; `idx > 0` significa que hay una entrada anterior **suya**.
+  - `history.length` **no sirve**: cuenta entradas del navegador, no las
+    nuestras, y en un WebView reutilizado o tras un enlace externo vale más de
+    uno sin que haya ni una pantalla de Banana detrás.
+  - `location.key` **tampoco lo demuestra**: un `replace` sobre la primera
+    entrada le da clave nueva sin que haya aparecido nada detrás, y eso pasa de
+    verdad en el guardia de `/cuenta`, en `AccessoryDetailPage` y en el
+    reemplazo canónico de `VariantPage`.
+  - **Una recarga no baja `idx` a 0**: el navegador conserva `history.state`,
+    así que una pantalla a la que se llegó navegando mantiene su `idx > 0` y
+    retroceder sigue siendo correcto.
+- Reparto de responsabilidades, que es lo que hace esto mantenible:
+  `appBack.ts` guarda la **regla semántica** como función pura —sin React, sin
+  `window`, sin sesión—; `useAppBack.ts` decide **cómo** se ejecuta la vuelta y
+  es el **único** sitio que lee `window.history.state`; `AppTopBar` sólo
+  **pinta** el control. La lectura del `idx` queda encapsulada a propósito: es
+  detalle interno del router, y si una versión futura lo cambia se pone roja una
+  prueba concreta en vez de la aplicación.
+- **El «Atrás» del Finder no es éste.** `/elige-tu-apple` conserva su control
+  interno, que retrocede un paso del asistente; el de la barra sale de la
+  pantalla. Son dos conceptos distintos y conviven a propósito.
+- Fuera del armazón y por tanto sin control: `/checkout/:step`, `/agente` y
+  `/agente/login`, que no montan `AppTopBar` y ya tienen su propia navegación.
+- **No se añadió `@capacitor/app` ni ningún listener del botón físico de
+  Android.** El bridge sigue delegando en el historial del WebView, que es la
+  misma pila que usa este control: los dos caminos coinciden por construcción y
+  duplicarlo sólo habría añadido una dependencia y dos comportamientos que
+  mantener sincronizados.
+- Evidencia: `src/lib/appBack.ts`, `src/lib/useAppBack.ts`,
+  `src/components/layout/AppTopBar.tsx`, `tests/unit/app-back.test.ts` (31
+  casos: el mapa completo de destinos y las clases de `idx`) y
+  `tests/e2e/app-atras.spec.ts` (12 pruebas: raíces, historial, entrada en
+  frío, la trampa del `replace`, 320×568, 390×844, teclado y la web sin botón).
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

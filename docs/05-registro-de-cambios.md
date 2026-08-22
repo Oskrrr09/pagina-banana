@@ -14,6 +14,47 @@ autores, diffs y marcas de tiempo.
 > documentación viva. Ver
 > [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
 
+## 2026-08-21 — «Volver» en las pantallas secundarias de la app nativa
+
+**PR #68** — «Añade navegación Atrás a las pantallas secundarias nativas».
+Rama `feat/native-back-navigation`, head `23716f10`, fusionada con *merge
+commit* en `d6e6e9ee` sobre `e2a92e19`. Cinco archivos funcionales, `+617/−0`:
+`src/lib/appBack.ts`, `src/lib/useAppBack.ts`,
+`src/components/layout/AppTopBar.tsx`, `tests/unit/app-back.test.ts` y
+`tests/e2e/app-atras.spec.ts`.
+
+En iPhone no hay retroceso del sistema, así que las secundarias del armazón
+nativo llevan ahora un control «Volver». **Con historial propio manda el
+historial** —el catálogo vuelve con sus filtros, la búsqueda con su término—;
+**sin él se va a un destino semántico con `replace`**. Las cuatro raíces de
+`AppTabBar` y `/login` no lo llevan. La regla semántica vive en `appBack.ts`
+como función pura, `useAppBack.ts` es lo único que lee `window.history.state` y
+`AppTopBar` sólo pinta el botón —44×44, `aria-label="Volver"`, galón existente
+girado—. La revisión visual a **320×568 y 390×844** quedó aprobada; la web no
+cambia. Ver
+[[02-decisiones#D-073 — «Volver» usa el historial cuando existe y un destino semántico cuando no]].
+
+Verificación. CI de la PR (`32530133221`) y CI posterior sobre `main`
+(`32533459831`), ambas en el intento 1 y en verde. Cifras del run post-fusión:
+**464 pruebas E2E — 463 aprobadas, 1 omitida esperada, 0 fallos, 0 reintentos,
+0 inestables**; 353 unitarias; `app-atras` 12/12; `app-back` 31/31; 24/24 en el
+panel de agentes; 35/35 en preferencias; 36 + 60 + 5 contra Supabase; y
+**GitHub Pages ejecutado de verdad y desplegado** sobre `d6e6e9ee`. Los ceros de
+reintentos e inestables salen de buscarlos en el registro del trabajo, no del
+distintivo verde.
+
+Avisos no bloqueantes del mismo run, **ninguno introducido por esta PR**:
+deprecación de Node 20 en las acciones, avisos de ESLint en `ChatBubble.tsx`,
+`npm audit` con una vulnerabilidad alta, `allow-scripts`, fragmentos de Vite por
+encima de 500 kB, deprecaciones de `punycode`/`url.parse` y de `[inbucket]` en
+la CLI de Supabase, y límites de descarga de Docker que se recuperaron solos.
+
+Fuera de alcance a propósito: `/checkout/:step`, `/agente` y `/agente/login`,
+que no montan `AppTopBar`; añadir `@capacitor/app` o interceptar el botón físico
+de Android, que sigue delegando en el historial del WebView. Durante la revisión
+se anotó además una deuda preexistente y ajena,
+[[04-problemas-pendientes#UI-002 — La barra de compra de la ficha se sale por la derecha a 320 px]].
+
 ## 2026-08-19 a 2026-08-20 — La app nativa deja de parecer una web comprimida
 
 Cinco PR seguidas del tramo de trabajo centrado en la aplicación nativa; la #62
