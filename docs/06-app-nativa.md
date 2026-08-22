@@ -121,6 +121,23 @@ Detalle y razones en
 
 Ver
 [[02-decisiones#D-075 — Cada apartado de la cuenta es una ruta, y la app la recorre como una lista]].
+
+**Inicio abre por lo que requiere atención** (desde el 2026-08-23):
+
+- El orden es **identidad compacta · aviso (si existe) · Finder · «Seguías
+  mirando» (si existe) · Oportunidades · Tu tienda · Bananito + Soporte**.
+- El saludo deja de ser un titular: una línea con el nombre —o «Mi cuenta»— y el
+  acceso a la cuenta.
+- **El aviso de una reserva disponible va por delante del Finder**, porque es
+  temporal y accionable. Sin avisos, el Finder es la primera pieza.
+- «Seguías mirando» usa la variante `recent` de la tarjeta: **sin distintivo de
+  descuento ni precio anterior**, mismo producto y mismo destino.
+- **Oportunidades enseña cuatro como mucho** y **no repite** ningún modelo que
+  ya salga en «Seguías mirando».
+- La web no cambia: `HomeWeb` y la Tienda nativa (`AppHome`) quedan intactas.
+
+Ver
+[[02-decisiones#D-076 — Inicio cuenta lo que requiere atención, no el catálogo]].
 La PR #68 se verificó con pruebas unitarias, E2E, CI y revisión visual a
 320×568 y 390×844: **no se recompiló ningún binario nativo**, así que las
 verificaciones de Android e iOS descritas arriba siguen siendo las últimas

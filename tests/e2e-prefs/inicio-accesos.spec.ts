@@ -20,9 +20,17 @@ import { expect, test } from '@playwright/test'
 
 const FIXTURE = '/pagina-banana/tests/e2e-prefs/inicio-fixture.html'
 
-test('saluda por el nombre de pila cuando lo hay', async ({ page }) => {
+test('la cabecera dice quién eres, sin saludo protagonista', async ({ page }) => {
+  // Era `Hola, Elena` a 28 px de tipografía display: el texto más grande de la
+  // pantalla para lo único que quien abre la aplicación ya sabe. Inicio v2 lo
+  // deja en una línea con el nombre y el acceso a la cuenta. Lo que esta
+  // prueba protege —que la cabecera identifique la sesión— no cambia.
   await page.goto(FIXTURE)
-  await expect(page.getByRole('heading', { level: 1, name: 'Hola, Elena' })).toBeVisible()
+
+  const h1 = page.getByRole('heading', { level: 1 })
+  await expect(h1).toHaveText('Elena')
+  await expect(h1, 'el saludo dejó de ser el titular').not.toHaveText(/Hola/)
+  await expect(page.getByRole('link', { name: 'Tu cuenta' })).toHaveAttribute('href', /\/cuenta$/)
 })
 
 test('la ruta del apartado abre Mis pedidos, no Datos personales', async ({ page }) => {
@@ -75,6 +83,42 @@ test('una reserva disponible se avisa en Inicio, y una en espera no', async ({ p
   // aquí aparecerían dos.
   await expect(avisos.getByRole('listitem')).toHaveCount(1)
   await expect(avisos).not.toContainText('MacBook Air M5')
+})
+
+test('el aviso va por delante del Finder', async ({ page }) => {
+  // DECISIÓN DE INICIO V2
+  //
+  // Una reserva `disponible` es información temporal y accionable: hay una
+  // unidad esperando. El Finder es una herramienta permanente y puede esperar
+  // un dedo más abajo. Sólo se puede comprobar aquí: hace falta una sesión con
+  // reservas, y la suite de navegador no tiene Supabase.
+  await page.goto(CON_RESERVAS)
+
+  // El aviso llega de una promesa: se espera a que exista antes de medirlo, no
+  // se mete un tiempo fijo.
+  const aviso = page.locator('[aria-label="Avisos"]')
+  await expect(aviso).toBeVisible()
+  const finder = page.locator('[aria-labelledby="inicio-finder"]')
+  await expect(finder).toBeVisible()
+
+  const cajaAviso = await aviso.boundingBox()
+  const cajaFinder = await finder.boundingBox()
+  expect(cajaAviso!.y + cajaAviso!.height, 'el aviso va antes que el Finder').toBeLessThanOrEqual(cajaFinder!.y + 1)
+})
+
+test('sin avisos no queda hueco, y el Finder pasa a ser lo primero', async ({ page }) => {
+  await page.goto(FIXTURE)
+
+  await expect(page.locator('[aria-label="Avisos"]'), 'sin reservas no se pinta nada').toHaveCount(0)
+  const orden = await page.evaluate(() => {
+    const h1 = document.querySelector('h1')!.getBoundingClientRect()
+    const finder = document.querySelector('[aria-labelledby="inicio-finder"]')!.getBoundingClientRect()
+    return { identidadBottom: h1.bottom, finderTop: finder.top, hueco: finder.top - h1.bottom }
+  })
+  expect(orden.finderTop, 'el Finder va justo detrás de la identidad').toBeGreaterThan(orden.identidadBottom)
+  // Sin número mágico: lo que se exige es que no haya un bloque entero de
+  // separación, no una distancia concreta.
+  expect(orden.hueco, `quedan ${Math.round(orden.hueco)} px entre identidad y Finder`).toBeLessThan(80)
 })
 
 test('el aviso abre el apartado de reservas de la cuenta', async ({ page }) => {

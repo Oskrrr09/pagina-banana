@@ -30,8 +30,30 @@ import { presentacionDeTarjeta } from '../../lib/offers'
  *
  * La imagen se deja en carga diferida —`ProductImage` lo hace por defecto sin
  * `priority`—: estos carruseles viven por debajo del pliegue.
+ *
+ * LA VARIANTE `recent` NO ES OTRA TARJETA
+ *
+ * En Inicio hay dos carriles con la misma tarjeta: «Seguías mirando», que es lo
+ * que esta persona estaba viendo, y «Oportunidades», que es lo que está
+ * rebajado. Se leían idénticos —mismo distintivo rojo, mismo precio tachado—,
+ * así que lo personal parecía un escaparate.
+ *
+ * `recent` **sólo neutraliza la presentación promocional**: se va el distintivo
+ * de descuento y el precio anterior, y el precio de esa misma variante se pinta
+ * en la tinta normal. El producto, la variante elegida, la imagen, el destino y
+ * el favorito son exactamente los mismos: `presentacionDeTarjeta` no se toca, y
+ * la geometría tampoco —las dos zonas de texto siguen reservando su caso más
+ * alto, así que la igualdad de alturas de la PR #66 se mantiene en los dos
+ * carriles y también mezclándolos—.
  */
-export function ProductCardCompact({ model }: { model: Model }) {
+export function ProductCardCompact({
+  model,
+  variant = 'default',
+}: {
+  model: Model
+  /** `recent` retira la presentación de oferta. No cambia qué producto se enseña. */
+  variant?: 'default' | 'recent'
+}) {
   const { t, intl } = useIdioma()
   const cat = useCatalogo()
   const { toggleFavorite, isFavorite } = useStore()
@@ -42,6 +64,9 @@ export function ProductCardCompact({ model }: { model: Model }) {
   // antes `variantPath(model)`.
   const { oferta, color, capacity } = presentacionDeTarjeta(model)
   const destino = variantPath(model, color, capacity)
+  // La oferta se sigue calculando igual —hace falta para saber QUÉ variante se
+  // enseña—; lo único que decide `recent` es si se presenta como rebaja.
+  const comoOferta = variant === 'default' && oferta !== null
 
   return (
     // EL PRODUCTO VA ENCIMA DE LA TARJETA, NO DENTRO DE OTRA CAJA
@@ -71,7 +96,7 @@ export function ProductCardCompact({ model }: { model: Model }) {
         <Icon name="heart" size={18} className={fav ? 'fill-danger text-danger' : ''} />
       </button>
 
-      {oferta && oferta.descuento > 0 && (
+      {comoOferta && oferta.descuento > 0 && (
         // Etiqueta, no cartel: cuenta lo mismo ocupando menos que el producto.
         <span className="absolute left-2 top-2 z-10 rounded-full bg-danger px-2 py-0.5 text-[11px] font-extrabold leading-tight text-white">
           -{oferta.descuento}%
@@ -115,7 +140,7 @@ export function ProductCardCompact({ model }: { model: Model }) {
           {/* El caso más alto es el de oferta —precio y precio anterior—, que
               mide 50 px con su `pt-2` incluido. */}
           <div className="mt-auto min-h-[3.125rem] pt-2">
-            {oferta ? (
+            {comoOferta ? (
               <>
                 {/* Los dos precios son de la MISMA variante: la ofertada. */}
                 <span className="block text-lg font-extrabold leading-none text-danger">
@@ -126,8 +151,13 @@ export function ProductCardCompact({ model }: { model: Model }) {
                 </span>
               </>
             ) : (
+              // Sin presentación de oferta se enseña el precio de la variante
+              // que abre el enlace. Con `recent` sobre un modelo rebajado eso
+              // es el precio ya rebajado —el que va a pagar—, en tinta normal:
+              // decir «desde» el de entrada sería enseñar un precio que no
+              // corresponde a la tarjeta que se está tocando.
               <span className="block text-lg font-bold leading-none text-ink">
-                {t('common.from', { precio: euro(model.fromPrice, intl) })}
+                {oferta ? euro(oferta.precio, intl) : t('common.from', { precio: euro(model.fromPrice, intl) })}
               </span>
             )}
           </div>
