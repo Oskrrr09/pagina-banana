@@ -14,6 +14,26 @@ autores, diffs y marcas de tiempo.
 > documentación viva. Ver
 > [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
 
+## 2026-08-22 — La prueba de la cabecera del checkout deja de correr una carrera
+
+**Sólo pruebas; cero cambios en producción.** `barra-banana.spec.ts` abría
+`./checkout/3` sin pedido demostrativo y medía el `header` acto seguido. Pero el
+paso 3 está guardado: sin pedido, `CheckoutPage` hace `<Navigate replace />`, y
+medir el color mientras el nodo se desmonta devuelve **cadena vacía**. Eso fue
+el intermitente del CI pre-merge de la PR #70 (run `32591398519`):
+`Expected "rgb(255, 206, 31)" · Received ""`.
+
+Los cuatro casos de checkout entran ahora por el flujo real —carrito sembrado,
+paso 1 relleno, pedido confirmado— con el nuevo `tests/e2e/checkout-helpers.ts`,
+y confirman URL, `#contenido-checkout` y **una sola** cabecera antes de medir.
+`sembrarCarrito` no es código nuevo: estaba duplicado literalmente en
+`checkout.spec.ts` y `checkout-flow.spec.ts` y se ha extraído allí.
+
+El redirect es correcto y no se toca; lo sigue comprobando `checkout.spec.ts`.
+Verificación: 20 repeticiones del caso sin un solo reintento, contraprueba que
+pone rojas cinco pruebas al romper el color, suite completa en Chromium y móvil
+con 468 aprobadas y 1 omitida esperada, 353 unitarias y `build:test`.
+
 ## 2026-08-22 — La barra de compra de la ficha cabe en un móvil estrecho
 
 **UI-002.** A 320 px la barra fija inferior de `VariantPage` medía **339 px de
