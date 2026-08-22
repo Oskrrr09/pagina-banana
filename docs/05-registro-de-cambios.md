@@ -14,6 +14,40 @@ autores, diffs y marcas de tiempo.
 > documentación viva. Ver
 > [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
 
+## 2026-08-22 — Cuenta se navega como una app, no como una web estrecha
+
+`/cuenta` deja de ser una pantalla con un carril horizontal de siete apartados.
+Medido con la aplicación real: el carril ocupaba **1104 px** en una caja de
+**280 px a 320** y **350 a 390**, así que en cinco de las siete pantallas a 320
+px sólo se veía **el apartado en el que ya estabas**.
+
+Los siete apartados pasan a tener **ruta propia** —`/cuenta/datos`,
+`/cuenta/pedidos`…— y **web y aplicación comparten la gramática**. En la
+aplicación `/cuenta` es ahora una lista vertical con grupos —Actividad, Mis
+datos, Preferencias— y cada fila abre su pantalla con el «Volver» del sistema;
+`AppTabBar` sigue visible y la pestaña Cuenta marcada. «Cerrar sesión» baja al
+final, y Favoritos y Tienda habitual van directas a `/favoritos` y `/tiendas`.
+
+**La web no se rediseña**: a 1440 px conserva columna, contenido, identidad,
+«Cerrar sesión» arriba a la derecha y la tarjeta de «Mis productos». Lo único
+que cambia es la dirección de cada enlace.
+
+`?apartado=` sigue entrando y se traduce con `replace` conservando el resto de
+la consulta; ningún enlace de la aplicación la genera ya. El «Volver» de
+`/cuenta/*` es `/cuenta`, con una sola entrada en `appBack`. Un enlace profundo
+sin sesión conserva su destino tras identificarse. Ver
+[[02-decisiones#D-075 — Cada apartado de la cuenta es una ruta, y la app la recorre como una lista]].
+
+Las siete secciones salen de `ProfilePage` a `src/components/account/` **sin
+tocar su cuerpo**: misma lógica, mismos estados, mismas peticiones. Sólo cambia
+quién las compone.
+
+Verificación local: **468 E2E aprobadas y 1 omitida esperada** en Chromium y
+móvil contra el artefacto, **71 de integración contra Supabase local** (+11
+casos nuevos), **35/35** en preferencias, **358 unitarias en 23 ficheros**
+(+5), `typecheck`, `build:test`, Prettier y ESLint con 0 errores, y `app:sync`
+correcto para iOS y Android sin tocar ningún fichero nativo versionado.
+
 ## 2026-08-22 — La prueba de la cabecera del checkout deja de correr una carrera
 
 **Sólo pruebas; cero cambios en producción.** `barra-banana.spec.ts` abría

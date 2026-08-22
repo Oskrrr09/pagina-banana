@@ -25,8 +25,8 @@ test('saluda por el nombre de pila cuando lo hay', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Hola, Elena' })).toBeVisible()
 })
 
-test('la ruta con apartado abre Mis pedidos, no Datos personales', async ({ page }) => {
-  await page.goto(`${FIXTURE}#/cuenta?apartado=pedidos`)
+test('la ruta del apartado abre Mis pedidos, no Datos personales', async ({ page }) => {
+  await page.goto(`${FIXTURE}#/cuenta/pedidos`)
 
   await expect(page.getByRole('heading', { name: 'Mi cuenta' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Mis pedidos' })).toBeVisible()
@@ -43,7 +43,7 @@ test('con sesión, Inicio no repite los destinos de la barra inferior', async ({
   // Se mira el destino, no el texto: «Mis compras» puede aparecer
   // legítimamente en otros sitios.
   await expect(page.locator('a[href$="/mis-productos"]')).toHaveCount(0)
-  await expect(page.locator('a[href*="apartado=pedidos"]')).toHaveCount(0)
+  await expect(page.locator('a[href$="/cuenta/pedidos"]')).toHaveCount(0)
 
   // Y lo que sí tiene que seguir habiendo: la ayuda, que no está en la barra.
   await expect(page.getByRole('link', { name: /Soporte/ })).toBeVisible()

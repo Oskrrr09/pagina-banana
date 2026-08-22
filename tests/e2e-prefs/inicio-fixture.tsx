@@ -103,6 +103,10 @@ function Fixture() {
                   }
                 />
                 <Route path="/cuenta" element={<ProfilePage />} />
+                {/* Los apartados tienen ruta propia desde la navegación
+                    nativa: sin ella el destino de los accesos de Inicio caería
+                    en el comodín. */}
+                <Route path="/cuenta/:apartado" element={<ProfilePage />} />
                 <Route path="*" element={<p>fuera del fixture</p>} />
               </Routes>
             </CustomerAuthContext.Provider>

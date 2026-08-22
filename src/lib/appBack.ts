@@ -60,6 +60,15 @@ const ESTATICAS: Record<string, string> = {
 const DETALLES: Record<string, string> = {
   '/accesorios': '/accesorios',
   '/tiendas': '/tiendas',
+  // Los apartados de la cuenta —`/cuenta/pedidos`, `/cuenta/datos`…— vuelven a
+  // la lista. Basta una entrada porque el mecanismo por segmentos ya cubre los
+  // siete: escribirlos uno a uno sería repetir el mapa de apartados aquí y
+  // dejar que se desincronizara.
+  //
+  // Sin esto caían en la rama del catálogo, `cuenta` no es una familia
+  // desarrollada y el control acababa mandando a la portada: comprobado en la
+  // aplicación antes de tocar nada.
+  '/cuenta': '/cuenta',
 }
 
 /**

@@ -1564,6 +1564,70 @@ No atribuye motivaciones que el repositorio no documenta.
   Detalle numérico en
   [[04-problemas-pendientes#UI-002 — La barra de compra de la ficha se sale por la derecha a 320 px]].
 
+## D-075 — Cada apartado de la cuenta es una ruta, y la app la recorre como una lista
+
+- Fecha: 2026-08-22. Auditoría del 2026-08-22 y su implementación.
+- Estado: vigente.
+- Problema, medido con la aplicación real y sesión de verdad: el carril
+  horizontal de apartados ocupaba **1104 px** dentro de una caja de **280 px a
+  320** y **350 px a 390**, así que quedaban **824 y 754 px fuera de la vista**.
+  En cinco de las siete pantallas a 320 px lo único visible del menú era **el
+  apartado en el que ya estabas**: pagaba el coste de un menú sin dar su
+  beneficio. Arrastrado al final dejaba «uento educativo», un fragmento de
+  palabra, y ningún indicador de activo. Nada de esto era maquetación rota —cero
+  desbordamiento del documento, objetivos de 44 px—: era **descubribilidad**.
+- **Y `?apartado=` no podía arreglarlo.** El armazón decide si una pantalla
+  lleva «Volver» mirando el **pathname**: `/cuenta?apartado=pedidos` es
+  `/cuenta`, o sea una raíz de pestaña, y nunca podría ofrecer retroceso sin
+  meter una excepción por parámetro en un módulo que hoy es puro.
+- Decisión: **los siete apartados tienen ruta propia** —`/cuenta/datos`,
+  `/cuenta/envio`, `/cuenta/facturacion`, `/cuenta/pedidos`, `/cuenta/reservas`,
+  `/cuenta/descuento`, `/cuenta/favoritos`—, y **web y aplicación usan la misma
+  gramática**. Dos formas de direccionar lo mismo habrían sido deuda desde el
+  primer día.
+- **En la aplicación, `/cuenta` es una lista vertical** con grupos —Actividad,
+  Mis datos, Preferencias— y cada fila abre su pantalla, que trae el «Volver»
+  del sistema. El orden pone Actividad primero: es una decisión de jerarquía de
+  producto, **no un hecho medido** —no hay analítica—.
+- **En la web no cambia la composición**: columna de apartados y contenido al
+  lado, identidad arriba, «Cerrar sesión» arriba a la derecha y tarjeta de «Mis
+  productos». A 1440 px esa disposición enseña los siete a la vez y funciona; lo
+  único que cambia es la dirección de cada enlace. El carril de la web móvil se
+  conserva: esta decisión resuelve la aplicación, no el responsive de la web.
+- **`?apartado=` queda como compatibilidad de ENTRADA**, nunca de salida: se
+  traduce a su subruta con `replace` —sin él quedaría una entrada de historial
+  que obligaría a un Atrás de más— y el resto de la consulta viaja con la
+  traducción. Un valor que no es apartado aterriza en `/cuenta`. Ningún enlace
+  de la aplicación genera ya la gramática antigua.
+- **El «Volver» de `/cuenta/*` es `/cuenta`**, con una sola entrada en el mapa
+  `DETALLES` de `appBack`: el mecanismo por segmentos ya cubre los siete, y
+  escribirlos uno a uno sería duplicar el mapa de apartados y dejar que se
+  desincronizara. Sin ella caían en la rama del catálogo y el control mandaba a
+  la portada —comprobado en la aplicación antes de tocar nada—.
+- **`AppTabBar` permanece visible** también en las secundarias, y la pestaña
+  Cuenta sigue marcada. Es lo que ya hacen la ficha de producto, el carrito y el
+  detalle de tienda; esconderla sólo aquí sería una excepción sin motivo.
+  `seccionActiva` y `contextoDe` funcionan por prefijo, así que no hizo falta
+  tocarlos.
+- **Favoritos y Tienda habitual son accesos directos** en la lista: van a
+  `/favoritos` y `/tiendas`. Una pantalla intermedia cuyo único contenido son
+  esos dos enlaces no aporta nada. **`/cuenta/favoritos` se conserva**, porque
+  la web la usa y hay enlaces antiguos: cambiar en silencio el significado de un
+  enlace profundo es peor que mantener una ruta.
+- **Un enlace profundo sin sesión conserva su destino**: el guardia compone
+  `?redirect=` con la ubicación real, y `safeRedirect` de `LoginPage` sigue
+  siendo quien decide qué destino es aceptable. Antes daba igual porque sólo
+  existía `/cuenta`; ahora perder el destino sería perder el enlace justo cuando
+  más vale.
+- Consecuencia de código: las siete secciones salen de `ProfilePage` a
+  `src/components/account/sections.tsx` **sin tocar su cuerpo**, y `ProfilePage`
+  queda como punto común —Supabase, sesión, carga, cierre de sesión— que elige
+  composición. La lógica, los estados y las peticiones son los mismos.
+- Evidencia: `src/components/account/`, `src/pages/ProfilePage.tsx`,
+  `src/lib/appBack.ts`, `src/App.tsx`, y los contratos nuevos en
+  `tests/integration/cuenta-navegacion-servidor.spec.ts`,
+  `tests/unit/app-back.test.ts` y `tests/unit/app-sections.test.ts`.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

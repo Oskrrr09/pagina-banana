@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { destinoAtrasApp, puedeVolverEnHistorial } from '../../src/lib/appBack'
 import { developedFamilies, getFamilyModels } from '../../src/data/products'
+import { APARTADOS } from '../../src/components/account/apartados'
 
 // A dónde vuelve cada pantalla de la aplicación nativa.
 //
@@ -24,6 +25,34 @@ describe('las raíces no llevan control de vuelta', () => {
     expect(destinoAtrasApp('/login')).toBeNull()
     // Y con el `redirect` que le pone el guardia de una ruta protegida.
     expect(destinoAtrasApp('/login', '?redirect=%2Fcuenta')).toBeNull()
+  })
+})
+
+describe('los apartados de la cuenta vuelven a la cuenta', () => {
+  it('los siete apartados devuelven /cuenta', () => {
+    // La lista sale del módulo de apartados, no escrita a mano: si mañana se
+    // añade uno, esta prueba lo cubre sin que nadie se acuerde de venir.
+    for (const { id } of APARTADOS) {
+      expect(destinoAtrasApp(`/cuenta/${id}`), id).toBe('/cuenta')
+    }
+  })
+
+  it('la raíz sigue siendo raíz, con parámetros o sin ellos', () => {
+    expect(destinoAtrasApp('/cuenta')).toBeNull()
+    // Ni siquiera con la gramática antigua: `search` no cambia el pathname, y
+    // es exactamente por eso por lo que los apartados necesitaban ruta propia.
+    expect(destinoAtrasApp('/cuenta', '?apartado=pedidos')).toBeNull()
+  })
+
+  it('la barra final no cambia la respuesta', () => {
+    expect(destinoAtrasApp('/cuenta/pedidos/')).toBe('/cuenta')
+    expect(destinoAtrasApp('/cuenta/')).toBeNull()
+  })
+
+  it('un apartado inventado también vuelve a la cuenta', () => {
+    // La pantalla lo redirige a `/cuenta` por su cuenta, pero mientras esa
+    // redirección está en vuelo el control debe apuntar a un sitio sensato.
+    expect(destinoAtrasApp('/cuenta/banana')).toBe('/cuenta')
   })
 })
 

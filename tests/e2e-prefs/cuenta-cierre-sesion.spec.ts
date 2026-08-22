@@ -93,6 +93,8 @@ test('sin parámetro se abre Datos personales, como siempre', async ({ page }) =
 })
 
 test('`?apartado=pedidos` abre Mis pedidos', async ({ page }) => {
+  // La gramática antigua se traduce a `/cuenta/pedidos`; lo que esta prueba
+  // protege —que el enlace de siempre siga abriendo lo que promete— no cambia.
   await page.goto(`${FIXTURE_CUENTA}?apartado=pedidos`)
 
   await expect(page.getByRole('heading', { name: 'Mis pedidos' })).toBeVisible()

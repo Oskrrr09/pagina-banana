@@ -102,6 +102,25 @@ de página, y el chat dentro de "Contacta con nosotros" en el menú
 
 Detalle y razones en
 [[02-decisiones#D-073 — «Volver» usa el historial cuando existe y un destino semántico cuando no]].
+
+**Cuenta se recorre como una lista, no como una web** (desde el 2026-08-22):
+
+- `/cuenta` es una **lista vertical** con tres grupos —Actividad, Mis datos y
+  Preferencias— y «Cerrar sesión» al final. Sustituye al carril horizontal, que
+  ocupaba 1104 px en una caja de 350 y enseñaba dos apartados de siete.
+- Cada apartado tiene **ruta propia** (`/cuenta/pedidos`, `/cuenta/datos`…) y es
+  una pantalla secundaria del armazón: trae «Volver», y su destino en frío es
+  `/cuenta`.
+- **`AppTabBar` sigue visible** en las secundarias, con la pestaña Cuenta
+  marcada, igual que en la ficha de producto o el carrito.
+- **Favoritos** y **Tienda habitual** son accesos directos a `/favoritos` y
+  `/tiendas`; `/cuenta/favoritos` se conserva por compatibilidad y porque la web
+  la usa.
+- La **web no cambia de composición**: mantiene su columna de apartados y su
+  contenido al lado, con las mismas direcciones nuevas.
+
+Ver
+[[02-decisiones#D-075 — Cada apartado de la cuenta es una ruta, y la app la recorre como una lista]].
 La PR #68 se verificó con pruebas unitarias, E2E, CI y revisión visual a
 320×568 y 390×844: **no se recompiló ningún binario nativo**, así que las
 verificaciones de Android e iOS descritas arriba siguen siendo las últimas

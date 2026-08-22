@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { APARTADOS } from '../../src/components/account/apartados'
 import {
   contextoDe,
   esCliente,
@@ -71,6 +72,15 @@ describe('qué pestaña se marca activa', () => {
     expect(seccionActiva('/mis-productos/lo-que-sea')).toBe('compras')
     expect(seccionActiva('/cuenta/direcciones')).toBe('cuenta')
   })
+
+  it('los apartados de la cuenta siguen siendo la pestaña Cuenta', () => {
+    // Desde que cada apartado tiene ruta propia esto dejó de ser hipotético:
+    // si `seccionActiva` no los reconociera, entrar en un apartado apagaría la
+    // pestaña y la barra inferior diría que no estás en ninguna sección.
+    for (const { id } of APARTADOS) {
+      expect(seccionActiva(`/cuenta/${id}`), id).toBe('cuenta')
+    }
+  })
 })
 
 describe('los dos contextos', () => {
@@ -99,7 +109,7 @@ describe('qué enseña la barra superior', () => {
   it('nunca encima de Mis compras ni de Cuenta', () => {
     // Son una herramienta para elegir qué comprar. Ahí invitan a irse justo
     // cuando alguien ha entrado a mirar lo suyo.
-    for (const ruta of ['/mis-productos', '/cuenta', '/login', '/registro']) {
+    for (const ruta of ['/mis-productos', '/cuenta', '/cuenta/pedidos', '/login', '/registro']) {
       expect(muestraChipsDeCategoria(ruta), ruta).toBe(false)
     }
   })

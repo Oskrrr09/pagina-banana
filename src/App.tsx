@@ -81,6 +81,11 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<RegisterPage />} />
           <Route path="/cuenta" element={<ProfilePage />} />
+          {/* Cada apartado de la cuenta es una dirección propia. El segmento se
+              valida dentro de `ProfilePage`: uno que no sea apartado vuelve a
+              `/cuenta` con `replace` en vez de caer en el 404, porque no es una
+              dirección rota sino un apartado que no existe. */}
+          <Route path="/cuenta/:apartado" element={<ProfilePage />} />
           <Route path="/mis-productos" element={<MyProductsPage />} />
           <Route path="/tienda" element={<StorePage />} />
           <Route path="/:family" element={<FamilyPage />} />
