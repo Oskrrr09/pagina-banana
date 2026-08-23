@@ -5,6 +5,7 @@ import { Field } from '../components/ui/Field'
 import { useAgentAuth } from '../lib/agentAuth'
 import { supabaseEnabled } from '../lib/supabase'
 import { InstallAppNote } from '../components/agent/AgentAppBar'
+import { clasificarErrorInicioSesion } from '../lib/loginErrors'
 
 // Acceso al panel de agentes — Fase 2.
 //
@@ -30,7 +31,14 @@ export function AgentLoginPage() {
     const { error: signInError } = await signIn(email.trim(), password)
     setSubmitting(false)
     if (signInError) {
-      setError(signInError === 'Invalid login credentials' ? 'Email o contraseña incorrectos.' : signInError)
+      // El panel va en castellano, pero la regla es la misma que en el acceso
+      // de cliente: lo técnico no se cuenta. Ver `clasificarErrorInicioSesion`.
+      const categoria = clasificarErrorInicioSesion(signInError)
+      setError(
+        categoria === 'credenciales'
+          ? 'Email o contraseña incorrectos.'
+          : 'No se ha podido iniciar sesión. Inténtalo de nuevo.',
+      )
     }
   }
 

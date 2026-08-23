@@ -391,6 +391,7 @@ export const it: Diccionario = {
   'auth.signInTitle': "Accedi",
   'auth.signInBody': "Accedi ai tuoi ordini, prenotazioni e indirizzi. Account dimostrativo: nessun addebito né spedizione reale.",
   'auth.badCredentials': "Email o password errati.",
+  'auth.signInError': "Accesso non riuscito. Riprova.",
   'auth.signingIn': "Accesso…",
   'auth.noAccount': "Non hai ancora un account?",
   'auth.hasAccount': "Hai già un account?",

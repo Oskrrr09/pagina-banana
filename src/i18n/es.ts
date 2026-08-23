@@ -422,6 +422,7 @@ export const es = {
   'auth.signInTitle': "Iniciar sesión",
   'auth.signInBody': "Accede a tus pedidos, reservas y direcciones. Cuenta de demostración: no se realizan cobros ni envíos reales.",
   'auth.badCredentials': "Email o contraseña incorrectos.",
+  'auth.signInError': "No se ha podido iniciar sesión. Inténtalo de nuevo.",
   'auth.signingIn': "Entrando…",
   'auth.noAccount': "¿Aún no tienes cuenta?",
   'auth.hasAccount': "¿Ya tienes cuenta?",

@@ -391,6 +391,7 @@ export const en: Diccionario = {
   'auth.signInTitle': "Sign in",
   'auth.signInBody': "Access your orders, reservations and addresses. Demonstration account: no real charges or shipments are made.",
   'auth.badCredentials': "Incorrect email or password.",
+  'auth.signInError': "We couldn’t sign you in. Please try again.",
   'auth.signingIn': "Signing in…",
   'auth.noAccount': "Don’t have an account yet?",
   'auth.hasAccount': "Already have an account?",

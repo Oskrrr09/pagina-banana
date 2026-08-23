@@ -391,6 +391,7 @@ export const fr: Diccionario = {
   'auth.signInTitle': "Se connecter",
   'auth.signInBody': "Accédez à vos commandes, réservations et adresses. Compte de démonstration : aucun débit ni envoi réel.",
   'auth.badCredentials': "E-mail ou mot de passe incorrect.",
+  'auth.signInError': "La connexion a échoué. Réessaie.",
   'auth.signingIn': "Connexion…",
   'auth.noAccount': "Pas encore de compte ?",
   'auth.hasAccount': "Vous avez déjà un compte ?",
