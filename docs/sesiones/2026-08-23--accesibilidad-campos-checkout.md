@@ -80,9 +80,12 @@ ESLint con **0 errores / 25 avisos**.
 ## Alcance
 
 `src/pages/CheckoutPage.tsx` y `tests/e2e/accessibility.spec.ts`, más la
-documentación de UX-062. **No** se creó un `<form>`, **no** se tradujo nada
-—`Pago y extras` sigue hardcodeado, que es A62-03/04—, y no se tocaron el login,
-el panel, Supabase ni las reglas de validación.
+documentación de UX-062. **No** se creó un `<form>` y **no** se tradujo nada. El
+`h1` `Pago y extras` sigue hardcodeado, pero es una **observación separada** que
+salió de la reauditoría y queda **fuera de A62-08**; no se ha decidido aún si
+merece deuda propia. **No es A62-03 ni A62-04**: aquélla es la traducción de
+Cuenta y ésta el copy obsoleto de «sesión iniciada». Tampoco se tocaron el
+login, el panel, Supabase ni las reglas de validación.
 
 ## Siguiente paso
 

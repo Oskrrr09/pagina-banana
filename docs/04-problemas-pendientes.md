@@ -1001,8 +1001,13 @@ código no sostengan.
 
 ### Reauditoría 2026-08-23
 
-Hecha con la aplicación real —artefacto compilado, Supabase local, fallos de red
-provocados por interceptación—, no leyendo código. **La nota original del
+Hecha con la aplicación real —artefacto compilado, Supabase local y fallos de red
+provocados por interceptación— **y contrastada después con el código y las
+pruebas**: A62-03 con `sections.tsx` y `apartados.tsx`, A62-04 con la sección de
+pedidos, A62-05 con `ProfilePage` y su prueba de integración, A62-07 con
+`LoginPage` y `AgentLoginPage`, A62-08 con `CheckoutPage` y `Field`, y A62-09
+con la ausencia de `AbortController` o de cualquier límite propio. Lo que **no**
+fue es una inferencia basada sólo en lectura estática. **La nota original del
 2026-08-19 no se conservó** en el repositorio ni en ningún commit: sólo existía
 la lista de arriba, así que cada hallazgo se remidió desde su frase.
 
