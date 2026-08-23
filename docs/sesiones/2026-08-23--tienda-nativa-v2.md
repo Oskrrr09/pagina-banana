@@ -27,7 +27,7 @@ catálogo», sin tocar Inicio, el armazón, la web ni los catálogos de familia.
 
 3 títulos · 7 superficies · 6 tarjetas · 18 enlaces · 5 filas de servicio.
 
-Y lo que de verdad fallaba: **6 ofertas de un catálogo de 21 modelos**, cuatro
+Y lo que de verdad fallaba: **6 ofertas de un catálogo de 23 modelos**, cuatro
 de ellas Mac, de modo que iPad, Watch, AirPods y Accesorios **no aparecían en
 toda la pantalla**. Con historial real la **intersección con Inicio era 6 de 6**.
 
@@ -115,6 +115,25 @@ Los chips de `AppTopBar` siguen midiendo 32 px y sin caber los seis. Es deuda
 del armazón, anotada desde la PR #43, y Tienda v2 la rodea creando su propia
 entrada en vez de rediseñar el shell. `AppHome` sigue llamándose así pese a ser
 Tienda: renombrarlo es mecánico y ajeno a esta entrega.
+
+## Corrección posterior (revisión de la PR)
+
+Dos pruebas no protegían lo que decían proteger, y se arreglaron **sin tocar
+producción**:
+
+- «todas las ofertas» sólo comprobaba «más que el teaser de Inicio». Con 6
+  ofertas reales, una Tienda que enseñara 5 frente a las 4 de Inicio seguía
+  verde: comprobado ejecutándolo. Ahora el conjunto esperado se deriva de
+  `allModels.filter(tieneOferta)` cargando el código real con el cargador SSR de
+  Vite, y se compara por igualdad exacta.
+- la ayuda se comparaba contra el `h2` de Oportunidades, no contra el carril.
+  Entre ambos hay 312 px en los que la ayuda podía colarse sin romper nada.
+  Ahora se exige que empiece cuando el carril ha terminado.
+
+Esa derivación destapó además que el catálogo tiene **23 modelos**, no 21: el 21
+venía de la nota del 2026-07-28, cuando AirPods tenía dos modelos y hoy tiene
+cuatro. Corregido arriba. **`docs/00-estado-actual.md` sigue diciendo 21**; es
+anterior a esta entrega y se deja como deuda para no ampliar su alcance.
 
 ## Siguiente paso
 

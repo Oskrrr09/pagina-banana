@@ -16,7 +16,7 @@ autores, diffs y marcas de tiempo.
 
 ## 2026-08-23 — Tienda deja de ser un Inicio recortado y pasa a ser el catálogo
 
-Tienda enseñaba **6 ofertas de 21 modelos** —cuatro Mac—, así que iPad, Watch,
+Tienda enseñaba **6 ofertas de 23 modelos** —cuatro Mac—, así que iPad, Watch,
 AirPods y Accesorios no aparecían en toda la pantalla; con historial real la
 **intersección de producto con Inicio era 6 de 6**; y Servicios ocupaba **286
 px, el 31 %**.

@@ -1697,11 +1697,11 @@ No atribuye motivaciones que el repositorio no documenta.
 - Fecha: 2026-08-23. Auditoría del 2026-08-23 y su implementación.
 - Estado: vigente.
 - Problema, medido con la aplicación real: Tienda enseñaba **6 ofertas de un
-  catálogo de 21 modelos** —cuatro de ellas Mac—, así que **iPad, Watch, AirPods
+  catálogo de 23 modelos** —cuatro de ellas Mac—, así que **iPad, Watch, AirPods
   y Accesorios no aparecían en toda la pantalla**. Con historial real la
   intersección de producto con Inicio era **6 de 6**: abrir Tienda después de
   Inicio no aportaba ni un producto nuevo. Su lead prometía «todo lo que puedes
-  comprar» y entregaba el 29 % del catálogo, todo rebajado. Y **Servicios
+  comprar» y entregaba el 26 % del catálogo, todo rebajado. Y **Servicios
   ocupaba 286 px, el 31 % de la pantalla**, con tres rótulos que se distinguían
   mal entre sí.
 - **Inicio y Tienda responden a preguntas distintas.** Inicio: «lo mío, lo que

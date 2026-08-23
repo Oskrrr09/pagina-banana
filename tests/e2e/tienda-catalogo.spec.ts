@@ -26,6 +26,27 @@ async function comoApp(page: Page, recientes?: string[]) {
   }, recientes)
 }
 
+type CatalogoReal = {
+  allModels: { family: string; slug: string }[]
+  tieneOferta: (model: never) => boolean
+}
+
+/**
+ * Carga el catálogo y las ofertas del código de producción en el lado Node de
+ * la prueba, para poder derivar el conjunto esperado en vez de escribirlo.
+ */
+async function conElCatalogoReal<T>(leer: (catalogo: CatalogoReal) => T): Promise<T> {
+  const { createServer } = await import('vite')
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'silent' })
+  try {
+    const productos = await vite.ssrLoadModule('/src/data/products/index.ts')
+    const ofertas = await vite.ssrLoadModule('/src/lib/offers.ts')
+    return leer({ allModels: productos.allModels, tieneOferta: ofertas.tieneOferta })
+  } finally {
+    await vite.close()
+  }
+}
+
 test.describe('Tienda', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
@@ -123,7 +144,7 @@ test.describe('Tienda', () => {
 //
 // QUÉ SE MIDIÓ ANTES DE CAMBIARLA
 //
-// Tienda enseñaba 6 ofertas de un catálogo de 21 modelos, cuatro de ellas Mac,
+// Tienda enseñaba 6 ofertas de un catálogo de 23 modelos, cuatro de ellas Mac,
 // así que iPad, Watch, AirPods y Accesorios no aparecían en toda la pantalla.
 // Con historial real la intersección de producto con Inicio era **6 de 6**. Y
 // la única entrada a las familias eran los chips del armazón, de los que a 320
@@ -132,41 +153,43 @@ test.describe('Tienda', () => {
 // Lo que estas pruebas protegen es la FUNCIÓN de la pantalla, no su aspecto.
 // ============================================================================
 test.describe('Tienda v2', () => {
-  test('las ofertas no están truncadas: Tienda enseña más que el teaser de Inicio', async ({ page }) => {
-    // POR QUÉ NO SE AFIRMA UN NÚMERO
+  test('Tienda enseña TODAS las ofertas reales del catálogo', async ({ page }) => {
+    // DE DÓNDE SALE EL CONJUNTO ESPERADO
     //
-    // Hoy el catálogo tiene seis ofertas, pero fijar el seis convertiría
-    // cualquier cambio de precios en un rojo falso. Y la lista real no se puede
-    // importar aquí: estas pruebas corren contra el `dist` compilado, donde el
-    // catálogo ya no es un módulo alcanzable desde el navegador.
+    // Del código de producción, no de un número escrito a mano y no de Inicio.
+    // `allModels.filter(tieneOferta)` es la misma definición que usa la
+    // pantalla, así que el día que cambien los precios el esperado cambia solo
+    // y esta prueba sigue diciendo la verdad.
     //
-    // Se comprueba la propiedad de otra forma: Inicio enseña un teaser de
-    // cuatro de esa MISMA lista, así que si Tienda contiene esas cuatro y
-    // además tiene más, no está truncada al corte del teaser. Junto con la
-    // ausencia de cualquier «ver todas», eso es lo que distingue a Tienda:
-    // aquí está el conjunto, no una muestra.
+    // No se pueden importar esos módulos directamente: `src/data/products`
+    // depende de `import.meta.env.BASE_URL`, que sólo existe cuando compila
+    // Vite; en el Node de Playwright revienta con «Cannot read properties of
+    // undefined (reading 'BASE_URL')». Se cargan por eso con el cargador SSR de
+    // Vite, que sí define ese entorno. Va en modo middleware: no abre puerto ni
+    // interfiere con el servidor de la suite, y la página se sigue midiendo
+    // contra el artefacto de siempre.
+    const ofertasEsperadas = await conElCatalogoReal(({ allModels, tieneOferta }) =>
+      allModels.filter(tieneOferta).map((m) => `${m.family}/${m.slug}`),
+    )
+    expect(ofertasEsperadas.length, 'el catálogo tiene alguna oferta que enseñar').toBeGreaterThan(0)
+
     await comoApp(page)
-
-    await page.goto('./')
-    const teaser = await page
-      .getByRole('list', { name: 'Oportunidades' })
-      .locator('article a[href]')
-      .evaluateAll((enlaces) => enlaces.map((a) => a.getAttribute('href')!.split('/').slice(2, 4).join('/')))
-
     await page.goto('./tienda')
-    const tienda = await page
-      .getByRole('list', { name: 'Oportunidades' })
+
+    const carril = page.getByRole('list', { name: 'Oportunidades' })
+    const renderizadas = await carril
       .locator('article a[href]')
       .evaluateAll((enlaces) => enlaces.map((a) => a.getAttribute('href')!.split('/').slice(2, 4).join('/')))
 
-    expect(teaser.length, 'Inicio enseña su teaser').toBeGreaterThan(0)
-    expect(tienda.length, 'Tienda enseña más que el teaser').toBeGreaterThan(teaser.length)
-    for (const modelo of teaser) expect(tienda, `${modelo} falta en Tienda`).toContain(modelo)
+    // Conjuntos exactos: ni una de menos —truncada— ni una de más —inventada—.
+    expect(renderizadas.slice().sort(), 'Tienda es el conjunto, no una muestra').toEqual(
+      ofertasEsperadas.slice().sort(),
+    )
+    expect(new Set(renderizadas).size, 'sin repetir ninguna').toBe(renderizadas.length)
 
     // Y todas se presentan como la oferta que son: precio anterior y distintivo.
-    const carril = page.getByRole('list', { name: 'Oportunidades' })
-    await expect(carril.locator('[class*="bg-danger"]')).toHaveCount(tienda.length)
-    await expect(carril.locator('.line-through')).toHaveCount(tienda.length)
+    await expect(carril.locator('[class*="bg-danger"]')).toHaveCount(ofertasEsperadas.length)
+    await expect(carril.locator('.line-through')).toHaveCount(ofertasEsperadas.length)
 
     await expect(page.getByRole('link', { name: /Ver (todas|más)/ }), 'no hay nada más que ver').toHaveCount(0)
   })
@@ -183,8 +206,13 @@ test.describe('Tienda v2', () => {
     // Secundaria: una fila, no la pieza amarilla a sangre que es en Inicio.
     expect(caja.height, 'no es un hero').toBeLessThan(140)
 
-    const oportunidades = (await page.getByRole('heading', { name: 'Oportunidades' }).boundingBox())!
-    expect(caja.y, 'va después del producto').toBeGreaterThan(oportunidades.y)
+    // DESPUÉS DEL PRODUCTO, NO DESPUÉS DE SU TÍTULO
+    //
+    // Comparar contra el `h2` dejaba pasar la regresión que importa: título de
+    // Oportunidades, ayuda, y las tarjetas debajo. Lo que se protege es que la
+    // ayuda empiece cuando el carril ya ha terminado de pintarse.
+    const carril = (await page.getByRole('list', { name: 'Oportunidades' }).boundingBox())!
+    expect(caja.y, 'va después del carril entero, no de su título').toBeGreaterThanOrEqual(carril.y + carril.height)
   })
 
   test('los servicios son tres, y comerciales', async ({ page }) => {
