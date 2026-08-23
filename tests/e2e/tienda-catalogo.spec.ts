@@ -36,29 +36,72 @@ test.describe('Tienda', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tienda')
   })
 
-  test('no repite lo que ya está en Inicio ni en la barra superior', async ({ page }) => {
-    // Con historial sembrado: si «Vistos recientemente» volviera, aquí saldría.
+  test('no repite lo personal de Inicio', async ({ page }) => {
+    // POR QUÉ SE MIDE EL CARRIL Y NO UN TÍTULO
+    //
+    // Esta prueba buscaba el encabezado «Continúa donde lo dejaste» para
+    // demostrar que Tienda no tiene recientes. Inicio v2 renombró ese carril a
+    // «Seguías mirando», así que la aserción pasó a comprobar la ausencia de un
+    // texto que ya no existe en ninguna parte: si el carril reapareciera en
+    // Tienda, seguiría verde.
+    //
+    // Ahora se comprueba la lista por su nombre accesible —que es el contrato
+    // visible— y, además, que Tienda no monte NINGÚN carril de producto que no
+    // sea el de ofertas. Eso protege la propiedad aunque vuelvan a renombrarlo.
     await comoApp(page, ['iphone/17-pro', 'mac/macbook-air-m5'])
     await page.goto('./tienda')
 
     const contenido = page.getByRole('main')
     await expect(
-      contenido.getByRole('heading', { name: 'Continúa donde lo dejaste' }),
-      'los vistos recientes son de Inicio',
+      contenido.getByRole('list', { name: 'Seguías mirando' }),
+      'el historial de vistos es de Inicio',
     ).toHaveCount(0)
+    const carriles = await contenido
+      .getByRole('list')
+      .evaluateAll((listas) =>
+        listas.map((l) => l.getAttribute('aria-label')).filter((etiqueta): etiqueta is string => Boolean(etiqueta)),
+      )
+    expect(carriles, 'el único carril de Tienda es el de ofertas').toEqual(['Oportunidades'])
+
     await expect(contenido.getByRole('heading', { name: 'Tu tienda' }), 'la tienda favorita es de Inicio').toHaveCount(
       0,
     )
-    await expect(
-      contenido.getByRole('heading', { name: 'Compra por categoría' }),
-      'las categorías viven en los chips de la barra',
-    ).toHaveCount(0)
+  })
 
-    // Y los chips siguen a un toque, que es lo que justifica retirar la rejilla:
-    // si desaparecieran, Tienda se quedaría sin ninguna entrada a las familias.
-    const chips = page.getByRole('navigation', { name: 'Categorías' })
-    await expect(chips.getByRole('link', { name: 'iPhone', exact: true })).toBeVisible()
-    await expect(chips.getByRole('link'), 'las seis familias del menú').toHaveCount(6)
+  test('ofrece entrada propia a las seis familias, sin depender de los chips', async ({ page }) => {
+    // QUÉ CAMBIÓ, Y POR QUÉ
+    //
+    // Hasta Tienda v2 esta prueba exigía que NO hubiera navegación de
+    // categorías en el contenido, porque «las familias ya viven en los chips».
+    // Medido sobre `main`: los chips ocupan 474 px y a 320 px sólo se ven
+    // CUATRO de las seis —«Accesorios» no aparece nunca sin arrastrar—, miden
+    // 32 px de alto, y se recortan bajo el buscador al bajar. No eran una
+    // entrada suficiente.
+    //
+    // La propiedad nueva es que Tienda lleve a las seis familias **desde su
+    // propio contenido**. Los chips siguen existiendo y no se tocan.
+    await comoApp(page)
+    await page.goto('./tienda')
+
+    // Se ancla a la sección por su nombre accesible: los chips de la barra
+    // también viven dentro de `<main>`, así que buscar ahí encontraría doce
+    // enlaces y la prueba no distinguiría una navegación de la otra.
+    const explorar = page.getByRole('region', { name: 'Explorar' })
+    await expect(explorar.getByRole('link'), 'las seis familias, dentro del contenido').toHaveCount(6)
+
+    for (const [nombre, destino] of [
+      ['Mac', '/mac'],
+      ['iPhone', '/iphone'],
+      ['iPad', '/ipad'],
+      ['Watch', '/apple-watch'],
+      ['AirPods', '/airpods'],
+      ['Accesorios', '/accesorios'],
+    ]) {
+      const enlace = explorar.getByRole('link', { name: nombre, exact: true })
+      await expect(enlace, nombre).toHaveAttribute('href', new RegExp(`${destino}$`))
+      const caja = await enlace.boundingBox()
+      expect(caja!.height, `«${nombre}» mide ${caja!.height} px de alto`).toBeGreaterThanOrEqual(44)
+    }
   })
 
   test('no hay hero de producto', async ({ page }) => {
@@ -73,6 +116,141 @@ test.describe('Tienda', () => {
     const h1 = await page.getByRole('heading', { level: 1 }).innerText()
     expect([h1, ...secciones].some((h) => /iPhone \d|MacBook|iPad |Watch Series/i.test(h))).toBe(false)
   })
+})
+
+// ============================================================================
+// TIENDA V2 — LA PUERTA AL CATÁLOGO.
+//
+// QUÉ SE MIDIÓ ANTES DE CAMBIARLA
+//
+// Tienda enseñaba 6 ofertas de un catálogo de 21 modelos, cuatro de ellas Mac,
+// así que iPad, Watch, AirPods y Accesorios no aparecían en toda la pantalla.
+// Con historial real la intersección de producto con Inicio era **6 de 6**. Y
+// la única entrada a las familias eran los chips del armazón, de los que a 320
+// px sólo se ven cuatro.
+//
+// Lo que estas pruebas protegen es la FUNCIÓN de la pantalla, no su aspecto.
+// ============================================================================
+test.describe('Tienda v2', () => {
+  test('las ofertas no están truncadas: Tienda enseña más que el teaser de Inicio', async ({ page }) => {
+    // POR QUÉ NO SE AFIRMA UN NÚMERO
+    //
+    // Hoy el catálogo tiene seis ofertas, pero fijar el seis convertiría
+    // cualquier cambio de precios en un rojo falso. Y la lista real no se puede
+    // importar aquí: estas pruebas corren contra el `dist` compilado, donde el
+    // catálogo ya no es un módulo alcanzable desde el navegador.
+    //
+    // Se comprueba la propiedad de otra forma: Inicio enseña un teaser de
+    // cuatro de esa MISMA lista, así que si Tienda contiene esas cuatro y
+    // además tiene más, no está truncada al corte del teaser. Junto con la
+    // ausencia de cualquier «ver todas», eso es lo que distingue a Tienda:
+    // aquí está el conjunto, no una muestra.
+    await comoApp(page)
+
+    await page.goto('./')
+    const teaser = await page
+      .getByRole('list', { name: 'Oportunidades' })
+      .locator('article a[href]')
+      .evaluateAll((enlaces) => enlaces.map((a) => a.getAttribute('href')!.split('/').slice(2, 4).join('/')))
+
+    await page.goto('./tienda')
+    const tienda = await page
+      .getByRole('list', { name: 'Oportunidades' })
+      .locator('article a[href]')
+      .evaluateAll((enlaces) => enlaces.map((a) => a.getAttribute('href')!.split('/').slice(2, 4).join('/')))
+
+    expect(teaser.length, 'Inicio enseña su teaser').toBeGreaterThan(0)
+    expect(tienda.length, 'Tienda enseña más que el teaser').toBeGreaterThan(teaser.length)
+    for (const modelo of teaser) expect(tienda, `${modelo} falta en Tienda`).toContain(modelo)
+
+    // Y todas se presentan como la oferta que son: precio anterior y distintivo.
+    const carril = page.getByRole('list', { name: 'Oportunidades' })
+    await expect(carril.locator('[class*="bg-danger"]')).toHaveCount(tienda.length)
+    await expect(carril.locator('.line-through')).toHaveCount(tienda.length)
+
+    await expect(page.getByRole('link', { name: /Ver (todas|más)/ }), 'no hay nada más que ver').toHaveCount(0)
+  })
+
+  test('la ayuda para elegir es secundaria y va después del producto', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./tienda')
+
+    const ayuda = page.getByRole('link', { name: /Encuentra tu Apple/ })
+    await expect(ayuda).toHaveAttribute('href', /\/elige-tu-apple$/)
+
+    const caja = (await ayuda.boundingBox())!
+    expect(caja.height, 'objetivo táctil').toBeGreaterThanOrEqual(44)
+    // Secundaria: una fila, no la pieza amarilla a sangre que es en Inicio.
+    expect(caja.height, 'no es un hero').toBeLessThan(140)
+
+    const oportunidades = (await page.getByRole('heading', { name: 'Oportunidades' }).boundingBox())!
+    expect(caja.y, 'va después del producto').toBeGreaterThan(oportunidades.y)
+  })
+
+  test('los servicios son tres, y comerciales', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./tienda')
+
+    const servicios = page.getByRole('region', { name: 'Servicios' })
+    const enlaces = servicios.getByRole('link')
+    await expect(enlaces, 'tres accesos, no cinco').toHaveCount(3)
+
+    for (const [nombre, destino] of [
+      ['Plan Renove', '/plan-renove'],
+      ['Comprar en tienda', '/tiendas'],
+      ['Servicio técnico', '/servicio-tecnico'],
+    ]) {
+      const enlace = servicios.getByRole('link', { name: nombre, exact: true })
+      await expect(enlace, nombre).toHaveAttribute('href', new RegExp(`${destino}$`))
+      expect((await enlace.boundingBox())!.height, `«${nombre}»`).toBeGreaterThanOrEqual(44)
+    }
+
+    // Los dos que se van: el índice genérico y el soporte, que ya tiene sitio
+    // propio en Inicio. Las rutas siguen existiendo; dejan de repetirse aquí.
+    await expect(servicios.getByRole('link', { name: /Soporte|Ayuda y servicios/ })).toHaveCount(0)
+    await expect(page.getByRole('main').locator('a[href$="/servicios"]')).toHaveCount(0)
+  })
+
+  for (const ventana of [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`el catálogo se alcanza sin arrastrar de lado a ${ventana.width} px`, async ({ page }) => {
+      await page.setViewportSize(ventana)
+      await comoApp(page)
+      await page.goto('./tienda')
+
+      const explorar = page.getByRole('region', { name: 'Explorar' })
+      const marco = (await explorar.boundingBox())!
+      const enlaces = explorar.getByRole('link')
+      await expect(enlaces).toHaveCount(6)
+
+      // Las seis caben en el ancho: nada de descubrir familias arrastrando.
+      for (let i = 0; i < 6; i++) {
+        const caja = (await enlaces.nth(i).boundingBox())!
+        const nombre = (await enlaces.nth(i).innerText()).trim()
+        expect(caja.x, `«${nombre}» empieza fuera`).toBeGreaterThanOrEqual(marco.x - 2)
+        expect(caja.x + caja.width, `«${nombre}» termina fuera`).toBeLessThanOrEqual(marco.x + marco.width + 2)
+        expect(caja.height, `«${nombre}» mide ${caja.height}`).toBeGreaterThanOrEqual(44)
+      }
+
+      const medida = await page.evaluate(() => {
+        const de = document.documentElement
+        const guardado = de.style.overflowX
+        de.style.overflowX = 'visible'
+        const documento = de.scrollWidth - de.clientWidth
+        de.style.overflowX = guardado
+        const cont = document.querySelector('#contenido')!
+        return { documento, lateral: cont.scrollWidth - cont.clientWidth }
+      })
+      expect(medida.documento, 'el documento no desborda').toBeLessThanOrEqual(2)
+      expect(medida.lateral, 'sólo el carril de producto se desplaza de lado').toBeLessThanOrEqual(2)
+
+      // Y el armazón sigue donde estaba.
+      await expect(page.locator('[data-app-topbar]')).toHaveCount(1)
+      await expect(page.locator('[data-app-tab-bar] [aria-current]')).toContainText('Tienda')
+    })
+  }
 })
 
 test.describe('catálogo de familia', () => {

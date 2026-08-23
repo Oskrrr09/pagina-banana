@@ -3,15 +3,16 @@ import { AppHome } from '../components/home/app/AppHome'
 import { isNativeApp } from '../lib/nativeApp'
 
 /**
- * `/tienda` — la portada comercial de la aplicación nativa.
+ * `/tienda` — la puerta al catálogo, dentro de la aplicación nativa.
  *
- * Es exactamente la portada que construyó la PR #39: hero, oportunidades,
- * categorías, destacados, tienda favorita, servicios y el historial de vistos.
- * Ese trabajo no se tira; sólo cambia por dónde se entra.
+ * Enseña las seis familias, las ofertas reales del catálogo, la ayuda para
+ * elegir y los servicios que afectan a una compra. Inicio (`/`) se ocupa de lo
+ * personal —lo que estabas mirando, lo que requiere atención—, y por eso las
+ * dos pantallas dejaron de competir por lo mismo.
  *
- * Antes vivía en `/` porque la app no tenía otro sitio donde ponerla. Ahora `/`
- * es Inicio —mi relación con Banana— y el comercio tiene pestaña propia, que es
- * lo que permite que las dos cosas dejen de competir por la misma pantalla.
+ * (El comentario anterior describía la portada de la PR #39 —con hero,
+ * destacados, tienda favorita e historial de vistos—, piezas que la #56 ya
+ * había retirado.)
  *
  * En la web esta ruta no existe: la portada comercial de la web es `/`, y
  * mandar ahí a quien llegue por un enlace evita tener dos portadas que dicen lo

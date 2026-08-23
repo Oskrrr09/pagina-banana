@@ -138,6 +138,22 @@ Ver
 
 Ver
 [[02-decisiones#D-076 — Inicio cuenta lo que requiere atención, no el catálogo]].
+
+**Tienda es la puerta al catálogo** (desde el 2026-08-23):
+
+- Orden: **Tienda · Explorar · Oportunidades · Ayuda para elegir · Servicios**.
+- **Explorar** lleva a las seis familias desde el contenido, en dos columnas y
+  con 56 px de alto. Los chips de `AppTopBar` siguen igual, pero ya no son la
+  única entrada: ocupan 474 px, a 320 px sólo se ven cuatro de seis y se
+  recortan al bajar.
+- **Oportunidades enseña todas** las ofertas reales del catálogo, sin «Ver
+  todas». El teaser de cuatro es cosa de Inicio.
+- **Servicios son tres y comerciales**: Plan Renove, «Comprar en tienda»
+  —`/tiendas`— y Servicio técnico.
+- Tienda **no se personaliza**: no lee sesión, historial ni tienda favorita.
+
+Ver
+[[02-decisiones#D-077 — Tienda es la puerta al catálogo, no una selección]].
 La PR #68 se verificó con pruebas unitarias, E2E, CI y revisión visual a
 320×568 y 390×844: **no se recompiló ningún binario nativo**, así que las
 verificaciones de Android e iOS descritas arriba siguen siendo las últimas

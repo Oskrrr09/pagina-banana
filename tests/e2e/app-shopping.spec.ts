@@ -38,18 +38,27 @@ test.describe('portada de la tienda', () => {
   // que era del historial pasa a Inicio, que es donde vive ahora, y lo cubre
   // `inicio-nativo.spec.ts`.
 
-  test('empieza por producto, no por servicios corporativos', async ({ page }) => {
+  test('el catálogo va antes que los servicios', async ({ page }) => {
+    // LA PROPIEDAD ES EL ORDEN, NO LOS RÓTULOS
+    //
+    // Antes esta prueba decía «empieza por producto»: comparaba Oportunidades
+    // con «Servicios y ayuda». Tienda v2 pone «Explorar» —la entrada a las seis
+    // familias— por delante del producto, porque la primera función de la
+    // pantalla es el catálogo. Lo que sigue siendo cierto, y es lo que aquí se
+    // protege, es que **lo comercial va antes que lo accesorio**.
     await comoApp(page)
     await page.goto('./tienda')
 
+    const explorar = page.getByRole('heading', { name: 'Explorar' })
     const oportunidades = page.getByRole('heading', { name: 'Oportunidades' })
-    const servicios = page.getByRole('heading', { name: 'Servicios y ayuda' })
-    await expect(oportunidades).toBeVisible()
-    await expect(servicios).toBeVisible()
+    const servicios = page.getByRole('heading', { name: 'Servicios' })
+    for (const seccion of [explorar, oportunidades, servicios]) await expect(seccion).toBeVisible()
 
-    const yProducto = (await oportunidades.boundingBox())!.y
-    const yServicios = (await servicios.boundingBox())!.y
-    expect(yServicios, 'los servicios van por debajo del producto').toBeGreaterThan(yProducto)
+    const y = async (h: typeof explorar) => (await h.boundingBox())!.y
+    expect(await y(oportunidades), 'el producto va después de la entrada al catálogo').toBeGreaterThan(
+      await y(explorar),
+    )
+    expect(await y(servicios), 'los servicios van por debajo del producto').toBeGreaterThan(await y(oportunidades))
   })
 
   test('las tarjetas de oferta llevan a la ficha de su variante', async ({ page }) => {

@@ -1692,6 +1692,63 @@ No atribuye motivaciones que el repositorio no documenta.
   `tests/e2e/inicio-nativo.spec.ts` y `tests/e2e-prefs/inicio-accesos.spec.ts`,
   con contraprueba del filtro de deduplicación.
 
+## D-077 — Tienda es la puerta al catálogo, no una selección
+
+- Fecha: 2026-08-23. Auditoría del 2026-08-23 y su implementación.
+- Estado: vigente.
+- Problema, medido con la aplicación real: Tienda enseñaba **6 ofertas de un
+  catálogo de 21 modelos** —cuatro de ellas Mac—, así que **iPad, Watch, AirPods
+  y Accesorios no aparecían en toda la pantalla**. Con historial real la
+  intersección de producto con Inicio era **6 de 6**: abrir Tienda después de
+  Inicio no aportaba ni un producto nuevo. Su lead prometía «todo lo que puedes
+  comprar» y entregaba el 29 % del catálogo, todo rebajado. Y **Servicios
+  ocupaba 286 px, el 31 % de la pantalla**, con tres rótulos que se distinguían
+  mal entre sí.
+- **Inicio y Tienda responden a preguntas distintas.** Inicio: «lo mío, lo que
+  requiere atención, ayúdame a decidir». Tienda: «qué vende Banana, entra al
+  catálogo, qué ofertas hay ahora». Compartir algunas tarjetas es aceptable; lo
+  que no lo era es compartir la función.
+- Orden: **Tienda · Explorar · Oportunidades · Ayuda para elegir · Servicios.**
+- **Vuelve una navegación de familias, y no es la de antes.** Se retiró en su
+  día porque «las familias ya viven en los chips de `AppTopBar`, que están
+  SIEMPRE arriba y a un toque». Esa premisa era incompleta en tres puntos
+  medidos: los chips ocupan 474 px y **a 320 px sólo se ven cuatro de seis**
+  —«Accesorios» no aparece nunca sin arrastrar—, miden **32 px** de alto, y **se
+  recortan bajo el buscador al bajar** (lo afirma `app-shell.spec.ts`).
+  «Explorar» no es la vieja rejilla «Compra por categoría», que era un
+  escaparate con imágenes: son seis destinos de 56 px en dos columnas, sin
+  iconos —no hay en `Icon` símbolos que distingan un Mac de un iPad sin
+  inventarlos—. **Los chips no se tocan**: siguen donde estaban.
+- **Oportunidades enseña todas las ofertas reales del catálogo**, sin límite y
+  sin «Ver todas»: en Inicio son un teaser de cuatro, aquí son el conjunto, que
+  es lo que se espera de una tienda. No se deduplica contra Inicio ni contra el
+  historial: lo que cambia es la función de la pantalla, no el producto.
+- **No hay bloque aparte de Accesorios**: es una de las seis familias de
+  Explorar, y repetirlo sería la duplicación que esto viene a quitar.
+- **La ayuda para elegir sigue siendo secundaria**, después del producto, y se
+  corrigen dos cosas que la hacían ilegible: pedía el icono `sparkles`, que **no
+  existe** en `Icon` —el componente cae a `paths.info` cuando no encuentra el
+  nombre, así que la fila se leía como un aviso con su ⓘ—, y tenía la jerarquía
+  invertida, con el eyebrow de título y el nombre de la herramienta de
+  subtítulo.
+- **Servicios quedan en tres, y comerciales**: Plan Renove, «Comprar en tienda»
+  —reencuadre de `/tiendas`, mismo destino y sin comportamiento nuevo— y
+  Servicio técnico. Se van de aquí el índice genérico `/servicios` y `/soporte`,
+  que ya tiene sitio propio en Inicio. Ninguna ruta desaparece del producto.
+- **Tienda no se personaliza.** No lee sesión, ni historial, ni tienda favorita:
+  es la misma pantalla para todo el mundo, y debe seguir siéndolo. Los favoritos
+  de la tarjeta siguen funcionando porque son comportamiento de la tarjeta.
+- **La web no cambia**: `/tienda` sigue redirigiendo a `/` fuera del binario, y
+  `HomeWeb`, `AppCustomerHome`, `ProductCardCompact`, `AppTopBar`, `AppTabBar` y
+  los catálogos de familia quedan intactos.
+- Resultado medido a 320: **6 familias alcanzables desde el contenido** sin
+  desplazamiento lateral y con 56 px de alto; servicios de **286 → 188 px**;
+  total de **954 → 1080 px** (2,17 → 2,45 pantallas). La pantalla crece 126 px y
+  a cambio deja de ser un subconjunto de Inicio.
+- Evidencia: `src/components/home/app/AppHome.tsx`, `src/pages/StorePage.tsx` y
+  los contratos de `tests/e2e/tienda-catalogo.spec.ts` y
+  `tests/e2e/app-shopping.spec.ts`, con contraprueba del carril personal.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y
