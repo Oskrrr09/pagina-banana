@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-21
+actualizado: 2026-08-23
 ---
 
 # Estado actual
@@ -12,91 +12,132 @@ actualizado: 2026-08-21
 > tiempo real con Supabase + panel de agentes** (Fase 1 desplegada el
 > 2026-07-30). No hay integración comercial real ni motor de pago.
 
-## La app nativa ya sabe volver (2026-08-21)
+## Foto de `main` (2026-08-23)
 
-El cierre funcional de la **PR #68** quedó integrado en `main` mediante
-`d6e6e9ee`, con la ejecución de CI posterior en verde: las pantallas secundarias
-de la aplicación nativa tienen por fin un control **«Volver»** visible, que es
-lo que faltaba desde que iOS no ofrece retroceso del sistema.
+> [!info] Cómo leer este documento
+> **Foto del producto hoy**: esta sección, «Referencia actual», «Qué funciona
+> hoy», «Qué no existe» y «Stack efectivo». Describen `main` tal y como está, no
+> cómo llegó a estarlo.
+>
+> **Archivo histórico**, con su fecha en el título y que **no debe leerse como
+> presente**: «Auditoría de seguridad», «Fase 2», «Chat», «Aplicaciones», los
+> tres bloques de «Cambios recientes», «Historial de despliegues» y
+> «Verificación realizada». Se conservan porque explican cómo se llegó aquí.
+>
+> La historia completa —qué PR trajo cada cosa— vive en
+> [[05-registro-de-cambios]]; el porqué, en [[02-decisiones]].
 
-Cómo se comporta, que son dos cosas y no una:
+| | |
+| --- | --- |
+| `main` = `origin/main` | `e04f0e6f681e30b6fb493f6f312a0d61bbbb7dde` |
+| Último merge | **PR #74** — Tienda nativa v2 |
+| URL pública | <https://oskrrr09.github.io/pagina-banana/> |
+| `main` protegida | sí, ruleset sin bypass. Ver [[02-decisiones#D-063]] |
+| Node en CI y `.nvmrc` | **24** |
 
-- **Con historial propio manda el historial.** Si React Router ha apilado una
-  entrada anterior, se retrocede de verdad, y por eso el catálogo vuelve con sus
-  filtros puestos y la búsqueda con su término intacto.
-- **Sin historial propio —enlace profundo, entrada directa— se usa un destino
-  semántico** con `replace`: una ficha abierta en frío vuelve al catálogo de su
-  familia, el detalle de una tienda a `/tiendas`, el comparador a la familia que
-  estaba comparando. Nunca un `navigate(-1)` a ciegas, que ahí saldría de la
-  aplicación.
+### Dos productos, un repositorio
 
-**Las raíces no lo llevan**: `/`, `/tienda`, `/mis-productos` y `/cuenta`, más
-`/login`, que es el destino de la pestaña «Cuenta» mientras no hay sesión. Allí
-no hay «atrás», hay pestañas.
+La misma SPA se sirve como **web** y como **aplicación nativa** iOS/Android
+mediante Capacitor. La rama que decide es `isNativeApp`, que lee
+`window.Capacitor`. No hay dos bases de código: hay dos armazones.
 
-La regla vive en `src/lib/appBack.ts` —función pura, sin React ni `window`— y
-`src/lib/useAppBack.ts` es la única pieza que lee `window.history.state`.
-`AppTopBar` sólo pinta el botón: 44×44, `aria-label="Volver"`, primero de la
-fila, sin segunda cabecera. Comprobado a **320×568 y 390×844** en las dos
-variantes de la barra. **La web no cambia**: sigue montando `Header` y no lleva
-este control. Detalle en
-[[02-decisiones#D-073 — «Volver» usa el historial cuando existe y un destino semántico cuando no]].
+- **Web** — monta `Header` y el pie comercial. No lleva barra de pestañas ni
+  control «Volver».
+- **Nativa** — monta `AppTopBar` y `AppTabBar`. El área desplazable es
+  `#contenido`, no el documento.
 
-Fuera del armazón nativo y por tanto sin este control: `/checkout/:step`,
-`/agente` y `/agente/login`. Android sigue delegando en el historial del
-WebView; no se añadió `@capacitor/app` ni ningún listener del botón físico.
+### Las cuatro pestañas de la app
 
-Verificación tras fusionar: la ejecución sobre `main` (`32533459831`, intento 1)
-terminó en verde —464 pruebas E2E con 463 aprobadas y 1 omitida esperada, 0
-fallos, 0 reintentos, 0 inestables—, 353 unitarias, 24/24 en el panel de
-agentes, 35/35 en preferencias, 36 + 60 + 5 contra Supabase y **GitHub Pages
-ejecutado de verdad y desplegado** sobre `d6e6e9ee`.
+`Inicio · Tienda · Compras · Cuenta` ([[02-decisiones#D-068]]). El rótulo de la
+tercera es «Compras»; su ruta sigue siendo `/mis-productos`
+([[02-decisiones#D-084]]).
 
-## La app nativa gana identidad visual (2026-08-19 a 2026-08-20)
+- **Inicio** (`/`) abre por **lo que requiere atención**: saludo breve, avisos,
+  el buscador de producto, lo que se estaba mirando y un teaser de cuatro
+  ofertas. Ver [[02-decisiones#D-076]].
+- **Tienda** (`/tienda`) es **la puerta al catálogo**: «Explorar» lleva a las
+  seis familias desde el contenido, «Oportunidades» enseña **todas** las ofertas
+  reales sin «Ver todas», y los servicios quedan en tres filas comerciales. No se
+  personaliza: no lee sesión, historial ni tienda favorita. Ver
+  [[02-decisiones#D-077]].
+- **Compras** (`/mis-productos`) es superficie de cuenta orientada a la
+  postventa, no un catálogo.
+- **Cuenta** (`/cuenta`, `/cuenta/:apartado`) navega por **subrutas**: cada
+  apartado es una dirección propia, con lista vertical de ajustes. Ver
+  [[02-decisiones#D-075]].
 
-> [!warning]
-> Este documento se había quedado en el 2026-08-07. Desde entonces se han
-> fusionado las PR #39 a #66 y **sólo las cinco últimas están descritas aquí**;
-> las veintitrés intermedias siguen sin recoger. El hueco está anotado en
-> [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
-> Hasta cerrarlo, git y GitHub son la única descripción completa del producto.
+### Armazón nativo
 
-`main` está en `5bdee61f`. Las cinco últimas entregas forman el tramo de
-trabajo centrado en la aplicación nativa —la #62 alcanza también a la web—.
-Ninguna toca datos, catálogo, Supabase ni dependencias.
+- **Cabecera amarilla Banana en todas las rutas**; barra de pestañas azul. Lo
+  que cambia por contexto es la composición de la cabecera —buscador prominente
+  y chips en comercial, búsqueda compacta en cliente—, no su color. Ver
+  [[02-decisiones#D-078]].
+- **«Volver»** en las pantallas secundarias: con historial propio retrocede de
+  verdad; sin él usa un destino semántico con `replace`. Las raíces —`/`,
+  `/tienda`, `/mis-productos`, `/cuenta` y `/login`— no lo llevan. Fuera del
+  armazón, y por tanto sin control: `/checkout/:step`, `/agente` y
+  `/agente/login`. Ver [[02-decisiones#D-073]].
+- **El arranque no atraviesa ninguna superficie que no sea de marca** y muestra
+  el logotipo hasta que la Home está pintada. Ver [[02-decisiones#D-079]].
+- Las **tipografías viajan con la aplicación** vía `@fontsource`; no hay
+  peticiones a Google Fonts. Ver [[02-decisiones#D-080]].
 
-**El aviso de tienda favorita ya no se come los toques de Inicio** (PR #62,
-`144294d8`). Flotaba sobre el contenido y las tarjetas que quedaban debajo no
-recibían el toque. Ahora ocupa una banda propia dentro del flujo —en la app y
-en la web—, con la lista desplazándose por dentro cuando no cabe, y el foco
-inicial sólo se toma si el botón de cerrar está a la vista. La PR #63
-(`763b9a71`) corrigió después la prueba que vigila ese desplazamiento. Detalle
-en [[02-decisiones#D-070 — El aviso de tienda favorita ocupa banda, no flota]].
+**Deuda conocida del armazón**: los chips de familia de `AppTopBar` ocupan 474 px,
+de modo que a 320 px sólo se ven cuatro de los seis y miden 32 px de alto. Tienda
+la rodea con «Explorar»; no está resuelta.
 
-**El producto pesa más que su marco** (PR #64, `3bb99a91`). `ProductCardCompact`
-tenía tres marcos concéntricos —borde de tarjeta, caja gris de la imagen y aire
-propio del producto— y el aparato quedaba reducido a unos 90 px de 152. La
-tarjeta ya no se dibuja: se separa del fondo con la sombra más discreta del
-sistema y la foto ocupa el ancho completo.
+### Catálogo
 
-**Inicio tiene jerarquía y color de marca** (PR #65, `096a3bf8`). El área de
-contenido era **90,1 % blanco y gris**; el azul, 7,2 % de pantalla, caía al
-**0,1 %** en el contenido porque sólo estaba en la barra de pestañas. Ahora hay
-saludo con tipografía de display, secciones en banda amarilla y una tarjeta con
-Bananito. Es Inicio de la app, no una copia de `/tienda`.
+**23 modelos** en cinco familias desarrolladas, contados sobre
+`src/data/products/`:
 
-**Las tarjetas de un carril terminan a la misma altura** (PR #66, `5bdee61f`).
-Antes medían 244,75, 220,75 y 239,5 px según el modelo que cayera dentro, por
-dos diferencias independientes: la segunda línea del nombre (18,75 px) y el
-precio anterior de una oferta (24 px). Cada zona reserva de antemano su caso más
-alto. El contrato verificado es la igualdad relativa, no una altura concreta;
-ver [[02-decisiones#D-072 — La geometría de la tarjeta no depende del producto]].
+| Familia | Modelos |
+| --- | --- |
+| iPhone | 4 — 17 Pro Max, 17 Pro, Air, 17 |
+| Mac | 8 — MacBook Neo, Air M4, Air M5, Pro M4, Pro M5, iMac 24" M4, Mac Studio, Mac mini M4 |
+| iPad | 4 — Pro, Air, mini, A16 |
+| Apple Watch | 3 — Ultra 3, Series 11, SE 3 |
+| AirPods | 4 — Pro 3, 4 con cancelación, 4, Max |
 
-Verificación tras fusionar: la ejecución de CI sobre `main` de la PR #66
-(`32425136106`) terminó en verde con 452 pruebas —451 aprobadas, 1 omitida
-esperada, 0 fallos, 0 reintentos, 0 inestables—, 24/24 en el panel de agentes,
-35/35 en preferencias, 36 + 60 + 5 contra Supabase y despliegue de Pages
-correcto. La de la PR #65 (`32417548643`) fue igualmente limpia con 450.
+**Accesorios** es la sexta familia de navegación y tiene catálogo y fichas
+propias bajo `/accesorios`, pero **no aporta modelos a `allModels`**. De los 23,
+seis están en oferta hoy —dos iPhone y cuatro Mac—; esa cifra la derivan las
+pruebas del propio catálogo, no está escrita en ningún sitio.
+
+### Pruebas y CI
+
+Verificado en la ejecución posterior a la PR #74 (`32638338391`, nº 144,
+intento 1, `push` sobre `main` en el SHA de arriba), **verde en los cinco
+trabajos**:
+
+| | |
+| --- | --- |
+| E2E | **503 totales · 502 aprobadas · 1 omitida esperada** · 0 fallos, 0 reintentos, 0 inestables |
+| Unitarias | **358/358** en 23 ficheros |
+| Panel de agentes | **24/24** |
+| Preferencias | **37/37** |
+| Supabase local | 36 + 71 + 5 |
+| ESLint | **0 errores**, 25 avisos |
+| GitHub Pages | desplegado sobre el merge SHA |
+
+La omitida esperada es `tests/e2e/pwa.spec.ts:109`, el caso exclusivo de
+desarrollo. La suite completa corre en Chromium y móvil; cinco flujos críticos
+pasan además como *smoke* en Firefox, WebKit y Safari móvil.
+
+**Criterio de calidad vigente**: una prueba debe demostrarse capaz de fallar, y
+la forma de demostrarlo es la contraprueba. Ver [[02-decisiones#D-081]].
+
+### Cuentas, compra y chat
+
+- El **checkout no exige sesión**. Una compra hecha sin cuenta se guarda en
+  `banana:pending-guest-orders` y se escribe en `pedidos` en cuanto aparece una
+  cuenta permanente. Ver [[02-decisiones#D-083]].
+- El **pedido guarda la identidad del producto** —familia y modelo incluidos—,
+  no sólo su nombre. Ver [[02-decisiones#D-067]].
+- La **identidad del chat sin cuenta es efímera**: no sobrevive a un reinicio.
+  Ver [[02-decisiones#D-082]].
+- El **historial de vistos es del dispositivo**, no de la cuenta. Ver
+  [[02-decisiones#D-064]].
 
 ## Auditoría de seguridad en curso (2026-08-02 a 2026-08-06)
 
@@ -270,14 +311,11 @@ Android (2026-08-01).**
 
 ## Referencia actual
 
-- Rama de producción: `main`.
-- `main` y `origin/main`: `30b7957`, base multidioma a cinco idiomas. La
-  auditoría actual retiró la afirmación de cobertura completa: ver I18N-001.
-- Rama de consolidación: `fix/security-i18n-quality-hardening`, creada desde
-  `main` e iniciada con los 14 commits de seguridad después de corregir el
-  estado nulo y el informe JSON RLS.
-- PR #33 y PR #34: abiertas en borrador, encadenadas y sin conflictos. No han
-  desplegado Pages.
+- Rama de producción: `main`, en
+  `e04f0e6f681e30b6fb493f6f312a0d61bbbb7dde` (PR #74). Sin ramas de
+  consolidación abiertas.
+- Base multidioma a cinco idiomas; la afirmación de cobertura completa quedó
+  retirada por I18N-001.
 - **Repositorio**: `Oskrrr09/pagina-banana`. Transferido el 2026-08-07 desde
   `luis-lop-nas`; con la transferencia cambió la URL pública, porque GitHub
   Pages no redirige entre cuentas y la dirección anterior devuelve 404.
@@ -289,8 +327,8 @@ Android (2026-08-01).**
 - **Node.js 24** en el workflow unificado `ci.yml`; `.nvmrc` alinea local y CI.
 - **Estado de dependencias (actualizado el 2026-08-06)**: React Router se migró
   de 6.30.4 a 7.18.2 y se probó en cuatro motores. Esa versión cierra los dos
-  avisos que motivaron la migración. `npm audit` conserva dos entradas `high`
-  por un único aviso del modo RSC (`GHSA-qwww-vcr4-c8h2`), que sólo alcanza a
+  avisos que motivaron la migración. `npm audit` informa **una**
+  vulnerabilidad `high`, por el aviso del modo RSC (`GHSA-qwww-vcr4-c8h2`), que sólo alcanza a
   las APIs RSC inestables: esta SPA declarativa con `BrowserRouter` no tiene
   servidor de React Router, ni acciones RSC, ni React Server Components, así
   que el camino vulnerable no es aplicable. La versión corregida
@@ -329,13 +367,10 @@ Android (2026-08-01).**
   enseñar el diseño; están claramente etiquetadas como contenido de
   demostración y se sustituirán por reseñas reales cuando Banana Computer las
   autorice.
-- Catálogo desarrollado para cinco familias, con **21 modelos** totales
-  contados sobre `src/data/products/`: iPhone (4: 17 Pro Max, 17 Pro,
-  Air, 17), Mac (8: MacBook Neo, MacBook Air M4, MacBook Air M5,
-  MacBook Pro M4, MacBook Pro M5, iMac 24" M4, Mac Studio, Mac mini M4),
-  iPad (4: Pro, Air, mini, A16), Apple Watch (3: Ultra 3, Series 11,
-  SE 3) y AirPods (2: Pro 3, Max). Accesorios tiene catálogo y fichas propias
-  bajo `/accesorios` y `/accesorios/:slug`.
+- Catálogo desarrollado para cinco familias, con **23 modelos** totales
+  contados sobre `src/data/products/`. El desglose está en la tabla de «Foto de
+  `main`». Accesorios tiene catálogo y fichas propias bajo `/accesorios` y
+  `/accesorios/:slug`, pero no aporta modelos a `allModels`.
 - Cada modelo cuenta con variantes de color/capacidad, imágenes locales
   en WebP, precios y disponibilidad de ejemplo.
 - Las familias iPhone y Mac presentan un selector horizontal de modelos y una
@@ -371,8 +406,9 @@ Android (2026-08-01).**
   `reservas`, todas con RLS activa. Escribir como agente, asignarse
   conversaciones y aprobar descuentos exigen `auth.uid()` presente en
   `agentes`; el visitante solo ve las filas ligadas a su sesión anónima. No
-  hay DELETE de conversaciones desde la aplicación. Este es el estado del
-  código de la rama; desplegarlo sigue bloqueado por SEC-RLS-001.
+  hay DELETE de conversaciones desde la aplicación. La migración segura
+  **se aplicó en producción el 2026-08-06**; ver SEC-RLS-001 y
+  [[08-predespliegue-supabase]].
 - Las tarjetas de producto reservan las mismas áreas para imagen, nombre y
   descripción, de modo que mantienen una altura alineada dentro de cada rejilla.
 - El carrusel de tiendas y el mega-menú de escritorio mantienen una altura fija

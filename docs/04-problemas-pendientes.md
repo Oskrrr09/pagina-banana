@@ -885,24 +885,95 @@ forman el backlog verificable.
 
 ## DOC-002 — La documentación viva va veintitrés PR por detrás
 
-- Estado: **abierto** desde el 2026-08-21.
-- Impacto: medio. No afecta al producto; afecta a quien retome el trabajo.
-- Evidencia: la última actualización de `00-estado-actual`, `02-decisiones` y
-  `05-registro-de-cambios` es del 2026-08-07 (PR #38). Entre esa fecha y hoy se
-  han fusionado veintiocho PR, de la #39 a la #66. Esta sesión documenta las
-  cinco últimas (#62 a #66); **las veintitrés intermedias (#39 a #61) no están
-  recogidas en ningún documento**.
-- Qué falta, según `gh pr list`: navegación de la app (#39, #41, #56), «Mis
-  productos» y pedidos (#40, #57), diseño y barras (#43, #49, #58), arranque
-  nativo (#50, #54), tipografías sin Google Fonts (#52), aviso de tienda (#51,
-  #53), Inicio nativo (#55), chat y panel (#47, #48), cuenta e identidad (#59,
-  #60), atrás desde ficha (#61) e integridad de pruebas (#44, #45, #46, #42).
-- Riesgo: mientras dure, git y GitHub son la única descripción completa del
-  producto, y cualquier lectura de `docs/` anterior al 2026-08-19 puede estar
-  describiendo un comportamiento que ya cambió.
-- Siguiente paso: recorrer esas PR por orden y volcar lo que sea decisión
-  —no lo que sea diff— en `02-decisiones`, resumiendo el resto en
-  `05-registro-de-cambios`.
+- Estado: **cerrado el 2026-08-23**. El título se conserva porque es como se
+  abrió el problema; **ya no describe el presente**.
+
+### Qué estaba roto
+
+- Abierto el **2026-08-21**. Impacto medio: no afectaba al producto, sino a
+  quien retomara el trabajo.
+- La última actualización de `00-estado-actual`, `02-decisiones` y
+  `05-registro-de-cambios` era del 2026-08-07 (PR #38). **El rango sin
+  reconstruir era #39 a #61**, veintitrés PR.
+- Riesgo mientras duró: git y GitHub eran la única descripción completa del
+  producto.
+
+> [!note] Dato de contexto, con su fecha
+> Al abrirse, el problema decía «entre esa fecha y hoy se han fusionado
+> veintiocho PR, de la #39 a la #66». Eso era cierto **el 2026-08-21**. En el
+> momento del cierre el último merge es la **PR #74**. La cifra se conserva como
+> contexto histórico, no como estado.
+
+### Cómo se reconstruyó
+
+Recorriendo las veintitrés PR **una a una desde GitHub y desde los merge
+commits**, y contrastando cada afirmación con el código de `main` en
+`e04f0e6f681e30b6fb493f6f312a0d61bbbb7dde`. La jerarquía de confianza fue: merge
+commit y diff real → código actual → pruebas → cuerpo de la PR. El inventario
+completo está en [[sesiones/2026-08-23--cierre-doc-002]].
+
+### Tres cosas que el propio DOC-002 decía mal
+
+Detectadas al reconstruir, y corregidas aquí:
+
+1. **«Las veintitrés no están recogidas en ningún documento» era falso.** Las PR
+   #39, #40 y #41 **sí** llevaban documentación en su propio diff: aportaron
+   **D-064, D-065, D-066** (#39), **D-067** (#40) y **D-068, D-069** (#41). Lo
+   que faltaba era el registro cronológico y las decisiones de la #42 en
+   adelante.
+2. **#51 no era «aviso de tienda»**, sino el inestable del selector de tienda en
+   Favoritos —un `strict mode violation`—. El aviso de tienda es sólo la #53.
+3. **#42 no era «integridad de pruebas»**, sino encaje a 320 px de Cuenta y el
+   aviso de apertura/cierre en tiendas.
+
+### Documentos actualizados
+
+| Documento | Qué se hizo |
+| --- | --- |
+| `05-registro-de-cambios` | Bloque nuevo «2026-08-07 a 2026-08-17», con **las 23 PR citadas por número** y su evolución posterior. Retirado el aviso de hueco. |
+| `02-decisiones` | **Siete** decisiones reconstruidas, D-078 a D-084. Corregidas dos contradicciones internas y añadido el linaje a D-075, D-076 y D-077. |
+| `00-estado-actual` | Auditado entero y reencabezado con una **foto de `main`**; ya no abre como diario. |
+| `04-problemas-pendientes` | Este cierre. |
+| `sesiones/2026-08-23--cierre-doc-002` | La reconstrucción y su método. |
+
+### Cuántas decisiones se añadieron de verdad
+
+**Siete**, no veintitrés, porque una PR no es una decisión:
+
+- **D-078** barras del armazón nativo (#43, #49, #58) · **D-079** arranque nativo
+  (#50, #54) · **D-080** tipografías locales (#52) · **D-081** integridad de
+  pruebas (#45, con #46 y #51) · **D-082** identidad efímera del chat (#47, con
+  #48) · **D-083** compra invitada (#59) · **D-084** «Compras» como superficie de
+  cuenta (#40, #57).
+
+**Ya estaban cubiertas y no se duplicaron**: D-064 a D-069 (#39, #40, #41), que
+viajaron en sus propias PR, y la #53, que ya vivía dentro de
+[[02-decisiones#D-070]].
+
+**Sustituidas, y ahora etiquetadas como tales**: la #55 por D-076, la #56 por
+D-077, la #60 por D-075 y la #49 por la #58. La #61 quedó **generalizada** por
+D-073, no sustituida.
+
+### Contradicciones internas corregidas
+
+- **D-065 se declaraba «vigente»** mientras **D-068 afirmaba reemplazarla**.
+  D-065 pasa a «evolucionada», distinguiendo el principio —que sigue— de su
+  composición concreta —que no—.
+- **D-068 seguía diciendo «Mis compras»**; el rótulo real es **«Compras»** desde
+  la #57.
+- `00-estado-actual` daba **21 modelos** y AirPods con 2; el catálogo real tiene
+  **23** y AirPods **4**. También decía que `main` estaba en `30b7957`, que las
+  PR #33 y #34 seguían **abiertas en borrador**, que `npm audit` conservaba
+  **dos** entradas `high` —hoy una— y que el despliegue seguía bloqueado por
+  SEC-RLS-001, cuya migración se aplicó el 2026-08-06.
+
+### Qué NO se hizo
+
+No se tocó código, pruebas, dependencias ni workflows. No se abordó UX-062, ni
+los chips de `AppTopBar`, ni `npm audit`, ni React Router 8, ni ningún otro
+problema abierto de producto. No se crearon decisiones nuevas para cambios
+mecánicos, ni se inventaron motivaciones que el diff, el cuerpo de la PR o el
+código no sostengan.
 
 ## UX-062 — Hallazgos abiertos de la auditoría del 2026-08-19
 
