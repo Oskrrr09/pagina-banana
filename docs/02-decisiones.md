@@ -1944,7 +1944,10 @@ orientada a la postventa del dispositivo.
 casara con el rótulo añadía riesgo —enlaces, pruebas, historial— a cambio de nada
 que el cliente note. Mismo criterio que ya aplicó la PR #41.
 
-**Evidencia hoy.** `appnav.purchases` vale `'Compras'` en los cinco idiomas y
-`AppTabBar.tsx` apunta a `/mis-productos`. Lo vigilan
+**Evidencia hoy.** La clave `appnav.purchases` expresa el rótulo «Compras» y
+está traducida en los cinco idiomas —`Purchases`, `Käufe`, `Achats`,
+`Acquisti`—; **en castellano vale `'Compras'`**, que es el rótulo que se ve en
+la app, porque la app va siempre en castellano
+([[02-decisiones#D-047]]). `AppTabBar.tsx` apunta a `/mis-productos`. Lo vigilan
 `tests/e2e-prefs/mis-productos.spec.ts` y
 `tests/integration/mis-productos-servidor.spec.ts`.
