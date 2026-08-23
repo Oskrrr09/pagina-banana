@@ -14,6 +14,37 @@ autores, diffs y marcas de tiempo.
 > documentación viva. Ver
 > [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
 
+## 2026-08-23 — Inicio deja de abrir con un saludo y abre con lo que importa
+
+El saludo `Hola, <nombre>` iba a 28 px de display y ocupaba **68 px con sesión y
+182 sin ella**; el Finder no empezaba hasta **y=258**; y a **320 px no se veía ni
+un producto completo** en el primer viewport. La pantalla sumaba **1559 px** con
+**5 títulos, 13 superficies y 2 carriles idénticos** —y el mismo producto podía
+salir en los dos—.
+
+Inicio pasa a contar una historia: **lo que requiere atención → lo que Banana
+puede ayudar a elegir → lo que estabas viendo**. Orden nuevo: identidad
+compacta, aviso si existe, Finder, «Seguías mirando», Oportunidades, tienda y
+ayuda. **El aviso va antes del Finder**: una reserva disponible es temporal y
+accionable. «Seguías mirando» usa una **variante `recent`** de la tarjeta que
+sólo retira la presentación de oferta —mismo producto, misma variante, mismo
+destino y mismo favorito—, Oportunidades baja a **cuatro exactas** y **descarta
+lo que ya se enseña arriba**. Tu tienda queda en una sola fila y la ayuda pierde
+su encabezado. Ver
+[[02-decisiones#D-076 — Inicio cuenta lo que requiere atención, no el catálogo]].
+
+Medido después: identidad **68 → 64 px**, Finder **258 → 178** con aviso y
+**141** sin él, total **1559 → 1448 px** (**3,54 → 3,29 pantallas**) a 320,
+títulos **5 → 4**, superficies **13 → 11**, **0 duplicados** entre carriles y 0
+desbordamiento. **La web no cambia**: `HomeWeb` y `AppHome` quedan intactas.
+
+Verificación local: **481 E2E aprobadas y 1 omitida esperada** en Chromium y
+móvil contra el artefacto, **71 de integración**, **37/37** en preferencias,
+**358 unitarias**, `typecheck`, `build:test`, Prettier y ESLint con 0 errores, y
+`app:sync` correcto para iOS y Android sin tocar ningún fichero nativo
+versionado. La prueba de deduplicación tiene contraprueba: sin el filtro se pone
+roja con `iphone/17-pro`.
+
 ## 2026-08-22 — Cuenta se navega como una app, no como una web estrecha
 
 `/cuenta` deja de ser una pantalla con un carril horizontal de siete apartados.

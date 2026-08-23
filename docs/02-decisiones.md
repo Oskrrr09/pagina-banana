@@ -1628,6 +1628,70 @@ No atribuye motivaciones que el repositorio no documenta.
   `tests/integration/cuenta-navegacion-servidor.spec.ts`,
   `tests/unit/app-back.test.ts` y `tests/unit/app-sections.test.ts`.
 
+## D-076 — Inicio cuenta lo que requiere atención, no el catálogo
+
+- Fecha: 2026-08-23. Auditoría del 2026-08-22 y su implementación.
+- Estado: vigente.
+- Problema, medido con la aplicación real y sesión de verdad: el saludo
+  `Hola, <nombre>` iba a 28 px de tipografía display y ocupaba **68 px con
+  sesión y 182 sin ella**; el Finder no empezaba hasta **y=258** en las tres
+  anchuras; y a **320 px no se veía ni un producto completo** en el primer
+  viewport. La pantalla sumaba **1559 px —3,54 pantallas—** con **5 títulos, 13
+  superficies redondeadas y 2 carriles idénticos**. Peor: con historial real, la
+  primera tarjeta de «Continúa» y la primera de «Oportunidades» eran **el mismo
+  producto**, en dos pantallazos seguidos.
+- **Inicio no es Tienda.** `/tienda` es la portada comercial y tiene pestaña
+  propia. Inicio cuenta otra historia: **lo que requiere mi atención → lo que
+  Banana puede ayudarme a elegir → lo que estaba viendo o puedo descubrir**.
+- Orden decidido: **identidad compacta · aviso (si existe) · Finder · «Seguías
+  mirando» (si existe) · Oportunidades · Tu tienda · Bananito + Soporte.**
+- **El aviso va ANTES del Finder.** Una reserva `disponible` es información
+  temporal y accionable —hay una unidad esperando—; el Finder es una
+  herramienta permanente y puede esperar un dedo más abajo. Consecuencia para
+  las pruebas, y por eso se escribe aquí: **no puede exigirse por contrato que
+  el Finder se vea entero sin desplazar**, porque con un aviso delante puede no
+  caber. El contrato sólo se afirma en el estado sin avisos.
+- **La identidad es una línea, no un titular.** El `h1` sigue existiendo —la
+  pantalla necesita su encabezado— pero deja de ser lo que más pesa. Sin nombre
+  se dice «Mi cuenta», que es cierto siempre: no se deriva del correo, no se
+  inventan iniciales y no hay avatar.
+- **`ProductCardCompact` gana una variante `recent`, no una segunda tarjeta.**
+  Sólo neutraliza la presentación promocional: se van el distintivo de descuento
+  y el precio anterior, y el precio de esa misma variante se pinta en tinta
+  normal. `presentacionDeTarjeta` no se toca, así que el producto, la variante
+  elegida, la imagen, el destino y el favorito son los mismos, y **la igualdad
+  de alturas de la D-072 se mantiene en los dos carriles y mezclándolos**.
+- **Oportunidades enseña cuatro como máximo**, número exacto y no un rango:
+  ocho era un escaparate, y el escaparate ya existe en Tienda. El resto se
+  alcanza con «Ver más».
+- **Un modelo no puede salir en los dos carriles.** Se resuelve primero lo
+  personal y Oportunidades descarta lo que ya está arriba. Se excluye por los
+  modelos que **se pintan** —resueltos contra el catálogo—, no por lo que haya
+  en `localStorage`: un reciente que ya no existe no debe descartar nada.
+- **Tu tienda es una sola pieza** con favorita y sin ella. Antes eran dos
+  composiciones distintas y, con favorita, un título de sección más una ficha
+  más una segunda llamada «Ver la tienda» que repetía el destino de la propia
+  ficha: tres elementos para un enlace.
+- **La ayuda pierde su encabezado.** Un `<h2>` que sólo precede a dos filas no
+  ordena nada; añadía un quinto título a la pantalla. Bananito y Soporte siguen
+  viéndose distintos porque tienen papeles distintos.
+- **El descargo demostrativo sale de la pieza principal.** «Orientación
+  demostrativa» ocupaba la tercera línea de la única tarjeta protagonista. No se
+  retira —el prototipo no puede presentar como real una recomendación que no lo
+  es— sino que baja a una nota pequeña bajo la tarjeta. El texto **no se parte
+  en dos claves**: `home.finder.body` lo comparte la portada web, y tocarlo
+  cambiaría una superficie que esta entrega no toca.
+- **La web no se rediseña.** `HomeWeb` y `AppHome` quedan intactas, y el carril
+  horizontal de la web móvil se conserva: esta decisión resuelve la aplicación.
+- Resultado medido: identidad de **68 → 64 px**, Finder de **258 → 178** con
+  aviso y **141 sin él**, total de **1559 → 1448 px** (3,54 → **3,29
+  pantallas**) a 320, títulos **5 → 4**, superficies **13 → 11** y **0
+  duplicados** entre carriles.
+- Evidencia: `src/components/home/app/AppCustomerHome.tsx`,
+  `src/components/product/ProductCardCompact.tsx` y los contratos de
+  `tests/e2e/inicio-nativo.spec.ts` y `tests/e2e-prefs/inicio-accesos.spec.ts`,
+  con contraprueba del filtro de deduplicación.
+
 ## Cómo añadir una decisión
 
 Añade una sección con identificador, fecha, estado, decisión, evidencia y

@@ -252,7 +252,13 @@ test.describe('Inicio y Tienda son dos cosas distintas', () => {
     await comoApp(page)
     await page.goto('./')
 
-    await expect(page.getByRole('heading', { level: 1, name: /Hola/ })).toBeVisible()
+    // El `h1` de Inicio dejó de ser un «Hola» de 28 px en Inicio v2: ahora es la
+    // identidad compacta —el nombre, o «Mi cuenta» si no lo hay—. Lo que esta
+    // línea protege es que Inicio SIGA teniendo su encabezado propio y que no
+    // sea el de una portada comercial.
+    const encabezado = page.locator('#contenido').getByRole('heading', { level: 1 })
+    await expect(encabezado).toBeVisible()
+    await expect(encabezado, 'el saludo grande se retiró en Inicio v2').not.toHaveText(/^Hola/)
 
     const contenido = page.locator('#contenido')
     await expect(contenido.getByRole('link', { name: /Soporte/ })).toBeVisible()
@@ -289,7 +295,9 @@ test.describe('Inicio y Tienda son dos cosas distintas', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tienda')
     await expect(page.getByRole('heading', { name: 'Oportunidades' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: /Hola/ }), 'el saludo es de Inicio').toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Seguías mirando' }), 'el carril personal es de Inicio').toHaveCount(
+      0,
+    )
   })
 
   test('en la web, /tienda no duplica la portada', async ({ page }) => {

@@ -14,6 +14,15 @@ import { allModels, getModel } from '../../../data/products'
 import type { Model } from '../../../data/types'
 import type { DbReservation } from '../../../lib/supabase'
 
+/**
+ * Cuántas ofertas caben en Inicio.
+ *
+ * Cuatro, exactas. Eran ocho, y ocho es un escaparate: Inicio no es Tienda, que
+ * tiene pestaña propia y su propia sección de oportunidades. El resto se
+ * alcanza con «Ver más».
+ */
+const MAX_OPORTUNIDADES = 4
+
 /** El mismo asset que usan el chat y el panel de agentes. */
 const BANANITO = `${import.meta.env.BASE_URL}img/chat/bananito-square.png`
 
@@ -54,7 +63,49 @@ const BANANITO = `${import.meta.env.BASE_URL}img/chat/bananito-square.png`
  * pantalla. Repetirlos aquí ocupaba media Inicio para no llevar a ningún sitio
  * nuevo. Las rutas siguen intactas; lo que se quita es la duplicación.
  */
+/**
+ * Los modelos del historial local que todavía existen en el catálogo.
+ *
+ * Vive fuera de la sección porque Oportunidades necesita saber cuáles se van a
+ * pintar para no repetirlos: es la MISMA lista, no una segunda lectura.
+ */
+function useRecientes(): Model[] {
+  const [modelos, setModelos] = useState<Model[]>([])
+  useEffect(() => {
+    setModelos(
+      leerRecientes()
+        .map((id) => {
+          const [familia, slug] = id.split('/')
+          return getModel(familia, slug)
+        })
+        .filter((m): m is Model => Boolean(m))
+        .slice(0, 6),
+    )
+  }, [])
+  return modelos
+}
+
 export function AppCustomerHome({ listarReservas = listMyReservations }: { listarReservas?: ListarReservas } = {}) {
+  // EL MISMO PRODUCTO NO PUEDE SALIR DOS VECES
+  //
+  // Los dos carriles se calculaban por separado, y con historial real la
+  // primera tarjeta de «Seguías mirando» y la primera de «Oportunidades» eran
+  // literalmente el mismo iPhone rebajado, en dos pantallazos seguidos.
+  //
+  // Se resuelven aquí en orden: primero lo personal, y Oportunidades descarta
+  // lo que ya se está enseñando arriba. Se excluye por lo que se PINTA —los
+  // modelos resueltos contra el catálogo—, no por lo que hay en
+  // `localStorage`: un reciente que ya no existe no debe descartar nada.
+  const recientes = useRecientes()
+  const yaVistos = recientes.map((m) => `${m.family}/${m.slug}`).join('|')
+  const ofertas = useMemo(() => {
+    const vistos = new Set(yaVistos ? yaVistos.split('|') : [])
+    return allModels
+      .filter(tieneOferta)
+      .filter((m) => !vistos.has(`${m.family}/${m.slug}`))
+      .slice(0, MAX_OPORTUNIDADES)
+  }, [yaVistos])
+
   // EL FONDO ES GRIS Y LAS PIEZAS SON BLANCAS
   //
   // Antes todo era blanco sobre blanco y lo único que separaba una cosa de otra
@@ -67,11 +118,16 @@ export function AppCustomerHome({ listarReservas = listMyReservations }: { lista
   // resto de pantallas de la aplicación.
   return (
     <div className="min-h-full bg-neutral pb-10">
-      <Saludo />
+      <Identidad />
+      {/* EL AVISO VA ANTES QUE EL FINDER
+          Una reserva que ha pasado a `disponible` es información temporal y
+          accionable: hay una unidad esperando. El Finder es una herramienta
+          permanente, y puede esperar un dedo más abajo. Sin avisos este bloque
+          no pinta nada y el Finder pasa a ser la primera pieza. */}
       <Avisos listarReservas={listarReservas} />
       <EncuentraTuApple />
-      <Continua />
-      <Oportunidades />
+      <SeguiasMirando modelos={recientes} />
+      <Oportunidades modelos={ofertas} />
       <TuTienda />
       <Ayuda />
     </div>
@@ -158,24 +214,33 @@ function Carrusel({ children, etiqueta }: { children: React.ReactNode; etiqueta:
 }
 
 /**
- * 1 · Saludo.
+ * 1 · Identidad.
  *
- * Corto a propósito: el contenido tiene que empezar pronto. Sólo se saluda por
- * el nombre si lo hay —un «Hola, null» o un «Hola, cliente» es peor que un hola
- * a secas—, y el `h1` de la pantalla vive aquí.
+ * UNA LÍNEA, NO UN TITULAR
+ *
+ * Era `Hola, Elena` a 28 px de tipografía display: el texto más grande de la
+ * pantalla para la única información que quien abre la aplicación ya tiene.
+ * Medido, se comía 68 px con sesión y 182 sin ella, y empujaba el Finder hasta
+ * y=258 en las tres anchuras.
+ *
+ * Ahora es una fila: el nombre a la izquierda y el acceso a la cuenta a la
+ * derecha. Sigue habiendo un `h1` —la pantalla necesita su encabezado— pero
+ * deja de ser lo que más pesa. Sin nombre se dice «Mi cuenta», que es cierto
+ * siempre: ni se deriva del correo, ni se inventan iniciales, ni hay avatar.
  */
-function Saludo() {
+function Identidad() {
   const { session, cliente } = useCustomerAuth()
   const primerNombre = cliente?.nombre?.trim().split(/\s+/)[0]
 
   if (!session) {
+    // Invitado: la misma invitación de antes, en dos líneas en vez de en un
+    // bloque de 182 px. Una sola frase de contexto y los dos destinos de
+    // siempre; no se prometen ventajas que no existan.
     return (
-      <header className="px-4 pt-6">
-        <h1 className="font-display text-[28px] font-extrabold leading-none text-ink">Hola</h1>
-        <p className="mt-2 max-w-[19rem] text-[15px] leading-snug text-muted">
-          Identifícate y tendrás aquí tus compras, tus pedidos y el soporte de cada producto.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+      <header className="px-4 pt-5">
+        <h1 className="text-[17px] font-bold leading-tight text-ink">Entra en tu cuenta</h1>
+        <p className="mt-1 text-sm leading-snug text-muted">Compras, pedidos y soporte en un mismo sitio.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
           <Link
             to="/login"
             className={`inline-flex min-h-11 items-center rounded-full bg-ink px-5 text-sm font-bold text-white ${PULSABLE}`}
@@ -194,10 +259,8 @@ function Saludo() {
   }
 
   return (
-    <header className="flex items-start justify-between gap-4 px-4 pt-6">
-      <h1 className="min-w-0 font-display text-[28px] font-extrabold leading-none text-ink">
-        {primerNombre ? `Hola, ${primerNombre}` : 'Hola'}
-      </h1>
+    <header className="flex items-center justify-between gap-3 px-4 pt-5">
+      <h1 className="min-w-0 truncate text-[17px] font-bold leading-tight text-ink">{primerNombre || 'Mi cuenta'}</h1>
       <Link
         to="/cuenta"
         aria-label="Tu cuenta"
@@ -253,7 +316,7 @@ function Avisos({ listarReservas }: { listarReservas: ListarReservas }) {
   if (listas.length === 0) return null
 
   return (
-    <section aria-label="Avisos" className="mt-6 px-4">
+    <section aria-label="Avisos" className="mt-4 px-4">
       <ul className="grid gap-3">
         {listas.map((reserva) => (
           <li key={reserva.id}>
@@ -282,28 +345,27 @@ function Avisos({ listarReservas }: { listarReservas: ListarReservas }) {
 /**
  * 3 · Encuentra tu Apple.
  *
- * La pieza principal, y la única con el amarillo de marca a sangre. Va antes
- * que los productos a propósito: es lo que Banana ofrece y una tienda genérica
- * no. Lleva al asistente de verdad; aquí no se duplica ni una pregunta suya.
+ * La pieza distintiva de Inicio, y la única con el amarillo de marca a sangre.
+ * Lleva al asistente de verdad; aquí no se duplica ni una pregunta suya.
+ *
+ * EL DESCARGO SALE DE LA TARJETA
+ *
+ * `home.finder.body` termina en «Orientación demostrativa», y esa frase ocupaba
+ * la tercera línea de la única pieza protagonista de la pantalla. No se retira
+ * —el prototipo no puede presentar como real una recomendación que no lo es—:
+ * baja a una nota pequeña justo debajo, donde sigue leyéndose y no compite.
+ *
+ * El texto NO se parte en dos claves: `home.finder.body` lo comparte la portada
+ * web, y tocarlo cambiaría una superficie que esta entrega no toca.
  */
 function EncuentraTuApple() {
   const t = useT()
 
   return (
-    // COMPACTA, NO ESCONDIDA
-    //
-    // Antes eran cuatro filas apiladas —rótulo, título, párrafo y botón— que se
-    // comían casi un tercio de la primera pantalla y a 320 px la llenaban
-    // entera. Ahora el título y la llamada comparten fila, así que el botón
-    // deja de costar su propia altura, y el cuerpo baja a 13 px.
-    //
-    // Sigue siendo el único bloque con el amarillo de marca a sangre, y sobre
-    // el fondo gris destaca más que antes sobre el blanco. Se encoge su altura,
-    // no su presencia.
-    <section aria-labelledby="inicio-finder" className="mt-6 px-4">
+    <section aria-labelledby="inicio-finder" className="mt-5 px-4">
       <div className="rounded-[20px] bg-brand px-5 py-4 text-ink">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/70">{t('home.finder.eyebrow')}</p>
-        <div className="mt-1 flex items-center gap-3">
+        <div className="mt-1.5 flex items-center gap-3">
           <h2 id="inicio-finder" className="min-w-0 flex-1 font-display text-[20px] font-extrabold leading-tight">
             {t('home.finder.title')}
           </h2>
@@ -315,43 +377,34 @@ function EncuentraTuApple() {
             <Icon name="arrow-right" size={16} aria-hidden="true" />
           </Link>
         </div>
-        <p className="mt-2 text-[13px] leading-snug text-ink/80">{t('home.finder.body')}</p>
       </div>
+      <p className="mt-2 px-1 text-xs leading-snug text-muted">{t('home.finder.body')}</p>
     </section>
   )
 }
 
 /**
- * 4 · Continúa donde lo dejaste.
+ * 4 · Seguías mirando.
  *
- * El historial es local y guarda sólo `familia/slug`: lo justo para volver a
- * buscar el modelo en el catálogo. Lo que no se resuelve contra el catálogo no
- * se pinta —un producto retirado desaparece solo—, y con cero vistos la sección
+ * El historial es local y guarda sólo `familia/slug`. La lista llega ya
+ * resuelta desde la composición —la necesita también Oportunidades para no
+ * repetir producto—, así que aquí sólo se pinta. Con cero vistos la sección
  * entera no existe.
+ *
+ * Las tarjetas van en variante `recent`: mismo producto, misma variante, mismo
+ * destino y mismo favorito, pero **sin presentación de oferta**. Antes este
+ * carril enseñaba distintivos de descuento y precios tachados, y lo personal
+ * se leía igual que el escaparate de abajo.
  */
-function Continua() {
-  const t = useT()
-  const [modelos, setModelos] = useState<Model[]>([])
-
-  useEffect(() => {
-    const encontrados = leerRecientes()
-      .map((id) => {
-        const [familia, slug] = id.split('/')
-        return getModel(familia, slug)
-      })
-      .filter((m): m is Model => Boolean(m))
-      .slice(0, 6)
-    setModelos(encontrados)
-  }, [])
-
+function SeguiasMirando({ modelos }: { modelos: Model[] }) {
   if (modelos.length === 0) return null
 
   return (
-    <Seccion titulo={t('app.home.recent')}>
-      <Carrusel etiqueta={t('app.home.recent')}>
+    <Seccion titulo="Seguías mirando">
+      <Carrusel etiqueta="Seguías mirando">
         {modelos.map((m) => (
           <li key={`${m.family}/${m.slug}`} className="snap-start">
-            <ProductCardCompact model={m} />
+            <ProductCardCompact model={m} variant="recent" />
           </li>
         ))}
       </Carrusel>
@@ -362,27 +415,27 @@ function Continua() {
 /**
  * 5 · Oportunidades.
  *
- * Sólo modelos con `previousPrice` de verdad. La tarjeta es la misma que usa
+ * Sólo modelos con `previousPrice` de verdad, **cuatro como mucho** y ninguno
+ * que ya esté arriba en «Seguías mirando». La tarjeta es la misma que usa
  * `/tienda`, y eso importa más de lo que parece: `presentacionDeTarjeta`
  * resuelve la **variante concreta** que está rebajada y enseña su precio junto
- * a SU precio anterior. Pintar el precio «desde» del modelo al lado del anterior
- * de otra configuración daría un descuento que nadie puede comprar.
+ * a SU precio anterior. Pintar el precio «desde» del modelo al lado del
+ * anterior de otra configuración daría un descuento que nadie puede comprar.
  *
- * Sin ofertas en el catálogo, la sección desaparece sola.
+ * Sin ofertas que enseñar, la sección desaparece sola.
  */
-function Oportunidades() {
+function Oportunidades({ modelos }: { modelos: Model[] }) {
   const t = useT()
-  const enOferta = useMemo(() => allModels.filter(tieneOferta).slice(0, 8), [])
 
-  if (enOferta.length === 0) return null
+  if (modelos.length === 0) return null
 
   return (
-    // La banda de marca muy clara es lo único que distingue esta sección de
-    // «Continúa»: misma tarjeta, mismo carril, pero una se lee comercial y la
-    // otra personal sin necesidad de un segundo componente de producto.
+    // La banda de marca muy clara separa lo comercial de lo personal. Ahora no
+    // es lo único que las distingue —las tarjetas de arriba ya no se presentan
+    // como oferta—, pero sigue diciendo de un vistazo qué es cada carril.
     <Seccion titulo={t('app.home.deals')} enlace="/tienda" etiquetaEnlace="Ver más" banda>
       <Carrusel etiqueta={t('app.home.deals')}>
-        {enOferta.map((m) => (
+        {modelos.map((m) => (
           <li key={`${m.family}/${m.slug}`} className="snap-start">
             <ProductCardCompact model={m} />
           </li>
@@ -395,60 +448,41 @@ function Oportunidades() {
 /**
  * 6 · Tu tienda.
  *
- * Con favorita, su ficha con el estado de apertura que ya calcula
- * `StoreStatus` a partir del horario —no se inventa aquí una segunda lógica de
- * horarios—. Sin favorita, la invitación compacta a elegirla: sin modal y sin
- * tapar nada.
+ * UNA PIEZA, CON FAVORITA Y SIN ELLA
+ *
+ * Antes eran dos composiciones distintas: sin favorita, una fila; con favorita,
+ * un `<h2>` de sección, una ficha y **una segunda llamada «Ver la tienda»** que
+ * repetía el destino de la propia ficha. Tres elementos para un enlace.
+ *
+ * Ahora es la misma fila en los dos casos y cambia lo que dice, no su forma ni
+ * su sitio. El estado de apertura lo sigue calculando `StoreStatus` a partir
+ * del horario: aquí no hay una segunda lógica, ni distancia, ni servicios.
  */
 function TuTienda() {
-  const t = useT()
   const { favoriteStore } = useStorePreference()
 
-  if (!favoriteStore) {
-    return (
-      <section className="mt-8 px-4">
-        <Link to="/tiendas" className={`flex min-h-14 items-center gap-3 p-4 ${TARJETA} ${PULSABLE}`}>
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-050 text-ink">
-            <Icon name="store" size={20} aria-hidden="true" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-semibold text-ink">Elige tu tienda</span>
-            <span className="block text-sm text-muted">Para tenerla siempre a mano</span>
-          </span>
-          <Icon name="chevron-right" size={18} aria-hidden="true" className="shrink-0 text-muted" />
-        </Link>
-      </section>
-    )
-  }
+  const destino = favoriteStore ? `/tiendas/${favoriteStore.slug}` : '/tiendas'
 
   return (
-    // UN SITIO, NO UNA FILA
-    //
-    // La misma información de antes —nombre, dirección y el estado que calcula
-    // `StoreStatus`— pero compuesta como una ficha: el rótulo de tienda en un
-    // círculo de marca, el nombre con peso de título y la llamada separada por
-    // una línea. Ni un dato nuevo: no hay horarios, ni distancia, ni servicios
-    // inventados.
-    <Seccion titulo={t('app.home.yourStore')}>
-      <div className="px-4">
-        <Link to={`/tiendas/${favoriteStore.slug}`} className={`block p-4 ${TARJETA} ${PULSABLE}`}>
-          <span className="flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-050 text-ink">
-              <Icon name="store" size={20} aria-hidden="true" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[17px] font-bold leading-tight text-ink">{favoriteStore.name}</span>
-              <span className="mt-0.5 block truncate text-sm text-muted">{favoriteStore.address}</span>
-            </span>
-            <StoreStatus store={favoriteStore} className="shrink-0" />
+    <section className="mt-6 px-4">
+      <Link to={destino} className={`flex min-h-14 items-center gap-3 p-4 ${TARJETA} ${PULSABLE}`}>
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-050 text-ink">
+          <Icon name="store" size={20} aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold text-ink">
+            {favoriteStore ? favoriteStore.name : 'Elige tu tienda'}
           </span>
-          <span className="mt-3 flex min-h-11 items-center gap-1 border-t border-line pt-3 text-sm font-semibold text-ink">
-            Ver la tienda
-            <Icon name="chevron-right" size={16} aria-hidden="true" />
+          <span className="block truncate text-sm text-muted">
+            {favoriteStore ? favoriteStore.address : 'Para tenerla siempre a mano'}
           </span>
-        </Link>
-      </div>
-    </Seccion>
+        </span>
+        {/* El estado sólo aparece cuando hay tienda; `shrink-0` para que no lo
+            aplaste el nombre y `truncate` arriba para que no lo empuje fuera. */}
+        {favoriteStore && <StoreStatus store={favoriteStore} className="shrink-0" />}
+        <Icon name="chevron-right" size={18} aria-hidden="true" className="shrink-0 text-muted" />
+      </Link>
+    </section>
   )
 }
 
@@ -458,24 +492,21 @@ function TuTienda() {
  * Lo único de la lista anterior que no estaba ya en la barra inferior. El chat
  * es un `<button>`: abre un diálogo, y un enlace que no navega miente al lector
  * de pantalla y al menú contextual del navegador.
+ *
+ * SIN ENCABEZADO
+ *
+ * Tenía un `<h2>` «¿Necesitas ayuda?» para dos accesos. Un título de sección
+ * que sólo precede a dos filas no ordena nada: añade un quinto encabezado a la
+ * pantalla y alarga el final. Las dos piezas se explican solas.
+ *
+ * Siguen viéndose distintas porque tienen papeles distintos: Bananito es la
+ * pieza cálida, con su cara y el amarillo de marca; Soporte es la fila
+ * utilitaria. Los destinos, el `openChat` y los textos no cambian.
  */
 function Ayuda() {
   return (
-    // DOS COSAS DISTINTAS, NO DOS FILAS CLONADAS
-    //
-    // Antes eran dos tarjetas idénticas —icono gris, título, detalle, galón—,
-    // y esa repetición era lo que hacía que el final de Inicio se leyera como
-    // la pantalla de Ajustes del sistema.
-    //
-    // Ahora tienen papeles distintos y se ven distintas: Bananito es la pieza
-    // cálida, con su cara y el amarillo de marca; Soporte es la fila
-    // utilitaria, más pequeña y sin adornos. Los destinos, el `openChat` y los
-    // textos son los mismos.
-    <section aria-labelledby="inicio-ayuda" className="mt-8 px-4">
-      <h2 id="inicio-ayuda" className="text-xl font-extrabold text-ink">
-        ¿Necesitas ayuda?
-      </h2>
-      <ul className="mt-3 grid gap-3">
+    <section aria-label="Ayuda" className="mt-6 px-4">
+      <ul className="grid gap-3">
         <li>
           <button
             type="button"
@@ -496,7 +527,7 @@ function Ayuda() {
         <li>
           <Link
             to="/soporte"
-            className={`flex w-full min-h-14 items-center gap-3 p-4 text-left ${TARJETA} ${PULSABLE}`}
+            className={`flex min-h-14 w-full items-center gap-3 p-4 text-left ${TARJETA} ${PULSABLE}`}
           >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-neutral text-muted">
               <Icon name="wrench" size={18} aria-hidden="true" />

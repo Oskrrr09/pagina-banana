@@ -82,8 +82,10 @@ test.describe('portada de la tienda', () => {
     })
     await page.goto('./')
 
-    await expect(page.getByRole('heading', { level: 1, name: /Hola/ })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Continúa donde lo dejaste' })).toHaveCount(0)
+    // La cabecera de Inicio dejó de ser un «Hola» de titular en Inicio v2; lo
+    // que esta línea protege es que la pantalla monte pese al JSON roto.
+    await expect(page.locator('#contenido').getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Seguías mirando' })).toHaveCount(0)
   })
 
   test('visitar una ficha la añade al historial', async ({ page }) => {
@@ -97,7 +99,7 @@ test.describe('portada de la tienda', () => {
 
     // El historial se pinta en Inicio, que es donde el cliente lo retoma.
     await page.goto('./')
-    const recientes = page.getByRole('list', { name: 'Continúa donde lo dejaste' })
+    const recientes = page.getByRole('list', { name: 'Seguías mirando' })
     await expect(recientes.getByRole('link', { name: /iPhone 17 Pro/ })).toBeVisible()
   })
 })
