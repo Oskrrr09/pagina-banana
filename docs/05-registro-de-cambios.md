@@ -1,18 +1,12 @@
 ---
 tipo: cambios
-actualizado: 2026-08-21
+actualizado: 2026-08-23
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
-
-> [!warning]
-> Este registro salta del 2026-08-07 al 2026-08-19. Las PR #39 a #61 —fusionadas
-> entre esas dos fechas— no están recogidas aquí ni en el resto de la
-> documentación viva. Ver
-> [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
 
 ## 2026-08-23 — Tienda deja de ser un Inicio recortado y pasa a ser el catálogo
 
@@ -246,6 +240,148 @@ checks en verde, sin `--admin` y sin borrar la rama.
 
 La dirección visual de las #64 y #65 queda recogida en
 [[02-decisiones#D-071 — En la app manda el producto, no el contenedor]].
+
+## 2026-08-07 a 2026-08-17 — El tramo #39 a #61, reconstruido
+
+Estas veintitrés entradas se escribieron el **2026-08-23**, no en su momento: el
+registro saltaba del 2026-08-07 al 2026-08-19 y el hueco estaba anotado como
+DOC-002. Se reconstruyeron desde los merge commits y se contrastaron con el
+código de `main`. Cada una dice, cuando procede, **en qué acabó**.
+
+### La app deja de ser la web dentro de un binario (#39 · #41)
+
+- **PR #39** (`1d803416`, 2026-08-07) — *La app nativa se comporta como una
+  tienda*. La portada del binario deja de ser la corporativa —carrusel de marca,
+  novedades, servicios, Plan Renove, FAQ— y pasa a ordenarse **producto →
+  descubrimiento → disponibilidad → compra**. Añade historial de vistos. Trajo
+  **D-064**, **D-065** y **D-066**. *Después*: su composición fue reemplazada por
+  D-076 (#73) en Inicio y D-077 (#74) en Tienda; D-064 y D-066 siguen vigentes.
+- **PR #41** (`0144b339`, 2026-08-08) — *Inicio · Tienda · Mis compras · Cuenta*.
+  Cuatro pestañas en lugar de cinco, y el cupón del carrito deja de desbordar en
+  móvil. Trajo **D-068** y **D-069**. *Después*: la estructura sigue vigente; el
+  rótulo «Mis compras» pasó a «Compras» en la #57. La ruta `/mis-productos` no se
+  movió, a propósito.
+
+### Pedidos y «Mis productos» (#40 · #57)
+
+- **PR #40** (`7bf8628e`, 2026-08-08) — *El pedido recuerda qué producto era, y
+  «Mis productos» v1*. `mirrorOrderToSupabase` perdía cinco campos de cada línea
+  —entre ellos `family` y `modelSlug`—, así que de un pedido guardado no se podía
+  saber qué producto era. Sin migración: `pedidos.lines` ya era `jsonb`. Trajo
+  **D-067**.
+- **PR #57** (`56cadc82`, 2026-08-16) — *Mis productos convierte tus compras en
+  una superficie útil de cuenta*. La pantalla sólo muestra líneas con
+  `kind === 'device'`, de modo que quien compraba sólo accesorios veía «Mis
+  compras» vacío. La pestaña pasa a **«Compras»** y la pantalla deja de ser una
+  rejilla de catálogo. Reconstruida como **D-084**.
+
+### Encaje, barras y armazón (#42 · #43 · #49 · #58)
+
+- **PR #42** (`510e24f5`, 2026-08-08) — *Que quepa en la ventana, y las tiendas
+  avisen antes de abrir y de cerrar*. A 320 px Cuenta desbordaba **789 px**: no
+  eran los campos, era el menú de siete chips, cuyo `overflow-x-auto` **nunca
+  llegaba a actuar** porque nadie le ponía límite —su scroll interno medía 0—.
+  Queda en 0 px de desbordamiento y 809 px de scroll interno. Añade aviso de
+  próxima apertura y cierre en tiendas. *Después*: Cuenta se rediseñó en la #72
+  (D-075), pero el criterio de encaje sigue.
+- **PR #43** (`7a8f3b9b`, 2026-08-09) — *Nav que no se pisa, panel de agentes
+  redimensionable y barras de la app*. Tres cosas: la barra azul de servicios de
+  la web pasa a `xl` —solapaba de 640 a ~1000 px—, el panel de agentes gana un
+  divisor arrastrable, y las barras de la app reciben color. Reconstruida como
+  **D-078**.
+- **PR #49** (`8887ef10`, 2026-08-11) — *Inicio también usa la barra superior
+  amarilla*. No había un fallo de safe area: en Tienda el patrón ya era correcto.
+  Inicio estaba claro por una decisión de diseño explícita, y es esa decisión la
+  que cambia. *Después*: **sustituida por la #58**, que quitó la condición.
+- **PR #58** (`e39802a7`, 2026-08-16) — *La barra de Banana es amarilla en toda
+  la aplicación*. `contextoDe` devuelve tres valores y **todo lo `neutro` caía en
+  blanco sin que nadie lo hubiera decidido**: soporte, tiendas, servicio técnico,
+  Plan Renove, login, registro y el 404. Cierra **D-078**.
+
+### Integridad de las pruebas (#44 · #45 · #46 · #51)
+
+- **PR #44** (`8d4b36ab`, 2026-08-09) — *La foto de producto no se sale de su
+  marco*. No era el hero: era `ProductImage` en toda caja no cuadrada. El padre
+  era un `grid` cuya fila se dimensionaba por contenido (316 px) mientras la caja
+  medía 197,5. Una línea de diff, más su regresión.
+- **PR #45** (`ac3729e9`, 2026-08-09) — *Integridad de pruebas: que puedan
+  ponerse rojas*. Una auditoría concluyó `TESTS NO FIABLES`; se demostraron
+  **seis mecanismos de falso verde** en `nav-solapes`, `anchos` y `secretos`.
+  Ningún cambio funcional del producto. Reconstruida como **D-081**.
+- **PR #46** (`117acdc7`, 2026-08-09) — *El flaky del comparador era la URL, no
+  el comparador*. Dos ejecuciones de CI con el mismo fallo en 1,2–1,3 s, sin
+  agotar timeout: no era una espera corta, era el parámetro de la URL.
+- **PR #51** (`cb481247`, 2026-08-12) — *El selector de tienda en Favoritos deja
+  de ser ambiguo*. Inestable observado en el CI posterior a la #50. El error real
+  era un `strict mode violation`: el rótulo resolvía a **dos** botones, y sólo se
+  manifestaba si aparecía el diálogo de bienvenida. **No arreglaba el arranque de
+  la #50**; era higiene de CI, y fue aparte.
+
+### Chat y panel de agentes (#47 · #48)
+
+- **PR #47** (`7b7307ab`, 2026-08-10) — *La identidad del chat sin cuenta deja de
+  ser duradera*. Reproducido contra Supabase local: mismo `auth.uid` anónimo y
+  misma conversación tras reiniciar; borrar `localStorage` no bastaba.
+  Reconstruida como **D-082**.
+- **PR #48** (`7ee79759`, 2026-08-11) — *Cerrar una conversación ya se refleja en
+  el panel*. **El backend siempre funcionó**: `cerrar_conversacion` devolvía 204.
+  Eran dos defectos de interfaz —la selección apuntaba a una fila que salía de la
+  bandeja, y el panel esperaba su propio eco de *realtime*—.
+
+### Arranque nativo (#50 · #54)
+
+- **PR #50** (`01581a30`, 2026-08-12) — *El arranque nativo deja de parpadear en
+  blanco*. Sin `ios.backgroundColor` el `WKWebView` nace blanco: **~700 ms**
+  medidos. Dos causas independientes, las dos demostradas. Parte de **D-079**.
+- **PR #54** (`8e8b901f`, 2026-08-14) — *El arranque enseña el logotipo hasta que
+  la Home está pintada*. Un defecto **distinto** del anterior: pantalla negra
+  antes del amarillo y logotipo ausente. Descartadas la ventana y el
+  `LaunchScreen` pintándolos de magenta y cian. Cierra **D-079**.
+
+### Tipografías (#52)
+
+- **PR #52** (`c33d0389`, 2026-08-13) — *Las tipografías dejan de depender de
+  Google Fonts*. Pasan a `@fontsource`, con los mismos pesos exactos. Se descartó
+  ampliar `IGNORED_ERROR`, que habría creado falsos verdes. Reconstruida como
+  **D-080**.
+
+### Aviso de tienda favorita (#53)
+
+- **PR #53** (`90f03b5c`, 2026-08-14) — *El aviso de tienda deja de bloquear la
+  página por fuera del panel*. Nació y se documentó como hoja no bloqueante
+  —`aria-modal="false"`, sin backdrop—, pero su capa exterior ocupaba **todo el
+  ancho** conservando `pointer-events: auto`. *Después*: la #62 descubrió que
+  seguía comiéndose los toques de Inicio y lo movió a banda propia (**D-070**);
+  la #63 estabilizó su prueba.
+
+### Inicio y Tienda, primera versión (#55 · #56)
+
+- **PR #55** (`494a31dd`, 2026-08-14) — *Inicio deja de ser una lista de
+  enlaces*. Era un saludo, cuatro filas de enlaces —tres de ellas ya en la barra
+  inferior—, la tienda favorita y un botón a Tienda: ni un producto, ni un
+  precio, ni una imagen. *Después*: **sustituida por D-076** (#73).
+- **PR #56** (`14c15d68`, 2026-08-15) — *Tienda deja de repetir Inicio y el
+  catálogo se vuelve directo*. Tienda era Inicio otra vez con un escaparate
+  delante: el `h1` de la sección era el nombre de un iPhone, y había 1.951 px
+  —2,3 pantallas— sin un solo control de catálogo. Quita además los **dos
+  escaparates** que precedían al filtro dentro de una familia. *Después*:
+  **sustituida por D-077** (#74).
+
+### Cuenta, compra invitada y Atrás (#59 · #60 · #61)
+
+- **PR #59** (`dc9fe5ba`, 2026-08-17) — *La compra invitada se guarda en tu
+  cuenta al identificarte*. Vivía en `sessionStorage` y se perdía al cerrar la
+  pestaña. Reconstruida como **D-083**.
+- **PR #60** (`704a1fd7`, 2026-08-17) — *Cuenta mantiene la URL, el historial y
+  el apartado activo*. El apartado salía de un `useState` sembrado una sola vez,
+  así que la URL mentía y Atrás no volvía al apartado anterior. *Después*:
+  **sustituida por D-075** (#72), que lo movió de `?apartado=` a subrutas
+  `/cuenta/:apartado` porque las raíces de «Atrás» se comparan por *pathname*.
+- **PR #61** (`c0cce5cb`, 2026-08-17) — *Atrás desde una ficha vuelve al catálogo
+  sin carreras de historial*. Salió del CI posterior a la #60, que terminó en
+  `success` pero **no limpio**: `431 passed · 1 skipped · 1 flaky`. La guarda
+  sigue en `VariantPage.tsx`. *Después*: **generalizada por D-073** (#68), que
+  dio a la app un «Volver» propio.
 
 ## 2026-08-07 — Transferencia del repositorio y protección de `main`
 

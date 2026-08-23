@@ -1142,7 +1142,13 @@ No atribuye motivaciones que el repositorio no documenta.
 ## D-065 — La app tiene su propia portada, no la web adaptada
 
 - Fecha: 2026-08-07.
-- Estado: vigente.
+- Estado: **evolucionada**. El principio —la app no monta la portada web— sigue
+  siendo cierto y lo cumplen `AppCustomerHome` y `AppHome`. Lo que ya no
+  describe el producto es su **composición concreta**: la barra de cinco
+  pestañas la reemplazó [[02-decisiones#D-068]] (PR #41), la portada de Inicio
+  la reemplazó [[02-decisiones#D-076]] (PR #73) y la de Tienda
+  [[02-decisiones#D-077]] (PR #74). Corregido el 2026-08-23 al cerrar DOC-002:
+  hasta entonces decía «vigente» mientras D-068 declaraba haberla reemplazado.
 - Decisión: dentro del binario, `Home` monta `AppHome`. El orden es
   producto → descubrimiento → disponibilidad → compra, y los servicios van al
   final.
@@ -1277,7 +1283,10 @@ No atribuye motivaciones que el repositorio no documenta.
 ## D-068 — La app acompaña al cliente: Inicio · Tienda · Mis compras · Cuenta
 
 - Fecha: 2026-08-08.
-- Estado: vigente. Reemplaza la barra de cinco pestañas de D-065.
+- Estado: vigente en su estructura —cuatro pestañas—; reemplaza la barra de
+  cinco de D-065. **El rótulo cambió**: la PR #57 pasó «Mis compras» a
+  **«Compras»** (`appnav.purchases`), sin mover la ruta `/mis-productos`. Ver
+  [[02-decisiones#D-084]].
 - Problema: la navegación nativa era `Inicio · Favoritos · Explorar · Carrito ·
   Cuenta`. Cinco destinos para una app que sólo sabía vender, con una pestaña
   que no navegaba —«Explorar» abría un diálogo— y sin ningún sitio donde vivir
@@ -1568,6 +1577,10 @@ No atribuye motivaciones que el repositorio no documenta.
 
 - Fecha: 2026-08-22. Auditoría del 2026-08-22 y su implementación.
 - Estado: vigente.
+- Sustituye el diseño de la **PR #60**, que mantenía el apartado activo en el
+  parámetro `?apartado=`. Aquello ya sincronizaba URL, historial y apartado; lo
+  que no daba era «Atrás» nativo, porque las raíces se comparan por *pathname*.
+  Reconstruido el 2026-08-23 al cerrar DOC-002.
 - Problema, medido con la aplicación real y sesión de verdad: el carril
   horizontal de apartados ocupaba **1104 px** dentro de una caja de **280 px a
   320** y **350 px a 390**, así que quedaban **824 y 754 px fuera de la vista**.
@@ -1632,6 +1645,8 @@ No atribuye motivaciones que el repositorio no documenta.
 
 - Fecha: 2026-08-23. Auditoría del 2026-08-22 y su implementación.
 - Estado: vigente.
+- Sustituye el Inicio de la **PR #55**, que fue el primero en dejar de ser una
+  lista de enlaces. Reconstruido el 2026-08-23 al cerrar DOC-002.
 - Problema, medido con la aplicación real y sesión de verdad: el saludo
   `Hola, <nombre>` iba a 28 px de tipografía display y ocupaba **68 px con
   sesión y 182 sin ella**; el Finder no empezaba hasta **y=258** en las tres
@@ -1696,6 +1711,9 @@ No atribuye motivaciones que el repositorio no documenta.
 
 - Fecha: 2026-08-23. Auditoría del 2026-08-23 y su implementación.
 - Estado: vigente.
+- Sustituye la Tienda de la **PR #56**, que separó Tienda de Inicio y quitó los
+  dos escaparates previos al filtro. Reconstruido el 2026-08-23 al cerrar
+  DOC-002.
 - Problema, medido con la aplicación real: Tienda enseñaba **6 ofertas de un
   catálogo de 23 modelos** —cuatro de ellas Mac—, así que **iPad, Watch, AirPods
   y Accesorios no aparecían en toda la pantalla**. Con historial real la
@@ -1754,3 +1772,179 @@ No atribuye motivaciones que el repositorio no documenta.
 Añade una sección con identificador, fecha, estado, decisión, evidencia y
 consecuencias. Si una decisión cambia, no borres su historia: márcala como
 reemplazada e indica el nuevo identificador.
+
+## D-078 — El armazón nativo tiene barras propias: cabecera Banana, pestañas azules
+
+- Fecha: 2026-08-09 a 2026-08-16. PR #43 (`7a8f3b9b`), PR #49 (`8887ef10`) y
+  PR #58 (`e39802a7`).
+- Estado: vigente.
+- **Reconstrucción histórica**, escrita el 2026-08-23 al cerrar
+  [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
+  Las tres PR se documentan juntas porque son una sola evolución.
+
+**Problema.** La barra inferior de la app y la cabecera no tenían un criterio de
+color propio: se derivaban del contexto de la ruta.
+
+**La evolución, en tres pasos.** La PR #43 fijó la barra inferior **azul en toda
+la app** y una cabecera que dependía del contexto: amarilla en Tienda, clara en
+Inicio, Mis compras y Cuenta. La PR #49 movió Inicio al amarillo. La PR #58
+cerró el criterio: `contextoDe` devuelve tres valores —`comercial`, `cliente`,
+`neutro`— y **todo lo `neutro` caía en blanco sin que nadie lo hubiera
+decidido**: soporte, tiendas, servicio técnico, Plan Renove, login, registro y
+el 404. Desde entonces la cabecera es amarilla siempre.
+
+**Decisión.** La cabecera de la aplicación nativa es la superficie amarilla
+Banana en todas las rutas; la barra de pestañas es azul. Lo que sigue dependiendo
+del contexto es la **composición** de la cabecera —buscador prominente y chips
+en comercial, búsqueda compacta en cliente—, no su color.
+
+**Evidencia hoy.** `AppTopBar.tsx` pinta `className="z-40 shrink-0 bg-banana"`
+sin condición, y `AppTabBar.tsx` usa `bg-azul`. Lo vigila
+`tests/e2e/barra-banana.spec.ts`.
+
+**Nota de historia.** La PR #43 llevaba además dos cambios que no son de este
+criterio: la barra azul de servicios de la **web** pasó a `xl` porque solapaba
+entre 640 y ~1000 px, y el panel de agentes ganó un divisor arrastrable.
+
+## D-079 — El arranque nativo va de Banana a Banana, y enseña el logotipo
+
+- Fecha: 2026-08-12 y 2026-08-14. PR #50 (`01581a30`) y PR #54 (`8e8b901f`).
+- Estado: vigente.
+- **Reconstrucción histórica**, escrita el 2026-08-23 al cerrar DOC-002.
+
+**Problema.** Abrir la app era `sistema → blanco nativo → blanco del documento →
+Home`. Sin `ios.backgroundColor`, Capacitor inicializa el `WKWebView` con la
+superficie del sistema: medido, **~700 ms de blanco**. La PR #54 encontró
+después un segundo defecto distinto —una pantalla negra antes del amarillo, y el
+logotipo que no aparecía en ningún momento.
+
+**Decisión.** El arranque no atraviesa ninguna superficie que no sea de la
+marca, y muestra el logotipo hasta que la Home está pintada.
+
+**Evidencia hoy.** `capacitor.config.ts`, `index.html`, `src/index.css`, los
+recursos `wordmark*.png` y `LaunchScreen.storyboard` de iOS. Lo vigila
+`tests/unit/arranque-nativo.test.ts`.
+
+**Nota de historia.** La #50 no resolvió el arranque entero: corrigió el blanco
+del WebView y del documento. El logotipo y el negro previo son de la #54.
+
+## D-080 — Las tipografías se distribuyen con la aplicación, no desde Google Fonts
+
+- Fecha: 2026-08-13. PR #52 (`c33d0389`).
+- Estado: vigente.
+- **Reconstrucción histórica**, escrita el 2026-08-23 al cerrar DOC-002.
+
+**Problema.** Inter y Manrope se pedían a Google Fonts en tiempo de ejecución. El
+CI posterior a la PR #50 registró un inestable en `product.spec.ts` cuyo rastro
+del primer intento señalaba una petición de fuente fallida.
+
+**Decisión.** Las tipografías viajan con la aplicación vía `@fontsource`, con
+**exactamente los mismos pesos** que se cargaban antes: Inter 400/500/600/700 y
+Manrope 500/700/800. Se retira del *service worker* la excepción que trataba
+`fonts.googleapis.com` y `fonts.gstatic.com` como recursos externos cacheables.
+
+**Alternativa descartada, y por qué.** Ampliar `IGNORED_ERROR` para silenciar el
+error de red habría convertido en falso verde cualquier imagen, script o API rota
+de verdad.
+
+**Evidencia hoy.** `@fontsource/inter` y `@fontsource/manrope` en
+`package.json`, importados en `src/main.tsx`; ninguna petición a dominios de
+Google. Lo vigila `tests/e2e/tipografias.spec.ts`.
+
+## D-081 — Una prueba que no puede ponerse roja no es una prueba
+
+- Fecha: 2026-08-09. PR #45 (`ac3729e9`), con las PR #46 (`117acdc7`) y #51
+  (`cb481247`) como aplicación del mismo criterio.
+- Estado: vigente.
+- **Reconstrucción histórica**, escrita el 2026-08-23 al cerrar DOC-002.
+
+**Problema.** Una auditoría del sistema de pruebas concluyó `TESTS NO FIABLES`.
+En tres áreas —`nav-solapes`, `anchos`, `secretos`— se demostraron **seis
+mecanismos distintos de falso verde**. El más claro: `solapes()` devolvía
+`{ visible: false, cruces: [] }` cuando la barra no se pintaba, y las pruebas
+sólo miraban `cruces`, así que **barra ausente → cero cruces → verde**. Medido:
+ocultándola a todos los anchos, cinco de siete pruebas seguían pasando.
+
+**Decisión.** Una comprobación debe demostrarse capaz de fallar. La forma de
+demostrarlo es la **contraprueba**: romper a propósito lo que la prueba dice
+proteger y verificar que se pone roja por el motivo esperado.
+
+**Evidencia hoy.** Es la metodología que sigue usándose: las dos correcciones de
+cobertura de la PR #74 se validaron exactamente así.
+
+**Nota de historia.** Las PR #46 y #51 no son de esta decisión, sino dos
+aplicaciones suyas: la #46 demostró que el inestable del comparador era la URL
+—`?f=` frente a `?familia=`— y no el comparador, y la #51 que el selector de
+tienda en Favoritos resolvía a **dos** botones, un `strict mode violation` que
+sólo se manifestaba cuando aparecía el diálogo de bienvenida.
+
+## D-082 — La identidad del chat sin cuenta es efímera
+
+- Fecha: 2026-08-10. PR #47 (`7b7307ab`), con la PR #48 (`7ee79759`) como
+  corrección del panel.
+- Estado: vigente.
+- **Reconstrucción histórica**, escrita el 2026-08-23 al cerrar DOC-002.
+
+**Problema.** Quien usaba el chat **sin cuenta** y volvía a abrir la web o la app
+seguía siendo la misma persona: no se le pedían nombre y correo y recuperaba su
+conversación anterior. Reproducido contra Supabase local: mismo `auth.uid`
+anónimo y misma conversación tras reiniciar. Borrar `localStorage` no bastaba.
+
+**Decisión.** Sin cuenta no hay identidad duradera: la sesión anónima y su
+conversación dejan de sobrevivir a un reinicio.
+
+**Evidencia hoy.** `src/lib/chatSession.ts` y la migración
+`20260810000500_continuidad_temporal_conversacion.sql`. Lo vigilan las pruebas
+de integración `chat-anonimo-efimero`, `chat-anonimo`, `chat-identidad-cuentas`
+y `continuidad-conversacion`.
+
+**Nota de historia.** La PR #48 es un problema distinto del panel de agentes, no
+de la identidad: cerrar una conversación no se reflejaba por **dos** defectos
+—la selección se quedaba apuntando a una fila que salía de la bandeja, y el
+panel esperaba su propio eco de *realtime*—. El backend siempre funcionó.
+
+## D-083 — La compra sin cuenta se reconcilia al identificarse
+
+- Fecha: 2026-08-17. PR #59 (`dc9fe5ba`).
+- Estado: vigente.
+- **Reconstrucción histórica**, escrita el 2026-08-23 al cerrar DOC-002.
+
+**Problema.** Quien compraba sin identificarse veía su pedido en la confirmación
+y lo **perdía al cerrar la pestaña**: vivía en `sessionStorage`, nunca llegaba al
+servidor y no había reconciliación posterior. El checkout no exige sesión —y no
+la va a exigir—, así que el hueco era estructural.
+
+**Decisión.** La compra invitada se guarda en una cola aparte
+—`banana:pending-guest-orders` en `localStorage`— y se escribe en `pedidos` en
+cuanto aparece una cuenta permanente.
+
+**Evidencia hoy.** `src/lib/pendingGuestOrders.ts`, `orderSync.ts`, `orderId.ts`
+y `customerAuth.tsx`. Lo vigilan `tests/unit/compra-invitado.test.ts` y
+`tests/integration/compra-invitado-servidor.spec.ts`.
+
+## D-084 — «Mis productos» es superficie de cuenta, y la pestaña se llama «Compras»
+
+- Fecha: 2026-08-08 y 2026-08-16. PR #40 (`7bf8628e`) y PR #57 (`56cadc82`).
+- Estado: vigente.
+- **Reconstrucción histórica**, escrita el 2026-08-23 al cerrar DOC-002.
+  Complementa [[02-decisiones#D-067]], que es la parte de datos.
+
+**Problema.** La pantalla se llamaba **«Mis compras»** y sólo enseña líneas de
+pedido con `kind === 'device'`: quien hubiera comprado únicamente accesorios
+tenía pedidos y veía «Mis compras» **vacío**. Además estaba construida como
+catálogo —rejilla de tarjetas verticales con foto cuadrada a ancho completo, unos
+310 px a 390 px de pantalla— para un producto que el cliente **ya tiene** y no
+está eligiendo.
+
+**Decisión.** El rótulo dice la verdad: la pestaña pasa a **«Compras»**. La
+pantalla deja de presentarse como catálogo y pasa a ser una superficie de cuenta,
+orientada a la postventa del dispositivo.
+
+**La ruta no se mueve.** Sigue siendo `/mis-productos`. Cambiarla sólo para que
+casara con el rótulo añadía riesgo —enlaces, pruebas, historial— a cambio de nada
+que el cliente note. Mismo criterio que ya aplicó la PR #41.
+
+**Evidencia hoy.** `appnav.purchases` vale `'Compras'` en los cinco idiomas y
+`AppTabBar.tsx` apunta a `/mis-productos`. Lo vigilan
+`tests/e2e-prefs/mis-productos.spec.ts` y
+`tests/integration/mis-productos-servidor.spec.ts`.
