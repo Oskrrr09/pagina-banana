@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button'
 import { Field } from '../components/ui/Field'
 import { useCustomerAuth } from '../lib/customerAuth'
 import { supabaseEnabled } from '../lib/supabase'
+import { clasificarErrorInicioSesion } from '../lib/loginErrors'
 
 // Acceso de clientes a la tienda.
 //
@@ -42,7 +43,10 @@ export function LoginPage() {
     const { error: signInError } = await signIn(email.trim(), password)
     setSubmitting(false)
     if (signInError) {
-      setError(signInError === 'Invalid login credentials' ? t('auth.badCredentials') : signInError)
+      // Nunca `setError(signInError)`: ese camino es el que enseñaba
+      // `Failed to fetch` y `{}`. Ver `clasificarErrorInicioSesion`.
+      const categoria = clasificarErrorInicioSesion(signInError)
+      setError(categoria === 'credenciales' ? t('auth.badCredentials') : t('auth.signInError'))
     }
   }
 

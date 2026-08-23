@@ -391,6 +391,7 @@ export const de: Diccionario = {
   'auth.signInTitle': "Anmelden",
   'auth.signInBody': "Zugriff auf deine Bestellungen, Reservierungen und Adressen. Demokonto: es wird nichts abgebucht und nichts versendet.",
   'auth.badCredentials': "E-Mail oder Passwort falsch.",
+  'auth.signInError': "Die Anmeldung ist fehlgeschlagen. Bitte versuche es erneut.",
   'auth.signingIn': "Anmeldung…",
   'auth.noAccount': "Noch kein Konto?",
   'auth.hasAccount': "Schon ein Konto?",

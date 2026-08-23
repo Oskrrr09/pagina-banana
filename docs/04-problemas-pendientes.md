@@ -1018,11 +1018,40 @@ la lista de arriba, así que cada hallazgo se remidió desde su frase.
 | **A62-04** | **SIGUE ABIERTO**: el copy «hechos con la sesión iniciada» es hoy además **falso**, porque D-083 hace que las compras de invitado acaben en esa misma lista. |
 | **A62-05** | **RESUELTO por evolución** en la PR #72 ([[02-decisiones#D-075]]): la intención de navegación sobrevive al login, tanto por subruta como por el `?apartado=` antiguo, sin entrada de historial de más. |
 | **A62-06** | **RESUELTO**: la confirmación tiene un **único** control, «Volver al inicio», y lleva a la portada. Igual en web y en la app. |
-| **A62-07** | **EVOLUCIONADO / PARCIAL**: la Cuenta ya da copy propio, pero el login de cliente y el de agente siguen enseñando el mensaje crudo del SDK. |
+| **A62-07** | **CORREGIDO** en la entrega de errores de inicio de sesión. La Cuenta ya daba copy propio; faltaban el login de cliente y el de agente. Ver abajo. |
 | **A62-08** | **CORREGIDO** en la entrega de accesibilidad del checkout. Ver abajo. |
 | **A62-09** | **EVOLUCIONADO / PARCIAL**: los fallos inmediatos aparecen en decenas de milisegundos, no en 4–8 s; lo que no existe es un límite propio, así que una conexión **colgada** no produce error nunca. |
 
-**UX-062 no queda cerrado**: siguen reales A62-03, A62-04, A62-07 y A62-09.
+**UX-062 no queda cerrado**: siguen reales A62-03, A62-04 y A62-09.
+
+### A62-07 — qué contrato quedó protegido
+
+El defecto: las dos pantallas de acceso traducían **un solo** error —el de
+credenciales— y para cualquier otro hacían `setError(signInError)`, es decir,
+pintaban el mensaje que venía del SDK. Medido: con la red caída se veía
+`Failed to fetch`, y ante un error de servidor llegaba a pintarse **`{}`**, el
+objeto serializado.
+
+Las propiedades que ahora se exigen:
+
+- las **credenciales incorrectas conservan su mensaje específico**, porque el
+  remedio es distinto: reescribirlas;
+- **cualquier otro error** —red, servidor, GoTrue, desconocido— produce un
+  mensaje **genérico y accionable**, nunca el texto de dentro;
+- el cliente usa copy **localizado en los cinco idiomas**; el panel de agentes
+  mantiene su castellano, que es el contrato vigente de esa superficie;
+- el mensaje sigue anunciándose por el **`role="alert"`** que ya existía;
+- la cuenta válida **sin permiso de agente** conserva su mensaje propio: es un
+  estado funcional, no un fallo.
+
+La frontera vive en una función pura compartida por las dos pantallas, para que
+no haya dos mapeos que puedan divergir. Las capas de autenticación siguen
+devolviendo el mensaje técnico —quien depura lo necesita—; lo que no puede es
+llegar al DOM.
+
+**A62-09 sigue separado y pendiente**: esta entrega sanea **qué** se enseña
+cuando el error llega, no **cuánto tarda** en llegar. No se añadió ningún
+`AbortController`, timeout, cancelación ni reintento.
 
 ### A62-08 — qué contrato quedó protegido
 
