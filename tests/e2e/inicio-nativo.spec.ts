@@ -180,31 +180,50 @@ test.describe('Inicio nativo', () => {
       // ofertas, y el comercial, que sí. La igualdad de alturas de la PR #66 la
       // garantiza el hueco reservado en la tarjeta, y tiene que seguir
       // cumpliéndose en las dos variantes.
+      //
+      // SE MIDE EL TEXTO, NO LA CAJA DEL TÍTULO
+      //
+      // La caja del `h3` vale 38 px SIEMPRE: `min-h-[2.375rem]` reserva las dos
+      // líneas, y ése es justamente el mecanismo que introdujo la PR #66. Medir
+      // su altura para demostrar que hay mezcla no puede funcionar —da 38 en
+      // todas las tarjetas, en las dos anchuras—, así que se mide la altura
+      // NATURAL del texto con un rango: 21 px con una línea y 39,75 con dos.
+      // Eso es lo que variaba antes y lo que la reserva absorbe ahora.
       const medir = (nombre: string) =>
         page.getByRole('list', { name: nombre }).evaluate((ul) =>
-          [...ul.querySelectorAll('article')].map((a) => ({
-            nombre: (a.querySelector('h3')?.textContent ?? '').trim(),
-            alto: Math.round(a.getBoundingClientRect().height * 100) / 100,
-            altoNombre: Math.round((a.querySelector('h3')?.getBoundingClientRect().height ?? 0) * 100) / 100,
-            conOferta: Boolean(a.querySelector('[class*="bg-danger"]')),
-          })),
+          [...ul.querySelectorAll('article')].map((a) => {
+            const h3 = a.querySelector('h3')!
+            const rango = document.createRange()
+            rango.selectNodeContents(h3)
+            return {
+              nombre: (h3.textContent ?? '').trim(),
+              alto: Math.round(a.getBoundingClientRect().height * 100) / 100,
+              altoTexto: Math.round(rango.getBoundingClientRect().height * 100) / 100,
+              conOferta: Boolean(a.querySelector('[class*="bg-danger"]')),
+            }
+          }),
         )
 
       await expect(page.getByRole('list', { name: RECIENTES })).toBeVisible()
       const personal = await medir(RECIENTES)
 
-      // Sin mezcla la comprobación no significaría nada: pasaría igual con tres
-      // tarjetas idénticas. La diferencia que antes aportaba el precio anterior
-      // ya no existe en este carril —`recent` retira la presentación de
-      // oferta—, así que la mezcla que queda, y la que sigue empujando la
-      // altura, es la del nombre de una línea frente al de dos.
+      // SIN MEZCLA, LA COMPROBACIÓN DE ABAJO NO SIGNIFICARÍA NADA
+      //
+      // Pasaría igual con tres tarjetas idénticas. La diferencia que antes
+      // aportaba el precio anterior ya no existe en este carril —`recent`
+      // retira la presentación de oferta—, así que la mezcla que queda, y la
+      // que empujaba la altura, es la del nombre de una línea frente al de dos.
+      //
+      // Se exigen DOS alturas de texto distintas, no «al menos una»: con la
+      // cardinalidad ya afirmada arriba, un conjunto no vacío siempre tiene
+      // tamaño 1, así que esa versión no comprobaba nada.
       expect(personal.length, 'el carril necesita varias tarjetas para comparar').toBeGreaterThanOrEqual(3)
       expect(
-        new Set(personal.map((m) => m.altoNombre)).size,
+        new Set(personal.map((m) => m.altoTexto)).size,
         `el carril tiene que mezclar nombres de una y de dos líneas: ${personal
-          .map((m) => `${m.nombre}=${m.altoNombre}`)
+          .map((m) => `${m.nombre}=${m.altoTexto}`)
           .join(' · ')}`,
-      ).toBeGreaterThanOrEqual(1)
+      ).toBeGreaterThanOrEqual(2)
       expect(
         personal.some((m) => m.conOferta),
         'el carril personal no presenta ofertas',
