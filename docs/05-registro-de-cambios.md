@@ -14,6 +14,39 @@ autores, diffs y marcas de tiempo.
 > documentación viva. Ver
 > [[04-problemas-pendientes#DOC-002 — La documentación viva va veintitrés PR por detrás]].
 
+## 2026-08-23 — Tienda deja de ser un Inicio recortado y pasa a ser el catálogo
+
+Tienda enseñaba **6 ofertas de 23 modelos** —cuatro Mac—, así que iPad, Watch,
+AirPods y Accesorios no aparecían en toda la pantalla; con historial real la
+**intersección de producto con Inicio era 6 de 6**; y Servicios ocupaba **286
+px, el 31 %**.
+
+Ahora el orden es **Tienda · Explorar · Oportunidades · Ayuda para elegir ·
+Servicios**. **Explorar** lleva a las seis familias desde el propio contenido:
+los chips del armazón ocupan 474 px, a 320 px sólo se ven cuatro de seis y se
+recortan al bajar, así que no eran una entrada suficiente —y no se tocan—.
+Oportunidades pasa a enseñar **todas** las ofertas reales, sin «Ver todas»: en
+Inicio son un teaser de cuatro, aquí el conjunto. Los servicios quedan en tres y
+comerciales —Plan Renove, «Comprar en tienda» y Servicio técnico—; `/servicios`
+y `/soporte` dejan de repetirse aquí. La ayuda para elegir corrige su icono
+—pedía `sparkles`, que no existe, y `Icon` caía a `info`— y su jerarquía
+invertida. Ver
+[[02-decisiones#D-077 — Tienda es la puerta al catálogo, no una selección]].
+
+Medido a 320: seis familias alcanzables sin desplazamiento lateral y con 56 px
+de alto, servicios de **286 → 188 px**, total de **954 → 1080 px**. La pantalla
+crece 126 px y a cambio deja de ser un subconjunto de Inicio.
+
+**No cambian** `HomeWeb`, `AppCustomerHome`, `ProductCardCompact`, `AppTopBar`,
+`AppTabBar` ni los catálogos de familia; `/tienda` sigue redirigiendo a `/` en
+la web.
+
+Verificación local: **487 E2E aprobadas y 1 omitida esperada** en Chromium y
+móvil contra el artefacto, **37/37** en preferencias, **24/24** en el panel,
+**358 unitarias**, `typecheck`, `build:test`, Prettier y ESLint con 0 errores, y
+`app:sync` correcto para iOS y Android sin tocar ningún fichero nativo
+versionado.
+
 ## 2026-08-23 — Inicio deja de abrir con un saludo y abre con lo que importa
 
 El saludo `Hola, <nombre>` iba a 28 px de display y ocupaba **68 px con sesión y
