@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useColorName, useT, type ClaveTexto } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button, ButtonLink } from '../components/ui/Button'
+import { Field } from '../components/ui/Field'
 import { Icon } from '../components/ui/Icon'
 import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
@@ -251,49 +252,79 @@ export function CheckoutPage() {
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <Field label={t('checkout.fullName')} error={errors.nombre}>
-                  <input
-                    value={form.nombre}
-                    onChange={(e) => setForm({ nombre: e.target.value })}
-                    className="field"
-                    autoComplete="name"
-                  />
+                  {(campo) => (
+                    <input
+                      {...campo}
+                      required
+                      value={form.nombre}
+                      onChange={(e) => setForm({ nombre: e.target.value })}
+                      className="field"
+                      autoComplete="name"
+                    />
+                  )}
                 </Field>
                 <Field label={t('account.email')} error={errors.email}>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ email: e.target.value })}
-                    className="field"
-                    autoComplete="email"
-                  />
+                  {(campo) => (
+                    <input
+                      {...campo}
+                      required
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ email: e.target.value })}
+                      className="field"
+                      autoComplete="email"
+                    />
+                  )}
                 </Field>
                 {delivery === 'envio' ? (
                   <>
                     <Field label={t('checkout.address')} error={errors.direccion} full>
-                      <input
-                        value={form.direccion}
-                        onChange={(e) => setForm({ direccion: e.target.value })}
-                        className="field"
-                        autoComplete="street-address"
-                      />
+                      {(campo) => (
+                        <input
+                          {...campo}
+                          required
+                          value={form.direccion}
+                          onChange={(e) => setForm({ direccion: e.target.value })}
+                          className="field"
+                          autoComplete="street-address"
+                        />
+                      )}
                     </Field>
+                    {/* Isla NO lleva `required`: `validateStep1` no la comprueba y el
+                        selector nace con una opción válida. Marcarla exigiría
+                        añadir una opción vacía, que es cambiar el control. */}
                     <Field label={t('checkout.island')} full>
-                      <select value={form.isla} onChange={(e) => setForm({ isla: e.target.value })} className="field">
-                        {ISLAS.map((isla) => (
-                          <option key={isla}>{isla}</option>
-                        ))}
-                      </select>
+                      {(campo) => (
+                        <select
+                          {...campo}
+                          value={form.isla}
+                          onChange={(e) => setForm({ isla: e.target.value })}
+                          className="field"
+                        >
+                          {ISLAS.map((isla) => (
+                            <option key={isla}>{isla}</option>
+                          ))}
+                        </select>
+                      )}
                     </Field>
                   </>
                 ) : (
                   <Field label="Tienda de recogida" error={errors.tienda} full>
-                    <select value={form.tienda} onChange={(e) => setForm({ tienda: e.target.value })} className="field">
-                      {stores.map((store) => (
-                        <option key={store.slug} value={store.slug}>
-                          {store.name} — {store.island}
-                        </option>
-                      ))}
-                    </select>
+                    {(campo) => (
+                      <select
+                        {...campo}
+                        required
+                        value={form.tienda}
+                        onChange={(e) => setForm({ tienda: e.target.value })}
+                        className="field"
+                      >
+                        {stores.map((store) => (
+                          <option key={store.slug} value={store.slug}>
+                            {store.name} — {store.island}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </Field>
                 )}
               </div>
@@ -617,26 +648,6 @@ function ModeButton({
     >
       <Icon name={icon} /> {label}
     </button>
-  )
-}
-
-function Field({
-  label,
-  error,
-  full,
-  children,
-}: {
-  label: string
-  error?: string
-  full?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <label className={`block ${full ? 'sm:col-span-2' : ''}`}>
-      <span className="mb-1 block text-sm font-medium text-ink">{label}</span>
-      {children}
-      {error && <span className="mt-1 block text-xs text-danger">{error}</span>}
-    </label>
   )
 }
 

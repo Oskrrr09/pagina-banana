@@ -996,9 +996,50 @@ código no sostengan.
   - **A62-08** — accesibilidad del componente `Field` del checkout.
   - **A62-09** — ante un fallo duro de red, el error tarda entre 4 y 8 segundos
     en aparecer.
-- Cautela: los ocho se observaron en esa fecha y **no se han vuelto a
-  comprobar** después de las PR #62 a #66. Reverificar antes de abrir trabajo
-  sobre cualquiera de ellos.
+- Cautela **superada el 2026-08-23**: los ocho se reverificaron sobre `main` en
+  `0407bb88`. Ver la subsección siguiente.
+
+### Reauditoría 2026-08-23
+
+Hecha con la aplicación real —artefacto compilado, Supabase local, fallos de red
+provocados por interceptación—, no leyendo código. **La nota original del
+2026-08-19 no se conservó** en el repositorio ni en ningún commit: sólo existía
+la lista de arriba, así que cada hallazgo se remidió desde su frase.
+
+| | Estado tras reverificar |
+| --- | --- |
+| **A62-02** | **RESUELTO** al reverificar: no existe repetición funcional real. Lo que se repite —«Envío a domicilio», el importe— son controles y resumen, funciones distintas. |
+| **A62-03** | **SIGUE ABIERTO**: la Cuenta web está esencialmente sin i18n. `sections.tsx` tiene 530 líneas y 2 llamadas a `t()`; `apartados.tsx`, ninguna. D-047 no lo tapa: habla de la app nativa, no de la web. |
+| **A62-04** | **SIGUE ABIERTO**: el copy «hechos con la sesión iniciada» es hoy además **falso**, porque D-083 hace que las compras de invitado acaben en esa misma lista. |
+| **A62-05** | **RESUELTO por evolución** en la PR #72 ([[02-decisiones#D-075]]): la intención de navegación sobrevive al login, tanto por subruta como por el `?apartado=` antiguo, sin entrada de historial de más. |
+| **A62-06** | **RESUELTO**: la confirmación tiene un **único** control, «Volver al inicio», y lleva a la portada. Igual en web y en la app. |
+| **A62-07** | **EVOLUCIONADO / PARCIAL**: la Cuenta ya da copy propio, pero el login de cliente y el de agente siguen enseñando el mensaje crudo del SDK. |
+| **A62-08** | **CORREGIDO** en la entrega de accesibilidad del checkout. Ver abajo. |
+| **A62-09** | **EVOLUCIONADO / PARCIAL**: los fallos inmediatos aparecen en decenas de milisegundos, no en 4–8 s; lo que no existe es un límite propio, así que una conexión **colgada** no produce error nunca. |
+
+**UX-062 no queda cerrado**: siguen reales A62-03, A62-04, A62-07 y A62-09.
+
+### A62-08 — qué contrato quedó protegido
+
+El defecto: el checkout tenía su propia copia de `Field` que envolvía el control
+en un `<label>` con el mensaje de error dentro, de modo que al fallar la
+validación el error pasaba a formar parte del **nombre accesible** del campo
+—`Nombre y apellidos` se convertía en `Nombre y apellidos Introduce tu
+nombre.`—. axe no lo veía, porque el campo seguía teniendo nombre.
+
+Se resuelve reutilizando el `Field` compartido y retirando la copia local. Las
+propiedades que ahora se exigen, expresadas como comportamiento y no como
+implementación:
+
+- el **nombre accesible** de un campo **no cambia** cuando aparece su error;
+- el error se asocia como **descripción** del control;
+- un control inválido expone **`aria-invalid`**;
+- etiqueta y control se asocian de forma **explícita**, no sólo por envoltura;
+- los campos que `validateStep1` exige de verdad expresan **`required`**.
+
+La Isla queda deliberadamente fuera de `required`: la validación no la comprueba
+y el selector nace con una opción válida, así que marcarla obligaría a añadir
+una opción vacía, que es cambiar el control.
 - Fuera de esta lista, siguen pendientes y ya conocidos: `pedidos.status`
   siempre vale `'demo'` y la tienda de recogida no se persiste.
 
