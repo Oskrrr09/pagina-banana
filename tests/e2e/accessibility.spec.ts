@@ -227,3 +227,103 @@ test('cada ruta pública tiene una sola región principal y supera la regla de l
     ).toEqual([])
   }
 })
+
+// ============================================================================
+// A62-08 — EL ERROR DESCRIBE EL CAMPO, NO LO RENOMBRA
+//
+// El checkout tenía su propia copia de `Field` que envolvía el control en un
+// `<label>` y metía el mensaje de error DENTRO de esa etiqueta. Con un único
+// control dentro, un `<label>` envolvente basta para dar nombre — y por eso
+// axe seguía verde—, pero al aparecer el error el texto pasaba a formar parte
+// del **nombre accesible**:
+//
+//   antes  → textbox "Nombre y apellidos"
+//   luego  → textbox "Nombre y apellidos Introduce tu nombre."
+//
+// Quien navega con lector de pantalla ve cambiar el nombre del campo, y nunca
+// oye que sea inválido porque no había `aria-invalid` ni `aria-describedby`.
+//
+// Lo que se protege aquí es la RELACIÓN, no la implementación: no se afirma
+// ningún `id` —los genera `useId()`— ni ninguna clase.
+// ============================================================================
+test.describe('errores del checkout asociados a su campo', () => {
+  // Los campos obligatorios según `validateStep1`, con su mensaje real.
+  const OBLIGATORIOS = [
+    { etiqueta: 'Nombre y apellidos', error: 'Introduce tu nombre.' },
+    { etiqueta: 'Email', error: 'Introduce un email válido.' },
+    { etiqueta: 'Dirección', error: 'Introduce la dirección de envío.' },
+  ] as const
+
+  /** Lo que un lector de pantalla deduce del control: nombre, descripción y validez. */
+  async function semantica(page: Page, etiqueta: string) {
+    return page.evaluate((rotulo) => {
+      const textoDe = (ids: string | null) =>
+        (ids ?? '')
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((id) => document.getElementById(id)?.textContent?.trim() ?? `«${id}» NO EXISTE`)
+          .join(' ')
+      const control = [...document.querySelectorAll('input, select, textarea')].find((el) => {
+        const propia = el.id ? document.querySelector(`label[for="${CSS.escape(el.id)}"]`) : null
+        const envolvente = el.closest('label')
+        return (propia ?? envolvente)?.textContent?.trim().startsWith(rotulo) ?? false
+      })
+      if (!control) return null
+      // Nombre accesible: el `aria-label` manda; si no, la etiqueta asociada.
+      const propia = control.id ? document.querySelector(`label[for="${CSS.escape(control.id)}"]`) : null
+      const envolvente = control.closest('label')
+      const fuente = propia ?? envolvente
+      return {
+        nombre: (control.getAttribute('aria-label') ?? fuente?.textContent ?? '').trim().replace(/\s+/g, ' '),
+        descripcion: textoDe(control.getAttribute('aria-describedby')),
+        invalido: control.getAttribute('aria-invalid'),
+        obligatorio: (control as HTMLInputElement).required,
+        etiquetaExplicita: propia !== null,
+      }
+    }, etiqueta)
+  }
+
+  test.beforeEach(async ({ page }) => {
+    await reduceMotion(page)
+    await seedCartForCheckout(page)
+    await page.goto('./checkout/1')
+    await expect(page, 'el paso 1 se abre con carrito').toHaveURL(/\/checkout\/1$/)
+  })
+
+  test('sin error, el campo se llama por su etiqueta y no se anuncia inválido', async ({ page }) => {
+    for (const { etiqueta } of OBLIGATORIOS) {
+      const s = await semantica(page, etiqueta)
+      expect(s, `${etiqueta} existe en el paso 1`).not.toBeNull()
+      expect(s!.nombre, `${etiqueta} se llama por su etiqueta`).toBe(etiqueta)
+      expect(s!.invalido, `${etiqueta} no nace inválido`).not.toBe('true')
+      expect(s!.descripcion, `${etiqueta} no apunta a una descripción inexistente`).toBe('')
+    }
+  })
+
+  test('con error, el mensaje describe el campo sin cambiarle el nombre', async ({ page }) => {
+    // Se dispara la validación real del producto, no se pinta un error a mano.
+    await page.getByRole('button', { name: 'Continuar' }).click()
+    await expect(page, 'la validación retiene el paso 1').toHaveURL(/\/checkout\/1$/)
+
+    for (const { etiqueta, error } of OBLIGATORIOS) {
+      await expect(page.getByText(error, { exact: true }), `${etiqueta} enseña su error`).toBeVisible()
+
+      const s = await semantica(page, etiqueta)
+      expect(s, `${etiqueta} sigue en pantalla`).not.toBeNull()
+
+      // El nombre NO se contamina: esto es lo que fallaba.
+      expect(s!.nombre, `el nombre de ${etiqueta} no cambia al fallar`).toBe(etiqueta)
+      expect(s!.nombre, `el error no se cuela en el nombre de ${etiqueta}`).not.toContain(error)
+
+      // El error es la DESCRIPCIÓN, resuelta desde `aria-describedby` real.
+      expect(s!.descripcion, `el error de ${etiqueta} describe el campo`).toBe(error)
+
+      // Y el control se anuncia inválido y obligatorio.
+      expect(s!.invalido, `${etiqueta} se anuncia inválido`).toBe('true')
+      expect(s!.obligatorio, `${etiqueta} es obligatorio para validateStep1`).toBe(true)
+
+      // La etiqueta se asocia explícitamente, no sólo por envoltura.
+      expect(s!.etiquetaExplicita, `${etiqueta} usa label/for`).toBe(true)
+    }
+  })
+})
