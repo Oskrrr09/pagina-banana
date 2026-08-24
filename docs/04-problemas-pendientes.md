@@ -1020,9 +1020,11 @@ la lista de arriba, así que cada hallazgo se remidió desde su frase.
 | **A62-06** | **RESUELTO**: la confirmación tiene un **único** control, «Volver al inicio», y lleva a la portada. Igual en web y en la app. |
 | **A62-07** | **CORREGIDO** en la entrega de errores de inicio de sesión. La Cuenta ya daba copy propio; faltaban el login de cliente y el de agente. Ver abajo. |
 | **A62-08** | **CORREGIDO** en la entrega de accesibilidad del checkout. Ver abajo. |
-| **A62-09** | **EVOLUCIONADO / PARCIAL**: los fallos inmediatos aparecen en decenas de milisegundos, no en 4–8 s; lo que no existe es un límite propio, así que una conexión **colgada** no produce error nunca. |
+| **A62-09** | **CORREGIDO EN ESTA ENTREGA, PENDIENTE DE FUSIÓN**. Antes: **EVOLUCIONADO / PARCIAL**: los fallos inmediatos aparecen en decenas de milisegundos, no en 4–8 s; lo que no existe es un límite propio, así que una conexión **colgada** no produce error nunca. |
 
-**UX-062 no queda cerrado**: sigue real **A62-09**, y sólo ése.
+**UX-062**: con esta entrega **todos** sus hallazgos quedan corregidos, pero el
+**cierre técnico definitivo queda pendiente de fusionar A62-09**. Hasta que ese
+merge exista, el problema sigue formalmente abierto.
 
 ### A62-03 y A62-04 — qué contrato quedó protegido
 
@@ -1074,6 +1076,45 @@ sólo se monta dentro de la aplicación y ahí D-047 ya fija el idioma.
 
 **A62-09 sigue separado y pendiente**: esta entrega es de copy e idioma, y no
 introduce ningún timeout.
+
+### A62-09 — qué contrato quedó protegido
+
+**Historia.** El síntoma de 2026-08-19 era «ante un fallo duro de red, el error
+tarda entre 4 y 8 segundos». La reauditoría del 2026-08-23 lo midió y cambió el
+diagnóstico: los fallos **inmediatos** ya aparecían en decenas de milisegundos
+—42–109 ms según el modo—, así que aquel síntoma ya no describía el producto. Lo
+que quedaba de verdad era otra cosa: **una conexión colgada no producía error
+nunca**, porque no existía ningún límite propio.
+
+**Reproducido antes de arreglarlo.** Reteniendo sólo la petición de contraseña
+—sin responder ni abortar—, `/login` y `/agente/login` se quedaban en
+«Entrando…», deshabilitadas y sin alerta, y **no se recuperaban solas**; sólo
+reaccionaban cuando la red respondía.
+
+**La resolución**, expresada como comportamiento:
+
+- el inicio de sesión tiene un **límite propio de 10 s**, y **sólo** él: se
+  aplica al `POST` de `/auth/v1/token` con `grant_type=password`;
+- al expirar hay **cancelación real** con `AbortController`, no un
+  `Promise.race`: la petición se aborta, de modo que sus tokens no pueden llegar
+  después y **no puede producirse un inicio de sesión tardío**;
+- vale para **cliente y agente**, porque el límite vive en el transporte que
+  ambos comparten;
+- el mensaje **reutiliza el copy seguro de A62-07**, sin lógica nueva ni copy
+  nuevo: `role="alert"`, botón rehabilitado y lo escrito se conserva para
+  reintentar;
+- **no afecta a ninguna otra operación de Supabase** —refresco de sesión,
+  PostgREST, Storage, Realtime, chat, pedidos, reservas ni el resto del panel—;
+- una **respuesta lenta pero válida sigue iniciando sesión**: lento no es
+  fallido.
+
+**Por qué se descartó `Promise.race`**: dejaría de esperar sin cancelar, y la
+petición podría completar después guardando la sesión y emitiendo `SIGNED_IN`
+cuando la pantalla ya ha dicho que falló. Sería peor que el defecto.
+
+**Nota de compatibilidad**: se compone la cancelación a mano con
+`AbortController`. `AbortSignal.timeout` y `AbortSignal.any` no existen hasta
+iOS 16 y el destino de despliegue declarado es iOS 15.
 
 ### A62-07 — qué contrato quedó protegido
 
