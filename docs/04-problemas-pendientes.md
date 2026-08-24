@@ -724,10 +724,18 @@ entonces por primera vez.
  ~700 ms   el aviso se monta y se lo lleva a su «Cerrar» ← el defecto
 ```
 
-El buscador de la cabecera **sí** es `aria-modal="true"`, así que el aviso se
-suspendía correctamente mientras estaba abierto; al cerrarse, el observador de
-mutaciones lo montaba de inmediato y su `requestAnimationFrame` enfocaba el
-botón de cerrar sin mirar quién tenía el foco en ese momento.
+**Por qué el aviso sí estaba suspendido durante la búsqueda**, que no es por lo
+que parece: la superficie **de escritorio** que se ve —`xl:block`— **no** lleva
+`role="dialog"` ni `aria-modal`. Lo que ocurre es que, con `searchOpen` activo,
+`Header` monta **a la vez** la rama móvil, marcada `role="dialog"`
+`aria-modal="true"` y oculta en escritorio con `xl:hidden`. Como
+`FavoriteStoreDialogs` detecta modales por **presencia en el DOM** y no por
+visibilidad, ese nodo oculto basta para mantener el aviso suspendido mientras la
+búsqueda está abierta.
+
+Al cerrarla desaparece también ese nodo, el observador de mutaciones reevalúa y
+el aviso puede montarse. Y era su `requestAnimationFrame` posterior el que
+enfocaba el botón de cerrar sin mirar quién tenía el foco en ese momento.
 
 **Resolución**: antes de tomar el foco, el aviso comprueba el foco **dentro del
 propio frame** —no el que guardó al entrar en el efecto, porque entre una cosa y
