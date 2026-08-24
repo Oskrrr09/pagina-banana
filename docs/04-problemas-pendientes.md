@@ -681,7 +681,9 @@ forman el backlog verificable.
 
 ## A11Y-003 — El aviso de "tienda favorita" robaba el foco a los diálogos abiertos
 
-- Estado: detectado el 2026-07-30, **cerrado el 2026-08-01**.
+- Estado: detectado el 2026-07-30, **cerrado el 2026-08-01**; **reabierto y
+  vuelto a cerrar el 2026-08-24** por el hueco que dejaba justo después de
+  cerrarse un diálogo. Ver «Segunda vuelta» al final de la entrada.
 - Impacto real, mayor de lo que se estimó al detectarlo: se anotó como
   "bajo/raro, requiere que ambos widgets coincidan en el tiempo". Ocurría
   lo bastante como para tumbar el CI de forma intermitente durante tres
@@ -699,6 +701,48 @@ forman el backlog verificable.
 - Regresión cubierta en `tests/e2e/favorite-store.spec.ts`: con la guía
   abierta el aviso no aparece y la guía conserva el foco; al cerrarla, el
   aviso sale.
+
+
+### Segunda vuelta (2026-08-24) — el instante siguiente
+
+La primera resolución miraba `[role="dialog"][aria-modal="true"]`, y eso cubría
+mientras el diálogo está abierto. Lo que quedaba fuera era **el instante
+después**.
+
+**Cómo se descubrió**: en el CI de una PR ajena —la de A62-09—, donde
+`tests/e2e/search.spec.ts:347` («Escape con selección cierra, restaura foco y no
+navega») falló al primer intento y pasó al reintento. **No lo causó aquella
+entrega**: su rama sólo tocaba el transporte de Supabase, y en el trabajo de E2E
+ni siquiera se construye. Es código preexistente cuyo defecto se observó
+entonces por primera vez.
+
+**La secuencia, medida cinco veces seguidas** al cerrar el buscador con Escape:
+
+```
+    0 ms   el buscador se desmonta, el foco cae en `body`
+   25 ms   el buscador lo devuelve a la lupa            ← correcto
+ ~700 ms   el aviso se monta y se lo lleva a su «Cerrar» ← el defecto
+```
+
+El buscador de la cabecera **sí** es `aria-modal="true"`, así que el aviso se
+suspendía correctamente mientras estaba abierto; al cerrarse, el observador de
+mutaciones lo montaba de inmediato y su `requestAnimationFrame` enfocaba el
+botón de cerrar sin mirar quién tenía el foco en ese momento.
+
+**Resolución**: antes de tomar el foco, el aviso comprueba el foco **dentro del
+propio frame** —no el que guardó al entrar en el efecto, porque entre una cosa y
+otra ha cambiado— y sólo se presenta si no hay nadie en nada, es decir si el
+elemento activo es el `body` o el documento. La propiedad no habla del buscador:
+**un aviso no modal puede aparecer, pero no interrumpe a quien ya está en algo.**
+
+Se conserva lo que ya funcionaba: en una visita donde nadie ha interactuado el
+aviso sigue empezando enfocado, y al desmontarse sólo devuelve el foco si de
+verdad llegó a tomarlo.
+
+**Regresión** en `tests/e2e/favorite-store.spec.ts`: el aviso aparece tras cerrar
+el buscador y la lupa conserva el foco; y sigue tomándolo cuando nadie está
+usando la página. La prueba que fallaba en CI pasa **30 veces seguidas sin
+reintentos**, igual que su hermana sin selección.
 
 ## APP-001 — La app nativa: compilada y ejecutada en iOS y Android
 

@@ -195,6 +195,27 @@ function FavoriteStorePrompt({ onChoose, onLater }: { onChoose: (slug: string) =
       const caja = boton.getBoundingClientRect()
       const aLaVista = caja.bottom > 0 && caja.top < window.innerHeight
       if (!aLaVista) return
+
+      // NI SIQUIERA ESTANDO A LA VISTA SE INTERRUMPE A NADIE
+      //
+      // El modal ya lo cubría la comprobación de arriba, pero quedaba el
+      // instante siguiente a cerrarlo. Al salir del buscador con Escape, éste
+      // devuelve el foco a la lupa y el aviso se montaba ~700 ms después y se
+      // lo llevaba a su «Cerrar». Se midió cinco veces seguidas, siempre igual,
+      // y en CI hacía intermitente la restauración de foco del buscador.
+      //
+      // Se mira el foco AQUÍ, dentro del frame, y no el que se guardó al entrar
+      // en el efecto: entre una cosa y otra puede haber cambiado, que es
+      // precisamente lo que pasa en esa secuencia.
+      //
+      // La propiedad es simple y no habla del buscador: si hay un elemento real
+      // enfocado —cualquiera—, ya hay alguien en algo y el aviso espera su
+      // turno. Sólo se presenta cuando el foco está en el documento, es decir
+      // cuando nadie ha empezado nada.
+      const activo = document.activeElement
+      const nadieEnNada = activo === null || activo === document.body || activo === document.documentElement
+      if (!nadieEnNada) return
+
       boton.focus()
       tomado = true
     })
