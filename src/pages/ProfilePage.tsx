@@ -42,9 +42,9 @@ function seccionDelApartado(apartado: Apartado, clienteId: string, nativa: boole
     case 'datos':
       return <PersonalDataSection headingLevel={nivel} />
     case 'envio':
-      return <AddressSection which="envio" title="Dirección de envío" headingLevel={nivel} />
+      return <AddressSection which="envio" headingLevel={nivel} />
     case 'facturacion':
-      return <AddressSection which="facturacion" title="Dirección de facturación" headingLevel={nivel} />
+      return <AddressSection which="facturacion" headingLevel={nivel} />
     case 'pedidos':
       return <OrdersSection clienteId={clienteId} headingLevel={nivel} />
     case 'reservas':
@@ -57,6 +57,7 @@ function seccionDelApartado(apartado: Apartado, clienteId: string, nativa: boole
 }
 
 export function ProfilePage() {
+  const t = useT()
   const { session, cliente, loading, signOut } = useCustomerAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -92,7 +93,7 @@ export function ProfilePage() {
   if (!supabaseEnabled) {
     return (
       <Container className="py-20 text-center">
-        <h1 className="text-2xl font-bold text-ink">Mi cuenta</h1>
+        <h1 className="text-2xl font-bold text-ink">{t('account.title')}</h1>
         <p className="mt-2 text-muted">Las cuentas necesitan Supabase configurado en este entorno.</p>
         <Link to="/" className="mt-4 inline-block font-semibold text-ink hover:underline">
           Volver a la portada
@@ -104,7 +105,7 @@ export function ProfilePage() {
   if (loading) {
     return (
       <Container className="py-20 text-center">
-        <p className="text-muted">Cargando tu cuenta…</p>
+        <p className="text-muted">{t('account.loadingAccount')}</p>
       </Container>
     )
   }
@@ -132,7 +133,7 @@ export function ProfilePage() {
     // cierre y falta un instante para navegar a la portada.
     return (
       <Container className="py-20 text-center">
-        <p className="text-muted">Cerrando sesión…</p>
+        <p className="text-muted">{t('account.signingOut')}</p>
       </Container>
     )
   }
@@ -193,11 +194,11 @@ export function ProfilePage() {
           desborde. */}
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start">
         <div className="min-w-0 w-full sm:flex-1">
-          <h1 className="text-2xl font-bold text-ink">Mi cuenta</h1>
+          <h1 className="text-2xl font-bold text-ink">{t('account.title')}</h1>
           <p className="mt-1 text-sm text-muted [overflow-wrap:anywhere]">{session.user.email}</p>
         </div>
         <Button variant="secondary" disabled={cerrandoSesion} onClick={() => void cerrarSesion()}>
-          {cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar sesión'}
+          {cerrandoSesion ? t('account.signingOut') : t('account.signOut')}
         </Button>
       </div>
 
@@ -210,8 +211,7 @@ export function ProfilePage() {
       <AccesoMisProductos />
 
       <div className="mt-4 rounded-[12px] border border-line bg-neutral px-4 py-2 text-xs text-muted">
-        <strong className="text-ink">Cuenta de demostración.</strong> Los pedidos, reservas y descuentos de esta página
-        son de ejemplo: no se cobra ni se envía nada.
+        <strong className="text-ink">{t('account.demoNotice')}</strong> {t('account.demoNoticeBody')}
       </div>
 
       {/* `min-w-0` en las dos celdas del grid.
@@ -274,6 +274,7 @@ function AccesoMisProductos() {
  * que pasa de `?apartado=` a su subruta.
  */
 function ProfileNav({ active, params }: { active: Apartado; params: URLSearchParams }) {
+  const t = useT()
   const carril = useRef<HTMLUListElement>(null)
   const activo = useRef<HTMLAnchorElement>(null)
 
@@ -334,7 +335,7 @@ function ProfileNav({ active, params }: { active: Apartado; params: URLSearchPar
   }, [active])
 
   return (
-    <nav aria-label="Apartados de mi cuenta" className="lg:sticky lg:top-24 lg:self-start">
+    <nav aria-label={t('account.sections')} className="lg:sticky lg:top-24 lg:self-start">
       <ul ref={carril} className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
         {APARTADOS.map((item) => {
           const selected = item.id === active
@@ -358,7 +359,7 @@ function ProfileNav({ active, params }: { active: Apartado; params: URLSearchPar
                   (selected ? 'bg-ink text-white' : 'text-ink hover:bg-neutral')
                 }
               >
-                {item.label}
+                {t(item.clave)}
               </Link>
             </li>
           )

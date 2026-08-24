@@ -1014,15 +1014,63 @@ la lista de arriba, así que cada hallazgo se remidió desde su frase.
 | | Estado tras reverificar |
 | --- | --- |
 | **A62-02** | **RESUELTO** al reverificar: no existe repetición funcional real. Lo que se repite —«Envío a domicilio», el importe— son controles y resumen, funciones distintas. |
-| **A62-03** | **SIGUE ABIERTO**: la Cuenta web está esencialmente sin i18n. `sections.tsx` tiene 530 líneas y 2 llamadas a `t()`; `apartados.tsx`, ninguna. D-047 no lo tapa: habla de la app nativa, no de la web. |
-| **A62-04** | **SIGUE ABIERTO**: el copy «hechos con la sesión iniciada» es hoy además **falso**, porque D-083 hace que las compras de invitado acaben en esa misma lista. |
+| **A62-03** | **CORREGIDO** en la entrega de i18n de Cuenta. Ver abajo. |
+| **A62-04** | **CORREGIDO** en la misma entrega, por compartir superficie. Ver abajo. |
 | **A62-05** | **RESUELTO por evolución** en la PR #72 ([[02-decisiones#D-075]]): la intención de navegación sobrevive al login, tanto por subruta como por el `?apartado=` antiguo, sin entrada de historial de más. |
 | **A62-06** | **RESUELTO**: la confirmación tiene un **único** control, «Volver al inicio», y lleva a la portada. Igual en web y en la app. |
 | **A62-07** | **CORREGIDO** en la entrega de errores de inicio de sesión. La Cuenta ya daba copy propio; faltaban el login de cliente y el de agente. Ver abajo. |
 | **A62-08** | **CORREGIDO** en la entrega de accesibilidad del checkout. Ver abajo. |
 | **A62-09** | **EVOLUCIONADO / PARCIAL**: los fallos inmediatos aparecen en decenas de milisegundos, no en 4–8 s; lo que no existe es un límite propio, así que una conexión **colgada** no produce error nunca. |
 
-**UX-062 no queda cerrado**: siguen reales A62-03, A62-04 y A62-09.
+**UX-062 no queda cerrado**: sigue real **A62-09**, y sólo ése.
+
+### A62-03 y A62-04 — qué contrato quedó protegido
+
+Van juntos porque comparten superficie: el copy falso de pedidos vivía dentro de
+la Cuenta que había que traducir, y separarlos habría obligado a tocar el mismo
+fichero dos veces.
+
+**A62-03.** La Cuenta web se escribía en castellano dentro del código:
+`sections.tsx` tenía 530 líneas con **dos** llamadas a `t()`, y `apartados.ts`
+ninguna. Ahora:
+
+- la Cuenta web **usa el idioma activo** en su raíz, sus siete apartados y sus
+  secciones;
+- los **cinco idiomas** están cubiertos, con traducción propia y no copia del
+  castellano;
+- los **datos de la persona** —nombre, correo, teléfono, dirección guardada,
+  número de pedido, nombre de producto, tienda favorita— **no se traducen**;
+- la **aplicación nativa sigue en castellano** por [[02-decisiones#D-047]], sin
+  ninguna rama aparte: `detectarIdioma` ya devuelve `es` cuando corre dentro del
+  binario, así que una sola lista de textos sirve a las dos superficies;
+- **no cambian rutas ni navegación**: [[02-decisiones#D-075]] queda intacta.
+
+El rótulo de cada apartado pasa de ser un texto a ser una **clave**. Los
+identificadores, el orden, las rutas y qué apartados aparecen no se tocan: sólo
+de dónde sale la palabra.
+
+**A62-04.** La sección de pedidos decía «Pedidos demostrativos hechos con la
+sesión iniciada» y, en vacío, «Todavía no has hecho ningún pedido con la sesión
+iniciada». Desde [[02-decisiones#D-083]] eso es **falso**: una compra hecha sin
+cuenta se reconcilia al identificarse, de modo que la lista puede contener
+pedidos que nadie hizo con la sesión abierta. Ahora:
+
+- los pedidos **no se describen por el estado de autenticación con que
+  nacieron**, sino por lo único que la pantalla sabe: que están asociados a la
+  cuenta;
+- el copy es **válido también para las compras invitadas reconciliadas**;
+- el estado vacío es **neutral**;
+- **no cambian** `listMyOrders`, la consulta, el orden, la detección de vacío,
+  el render de la tarjeta ni la reconciliación.
+
+**Excepción documentada.** La pantalla de «Las cuentas necesitan Supabase
+configurado en este entorno» sigue en castellano: sólo aparece cuando Supabase
+**no** está configurado, es decir en desarrollo, y es información para quien
+monta el entorno. `AccountRootNative` también se queda en castellano, porque
+sólo se monta dentro de la aplicación y ahí D-047 ya fija el idioma.
+
+**A62-09 sigue separado y pendiente**: esta entrega es de copy e idioma, y no
+introduce ningún timeout.
 
 ### A62-07 — qué contrato quedó protegido
 

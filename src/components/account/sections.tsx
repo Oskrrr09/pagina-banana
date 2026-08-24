@@ -1,19 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useT } from '../../lib/i18n'
+import { useIdioma, useT, type ClaveTexto } from '../../lib/i18n'
 import { Button } from '../ui/Button'
 import { Field } from '../ui/Field'
 import { useCustomerAuth } from '../../lib/customerAuth'
 import { useStore } from '../../lib/store'
 import { useStorePreference } from '../../lib/storePreference'
 import { listMyOrders } from '../../lib/orderSync'
-import {
-  cancelReservation,
-  describeReservationStatus,
-  listMyReservations,
-  type ReservationWithPosition,
-} from '../../lib/reservations'
-import { ACCEPTED_ACCEPT_ATTR, describeStatus, uploadEducationalProof } from '../../lib/educationalDiscount'
+import { cancelReservation, listMyReservations, type ReservationWithPosition } from '../../lib/reservations'
+import { ACCEPTED_ACCEPT_ATTR, uploadEducationalProof } from '../../lib/educationalDiscount'
 import type { DbAddress, DbOrder } from '../../lib/supabase'
 import { ISLAS } from '../../lib/checkoutState'
 import { euro } from '../../lib/format'
@@ -68,11 +63,12 @@ export function Section({
 
 /** Aviso de guardado que se anuncia a lectores de pantalla. */
 function SaveFeedback({ state }: { state: 'idle' | 'saving' | 'saved' | 'error' }) {
+  const t = useT()
   return (
     <p role="status" aria-live="polite" className="min-h-5 text-xs">
-      {state === 'saving' && <span className="text-muted">Guardando…</span>}
-      {state === 'saved' && <span className="text-ink">Guardado.</span>}
-      {state === 'error' && <span className="text-danger">No se pudo guardar. Inténtalo de nuevo.</span>}
+      {state === 'saving' && <span className="text-muted">{t('account.saving')}</span>}
+      {state === 'saved' && <span className="text-ink">{t('account.saved')}</span>}
+      {state === 'error' && <span className="text-danger">{t('account.saveError')}</span>}
     </p>
   )
 }
@@ -102,7 +98,7 @@ export function PersonalDataSection({ headingLevel }: NivelDeTitulo) {
   }
 
   return (
-    <Section title="Datos personales" headingLevel={headingLevel}>
+    <Section title={t('account.personalData')} headingLevel={headingLevel}>
       <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
         <Field label={t('checkout.fullName')}>
           {(props) => (
@@ -115,7 +111,7 @@ export function PersonalDataSection({ headingLevel }: NivelDeTitulo) {
             />
           )}
         </Field>
-        <Field label="Teléfono">
+        <Field label={t('account.phone')}>
           {(props) => (
             <input
               {...props}
@@ -129,7 +125,7 @@ export function PersonalDataSection({ headingLevel }: NivelDeTitulo) {
         </Field>
         <div className="sm:col-span-2">
           <Button type="submit" disabled={state === 'saving'}>
-            Guardar datos
+            {t('account.saveData')}
           </Button>
           <div className="mt-2">
             <SaveFeedback state={state} />
@@ -140,16 +136,15 @@ export function PersonalDataSection({ headingLevel }: NivelDeTitulo) {
   )
 }
 
-export function AddressSection({
-  which,
-  title,
-  headingLevel,
-}: { which: 'envio' | 'facturacion'; title: string } & NivelDeTitulo) {
+export function AddressSection({ which, headingLevel }: { which: 'envio' | 'facturacion' } & NivelDeTitulo) {
+  // El título sale de `which` en vez de llegar por prop: quien la monta es una
+  // función suelta, no un componente, y allí no se pueden llamar hooks.
+  const t = useT()
   const { cliente, updateProfile } = useCustomerAuth()
   const stored = which === 'envio' ? cliente?.direccion_envio : cliente?.direccion_facturacion
   // La "otra" dirección, para poder copiarla.
   const otra = which === 'envio' ? cliente?.direccion_facturacion : cliente?.direccion_envio
-  const otraLabel = which === 'envio' ? 'facturación' : 'envío'
+  const copiarDeLaOtraLabel = which === 'envio' ? t('account.copyBilling') : t('account.copyShipping')
 
   const [address, setAddress] = useState<DbAddress>(EMPTY_ADDRESS)
   const [state, setState] = useState<SaveState>('idle')
@@ -190,26 +185,24 @@ export function AddressSection({
 
   return (
     <Section
-      title={title}
+      title={which === 'envio' ? t('account.shippingAddress') : t('account.billingAddress')}
       headingLevel={headingLevel}
-      description={
-        which === 'envio' ? 'Se usa para rellenar el checkout más rápido.' : 'La usamos en la factura del pedido.'
-      }
+      description={which === 'envio' ? t('account.shippingIntro') : t('account.billingIntro')}
     >
       <form onSubmit={save} className="rounded-[16px] border border-line bg-surface p-5 shadow-sm">
         {otraTieneDatos && (
           <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[12px] bg-neutral p-3">
             <Button type="button" variant="secondary" size="sm" onClick={copiarDeLaOtra}>
-              Copiar dirección de {otraLabel}
+              {copiarDeLaOtraLabel}
             </Button>
             <span role="status" aria-live="polite" className="text-xs text-muted">
-              {copiedNotice ? 'Copiada. Revísala y pulsa Guardar.' : 'Rellena este formulario con la otra dirección.'}
+              {copiedNotice ? t('account.copied') : t('account.copyHint')}
             </span>
           </div>
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Calle y número" full>
+          <Field label={t('account.street')} full>
             {(props) => (
               <input
                 {...props}
@@ -220,7 +213,7 @@ export function AddressSection({
               />
             )}
           </Field>
-          <Field label="Ciudad">
+          <Field label={t('account.city')}>
             {(props) => (
               <input
                 {...props}
@@ -230,10 +223,10 @@ export function AddressSection({
               />
             )}
           </Field>
-          <Field label="Isla">
+          <Field label={t('checkout.island')}>
             {(props) => (
               <select {...props} className="field" value={address.isla} onChange={(e) => set({ isla: e.target.value })}>
-                <option value="">Selecciona una isla</option>
+                <option value="">{t('account.selectIsland')}</option>
                 {ISLAS.map((isla) => (
                   <option key={isla} value={isla}>
                     {isla}
@@ -242,7 +235,7 @@ export function AddressSection({
               </select>
             )}
           </Field>
-          <Field label="Código postal">
+          <Field label={t('account.postalCode')}>
             {(props) => (
               <input
                 {...props}
@@ -257,7 +250,7 @@ export function AddressSection({
 
         <div className="mt-4">
           <Button type="submit" disabled={state === 'saving'}>
-            Guardar dirección
+            {t('account.saveAddress')}
           </Button>
           <div className="mt-2">
             <SaveFeedback state={state} />
@@ -269,6 +262,7 @@ export function AddressSection({
 }
 
 export function OrdersSection({ clienteId, headingLevel }: { clienteId: string } & NivelDeTitulo) {
+  const { t, intl } = useIdioma()
   const [orders, setOrders] = useState<DbOrder[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
@@ -289,16 +283,20 @@ export function OrdersSection({ clienteId, headingLevel }: { clienteId: string }
   }, [clienteId])
 
   return (
-    <Section
-      title="Mis pedidos"
-      headingLevel={headingLevel}
-      description="Pedidos demostrativos hechos con la sesión iniciada."
-    >
-      {status === 'loading' && <p className="text-sm text-muted">Cargando…</p>}
-      {status === 'error' && <p className="text-sm text-danger">No se pudieron cargar los pedidos.</p>}
+    // A62-04: NO SE DESCRIBE CÓMO NACIÓ EL PEDIDO
+    //
+    // Decía «Pedidos demostrativos hechos con la sesión iniciada» y, en vacío,
+    // «Todavía no has hecho ningún pedido con la sesión iniciada». Desde D-083
+    // una compra hecha SIN cuenta se reconcilia al identificarse, así que esta
+    // misma lista puede contener pedidos que nadie hizo con la sesión abierta.
+    // Lo único que la pantalla sabe —y por tanto lo único que afirma— es que
+    // están asociados a esta cuenta.
+    <Section title={t('account.orders')} headingLevel={headingLevel} description={t('account.ordersIntro')}>
+      {status === 'loading' && <p className="text-sm text-muted">{t('common.loading')}</p>}
+      {status === 'error' && <p className="text-sm text-danger">{t('account.ordersError')}</p>}
       {status === 'ready' && orders.length === 0 && (
         <p className="rounded-[12px] border border-line bg-neutral p-4 text-sm text-muted">
-          Todavía no has hecho ningún pedido con la sesión iniciada.
+          {t('account.ordersEmpty')}
         </p>
       )}
       <ul className="space-y-4">
@@ -307,7 +305,7 @@ export function OrdersSection({ clienteId, headingLevel }: { clienteId: string }
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <p className="font-mono text-sm font-semibold text-ink">{order.id}</p>
               <p className="text-xs text-muted">
-                {new Date(order.created_at).toLocaleDateString('es-ES', {
+                {new Date(order.created_at).toLocaleDateString(intl, {
                   day: '2-digit',
                   month: 'long',
                   year: 'numeric',
@@ -318,7 +316,8 @@ export function OrdersSection({ clienteId, headingLevel }: { clienteId: string }
               </p>
             </div>
             <p className="mt-1 text-xs text-muted">
-              {order.delivery === 'envio' ? 'Envío a domicilio' : 'Recogida en tienda'} · {order.payment_method}
+              {order.delivery === 'envio' ? t('checkout.homeDelivery') : t('checkout.storePickup')} ·{' '}
+              {order.payment_method}
             </p>
             <ul className="mt-3 space-y-1 text-sm text-ink">
               {order.lines.map((line, index) => (
@@ -335,7 +334,22 @@ export function OrdersSection({ clienteId, headingLevel }: { clienteId: string }
   )
 }
 
+/**
+ * El estado de una reserva, en el idioma activo.
+ *
+ * `describeReservationStatus` sigue devolviendo castellano y no se toca: lo
+ * comparte con superficies que van siempre en español. Aquí sólo se traduce el
+ * valor, que es lo que ve quien mira su cuenta.
+ */
+const CLAVE_RESERVA = {
+  'en-espera': 'account.resWaiting',
+  disponible: 'account.resAvailable',
+  completada: 'account.resCompleted',
+  cancelada: 'account.resCancelled',
+} as const satisfies Record<ReservationWithPosition['reservation']['estado'], ClaveTexto>
+
 export function ReservationsSection({ clienteId, headingLevel }: { clienteId: string } & NivelDeTitulo) {
+  const { t, intl } = useIdioma()
   const [items, setItems] = useState<ReservationWithPosition[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -362,17 +376,12 @@ export function ReservationsSection({ clienteId, headingLevel }: { clienteId: st
   }
 
   return (
-    <Section
-      title="Mis reservas"
-      headingLevel={headingLevel}
-      description="Reservas de productos sin stock. El puesto en la lista de espera lo fija el momento del pago."
-    >
-      {status === 'loading' && <p className="text-sm text-muted">Cargando…</p>}
-      {status === 'error' && <p className="text-sm text-danger">No se pudieron cargar las reservas.</p>}
+    <Section title={t('account.reservations')} headingLevel={headingLevel} description={t('account.reservationsIntro')}>
+      {status === 'loading' && <p className="text-sm text-muted">{t('common.loading')}</p>}
+      {status === 'error' && <p className="text-sm text-danger">{t('account.reservationsError')}</p>}
       {status === 'ready' && items.length === 0 && (
         <p className="rounded-[12px] border border-line bg-neutral p-4 text-sm text-muted">
-          No tienes ninguna reserva. Cuando un producto esté agotado o sea bajo pedido, podrás reservarlo desde su
-          ficha.
+          {t('account.reservationsEmpty')}
         </p>
       )}
       <ul className="space-y-4">
@@ -384,22 +393,23 @@ export function ReservationsSection({ clienteId, headingLevel }: { clienteId: st
               <p className="ml-auto font-semibold text-ink">{euro(Number(reservation.price))}</p>
             </div>
             <p className="mt-2 text-sm text-ink">
-              {describeReservationStatus(reservation.estado)}
+              {t(CLAVE_RESERVA[reservation.estado])}
               {reservation.estado === 'en-espera' && position != null && (
                 <>
                   {' · '}
                   <strong>
-                    Posición {position} {position === 1 ? '(siguiente)' : ''}
+                    {t('account.position', { n: position })} {position === 1 ? t('account.positionNext') : ''}
                   </strong>
                 </>
               )}
             </p>
             <p className="mt-1 text-xs text-muted">
-              Reservado el{' '}
-              {new Date(reservation.pagado_at).toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
+              {t('account.reservedOn', {
+                fecha: new Date(reservation.pagado_at).toLocaleDateString(intl, {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric',
+                }),
               })}
             </p>
             {reservation.estado === 'en-espera' && (
@@ -410,7 +420,7 @@ export function ReservationsSection({ clienteId, headingLevel }: { clienteId: st
                 disabled={busyId === reservation.id}
                 onClick={() => void cancel(reservation.id)}
               >
-                Cancelar reserva
+                {t('account.cancelReservation')}
               </Button>
             )}
           </li>
@@ -420,7 +430,15 @@ export function ReservationsSection({ clienteId, headingLevel }: { clienteId: st
   )
 }
 
+/** Mismo criterio que en reservas: `describeStatus` se queda como está. */
+const CLAVE_DESCUENTO = {
+  pendiente: 'account.discountPendingStatus',
+  aprobado: 'account.discountApproved',
+  rechazado: 'account.discountRejected',
+} as const satisfies Record<'pendiente' | 'aprobado' | 'rechazado', ClaveTexto>
+
 export function EducationalDiscountSection({ headingLevel }: NivelDeTitulo) {
+  const t = useT()
   const { session, cliente, refresh } = useCustomerAuth()
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -444,31 +462,26 @@ export function EducationalDiscountSection({ headingLevel }: NivelDeTitulo) {
 
   return (
     <Section
-      title="Descuento educativo"
+      title={t('account.educationDiscount')}
       headingLevel={headingLevel}
-      description="Sube un justificante (matrícula o carné de estudiante). Lo revisa una persona del equipo; no es automático."
+      description={t('account.discountIntro')}
     >
       <div className="rounded-[16px] border border-line bg-surface p-5 shadow-sm">
         <p className="text-sm text-ink">
-          Estado: <strong>{describeStatus(estado)}</strong>
+          {t('account.statusLabel')} <strong>{t(estado ? CLAVE_DESCUENTO[estado] : 'account.discountNone')}</strong>
         </p>
 
         {cliente?.descuento_educativo_nota && (
           <p className="mt-2 rounded-[12px] bg-neutral p-3 text-sm text-muted">
-            <strong className="text-ink">Nota del equipo:</strong> {cliente.descuento_educativo_nota}
+            <strong className="text-ink">{t('account.teamNote')}</strong> {cliente.descuento_educativo_nota}
           </p>
         )}
 
-        {estado === 'pendiente' && (
-          <p className="mt-2 text-sm text-muted">
-            Ya tenemos tu justificante. Te avisaremos cuando esté revisado. Puedes subir otro si te has equivocado de
-            archivo.
-          </p>
-        )}
+        {estado === 'pendiente' && <p className="mt-2 text-sm text-muted">{t('account.discountPending')}</p>}
 
         <div className="mt-4">
           <label htmlFor="justificante-educativo" className="mb-1 block text-sm font-medium text-ink">
-            {estado ? 'Subir otro justificante' : 'Subir justificante'}
+            {estado ? t('account.uploadAnotherProof') : t('account.uploadProof')}
           </label>
           <input
             ref={inputRef}
@@ -479,11 +492,11 @@ export function EducationalDiscountSection({ headingLevel }: NivelDeTitulo) {
             disabled={uploading}
             className="block w-full text-sm text-ink file:mr-3 file:cursor-pointer file:rounded-full file:border file:border-ink/20 file:bg-transparent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink hover:file:bg-black/5"
           />
-          <p className="mt-1 text-xs text-muted">PDF, JPG o PNG. Máximo 5 MB.</p>
+          <p className="mt-1 text-xs text-muted">{t('account.fileHint')}</p>
         </div>
 
         <p role="status" aria-live="polite" className="mt-2 min-h-5 text-xs">
-          {uploading && <span className="text-muted">Subiendo…</span>}
+          {uploading && <span className="text-muted">{t('account.uploading')}</span>}
           {error && <span className="text-danger">{error}</span>}
         </p>
       </div>
@@ -497,34 +510,32 @@ export function FavoritesSection({ headingLevel }: NivelDeTitulo) {
   const { favoriteStore } = useStorePreference()
 
   return (
-    <Section title="Favoritos y tienda" headingLevel={headingLevel}>
+    <Section title={t('account.favorites')} headingLevel={headingLevel}>
       <div className="grid gap-6 sm:grid-cols-2">
         <div className="rounded-[16px] border border-line bg-surface p-5 shadow-sm">
-          <h3 className="font-semibold text-ink">Productos favoritos</h3>
+          <h3 className="font-semibold text-ink">{t('account.favoriteProducts')}</h3>
           <p className="mt-1 text-sm text-muted">
             {favorites.length === 0
-              ? 'Todavía no has guardado ninguno.'
-              : `Tienes ${favorites.length} producto${favorites.length === 1 ? '' : 's'} guardado${favorites.length === 1 ? '' : 's'}.`}
+              ? t('account.noFavorites')
+              : t(favorites.length === 1 ? 'account.favoritesOne' : 'account.favoritesMany', {
+                  n: favorites.length,
+                })}
           </p>
           <Link to="/favoritos" className="mt-3 inline-block text-sm font-semibold text-ink underline">
-            Ver mis favoritos
+            {t('account.viewFavorites')}
           </Link>
         </div>
 
         <div className="rounded-[16px] border border-line bg-surface p-5 shadow-sm">
-          <h3 className="font-semibold text-ink">Tienda habitual</h3>
-          <p className="mt-1 text-sm text-muted">
-            {favoriteStore ? favoriteStore.name : 'No has elegido ninguna todavía.'}
-          </p>
+          <h3 className="font-semibold text-ink">{t('account.usualStore')}</h3>
+          <p className="mt-1 text-sm text-muted">{favoriteStore ? favoriteStore.name : t('account.noStoreChosen')}</p>
           <Link to="/tiendas" className="mt-3 inline-block text-sm font-semibold text-ink underline">
             {t('common.viewStores')}
           </Link>
         </div>
       </div>
 
-      <p className="mt-3 text-xs text-muted">
-        Favoritos y tienda habitual se guardan en este navegador, no en la cuenta.
-      </p>
+      <p className="mt-3 text-xs text-muted">{t('account.localOnly')}</p>
     </Section>
   )
 }
