@@ -814,10 +814,15 @@ test('el aviso sí toma el foco cuando aparece a la vista', async ({ page }) => 
 // EL AVISO APARECE, PERO NO LE QUITA EL FOCO A NADIE.
 //
 // A11Y-003 arregló que el aviso robara el foco a un diálogo abierto, y lo hizo
-// vigilando `[role="dialog"][aria-modal="true"]`. El buscador de la cabecera SÍ
-// lo es, así que mientras está abierto el aviso se suspende correctamente.
+// vigilando `[role="dialog"][aria-modal="true"]`. Durante la búsqueda el aviso
+// sí queda suspendido, aunque no por la superficie que se ve: la rama de
+// escritorio —`xl:block`— NO lleva esa semántica. Con `searchOpen` activo,
+// `Header` mantiene montada además la rama móvil, que sí es `aria-modal`; en
+// escritorio está oculta con `xl:hidden` pero sigue en el DOM, y la guarda mira
+// presencia y no visibilidad, así que basta para suspenderlo.
 //
-// El hueco está en el instante siguiente. Al cerrar el buscador con Escape:
+// El hueco está en el instante siguiente: al cerrar, ese nodo desaparece con el
+// resto y el aviso puede montarse. Al cerrar el buscador con Escape:
 //
 //   0 ms   el buscador se desmonta, el foco cae en `body`
 //   25 ms  el buscador lo devuelve a la lupa           ← correcto
