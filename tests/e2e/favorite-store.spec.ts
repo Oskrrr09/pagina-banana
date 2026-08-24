@@ -809,3 +809,71 @@ test('el aviso sí toma el foco cuando aparece a la vista', async ({ page }) => 
   expect(estado.focoEnElBoton, 'estando a la vista, el aviso sí reclama el foco').toBe(true)
   expect(estado.y, 'y no ha hecho falta mover la página').toBe(0)
 })
+
+// ============================================================================
+// EL AVISO APARECE, PERO NO LE QUITA EL FOCO A NADIE.
+//
+// A11Y-003 arregló que el aviso robara el foco a un diálogo abierto, y lo hizo
+// vigilando `[role="dialog"][aria-modal="true"]`. Durante la búsqueda el aviso
+// sí queda suspendido, aunque no por la superficie que se ve: la rama de
+// escritorio —`xl:block`— NO lleva esa semántica. Con `searchOpen` activo,
+// `Header` mantiene montada además la rama móvil, que sí es `aria-modal`; en
+// escritorio está oculta con `xl:hidden` pero sigue en el DOM, y la guarda mira
+// presencia y no visibilidad, así que basta para suspenderlo.
+//
+// El hueco está en el instante siguiente: al cerrar, ese nodo desaparece con el
+// resto y el aviso puede montarse. Al cerrar el buscador con Escape:
+//
+//   0 ms   el buscador se desmonta, el foco cae en `body`
+//   25 ms  el buscador lo devuelve a la lupa           ← correcto
+//  ~700 ms el aviso se monta y se lo lleva a su «Cerrar» ← el defecto
+//
+// Medido cinco veces seguidas, siempre igual. En CI la restauración compite con
+// ese autofoco y `search.spec.ts:347` fallaba de forma intermitente.
+//
+// La regla que se protege es de producto y no depende del buscador: un aviso no
+// modal puede presentarse, pero no interrumpe a quien ya está en algo.
+// ============================================================================
+test.describe('el aviso no interrumpe a quien está usando la página', () => {
+  test('no le quita el foco a la lupa después de cerrar el buscador', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 900 })
+    await page.goto('./')
+
+    const lupa = page.getByRole('button', { name: 'Buscar', exact: true }).first()
+    await lupa.click()
+    const input = page.locator('[data-testid="header-search-input"]:visible')
+    await input.fill('AirPods')
+    await expect(page.getByRole('option').first()).toBeVisible()
+    await input.press('ArrowDown')
+    await input.press('Escape')
+
+    // El buscador hace su parte: devuelve el foco a quien lo abrió.
+    await expect(lupa, 'el buscador restaura el foco al cerrarse').toBeFocused()
+
+    // Y ahora llega el aviso. Se espera AL AVISO, no a un tiempo inventado.
+    const aviso = page.locator('[data-favorite-store-prompt]')
+    await expect(aviso, 'el aviso acaba apareciendo por su cuenta').toBeVisible({ timeout: 5000 })
+
+    // Aparecer sí; interrumpir no.
+    await expect(lupa, 'y aparecer no es motivo para quitarle el foco a nadie').toBeFocused()
+
+    // Y si no lo tomó, tampoco lo mueve al marcharse. Se descarta con Escape
+    // —que el propio aviso escucha— en vez de pulsando «Ahora no»: pulsar con
+    // el ratón mueve el foco a ese botón, y entonces la comprobación hablaría
+    // del ratón y no de lo que hace el aviso al desmontarse.
+    await page.keyboard.press('Escape')
+    await expect(aviso).toHaveCount(0)
+    await expect(lupa, 'al marcharse no arrastra el foco de nadie').toBeFocused()
+  })
+
+  test('sí toma el foco cuando nadie está usando nada', async ({ page }) => {
+    // El contrato de A11Y-003 que NO debe romperse: en una visita en la que
+    // nadie ha interactuado, el aviso sigue pudiendo empezar enfocado.
+    await page.setViewportSize({ width: 1366, height: 900 })
+    await page.goto('./')
+
+    const cerrar = page.getByRole('button', { name: 'Cerrar aviso de tienda favorita' })
+    await expect(cerrar).toBeVisible({ timeout: 5000 })
+    await expect(cerrar, 'sin nadie a quien interrumpir, el aviso se presenta').toBeFocused()
+  })
+})
