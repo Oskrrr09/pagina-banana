@@ -71,11 +71,20 @@ async function cuenta(etiqueta: string) {
  * infraestructura sólo para pintar una tarjeta haría la suite más lenta sin
  * proteger nada nuevo.
  */
+let pedidosCreados = 0
+
 async function pedidoAsociado(uid: string) {
+  // EL IDENTIFICADOR TIENE QUE SER ÚNICO POR LLAMADA
+  //
+  // Con el sello del fichero bastaba mientras sólo hubiera un pedido. Al probar
+  // dos idiomas, las dos variantes insertaban la MISMA clave y, corriendo en
+  // paralelo, la segunda chocaba con `23505 duplicate key`. Se numera cada
+  // pedido para que dos pruebas nunca compitan por la misma fila.
+  const numero = ++pedidosCreados
   const { error } = await servicio()
     .from('pedidos')
     .insert({
-      id: `BC-A6203${RUN.slice(-6).toUpperCase()}`,
+      id: `BC-A6203${RUN.slice(-5).toUpperCase()}${numero}`,
       cliente_id: uid,
       delivery: 'envio',
       payment_method: 'tarjeta',
