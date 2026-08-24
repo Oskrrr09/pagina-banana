@@ -1040,6 +1040,9 @@ ninguna. Ahora:
   castellano;
 - los **datos de la persona** —nombre, correo, teléfono, dirección guardada,
   número de pedido, nombre de producto, tienda favorita— **no se traducen**;
+- los **enumerados internos sí**: `delivery` y `payment_method` los escribe el
+  producto, no quien compra, así que se presentan con el contrato del checkout
+  y nunca como el token que viaja en la base;
 - la **aplicación nativa sigue en castellano** por [[02-decisiones#D-047]], sin
   ninguna rama aparte: `detectarIdioma` ya devuelve `es` cuando corre dentro del
   binario, así que una sola lista de textos sirve a las dos superficies;

@@ -261,6 +261,32 @@ export function AddressSection({ which, headingLevel }: { which: 'envio' | 'fact
   )
 }
 
+/**
+ * El método de pago, tal y como se enseña.
+ *
+ * `payment_method` NO es un dato que escriba nadie: es un enum del propio
+ * producto —`'tarjeta' | 'bizum' | 'financiacion'`—, así que imprimirlo tal cual
+ * dejaba «Home delivery · tarjeta» con la web en inglés. Se reutiliza el
+ * contrato que ya usa el checkout en vez de inventar claves paralelas.
+ *
+ * Es un `switch` con retorno declarado a propósito: si el union incorpora un
+ * método nuevo, la función deja de devolver siempre `string` y el compilador
+ * lo para aquí, en vez de dejar que el token interno se cuele en la pantalla.
+ *
+ * Bizum se queda como está: es un nombre propio y se escribe igual en los cinco
+ * idiomas, igual que en el checkout.
+ */
+function etiquetaDePago(metodo: DbOrder['payment_method'], t: (clave: ClaveTexto) => string): string {
+  switch (metodo) {
+    case 'tarjeta':
+      return t('checkout.card')
+    case 'bizum':
+      return 'Bizum'
+    case 'financiacion':
+      return t('checkout.financing')
+  }
+}
+
 export function OrdersSection({ clienteId, headingLevel }: { clienteId: string } & NivelDeTitulo) {
   const { t, intl } = useIdioma()
   const [orders, setOrders] = useState<DbOrder[]>([])
@@ -317,7 +343,7 @@ export function OrdersSection({ clienteId, headingLevel }: { clienteId: string }
             </div>
             <p className="mt-1 text-xs text-muted">
               {order.delivery === 'envio' ? t('checkout.homeDelivery') : t('checkout.storePickup')} ·{' '}
-              {order.payment_method}
+              {etiquetaDePago(order.payment_method, t)}
             </p>
             <ul className="mt-3 space-y-1 text-sm text-ink">
               {order.lines.map((line, index) => (

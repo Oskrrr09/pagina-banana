@@ -73,7 +73,7 @@ async function cuenta(etiqueta: string) {
  */
 let pedidosCreados = 0
 
-async function pedidoAsociado(uid: string) {
+async function pedidoAsociado(uid: string, metodo: 'tarjeta' | 'bizum' | 'financiacion' = 'tarjeta') {
   // EL IDENTIFICADOR TIENE QUE SER ÚNICO POR LLAMADA
   //
   // Con el sello del fichero bastaba mientras sólo hubiera un pedido. Al probar
@@ -87,7 +87,7 @@ async function pedidoAsociado(uid: string) {
       id: `BC-A6203${RUN.slice(-5).toUpperCase()}${numero}`,
       cliente_id: uid,
       delivery: 'envio',
-      payment_method: 'tarjeta',
+      payment_method: metodo,
       products_total: 1229,
       insurance_total: 0,
       lines: [
@@ -132,6 +132,8 @@ const IDIOMAS = [
     datos: 'Datos personales',
     pedidos: 'Mis pedidos',
     vacio: 'Todavía no tienes ningún pedido.',
+    conTarjeta: 'Envío a domicilio · Tarjeta',
+    conFinanciacion: 'Envío a domicilio · Financiación',
   },
   {
     locale: 'en-US',
@@ -141,6 +143,8 @@ const IDIOMAS = [
     datos: 'Personal details',
     pedidos: 'My orders',
     vacio: 'You have no orders yet.',
+    conTarjeta: 'Home delivery · Card',
+    conFinanciacion: 'Home delivery · Financing',
   },
   {
     locale: 'de-DE',
@@ -228,7 +232,8 @@ test.describe('A62-04 · un pedido asociado no se describe por cómo nació', ()
 
       test('la tarjeta se ve y el copy no habla de sesión iniciada', async ({ page }) => {
         const a = await cuenta(`pedido-${corto}`)
-        await pedidoAsociado(a.uid)
+        await pedidoAsociado(a.uid, 'tarjeta')
+        await pedidoAsociado(a.uid, 'financiacion')
         await identificarse(page, a.email, a.password)
 
         await page.goto('./cuenta/pedidos')
@@ -236,6 +241,28 @@ test.describe('A62-04 · un pedido asociado no se describe por cómo nació', ()
         await expect(page.getByText(idioma.vacio), 'con pedido no hay estado vacío').toHaveCount(0)
         for (const frase of OBSOLETO) {
           await expect(page.getByText(frase)).toHaveCount(0)
+        }
+
+        // EL MÉTODO DE PAGO ES UN ENUM INTERNO, NO UN DATO DE LA PERSONA
+        //
+        // `payment_method` sólo vale 'tarjeta' | 'bizum' | 'financiacion': lo
+        // escribe el propio producto, no lo teclea nadie. Pintarlo crudo dejaba
+        // «Home delivery · tarjeta» con la web en inglés. Se comprueba la LÍNEA
+        // ENTERA —entrega y pago juntos— para que la aserción no pueda pasar por
+        // encontrar la palabra suelta en cualquier otro punto de la pantalla.
+        await expect(
+          page.getByText(idioma.conTarjeta, { exact: true }),
+          'la línea combina entrega y pago, los dos traducidos',
+        ).toBeVisible()
+        await expect(
+          page.getByText(idioma.conFinanciacion, { exact: true }),
+          'y lo mismo con la financiación',
+        ).toBeVisible()
+        for (const token of ['tarjeta', 'financiacion']) {
+          await expect(
+            page.getByText(new RegExp(`·\\s*${token}\\b`)),
+            `el token interno «${token}» no llega a la pantalla`,
+          ).toHaveCount(0)
         }
       })
     })
