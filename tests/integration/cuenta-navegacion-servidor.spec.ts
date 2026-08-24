@@ -423,7 +423,10 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
     await page.goto('./cuenta/pedidos')
 
     await expect(seccion(page, 'Mis pedidos')).toBeVisible()
-    await expect(page.getByText(/Todavía no has hecho ningún pedido/i)).toBeVisible()
+    // El vacío no describe CÓMO se hicieron los pedidos: desde D-083 una compra
+    // de invitado acaba en esta misma lista al identificarse (A62-04).
+    await expect(page.getByText('Todavía no tienes ningún pedido.')).toBeVisible()
+    await expect(page.getByText(/sesión iniciada/i), 'la afirmación falsa no vuelve').toHaveCount(0)
     await expect(page.getByText(/No se pudieron cargar/i), 'un vacío no es un error').toHaveCount(0)
   })
 
@@ -493,7 +496,7 @@ test.describe('los datos, y lo que se ve cuando fallan', () => {
     await expect(seccionPedidos.getByText('Cargando…'), 'y desaparece al llegar la respuesta').toHaveCount(0, {
       timeout: 15_000,
     })
-    await expect(page.getByText(/Todavía no has hecho ningún pedido/i)).toBeVisible()
+    await expect(page.getByText('Todavía no tienes ningún pedido.')).toBeVisible()
   })
 
   test('Reservas enseña la carga mientras su lectura sigue pendiente', async ({ page }) => {

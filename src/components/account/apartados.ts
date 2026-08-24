@@ -1,3 +1,5 @@
+import type { ClaveTexto } from '../../lib/i18n'
+
 // Los apartados de «Mi cuenta», y la gramática de sus direcciones.
 //
 // POR QUÉ SON SUBRUTAS Y NO UN PARÁMETRO
@@ -13,15 +15,24 @@
 // superficies. El parámetro antiguo sigue entrando y se normaliza con
 // `replace`.
 
+// EL RÓTULO ES UNA CLAVE, NO UN TEXTO
+//
+// La web habla cinco idiomas y la aplicación siempre castellano (D-047). Con el
+// texto escrito aquí, `/cuenta` se veía en español aunque el resto de la tienda
+// estuviera en alemán. Guardando la clave, cada superficie lo resuelve con su
+// idioma activo y no hacen falta dos listas que mantener en paralelo.
+//
+// El orden, los identificadores y las rutas no cambian: sólo de dónde sale el
+// rótulo.
 export const APARTADOS = [
-  { id: 'datos', label: 'Datos personales' },
-  { id: 'envio', label: 'Dirección de envío' },
-  { id: 'facturacion', label: 'Dirección de facturación' },
-  { id: 'pedidos', label: 'Mis pedidos' },
-  { id: 'reservas', label: 'Mis reservas' },
-  { id: 'descuento', label: 'Descuento educativo' },
-  { id: 'favoritos', label: 'Favoritos y tienda' },
-] as const
+  { id: 'datos', clave: 'account.personalData' },
+  { id: 'envio', clave: 'account.shippingAddress' },
+  { id: 'facturacion', clave: 'account.billingAddress' },
+  { id: 'pedidos', clave: 'account.orders' },
+  { id: 'reservas', clave: 'account.reservations' },
+  { id: 'descuento', clave: 'account.educationDiscount' },
+  { id: 'favoritos', clave: 'account.favorites' },
+] as const satisfies readonly { id: string; clave: ClaveTexto }[]
 
 export type Apartado = (typeof APARTADOS)[number]['id']
 
