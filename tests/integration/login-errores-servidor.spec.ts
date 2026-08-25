@@ -182,3 +182,217 @@ test.describe('los errores del acceso de agente no cuentan la implementación', 
     ).toBeVisible()
   })
 })
+
+// ============================================================================
+// A62-09 — LA APLICACIÓN TIENE SU PROPIO RELOJ.
+//
+// A62-07 decidió QUÉ se enseña cuando el error llega. Esto decide CUÁNTO se
+// espera a que llegue. Reproducido antes de arreglarlo: reteniendo la petición
+// de contraseña —sin responder ni abortar—, las dos pantallas se quedaban en
+// «Entrando…», deshabilitadas y sin alerta, y **no se recuperaban solas**; sólo
+// reaccionaban cuando la red respondía.
+//
+// LA PROPIEDAD QUE SE PROTEGE
+//
+// La interfaz sale del estado pendiente **mientras la ruta sigue retenida**.
+// Eso es lo que distingue una cancelación propia de una liberación provocada
+// por la prueba: aquí nadie suelta la petición hasta después de comprobarlo.
+// ============================================================================
+
+/** Techo de la ESPERA DEL TEST. No es el límite de la aplicación, que es menor. */
+const TECHO_DEL_TEST = 13_000
+
+/**
+ * Deja el servidor RESPONDER y retiene su respuesta antes de entregarla.
+ *
+ * POR QUÉ NO BASTA CON DEJAR LA PETICIÓN MUDA
+ *
+ * Retener sin más, y abortar al soltar, demuestra que la interfaz se recupera
+ * sola —que es lo primero—, pero deja sin probar el caso que de verdad da miedo:
+ * que el servidor **sí** hubiera validado las credenciales y su `200` con
+ * tokens llegara tarde, después de que el cliente ya se hubiera rendido. Con un
+ * `abort` esa respuesta no existe nunca, así que la prueba afirmaba más de lo
+ * que ejercitaba.
+ *
+ * Aquí el `route.fetch()` va **antes** de la barrera: GoTrue procesa el login de
+ * verdad y su respuesta se queda en Playwright, mientras la petición de la
+ * página sigue pendiente y el `AbortController` de producción corre su plazo.
+ * Sólo cuando la prueba ha comprobado la recuperación se intenta entregarla.
+ */
+function retenerInicioSesion(page: Page) {
+  let liberar: () => void = () => {}
+  const retenida = new Promise<void>((resolve) => {
+    liberar = resolve
+  })
+  let acabar: () => void = () => {}
+  /** Se resuelve cuando el manejador ha terminado del todo: nada queda en vuelo. */
+  const handlerTerminado = new Promise<void>((resolve) => {
+    acabar = resolve
+  })
+
+  let interceptadas = 0
+  let sueltas = 0
+  let servidorRespondio = false
+  let statusServidor: number | null = null
+  let entregaTardia: 'entregada' | 'rechazada' | null = null
+
+  const listo = page.route('**/auth/v1/token**', async (route) => {
+    if (!route.request().url().includes('grant_type=password')) return route.continue()
+    interceptadas += 1
+    try {
+      // El servidor valida las credenciales DE VERDAD y emite sus tokens…
+      const respuesta = await route.fetch()
+      servidorRespondio = true
+      statusServidor = respuesta.status()
+
+      // …y esa respuesta se queda aquí. El navegador sigue esperando.
+      await retenida
+      sueltas += 1
+
+      // Entrega tardía. Que Playwright la acepte o la rechace por petición ya
+      // cancelada son los dos desenlaces válidos: lo que no puede pasar es que
+      // esos tokens inicien sesión.
+      try {
+        await route.fulfill({ response: respuesta })
+        entregaTardia = 'entregada'
+      } catch {
+        entregaTardia = 'rechazada'
+      }
+    } finally {
+      acabar()
+    }
+  })
+
+  return {
+    listo,
+    handlerTerminado,
+    liberar: () => liberar(),
+    get interceptadas() {
+      return interceptadas
+    },
+    get sueltas() {
+      return sueltas
+    },
+    get servidorRespondio() {
+      return servidorRespondio
+    },
+    get statusServidor() {
+      return statusServidor
+    },
+    get entregaTardia() {
+      return entregaTardia
+    },
+  }
+}
+
+/** Lo que se ve: botón, alerta, dirección y lo que quedó escrito. */
+async function pantalla(page: Page) {
+  return page.evaluate(() => {
+    const boton = document.querySelector('button[type="submit"]')
+    const aviso = document.querySelector('[role="alert"]')
+    const email = document.querySelector('input[type="email"]') as HTMLInputElement | null
+    const clave = document.querySelector('input[type="password"]') as HTMLInputElement | null
+    return {
+      boton: boton?.textContent?.trim() ?? null,
+      deshabilitado: (boton as HTMLButtonElement | null)?.disabled ?? null,
+      alerta: aviso?.textContent?.trim() ?? null,
+      ruta: location.pathname,
+      email: email?.value ?? null,
+      clave: clave?.value ?? null,
+      // Claves de sesión de supabase-js, por patrón: el `project-ref` no se
+      // escribe a mano porque cambia con el entorno.
+      sesiones: Object.keys(localStorage).filter((k) => /auth-token$/.test(k) || k === 'banana-agente-auth'),
+    }
+  })
+}
+
+for (const caso of [
+  { etq: 'cliente', ruta: './login', reposo: 'Iniciar sesión', generico: GENERICO_CLIENTE, destino: /\/cuenta/ },
+  { etq: 'agente', ruta: './agente/login', reposo: 'Entrar', generico: GENERICO_AGENTE, destino: /\/agente$/ },
+] as const) {
+  test(`A62-09 · ${caso.etq}: una petición colgada deja de esperarse por el límite propio`, async ({ page }) => {
+    const a = await cuenta(`timeout-${caso.etq}`, caso.etq === 'agente')
+    await abrir(page, caso.ruta)
+    const retencion = retenerInicioSesion(page)
+    await retencion.listo
+
+    try {
+      await enviar(page, a.email, a.password)
+
+      // Primero, el estado pendiente: la petición está en vuelo y retenida.
+      await expect(page.getByRole('button', { name: 'Entrando…' })).toBeDisabled()
+      const pendiente = await pantalla(page)
+      expect(pendiente.alerta, 'mientras espera no hay nada que decir').toBeNull()
+      expect(retencion.interceptadas, 'el password grant se interceptó de verdad').toBe(1)
+
+      // Y el servidor NO se quedó callado: validó las credenciales y emitió sus
+      // tokens. Ese `200` está retenido, a un paso del navegador.
+      await expect.poll(() => retencion.servidorRespondio, { message: 'el servidor llegó a responder' }).toBe(true)
+      expect(retencion.statusServidor, 'y respondió que el login era bueno').toBe(200)
+
+      // Y ahora lo que fallaba: que se recupere SOLA.
+      await expect(page.getByRole('alert'), 'la aplicación deja de esperar por su cuenta').toBeVisible({
+        timeout: TECHO_DEL_TEST,
+      })
+
+      const tras = await pantalla(page)
+      expect(retencion.sueltas, 'la ruta seguía retenida: la recuperación no la causó el test').toBe(0)
+
+      expect(tras.alerta, 'el copy seguro de A62-07, sin duplicar su lógica').toBe(caso.generico)
+      expect(tras.alerta).not.toMatch(/Failed to fetch|AbortError|aborted|signal/i)
+      expect(tras.boton, 'el botón vuelve a su texto de reposo').toBe(caso.reposo)
+      expect(tras.deshabilitado, 'y se puede volver a intentar').toBe(false)
+      expect(tras.email, 'el correo escrito no se pierde').toBe(a.email)
+      expect(tras.clave, 'ni la contraseña').toBe(a.password)
+      expect(tras.ruta, 'no se navega a ninguna parte').toContain(caso.etq === 'agente' ? '/agente/login' : '/login')
+      expect(tras.sesiones, 'no hay sesión').toEqual([])
+
+      // NADA DE SIGNED_IN TARDÍO
+      //
+      // Ahora sí: se intenta entregar el `200` que el servidor emitió ANTES del
+      // plazo. Es el escenario que da miedo —credenciales buenas, tokens
+      // válidos, sólo que tarde— y el que hay que descartar. Se espera a que el
+      // manejador termine, en vez de a un reloj.
+      retencion.liberar()
+      await retencion.handlerTerminado
+      expect(retencion.entregaTardia, 'la entrega tardía se intentó y se resolvió').not.toBeNull()
+
+      const tarde = await pantalla(page)
+      expect(tarde.sesiones, 'los tokens tardíos no inician sesión').toEqual([])
+      expect(tarde.ruta, 'ni navega tarde').toBe(tras.ruta)
+      await expect(page).not.toHaveURL(caso.destino)
+
+      // Ventana de observación, no estabilizador: si `supabase-js` fuese a
+      // reaccionar a esa respuesta lo haría aquí. La prueba ya sería correcta
+      // sin ella; sirve para que la ausencia se afirme sobre algo mirado.
+      await page.waitForTimeout(500)
+      const masTarde = await pantalla(page)
+      expect(masTarde.sesiones, 'tampoco un instante después').toEqual([])
+      expect(masTarde.ruta, 'y sigue donde estaba').toBe(tras.ruta)
+    } finally {
+      retencion.liberar()
+      await page.unroute('**/auth/v1/token**').catch(() => undefined)
+    }
+  })
+}
+
+test('A62-09 · una respuesta lenta pero válida sigue iniciando sesión', async ({ page }) => {
+  // Medio segundo: muy por debajo del límite. Acercarse a él sólo alargaría la
+  // suite sin proteger nada más.
+  const a = await cuenta('timeout-lenta')
+  await abrir(page, './login')
+  await page.route('**/auth/v1/token**', async (route) => {
+    if (!route.request().url().includes('grant_type=password')) return route.continue()
+    const respuesta = await route.fetch()
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    await route.fulfill({ response: respuesta })
+  })
+
+  try {
+    await enviar(page, a.email, a.password)
+    await expect(page, 'lento no es lo mismo que fallido').toHaveURL(/\/cuenta/, { timeout: 20_000 })
+    await expect(page.getByText(GENERICO_CLIENTE), 'y no se inventa un error').toHaveCount(0)
+  } finally {
+    await page.unroute('**/auth/v1/token**').catch(() => undefined)
+  }
+})

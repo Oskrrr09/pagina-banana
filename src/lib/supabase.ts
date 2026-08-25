@@ -14,8 +14,113 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL
 const anon = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// ---------------------------------------------------------------------------
+// A62-09 — EL INICIO DE SESIÓN NO ESPERA PARA SIEMPRE
+//
+// Una respuesta de error llega rápido y una red rechazada también, pero una
+// petición que se queda COLGADA —ni resuelve ni rechaza— dejaba las dos
+// pantallas de acceso en «Entrando…», deshabilitadas y sin decir nada, sin
+// recuperarse nunca por su cuenta: no existía ningún límite propio en todo
+// `src/`.
+//
+// POR QUÉ AQUÍ Y NO EN customerAuth/agentAuth
+//
+// Un `Promise.race` alrededor de `signInWithPassword` dejaría de esperar, pero
+// NO cancelaría nada: la petición seguiría viva y podría completar después,
+// guardando la sesión y emitiendo `SIGNED_IN` cuando la interfaz ya ha dicho
+// que falló. Eso sería peor que el defecto. Aquí se aborta el `fetch` de
+// verdad, así que los tokens nunca llegan a `_saveSession()`.
+//
+// POR QUÉ SÓLO EL «PASSWORD GRANT»
+//
+// Este mismo `fetch` lo usan también PostgREST, Storage y el resto de
+// operaciones de los dos clientes, así que discriminar no es una elegancia:
+// es obligatorio. Todo lo demás pasa intacto, incluido el refresco de sesión.
+// ---------------------------------------------------------------------------
+
+/**
+ * Cuánto se espera a que responda el inicio de sesión antes de rendirse.
+ *
+ * Diez segundos, medidos y no intuidos: contra Supabase local la petición
+ * tarda 82–96 ms, así que esto es unas cien veces la mediana observada y deja
+ * margen de sobra para una red móvil con el cifrado de contraseña del servidor
+ * por medio. Alto para no declarar fallo en una conexión lenta; bajo para que
+ * nadie se quede mirando «Entrando…».
+ */
+const LOGIN_PASSWORD_TIMEOUT_MS = 10_000
+
+/** El `fetch` del entorno, resuelto en cada llamada para no fijar `this`. */
+const fetchNativo: typeof fetch = (entrada, opciones) => globalThis.fetch(entrada, opciones)
+
+function urlDe(entrada: RequestInfo | URL): URL | null {
+  try {
+    if (typeof entrada === 'string') return new URL(entrada, globalThis.location?.href)
+    if (entrada instanceof URL) return entrada
+    return new URL(entrada.url)
+  } catch {
+    return null
+  }
+}
+
+function metodoDe(entrada: RequestInfo | URL, opciones?: RequestInit): string {
+  if (opciones?.method) return opciones.method.toUpperCase()
+  if (typeof entrada !== 'string' && !(entrada instanceof URL)) return entrada.method.toUpperCase()
+  return 'GET'
+}
+
+/**
+ * ¿Es ESTA petición el inicio de sesión por contraseña?
+ *
+ * Se comprueban las tres cosas por separado en vez de buscar un trozo de texto
+ * dentro de la dirección: el orden de la consulta no está garantizado, y
+ * `token?grant_type=password` podría aparecer por casualidad en otro sitio.
+ */
+function esInicioSesionPorContrasena(entrada: RequestInfo | URL, opciones?: RequestInit): boolean {
+  if (metodoDe(entrada, opciones) !== 'POST') return false
+  const url = urlDe(entrada)
+  if (!url || !url.pathname.endsWith('/auth/v1/token')) return false
+  return url.searchParams.get('grant_type') === 'password'
+}
+
+/** La cancelación que ya traía quien llama, si traía alguna. */
+function senalPrevia(entrada: RequestInfo | URL, opciones?: RequestInit): AbortSignal | null {
+  if (opciones?.signal) return opciones.signal
+  if (typeof entrada !== 'string' && !(entrada instanceof URL)) return entrada.signal ?? null
+  return null
+}
+
+/**
+ * Transporte de los dos clientes. Transparente salvo para el `password grant`.
+ *
+ * La composición de señales se hace a mano: `AbortSignal.any` y
+ * `AbortSignal.timeout` no existen hasta iOS 16 y la aplicación se despliega
+ * con destino iOS 15.
+ */
+const fetchConLimiteDeLogin: typeof fetch = async (entrada, opciones) => {
+  if (!esInicioSesionPorContrasena(entrada, opciones)) return fetchNativo(entrada, opciones)
+
+  const control = new AbortController()
+  const previa = senalPrevia(entrada, opciones)
+  const propagar = () => control.abort()
+  if (previa) {
+    if (previa.aborted) control.abort()
+    else previa.addEventListener('abort', propagar)
+  }
+
+  const reloj = setTimeout(() => control.abort(), LOGIN_PASSWORD_TIMEOUT_MS)
+  try {
+    return await fetchNativo(entrada, { ...opciones, signal: control.signal })
+  } finally {
+    // Pase lo que pase —éxito, error HTTP, red caída, cancelación externa o
+    // nuestro propio límite—, no queda ni un temporizador ni un oyente vivos.
+    clearTimeout(reloj)
+    previa?.removeEventListener('abort', propagar)
+  }
+}
+
 // Cliente de la tienda: chat del visitante y sesión del CLIENTE.
-export const supabase: SupabaseClient | null = url && anon ? createClient(url, anon) : null
+export const supabase: SupabaseClient | null =
+  url && anon ? createClient(url, anon, { global: { fetch: fetchConLimiteDeLogin } }) : null
 
 // Cliente del panel /agente: sesión del AGENTE.
 //
@@ -31,6 +136,7 @@ export const supabaseAgent: SupabaseClient | null =
   url && anon
     ? createClient(url, anon, {
         auth: { storageKey: 'banana-agente-auth' },
+        global: { fetch: fetchConLimiteDeLogin },
       })
     : null
 
