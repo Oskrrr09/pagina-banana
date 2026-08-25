@@ -1,6 +1,6 @@
 ---
 tipo: problemas
-actualizado: 2026-08-21
+actualizado: 2026-08-25
 ---
 
 # Problemas pendientes
@@ -1027,15 +1027,18 @@ problema abierto de producto. No se crearon decisiones nuevas para cambios
 mecánicos, ni se inventaron motivaciones que el diff, el cuerpo de la PR o el
 código no sostengan.
 
-## UX-062 — Hallazgos abiertos de la auditoría del 2026-08-19
+## UX-062 — Hallazgos de la auditoría del 2026-08-19
 
-- Estado: **abiertos**, ninguno abordado.
+- Estado: **cerrado por completo el 2026-08-25**. Los nueve hallazgos están
+  resueltos o corregidos y fusionados; el último, A62-09, con la PR #79
+  (`714781aa`). **Cuando se abrió esta ficha estaban los nueve abiertos y
+  ninguno abordado**; la evolución de cada uno se conserva más abajo.
 - Origen: auditoría de sólo lectura del 2026-08-19 sobre `main` (estado
   posterior a la PR #61), hecha para elegir el siguiente cambio por impacto
   real. Se recogieron nueve hallazgos; el primero (A62-01, el aviso de tienda
   favorita tapando Inicio) se resolvió en la PR #62 y está en
   [[02-decisiones#D-070 — El aviso de tienda favorita ocupa banda, no flota]].
-  Quedan ocho:
+  Quedaban ocho, y así se recogieron entonces:
   - **A62-02** — el checkout duplica su propio texto.
   - **A62-03** — `/cuenta` no está traducida.
   - **A62-04** — queda texto obsoleto de «sesión iniciada».
@@ -1072,11 +1075,16 @@ la lista de arriba, así que cada hallazgo se remidió desde su frase.
 | **A62-06** | **RESUELTO**: la confirmación tiene un **único** control, «Volver al inicio», y lleva a la portada. Igual en web y en la app. |
 | **A62-07** | **CORREGIDO** en la entrega de errores de inicio de sesión. La Cuenta ya daba copy propio; faltaban el login de cliente y el de agente. Ver abajo. |
 | **A62-08** | **CORREGIDO** en la entrega de accesibilidad del checkout. Ver abajo. |
-| **A62-09** | **CORREGIDO EN ESTA ENTREGA, PENDIENTE DE FUSIÓN**. Antes: **EVOLUCIONADO / PARCIAL**: los fallos inmediatos aparecen en decenas de milisegundos, no en 4–8 s; lo que no existe es un límite propio, así que una conexión **colgada** no produce error nunca. |
+| **A62-09** | **CORREGIDO** y **fusionado en la PR #79** (`714781aa`, 2026-08-25). Antes: **EVOLUCIONADO / PARCIAL**: los fallos inmediatos aparecen en decenas de milisegundos, no en 4–8 s; lo que no existe es un límite propio, así que una conexión **colgada** no produce error nunca. |
 
-**UX-062**: con esta entrega **todos** sus hallazgos quedan corregidos, pero el
-**cierre técnico definitivo queda pendiente de fusionar A62-09**. Hasta que ese
-merge exista, el problema sigue formalmente abierto.
+**UX-062**: todos sus hallazgos quedan corregidos y el **cierre técnico
+definitivo se completó al fusionar A62-09** en la PR #79 (`714781aa`), el
+2026-08-25. **UX-062 queda cerrado por completo**: no queda ningún subhallazgo
+abierto.
+
+> Mientras esta sección se escribió, el cierre aún dependía de ese merge y el
+> problema constaba como formalmente abierto. Se deja anotado para que se
+> entienda la redacción de la reauditoría que sigue, no como estado vigente.
 
 ### A62-03 y A62-04 — qué contrato quedó protegido
 
