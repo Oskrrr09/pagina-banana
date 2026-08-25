@@ -8,7 +8,7 @@ import { useStore } from '../../lib/store'
 import { useStorePreference } from '../../lib/storePreference'
 import { listMyOrders } from '../../lib/orderSync'
 import { cancelReservation, listMyReservations, type ReservationWithPosition } from '../../lib/reservations'
-import { ACCEPTED_ACCEPT_ATTR, uploadEducationalProof } from '../../lib/educationalDiscount'
+import { ACCEPTED_ACCEPT_ATTR, uploadEducationalProof, type ErrorJustificante } from '../../lib/educationalDiscount'
 import type { DbAddress, DbOrder } from '../../lib/supabase'
 import { ISLAS } from '../../lib/checkoutState'
 import { euro } from '../../lib/format'
@@ -463,12 +463,24 @@ const CLAVE_DESCUENTO = {
   rechazado: 'account.discountRejected',
 } as const satisfies Record<'pendiente' | 'aprobado' | 'rechazado', ClaveTexto>
 
+/**
+ * Qué se le dice a quien sube según por qué no ha podido ser.
+ *
+ * `satisfies` obliga a cubrir las tres categorías: si mañana aparece una
+ * cuarta, esto deja de compilar en vez de caerse en silencio al genérico.
+ */
+const CLAVE_ERROR_JUSTIFICANTE = {
+  formato: 'account.uploadInvalidFormat',
+  tamano: 'account.uploadTooLarge',
+  tecnico: 'account.uploadProofError',
+} as const satisfies Record<ErrorJustificante, ClaveTexto>
+
 export function EducationalDiscountSection({ headingLevel }: NivelDeTitulo) {
   const t = useT()
   const { session, cliente, refresh } = useCustomerAuth()
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<ErrorJustificante | null>(null)
   const estado = cliente?.descuento_educativo_estado ?? null
 
   async function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -523,7 +535,7 @@ export function EducationalDiscountSection({ headingLevel }: NivelDeTitulo) {
 
         <p role="status" aria-live="polite" className="mt-2 min-h-5 text-xs">
           {uploading && <span className="text-muted">{t('account.uploading')}</span>}
-          {error && <span className="text-danger">{error}</span>}
+          {error && <span className="text-danger">{t(CLAVE_ERROR_JUSTIFICANTE[error])}</span>}
         </p>
       </div>
     </Section>

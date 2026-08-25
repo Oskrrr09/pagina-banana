@@ -36,17 +36,34 @@ export function describeStatus(estado: EducationalDiscountStatus | null): string
 }
 
 /**
+ * Por qué no ha podido subirse el justificante.
+ *
+ * Devolvía un `string`, y en ese mismo `string` viajaban dos cosas que no se
+ * parecen en nada: motivos que quien sube puede resolver —el formato, el
+ * tamaño— y el `message` de Storage o del RPC, que no le sirve a nadie salvo a
+ * quien depure. La cuenta pintaba lo que llegara, así que pintaba ambos.
+ *
+ * Ahora se devuelve la categoría y el texto lo elige la interfaz, que es donde
+ * está el diccionario: los dos motivos de dominio siguen siendo específicos
+ * —y, de paso, por fin traducidos— y todo lo demás cae en `'tecnico'`.
+ */
+export type ErrorJustificante = 'formato' | 'tamano' | 'tecnico'
+
+/**
  * Sube el justificante del cliente autenticado y deja la solicitud
  * pendiente de revisión. Sustituye a cualquier archivo anterior.
  */
-export async function uploadEducationalProof(userId: string, file: File): Promise<{ error: string | null }> {
-  if (!supabase) return { error: 'Supabase no está configurado.' }
+export async function uploadEducationalProof(userId: string, file: File): Promise<{ error: ErrorJustificante | null }> {
+  // El orden importa y se conserva: sin Supabase no se valida nada, porque no
+  // hay a dónde subir. Cambiarlo alteraría el comportamiento en los entornos
+  // que corren sin backend.
+  if (!supabase) return { error: 'tecnico' }
 
   if (!ACCEPTED_MIME.includes(file.type)) {
-    return { error: 'Formato no admitido. Sube un PDF, JPG o PNG.' }
+    return { error: 'formato' }
   }
   if (file.size > MAX_FILE_BYTES) {
-    return { error: 'El archivo supera los 5 MB.' }
+    return { error: 'tamano' }
   }
 
   // Nombre estable por usuario: así una segunda subida reemplaza a la
@@ -57,7 +74,7 @@ export async function uploadEducationalProof(userId: string, file: File): Promis
   const { error: uploadError } = await supabase.storage
     .from(EDUCATIONAL_DISCOUNT_BUCKET)
     .upload(path, file, { upsert: true, contentType: file.type })
-  if (uploadError) return { error: uploadError.message }
+  if (uploadError) return { error: 'tecnico' }
 
   // Por RPC: el cliente ya no tiene UPDATE sobre `clientes`, porque tenerlo
   // le permitía ponerse el descuento en 'aprobado'. La función comprueba
@@ -79,7 +96,7 @@ export async function uploadEducationalProof(userId: string, file: File): Promis
         limpiezaError,
       )
     }
-    return { error: registroError.message }
+    return { error: 'tecnico' }
   }
 
   return { error: null }
