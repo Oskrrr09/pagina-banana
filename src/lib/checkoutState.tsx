@@ -35,13 +35,32 @@ export const ISLAS = [
 
 export type CheckoutStep = 1 | 2 | 3
 
+/**
+ * Por qué no se puede pasar del paso 1.
+ *
+ * Aquí vivían los cuatro mensajes escritos en castellano, y de aquí salían
+ * directos al DOM: con la web en inglés, quien se equivocaba de correo leía
+ * «Introduce un email válido.». El estado expresa el MOTIVO; el idioma lo
+ * decide la interfaz, que es la que tiene diccionario.
+ *
+ * Este módulo no importa nada de i18n a propósito: así la validación se puede
+ * probar sin proveedor de idioma, y no hay dos sitios donde cambiar un copy.
+ */
+export type MotivoStep1 = 'nombre-requerido' | 'email-invalido' | 'direccion-requerida' | 'tienda-requerida'
+
+/** Qué campo del paso 1 puede quedar mal. */
+export type CampoErrorStep1 = 'nombre' | 'email' | 'direccion' | 'tienda'
+
+/** Los motivos por campo. Vacío significa que el paso 1 es válido. */
+export type ErroresStep1 = Partial<Record<CampoErrorStep1, MotivoStep1>>
+
 interface CheckoutState {
   delivery: DemoDeliveryMode
   setDelivery: (mode: DemoDeliveryMode) => void
   form: CheckoutForm
   setForm: (partial: Partial<CheckoutForm>) => void
   step1Valid: boolean
-  validateStep1: () => Record<string, string> // errores por campo
+  validateStep1: () => ErroresStep1
   reset: () => void
 }
 
@@ -109,15 +128,15 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const setDelivery = useCallback((mode: DemoDeliveryMode) => setDeliveryState(mode), [])
   const setForm = useCallback((partial: Partial<CheckoutForm>) => setFormState((prev) => ({ ...prev, ...partial })), [])
 
-  const validateStep1 = useCallback((): Record<string, string> => {
-    const errors: Record<string, string> = {}
-    if (!form.nombre.trim()) errors.nombre = 'Introduce tu nombre.'
-    if (!EMAIL_RE.test(form.email)) errors.email = 'Introduce un email válido.'
+  const validateStep1 = useCallback((): ErroresStep1 => {
+    const errors: ErroresStep1 = {}
+    if (!form.nombre.trim()) errors.nombre = 'nombre-requerido'
+    if (!EMAIL_RE.test(form.email)) errors.email = 'email-invalido'
     if (delivery === 'envio' && !form.direccion.trim()) {
-      errors.direccion = 'Introduce la dirección de envío.'
+      errors.direccion = 'direccion-requerida'
     }
     if (delivery === 'recogida' && !form.tienda) {
-      errors.tienda = 'Elige una tienda de recogida.'
+      errors.tienda = 'tienda-requerida'
     }
     return errors
   }, [delivery, form])

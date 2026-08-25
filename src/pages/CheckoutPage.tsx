@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { useColorName, useT, type ClaveTexto } from '../lib/i18n'
+import { useColorName, useIdioma, useT, type ClaveTexto } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Field } from '../components/ui/Field'
@@ -9,7 +10,7 @@ import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { Chip } from '../components/ui/Chip'
 import { useStore } from '../lib/store'
-import { ISLAS, useCheckoutState, formatAddressLine } from '../lib/checkoutState'
+import { ISLAS, useCheckoutState, formatAddressLine, type ErroresStep1, type MotivoStep1 } from '../lib/checkoutState'
 import { useCustomerAuth } from '../lib/customerAuth'
 import { createReservationsFromCart, isReservationLine } from '../lib/reservations'
 import { mirrorOrderToSupabase } from '../lib/orderSync'
@@ -32,10 +33,53 @@ import { euro, monthlyQuote } from '../lib/format'
 //   (sessionStorage) para no perderlos al navegar hacia atrás.
 // Claves, no texto: esto vive fuera del componente y la traducción se aplica
 // al pintar cada paso.
+/**
+ * Qué se le dice a quien no puede pasar del paso 1.
+ *
+ * `validateStep1` devuelve el motivo; el texto lo elige aquí la interfaz, que
+ * es la que tiene diccionario. `satisfies` obliga a cubrir los cuatro: añadir
+ * un motivo nuevo sin copy deja de compilar en vez de pintar el código crudo.
+ */
+/**
+ * Pinta una frase traducida que lleva un enlace dentro.
+ *
+ * Los dos avisos de lista de espera necesitan un `<Link>` en medio de la
+ * frase, y el sitio del enlace **no es el mismo en todos los idiomas**: en
+ * alemán cae antes de la coma final, en inglés al principio de la segunda
+ * oración. Partir el texto en tres fragmentos habría obligado a los cinco
+ * diccionarios a conservar el orden del castellano.
+ *
+ * `conNegritas` no sirve: sólo entiende `<b>` y sólo produce `<strong>`, no
+ * puede interpolar un nodo. Y en vez de generalizar `i18n.tsx` para dos casos
+ * —eso sí sería una decisión de arquitectura—, se parte una vez por `{link}`.
+ *
+ * No hay `dangerouslySetInnerHTML`: el texto traducido nunca se interpreta
+ * como HTML, sólo se corta.
+ */
+function conEnlace(texto: string, destino: string, rotulo: string): ReactNode {
+  const [antes, despues = ''] = texto.split('{link}')
+  return (
+    <>
+      {antes}
+      <Link to={destino} className="font-semibold text-ink underline">
+        {rotulo}
+      </Link>
+      {despues}
+    </>
+  )
+}
+
+const CLAVE_ERROR_STEP1 = {
+  'nombre-requerido': 'checkout.error.name',
+  'email-invalido': 'checkout.error.email',
+  'direccion-requerida': 'checkout.error.address',
+  'tienda-requerida': 'checkout.error.store',
+} as const satisfies Record<MotivoStep1, ClaveTexto>
+
 const STEPS: ClaveTexto[] = ['checkout.step.delivery', 'checkout.step.payment', 'checkout.step.confirmation']
 
 export function CheckoutPage() {
-  const t = useT()
+  const { t, intl } = useIdioma()
   const nombreColor = useColorName()
   const { step } = useParams()
   const parsedStep = Number(step)
@@ -108,7 +152,7 @@ export function CheckoutPage() {
         <h1 className="text-2xl font-bold text-ink">{t('checkout.empty')}</h1>
         <p className="mt-2 text-muted">{t('checkout.emptyBody')}</p>
         <Link to="/iphone" className="mt-4 inline-block font-semibold text-ink hover:underline">
-          Ver productos
+          {t('checkout.viewProducts')}
         </Link>
       </Container>
     )
@@ -118,11 +162,16 @@ export function CheckoutPage() {
     return <Navigate to="/checkout/1" replace />
   }
 
+  /** Los motivos del estado, ya convertidos en algo que se puede leer. */
+  function traducirErrores(motivos: ErroresStep1): Record<string, string> {
+    return Object.fromEntries(Object.entries(motivos).map(([campo, motivo]) => [campo, t(CLAVE_ERROR_STEP1[motivo])]))
+  }
+
   function next() {
     if (current === 1) {
-      const e = validateStep1()
-      setErrors(e)
-      if (Object.keys(e).length > 0) return
+      const motivos = validateStep1()
+      setErrors(traducirErrores(motivos))
+      if (Object.keys(motivos).length > 0) return
       navigate('/checkout/2')
       return
     }
@@ -193,7 +242,6 @@ export function CheckoutPage() {
       <Container className="pt-6">
         <div className="rounded-[12px] border border-line bg-neutral px-4 py-2 text-xs text-muted">
           <strong className="text-ink">{t('checkout.demoOrder')}</strong> {t('checkout.demoOrderBody')}
-          los datos se guardan solo en tu navegador.
         </div>
       </Container>
 
@@ -309,7 +357,7 @@ export function CheckoutPage() {
                     </Field>
                   </>
                 ) : (
-                  <Field label="Tienda de recogida" error={errors.tienda} full>
+                  <Field label={t('checkout.pickupStore')} error={errors.tienda} full>
                     {(campo) => (
                       <select
                         {...campo}
@@ -336,7 +384,7 @@ export function CheckoutPage() {
 
           {current === 2 && (
             <div>
-              <h1 className="text-xl font-bold text-ink">Pago y extras</h1>
+              <h1 className="text-xl font-bold text-ink">{t('checkout.step.payment')}</h1>
               <p className="mb-3 mt-4 text-sm font-semibold text-ink">{t('checkout.paymentMethod')}</p>
               <div className="flex flex-wrap gap-2">
                 {(['tarjeta', 'bizum', 'financiacion'] as const).map((p) => (
@@ -346,29 +394,25 @@ export function CheckoutPage() {
                 ))}
               </div>
               <p className="mt-2 text-xs text-muted">
-                Pago demostrativo · <span className="italic">no se realizan cargos reales.</span>
+                {t('checkout.demoPayment')} · <span className="italic">{t('checkout.noRealCharges')}</span>
               </p>
 
               {pay === 'financiacion' && (
                 <div className="mt-4 rounded-[12px] border border-line bg-neutral p-4">
                   <p className="text-sm font-semibold text-ink">{t('checkout.instalmentSimulator')}</p>
-                  <p className="mb-3 text-xs text-muted">
-                    Condición demostrativa — pendiente de validación con Banana Computer.
-                  </p>
+                  <p className="mb-3 text-xs text-muted">{t('checkout.financingDemoNote')}</p>
                   <div className="flex flex-wrap gap-2">
                     {[12, 24, 36].map((m) => (
                       <Chip key={m} selected={months === m} onClick={() => setMonths(m)}>
-                        {m} meses
+                        {t('checkout.monthsOption', { n: m })}
                       </Chip>
                     ))}
                   </div>
                   <p className="mt-3 text-lg font-bold text-ink">
-                    {euro(monthlyQuote(cartSubtotal, months))}/mes{' '}
-                    <span className="text-xs font-normal text-muted">(orientativo)</span>
+                    {t('checkout.perMonth', { importe: euro(monthlyQuote(cartSubtotal, months), intl) })}{' '}
+                    <span className="text-xs font-normal text-muted">{t('checkout.indicative')}</span>
                   </p>
-                  <p className="mt-2 text-xs text-muted">
-                    La contratación se completaría de forma presencial en tienda.
-                  </p>
+                  <p className="mt-2 text-xs text-muted">{t('checkout.financingInPerson')}</p>
                 </div>
               )}
 
@@ -391,10 +435,12 @@ export function CheckoutPage() {
                           className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
                         />
                         <span>
-                          <span className="block font-semibold">Seguro para {line.name}</span>
+                          <span className="block font-semibold">
+                            {t('checkout.insuranceFor', { producto: line.name })}
+                          </span>
                           <span className="block text-xs text-muted">
-                            {line.capacity} · {nombreColor(line.color)} · +{euro(insurancePrice)}
-                            /mes* por unidad
+                            {line.capacity} · {nombreColor(line.color)} · +{euro(insurancePrice, intl)}
+                            {t('checkout.perMonthPerUnit')}
                           </span>
                         </span>
                       </label>
@@ -402,16 +448,16 @@ export function CheckoutPage() {
                 </div>
                 <div className="mt-4">
                   <p className="mb-1 text-sm font-semibold text-ink">{t('checkout.couponCode')}</p>
-                  <input placeholder="Introduce tu código" className="field max-w-xs" />
+                  <input placeholder={t('checkout.couponPlaceholder')} className="field max-w-xs" />
                 </div>
               </div>
 
               <div className="mt-6 border-t border-line pt-5">
                 <p className="text-sm font-semibold text-ink">{t('checkout.tradeInNote')}</p>
                 <p className="mt-1 text-sm text-muted">
-                  Servicio presencial: la tasación se gestionaría en tienda, no en este paso online.{' '}
+                  {t('checkout.tradeInBody')}{' '}
                   <Link to="/plan-renove" className="font-semibold text-ink hover:underline">
-                    Ver Plan Renove ›
+                    {t('checkout.viewTradeIn')} ›
                   </Link>
                 </p>
               </div>
@@ -430,10 +476,10 @@ export function CheckoutPage() {
                     : t('checkout.orderConfirmed')}
                 </h1>
                 <p className="mt-2 text-muted">
-                  Número de pedido: <strong className="text-ink">{confirmedOrder.id}</strong>
+                  {t('checkout.orderNumber')} <strong className="text-ink">{confirmedOrder.id}</strong>
                 </p>
                 <div className="mt-3 flex justify-center">
-                  <ProvisionalBadge label="Pedido de demostración" />
+                  <ProvisionalBadge label={t('checkout.demoOrderBadge')} />
                 </div>
               </div>
 
@@ -443,24 +489,9 @@ export function CheckoutPage() {
                 <div className="mt-6 rounded-[12px] border border-line bg-neutral p-5 text-sm">
                   <p className="font-semibold text-ink">{t('checkout.waitingList')}</p>
                   <p className="mt-1 text-muted">
-                    {customerSession ? (
-                      <>
-                        Las unidades reservadas se sirven por orden de reserva cuando lleguen. Puedes consultar tu
-                        posición en{' '}
-                        <Link to="/cuenta" className="font-semibold text-ink underline">
-                          Mi cuenta
-                        </Link>
-                        .
-                      </>
-                    ) : (
-                      <>
-                        Al no haber sesión iniciada, esta reserva no se ha guardado en ninguna cuenta.{' '}
-                        <Link to="/login" className="font-semibold text-ink underline">
-                          Inicia sesión
-                        </Link>{' '}
-                        antes de reservar para poder seguirla.
-                      </>
-                    )}
+                    {customerSession
+                      ? conEnlace(t('checkout.waitingListAccount'), '/cuenta', t('account.title'))
+                      : conEnlace(t('checkout.waitingListGuest'), '/login', t('checkout.signIn'))}
                   </p>
                 </div>
               )}
@@ -470,7 +501,7 @@ export function CheckoutPage() {
                 <ul className="mt-2 space-y-1">
                   <li>
                     <span className="font-medium text-ink">{t('checkout.field.date')}</span>{' '}
-                    {new Date(confirmedOrder.createdAt).toLocaleString('es-ES', {
+                    {new Date(confirmedOrder.createdAt).toLocaleString(intl, {
                       timeZone: 'Atlantic/Canary',
                     })}
                   </li>
@@ -499,36 +530,37 @@ export function CheckoutPage() {
                         : t('checkout.financingMonths', {
                             meses: confirmedOrder.financingMonths ?? 0,
                           })}{' '}
-                    <span className="italic">(demostrativo)</span>
+                    <span className="italic">{t('checkout.demoSuffix')}</span>
                   </li>
                   <li>
-                    <span className="font-medium text-ink">{t('checkout.field.status')}</span> demo · pendiente de
-                    validación
+                    <span className="font-medium text-ink">{t('checkout.field.status')}</span>{' '}
+                    {t('checkout.statusDemo')}
                   </li>
                 </ul>
-                <p className="mt-3 text-xs">
-                  No se ha enviado ningún email real ni se ha realizado ningún cargo. Este resumen queda en tu navegador
-                  durante esta sesión.
-                </p>
+                <p className="mt-3 text-xs">{t('checkout.noEmailNote')}</p>
               </div>
 
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <Link to="/" className="font-semibold text-ink hover:underline">
-                  Volver al inicio
+                  {t('checkout.backHome')}
                 </Link>
                 <span className="text-line">·</span>
                 <Link to="/soporte" className="font-semibold text-ink hover:underline">
-                  Ir a soporte
+                  {t('checkout.goSupport')}
                 </Link>
               </div>
             </div>
           )}
 
           {current < 3 && (
-            <div className="mt-8 flex items-center justify-between">
+            // `data-checkout-nav` marca la barra de avance. El rótulo del botón
+            // cambia con el paso y con el idioma, así que las pruebas que
+            // recorren el flujo en otros idiomas necesitan un ancla estructural.
+            // Misma convención que `data-app-topbar` o `data-app-chips`.
+            <div data-checkout-nav className="mt-8 flex items-center justify-between">
               {current > 1 ? (
                 <Link to={`/checkout/${current - 1}`} className="text-sm font-semibold text-muted hover:text-ink">
-                  ← Atrás
+                  ← {t('common.back')}
                 </Link>
               ) : (
                 <span />
@@ -537,7 +569,7 @@ export function CheckoutPage() {
                 {processing ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    Procesando…
+                    {t('checkout.processing')}
                   </>
                 ) : current === 2 ? (
                   t('checkout.confirmOrder')
@@ -557,7 +589,10 @@ export function CheckoutPage() {
               {summaryLines.map((line) => {
                 const isAccessory = line.kind === 'accessory'
                 const src = isAccessory ? line.image : productImage(line.modelSlug, line.color)
-                const altText = isAccessory ? line.name : `${line.name} ${line.color}`
+                // El color persistido es castellano —hace de identificador—, así que
+                // el nombre accesible se compone con el traducido, igual que el
+                // visible de dos líneas más abajo.
+                const altText = isAccessory ? line.name : `${line.name} ${nombreColor(line.color)}`
                 return (
                   <li key={line.id} className="flex gap-3">
                     <div className="w-14 shrink-0">
@@ -572,11 +607,12 @@ export function CheckoutPage() {
                         {isAccessory ? t('checkout.appleAccessory') : nombreColor(line.color)} ·{' '}
                         {t('checkout.units', { n: line.qty })}
                       </p>
-                      <p className="font-semibold text-ink">{euro(line.price * line.qty)}</p>
+                      <p className="font-semibold text-ink">{euro(line.price * line.qty, intl)}</p>
                       {line.insured && (
                         <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-available">
                           <Icon name="shield" size={14} />
-                          Seguro incluido · {euro(insurancePrice * line.qty)}/mes*
+                          {t('checkout.insuranceIncluded')} ·{' '}
+                          {t('checkout.perMonthDemo', { importe: euro(insurancePrice * line.qty, intl) })}
                         </p>
                       )}
                     </div>
@@ -588,12 +624,12 @@ export function CheckoutPage() {
             <dl className="mt-4 space-y-1 border-t border-line pt-4 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted">{t('checkout.products')}</dt>
-                <dd className="text-ink">{euro(summaryProducts)}</dd>
+                <dd className="text-ink">{euro(summaryProducts, intl)}</dd>
               </div>
               {summaryInsurance > 0 && (
                 <div className="flex justify-between">
                   <dt className="text-muted">{t('checkout.insurance')}</dt>
-                  <dd className="text-ink">{euro(summaryInsurance)}/mes*</dd>
+                  <dd className="text-ink">{t('checkout.perMonthDemo', { importe: euro(summaryInsurance, intl) })}</dd>
                 </div>
               )}
               <div className="flex justify-between">
@@ -601,20 +637,25 @@ export function CheckoutPage() {
                 <dd className="font-medium text-available">{t('cart.free')}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted">Entrega</dt>
+                <dt className="text-muted">{t('checkout.step.delivery')}</dt>
                 <dd className="text-ink">
                   {current === 3 && confirmedOrder
                     ? confirmedOrder.delivery === 'envio'
-                      ? 'Envío a domicilio'
-                      : `Recogida — ${getStore(confirmedOrder.customer.tienda ?? '')?.name ?? confirmedOrder.customer.tienda}`
+                      ? t('checkout.homeDelivery')
+                      : t('checkout.pickupAt', {
+                          tienda:
+                            getStore(confirmedOrder.customer.tienda ?? '')?.name ??
+                            confirmedOrder.customer.tienda ??
+                            '',
+                        })
                     : delivery === 'envio'
-                      ? 'Envío a domicilio'
-                      : `Recogida — ${tiendaObj?.name ?? form.tienda}`}
+                      ? t('checkout.homeDelivery')
+                      : t('checkout.pickupAt', { tienda: tiendaObj?.name ?? form.tienda })}
                 </dd>
               </div>
               <div className="flex justify-between border-t border-line pt-2">
                 <dt className="font-bold text-ink">{t('checkout.productsTotal')}</dt>
-                <dd className="font-bold text-ink">{euro(current === 3 ? summaryProducts : total)}</dd>
+                <dd className="font-bold text-ink">{euro(current === 3 ? summaryProducts : total, intl)}</dd>
               </div>
             </dl>
             <div className="mt-3">
