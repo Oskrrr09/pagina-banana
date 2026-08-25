@@ -63,14 +63,12 @@ export async function llegarAlPaso(page: Page, paso: 1 | 2 | 3) {
   await expect(page, 'con carrito, el paso 1 se abre directo').toHaveURL(/\/checkout\/1$/)
   if (paso === 1) return
 
-  await page.getByLabel('Nombre y apellidos').fill('Elena R.')
-  await page.getByLabel('Email').fill('elena@example.test')
-  await page.getByLabel('Dirección').fill('Calle Mayor 1')
-  await page.getByRole('button', { name: 'Continuar' }).click()
+  await rellenarPaso1(page)
+  await avanzar(page)
   await expect(page, 'el paso 1 válido abre el paso 2').toHaveURL(/\/checkout\/2$/)
   if (paso === 2) return
 
-  await page.getByRole('button', { name: 'Confirmar pedido' }).click()
+  await avanzar(page)
   await expect(page, 'confirmar crea el pedido y abre el paso 3').toHaveURL(/\/checkout\/3$/)
   // El número de pedido sólo se pinta cuando `confirmedOrder` existe, así que
   // verlo demuestra que la precondición del paso 3 se cumple de verdad y que
@@ -80,4 +78,39 @@ export async function llegarAlPaso(page: Page, paso: 1 | 2 | 3) {
     page.getByText(/BC-([0-9A-F]{12}|\d{6})/),
     'el paso 3 enseña el número del pedido demostrativo',
   ).toBeVisible()
+}
+
+// ----------------------------------------------------------------------------
+// POR QUÉ EL RECORRIDO DEJÓ DE USAR RÓTULOS
+//
+// `llegarAlPaso` rellenaba con `getByLabel('Nombre y apellidos')` y pulsaba
+// «Continuar». Eso ata el recorrido al castellano, y AUD-002 necesita hacerlo
+// en inglés, alemán, francés e italiano. Duplicar el flujo en un helper
+// paralelo habría dejado dos caminos al mismo sitio que divergen en cuanto uno
+// de los dos cambie, así que se cambia el de dentro y todos los consumidores
+// —las suites españolas incluidas— siguen usando la misma función.
+//
+// Los campos se buscan por `autocomplete`, que no es un gancho puesto para la
+// prueba: es el atributo que hace que un gestor de contraseñas o el autorrelleno
+// del navegador funcionen. Si desapareciera, el formulario tendría un problema
+// de verdad y esta prueba debe enterarse.
+// ----------------------------------------------------------------------------
+
+/** Los datos mínimos del paso 1, sin depender de cómo se rotulen los campos. */
+export async function rellenarPaso1(page: Page) {
+  await page.locator('input[autocomplete="name"]').fill('Elena R.')
+  await page.locator('input[autocomplete="email"]').fill('elena@example.test')
+  await page.locator('input[autocomplete="street-address"]').fill('Calle Mayor 1')
+}
+
+/**
+ * Pulsa el control que lleva al paso siguiente.
+ *
+ * El rótulo cambia con el idioma y con el paso —«Continuar», «Confirmar
+ * pedido»—, así que se localiza por estructura: es el único botón de la barra
+ * inferior de navegación, que tiene marca propia. El detalle estructural vive
+ * aquí y no se repite por la suite.
+ */
+export async function avanzar(page: Page) {
+  await page.locator('[data-checkout-nav] button').click()
 }
