@@ -102,6 +102,13 @@ test.describe('el checkout en inglés', () => {
     expect(semantica.invalido, 'el campo se anuncia inválido').toBe('true')
     expect(semantica.requerido, 'y obligatorio').toBe(true)
     expect(semantica.descripcion, 'el error es la descripción del campo, traducida').toBe('Enter your name.')
+
+    // Que esto salga en inglés exige que el motivo se traduzca AL PINTAR. Si el
+    // estado volviera a guardar el texto ya traducido, esta prueba seguiría
+    // pasando —se traduce en el mismo render— pero el error se quedaría en el
+    // idioma de la validación en cuanto el idioma cambiase después. Lo que
+    // impide esa vuelta atrás es el tipo: `errors` es `ErroresStep1`, así que
+    // guardar un `string` no compila. Ver la nota de AUD-002.
   })
 
   test('paso 2: pago, financiación, seguro y extras están en inglés', async ({ page }) => {

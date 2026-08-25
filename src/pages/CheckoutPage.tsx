@@ -95,7 +95,11 @@ export function CheckoutPage() {
   const hasReservations = cart.some(isReservationLine)
   const hasPurchases = cart.some((line) => !isReservationLine(line))
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  // Motivos, no mensajes. Guardar aquí el texto ya traducido lo congelaba en el
+  // idioma que hubiera al validar: si el idioma cambiase después, el resto de
+  // la pantalla se volvería a pintar y estos errores no. El estado dice POR QUÉ
+  // falla; el idioma lo elige el render, que es quien se rehace.
+  const [errors, setErrors] = useState<ErroresStep1>({})
   const [pay, setPay] = useState<'tarjeta' | 'bizum' | 'financiacion'>('tarjeta')
   const [months, setMonths] = useState(24)
   const [processing, setProcessing] = useState(false)
@@ -162,15 +166,15 @@ export function CheckoutPage() {
     return <Navigate to="/checkout/1" replace />
   }
 
-  /** Los motivos del estado, ya convertidos en algo que se puede leer. */
-  function traducirErrores(motivos: ErroresStep1): Record<string, string> {
-    return Object.fromEntries(Object.entries(motivos).map(([campo, motivo]) => [campo, t(CLAVE_ERROR_STEP1[motivo])]))
+  /** El motivo, dicho en el idioma que esté activo AHORA. */
+  function textoError(motivo: MotivoStep1 | undefined) {
+    return motivo ? t(CLAVE_ERROR_STEP1[motivo]) : undefined
   }
 
   function next() {
     if (current === 1) {
       const motivos = validateStep1()
-      setErrors(traducirErrores(motivos))
+      setErrors(motivos)
       if (Object.keys(motivos).length > 0) return
       navigate('/checkout/2')
       return
@@ -299,7 +303,7 @@ export function CheckoutPage() {
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <Field label={t('checkout.fullName')} error={errors.nombre}>
+                <Field label={t('checkout.fullName')} error={textoError(errors.nombre)}>
                   {(campo) => (
                     <input
                       {...campo}
@@ -311,7 +315,7 @@ export function CheckoutPage() {
                     />
                   )}
                 </Field>
-                <Field label={t('account.email')} error={errors.email}>
+                <Field label={t('account.email')} error={textoError(errors.email)}>
                   {(campo) => (
                     <input
                       {...campo}
@@ -326,7 +330,7 @@ export function CheckoutPage() {
                 </Field>
                 {delivery === 'envio' ? (
                   <>
-                    <Field label={t('checkout.address')} error={errors.direccion} full>
+                    <Field label={t('checkout.address')} error={textoError(errors.direccion)} full>
                       {(campo) => (
                         <input
                           {...campo}
@@ -357,7 +361,7 @@ export function CheckoutPage() {
                     </Field>
                   </>
                 ) : (
-                  <Field label={t('checkout.pickupStore')} error={errors.tienda} full>
+                  <Field label={t('checkout.pickupStore')} error={textoError(errors.tienda)} full>
                     {(campo) => (
                       <select
                         {...campo}
