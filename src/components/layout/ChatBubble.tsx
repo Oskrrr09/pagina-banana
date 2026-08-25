@@ -529,6 +529,7 @@ function GuestGate({ onSubmit }: { onSubmit: (nombre: string, email: string) => 
  * valoración, se muestra el formulario de estrellas; si no, solo el aviso.
  */
 function ClosedFooter({ session }: { session: ReturnType<typeof useVisitorChatSession> }) {
+  const t = useT()
   const { cierre, enviarValoracion, empezarNuevaConversacion } = session
   const [estrellas, setEstrellas] = useState(0)
   const [observacion, setObservacion] = useState('')
@@ -566,7 +567,9 @@ function ClosedFooter({ session }: { session: ReturnType<typeof useVisitorChatSe
     setEnviando(true)
     const { error: err } = await enviarValoracion(estrellas, observacion)
     setEnviando(false)
-    setError(err)
+    // `err` ya no es un texto: es una categoría. El copy lo elige esta capa,
+    // que es la que tiene diccionario. Antes aquí entraba el `message` del RPC.
+    setError(err ? t('chat.ratingError') : null)
   }
 
   return (

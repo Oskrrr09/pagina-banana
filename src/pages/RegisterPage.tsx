@@ -49,7 +49,15 @@ export function RegisterPage() {
     setSubmitting(false)
 
     if (result.error) {
-      setFormError(result.error)
+      // Nunca `setFormError(result.error)`: `signUp` devuelve el `message` del
+      // SDK en sus cuatro caminos, y ése era el que enseñaba `Failed to fetch`,
+      // `{}` y `User already registered`. La capa lo conserva para quien
+      // depure; aquí sólo se dice que no ha podido ser.
+      //
+      // Tampoco se distingue el email ya registrado: un copy propio para ese
+      // caso convertiría esta pantalla en un oráculo de qué direcciones tienen
+      // cuenta. Quien ya la tenga tiene abajo el enlace para entrar.
+      setFormError(t('auth.signUpError'))
       return
     }
     if (result.needsEmailConfirmation) {

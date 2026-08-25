@@ -79,6 +79,17 @@ limpiarResiduoHeredado()
 
 type Status = 'loading' | 'ready' | 'demo' | 'error'
 
+/**
+ * Lo único que esta capa le cuenta a la interfaz cuando la valoración no sale.
+ *
+ * Era `string`, y con esa firma lo natural era devolver el `message` del RPC:
+ * eso es lo que acababa pintado dentro de la burbuja. Un tipo cerrado hace que
+ * ya no compile. Hoy tiene un solo miembro porque sólo hay una cosa que hacer
+ * —volver a intentarlo—; el detalle técnico sigue yendo a `console.error`, que
+ * es donde sirve de algo.
+ */
+export type ErrorValoracion = 'tecnico'
+
 export interface ChatSession {
   messages: DbMessage[]
   sendMessage: (texto: string) => Promise<void>
@@ -98,7 +109,7 @@ export interface ChatSession {
     valoracionSolicitada: boolean
     valoracionEnviada: boolean
   }
-  enviarValoracion: (estrellas: number, observacion: string) => Promise<{ error: string | null }>
+  enviarValoracion: (estrellas: number, observacion: string) => Promise<{ error: ErrorValoracion | null }>
   /**
    * Abre una conversación nueva dejando atrás la cerrada, sin recargar la
    * página. El historial anterior sigue en la base de datos.
@@ -522,7 +533,7 @@ export function useVisitorChatSession(active: boolean, identity: VisitorIdentity
 
   const enviarValoracion = useCallback(
     async (estrellas: number, observacion: string) => {
-      if (!supabase || !conversationId) return { error: 'No hay conversación.' }
+      if (!supabase || !conversationId) return { error: 'tecnico' as const }
 
       // Ya no se manda el id del visitante: la función deduce de quién es la
       // conversación a partir de la sesión. Mandarlo era ofrecerle al servidor
@@ -534,7 +545,7 @@ export function useVisitorChatSession(active: boolean, identity: VisitorIdentity
       })
       if (error) {
         console.error('[chatSession] valoración error', error)
-        return { error: error.message }
+        return { error: 'tecnico' as const }
       }
       setConversation((prev) =>
         prev
