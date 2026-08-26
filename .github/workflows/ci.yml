@@ -45,8 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -70,8 +70,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -90,7 +90,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -101,7 +101,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_ANON_KEY: ''
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-test
           path: dist
@@ -113,15 +113,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       # Sin recompilar: se reutiliza el artefacto del trabajo anterior. Lo
       # necesitan las comprobaciones que inspeccionan el bundle publicado.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist-test
           path: dist
@@ -142,7 +142,7 @@ jobs:
       # tienda favorita ni los avisos de quien acaba de salir.
       - name: Probar el reinicio de preferencias al cerrar sesión
         run: npm run test:e2e:prefs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
@@ -171,4 +171,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
