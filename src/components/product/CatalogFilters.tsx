@@ -65,9 +65,21 @@ export function CatalogFilters({
     })
   }
 
+  const etiquetaOrden = ORDENES.find((o) => o.valor === filtros.orden) ?? ORDENES[0]
+
   return (
-    <div className="mb-6">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="mb-3">
+      {/* UNA FILA, NO TRES.
+          Antes esto ocupaba «Filtrar», una etiqueta con un `<select>` y el
+          recuento, cada uno con su alto: ~130 px sumando separaciones, justo
+          por delante del primer producto. En 320 px eso bastaba para que no
+          entrara ni una tarjeta.
+
+          La funcionalidad no cambia: los mismos filtros, los mismos tres
+          órdenes y el mismo estado en la URL. Lo que cambia es que ahora son
+          dos controles táctiles del mismo alto y el catálogo empieza justo
+          debajo. */}
+      <div className="flex items-center gap-2">
         <Button variant="secondary" size="sm" onClick={() => setAbierto(true)}>
           <Icon name="filter" size={16} />
           {t('catalog.filter')}
@@ -78,46 +90,56 @@ export function CatalogFilters({
           )}
         </Button>
 
-        {/* El orden no se esconde tras el panel: se cambia de un toque.
-            `min-w-0` en la etiqueta y en el desplegable, y `max-w-full` en
-            este: el ancho intrínseco de un `<select>` lo fija su opción más
-            larga, y «Orden del catálogo» no cabe junto a «Filtrar» en una
-            pantalla de 320 px. Un elemento flexible no encoge por debajo de su
-            contenido salvo que se le quite ese mínimo, así que sin esto se
-            salía de la pantalla —tres píxeles con las fuentes de Linux, cero
-            con las de macOS, que es la clase de diferencia que sólo aparece en
-            CI—. Envolver no bastaba: `flex-wrap` mueve elementos de línea, no
-            los estrecha. */}
-        <label className="flex min-w-0 items-center gap-2 text-sm text-muted">
-          <span className="shrink-0">{t('catalog.sort')}</span>
-          <select
-            value={filtros.orden}
-            onChange={(e) => onCambiar({ ...filtros, orden: e.target.value as Orden })}
-            className="h-9 min-w-0 max-w-full truncate rounded-[10px] border border-line bg-surface px-2 text-sm font-semibold text-ink"
-          >
-            {ORDENES.map((o) => (
-              <option key={o.valor} value={o.valor}>
-                {t(o.clave)}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* El orden deja de ser un `<select>` de formulario y pasa a la misma
+            hoja que los filtros. Sigue siendo alcanzable de un toque y sigue
+            escribiéndose en la URL; lo que se va es el lenguaje de escritorio
+            —y con él el problema de ancho intrínseco que obligaba a `min-w-0`
+            en tres sitios para que «Orden del catálogo» no desbordara a 320—. */}
+        {/* EL VALOR SÓLO SE ENSEÑA CUANDO DICE ALGO
+            Poner siempre el orden actual dentro del botón parecía informativo y
+            a 320 px reventaba: «Ordenar · Orden del catálogo» no cabe, y el
+            texto se salía del control en tres líneas. Medido en la captura de
+            la Fase A.
 
-        {/* `aria-live`: al filtrar, el recuento cambia sin mover el foco, así
-            que hay que anunciarlo o quien use lector de pantalla no se entera. */}
-        <p aria-live="polite" className="text-sm text-muted">
-          {t('catalog.showing', { visibles: totalVisible, total: totalSin })}
-        </p>
-
-        {activos > 0 && (
-          <Button variant="tertiary" size="sm" onClick={() => onCambiar({ ...FILTROS_VACIOS, orden: filtros.orden })}>
-            {t('catalog.clearFilters')}
-          </Button>
-        )}
+            Además el valor por defecto no aporta —«Orden del catálogo» es
+            justamente «no he ordenado nada»—, así que se enseña sólo cuando hay
+            un orden elegido, y truncado. `min-w-0` porque un elemento flexible
+            no encoge por debajo de su contenido sin él. */}
+        <Button variant="secondary" size="sm" className="min-w-0" onClick={() => setAbierto(true)}>
+          <span className="truncate">
+            {t('catalog.sort')}
+            {filtros.orden !== 'catalogo' && (
+              <span className="font-normal text-muted"> · {t(etiquetaOrden.clave)}</span>
+            )}
+          </span>
+          <Icon name="chevron-down" size={14} aria-hidden="true" className="shrink-0" />
+        </Button>
       </div>
+
+      {/* El recuento se anuncia, pero ya no ocupa una tercera pieza delante del
+          producto: quien ve la rejilla los está contando con los ojos. Para
+          lector de pantalla no cambia nada. */}
+      <p aria-live="polite" className="sr-only">
+        {t('catalog.showing', { visibles: totalVisible, total: totalSin })}
+      </p>
 
       <Modal open={abierto} onClose={() => setAbierto(false)} title={t('catalog.filter')}>
         <fieldset className="border-0 p-0">
+          <legend className="text-sm font-bold text-ink">{t('catalog.sort')}</legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {ORDENES.map((o) => (
+              <Chip
+                key={o.valor}
+                selected={filtros.orden === o.valor}
+                onClick={() => onCambiar({ ...filtros, orden: o.valor })}
+              >
+                {t(o.clave)}
+              </Chip>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="mt-6 border-0 p-0">
           <legend className="text-sm font-bold text-ink">{t('catalog.maxPrice')}</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             <Chip selected={filtros.precioMax == null} onClick={() => onCambiar({ ...filtros, precioMax: null })}>

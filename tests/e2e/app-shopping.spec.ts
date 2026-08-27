@@ -41,11 +41,16 @@ test.describe('portada de la tienda', () => {
   test('el catálogo va antes que los servicios', async ({ page }) => {
     // LA PROPIEDAD ES EL ORDEN, NO LOS RÓTULOS
     //
-    // Antes esta prueba decía «empieza por producto»: comparaba Oportunidades
-    // con «Servicios y ayuda». Tienda v2 pone «Explorar» —la entrada a las seis
-    // familias— por delante del producto, porque la primera función de la
-    // pantalla es el catálogo. Lo que sigue siendo cierto, y es lo que aquí se
-    // protege, es que **lo comercial va antes que lo accesorio**.
+    // Esta prueba ha ido siguiendo a la pantalla. Primero decía «empieza por
+    // producto»; Tienda v2 puso «Explorar» por delante y se cambió a «lo
+    // comercial antes que lo accesorio».
+    //
+    // La Fase A vuelve a invertir esos dos: seis cajas con chevron por delante
+    // de las ofertas hacían que la tienda abriera como un menú de ajustes. Ahora
+    // el producto va primero y las familias —ya con fotografía— justo después.
+    //
+    // Se siguen exigiendo las tres secciones y un orden completo y estricto, no
+    // menos que antes.
     await comoApp(page)
     await page.goto('./tienda')
 
@@ -55,9 +60,7 @@ test.describe('portada de la tienda', () => {
     for (const seccion of [explorar, oportunidades, servicios]) await expect(seccion).toBeVisible()
 
     const y = async (h: typeof explorar) => (await h.boundingBox())!.y
-    expect(await y(oportunidades), 'el producto va después de la entrada al catálogo').toBeGreaterThan(
-      await y(explorar),
-    )
+    expect(await y(explorar), 'la entrada al catálogo va después del producto').toBeGreaterThan(await y(oportunidades))
     expect(await y(servicios), 'los servicios van por debajo del producto').toBeGreaterThan(await y(oportunidades))
   })
 
@@ -342,7 +345,9 @@ test.describe('filtros del catálogo', () => {
     await page.goto('./airpods')
 
     await expect(page.getByRole('button', { name: /Filtrar/ })).toBeVisible()
-    await expect(page.getByRole('combobox')).toBeVisible()
+    // El orden dejó de ser un `<select>` y comparte panel con los filtros; sigue
+    // siendo alcanzable de un toque desde la propia pantalla.
+    await expect(page.getByRole('button', { name: /Ordenar/ })).toBeVisible()
     await expect(page.getByText('Filtrar por precio'), 'el sistema antiguo debe haber desaparecido').toHaveCount(0)
   })
 
@@ -358,10 +363,17 @@ test.describe('filtros del catálogo', () => {
     await page.getByRole('button', { name: /Filtrar/ }).click()
     await page.getByRole('button', { name: 'Hasta 500 €' }).click()
     await page.getByRole('button', { name: /Ver \d+ modelos/ }).click()
-    await page.getByRole('combobox').selectOption('precio-desc')
+    await page.getByRole('button', { name: /Ordenar/ }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Precio: de mayor a menor', exact: true }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /Ver \d+ modelos/ })
+      .click()
 
     await expect(page).toHaveURL(/\?precio=500&orden=precio-desc$/)
-    await expect(page.getByRole('combobox')).toHaveValue('precio-desc')
+    await expect(page.getByRole('button', { name: /Ordenar/ }), 'el control dice por qué está ordenado').toContainText(
+      'Precio',
+    )
     // 3 de los 4 AirPods bajan de 500 €; los Max, a 579 €, quedan fuera.
     await expect(page.getByText('3 de 4')).toBeVisible()
 
@@ -376,8 +388,10 @@ test.describe('filtros del catálogo', () => {
     // La URL vuelve con los dos parámetros...
     await expect(page, 'Atrás recupera el catálogo que se estaba viendo').toHaveURL(/\?precio=500&orden=precio-desc$/)
     // ...y los controles vuelven a reflejarlos, que es lo que ve quien navega.
-    await expect(page.getByRole('combobox')).toHaveValue('precio-desc')
-    await expect(page.getByText('3 de 4'), 'el filtro de precio sigue aplicado').toBeVisible()
+    await expect(page.getByRole('button', { name: /Ordenar/ })).toContainText('Precio')
+    // El recuento ya no ocupa una pieza delante del producto, pero se sigue
+    // anunciando: se comprueba en el texto accesible, no en píxeles.
+    await expect(page.getByText('3 de 4'), 'el filtro de precio sigue aplicado').toBeAttached()
     await expect(page.getByRole('button', { name: /Filtrar 1/ }), 'el contador del botón sigue a 1').toBeVisible()
     await expect(page.getByRole('link', { name: /AirPods Max/ })).toHaveCount(0)
   })

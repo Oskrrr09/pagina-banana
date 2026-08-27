@@ -118,17 +118,27 @@ export function AppCustomerHome({ listarReservas = listMyReservations }: { lista
   // resto de pantallas de la aplicación.
   return (
     <div className="min-h-full bg-neutral pb-10">
-      <Identidad />
-      {/* EL AVISO VA ANTES QUE EL FINDER
-          Una reserva que ha pasado a `disponible` es información temporal y
-          accionable: hay una unidad esperando. El Finder es una herramienta
-          permanente, y puede esperar un dedo más abajo. Sin avisos este bloque
-          no pinta nada y el Finder pasa a ser la primera pieza. */}
+      {/* EL ORDEN SIGUE UNA REGLA, NO CINCO MAQUETAS
+          Urgencia primero, luego lo relevante, y la cuenta nunca la primera.
+
+          Antes abría `Identidad`: un bloque con «Entra en tu cuenta», su
+          párrafo y dos botones grandes. Lo primero de una tienda no puede ser
+          un formulario de acceso, y medido a 320 empujaba la primera imagen de
+          producto hasta y=465, donde la barra de pestañas ya la tapa.
+
+          Un aviso de reserva disponible sí puede ir delante: es temporal y
+          accionable, hay una unidad esperando. Es la única excepción, y
+          justo detrás va producto.
+
+          `SeguiasMirando` no pinta nada sin historial y `Oportunidades` ya
+          descarta lo que aquél enseña, así que con o sin recientes el primer
+          bloque después del aviso siempre es producto. */}
       <Avisos listarReservas={listarReservas} />
-      <EncuentraTuApple />
       <SeguiasMirando modelos={recientes} />
       <Oportunidades modelos={ofertas} />
+      <EncuentraTuApple />
       <TuTienda />
+      <Identidad />
       <Ayuda />
     </div>
   )
@@ -176,7 +186,11 @@ function Seccion({
   banda?: boolean
 }) {
   return (
-    <section className={banda ? 'mt-8 bg-brand-050 py-6' : 'mt-8'}>
+    // `first:mt-4`: ahora el primer bloque de la pantalla es un carril de
+    // producto, y los 32 px que lo separaban del bloque anterior quedaban como
+    // un hueco blanco justo debajo de la barra. Entre secciones la separación
+    // no cambia.
+    <section className={banda ? 'mt-8 bg-brand-050 py-6 first:mt-4' : 'mt-8 first:mt-4'}>
       <div className="flex items-baseline justify-between gap-3 px-4">
         <h2 className="text-xl font-extrabold text-ink">{titulo}</h2>
         {enlace && (
@@ -402,9 +416,9 @@ function SeguiasMirando({ modelos }: { modelos: Model[] }) {
   return (
     <Seccion titulo="Seguías mirando">
       <Carrusel etiqueta="Seguías mirando">
-        {modelos.map((m) => (
+        {modelos.map((m, i) => (
           <li key={`${m.family}/${m.slug}`} className="snap-start">
-            <ProductCardCompact model={m} variant="recent" />
+            <ProductCardCompact model={m} variant="recent" priority={i === 0} />
           </li>
         ))}
       </Carrusel>
@@ -435,9 +449,12 @@ function Oportunidades({ modelos }: { modelos: Model[] }) {
     // como oferta—, pero sigue diciendo de un vistazo qué es cada carril.
     <Seccion titulo={t('app.home.deals')} enlace="/tienda" etiquetaEnlace="Ver más" banda>
       <Carrusel etiqueta={t('app.home.deals')}>
-        {modelos.map((m) => (
+        {/* Con historial, «Seguías mirando» va delante y ésta ya no es la
+            primera imagen de la pantalla; sin él, sí lo es. Pedir la primera
+            con prioridad en los dos casos cuesta una imagen y acierta siempre. */}
+        {modelos.map((m, i) => (
           <li key={`${m.family}/${m.slug}`} className="snap-start">
-            <ProductCardCompact model={m} />
+            <ProductCardCompact model={m} priority={i === 0} />
           </li>
         ))}
       </Carrusel>

@@ -63,7 +63,7 @@ test.describe('con historial propio manda el historial', () => {
   test('desde el catálogo a una ficha y vuelta, con el filtro puesto', async ({ page }) => {
     await comoApp(page)
     await page.goto('./iphone?orden=precio-asc')
-    await expect(page.getByRole('combobox', { name: 'Ordenar' })).toHaveValue('precio-asc')
+    await expect(page.getByRole('button', { name: /Ordenar/ })).toContainText('Precio')
 
     // Se entra por donde se entra de verdad: pulsando la tarjeta. Navegar a la
     // ficha por URL probaría otro caso —el de entrada directa— con el nombre
@@ -76,7 +76,7 @@ test.describe('con historial propio manda el historial', () => {
     await volver(page).click()
 
     await expect(page, 'Volver devuelve el catálogo que se estaba viendo').toHaveURL(/\/iphone\?orden=precio-asc$/)
-    await expect(page.getByRole('combobox', { name: 'Ordenar' })).toHaveValue('precio-asc')
+    await expect(page.getByRole('button', { name: /Ordenar/ })).toContainText('Precio')
   })
 
   test('desde una búsqueda a un resultado y vuelta, con la consulta intacta', async ({ page }) => {
