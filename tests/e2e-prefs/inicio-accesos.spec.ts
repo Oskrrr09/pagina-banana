@@ -106,19 +106,39 @@ test('el aviso va por delante del Finder', async ({ page }) => {
   expect(cajaAviso!.y + cajaAviso!.height, 'el aviso va antes que el Finder').toBeLessThanOrEqual(cajaFinder!.y + 1)
 })
 
-test('sin avisos no queda hueco, y el Finder pasa a ser lo primero', async ({ page }) => {
+test('sin avisos, lo primero es producto y no queda hueco', async ({ page }) => {
   await page.goto(FIXTURE)
 
+  // QUÉ CAMBIÓ EN LA FASE A
+  //
+  // Esta prueba exigía que el Finder fuera lo primero, justo detrás de la
+  // identidad. Ahora la identidad ya no abre la pantalla y el primer bloque es
+  // un carril de PRODUCTO: la app abría pidiendo cuenta y ofreciendo una
+  // herramienta, con el producto debajo del pliegue.
+  //
+  // Se sigue exigiendo lo mismo con la misma dureza, sólo que sobre la pieza
+  // que ahora manda: que vaya la primera y que no arrastre un hueco.
   await expect(page.locator('[aria-label="Avisos"]'), 'sin reservas no se pinta nada').toHaveCount(0)
   const orden = await page.evaluate(() => {
-    const h1 = document.querySelector('h1')!.getBoundingClientRect()
+    const cont = document.querySelector('main') ?? document.body
+    const primera = cont.querySelector('section')!.getBoundingClientRect()
+    const carril = document.querySelector('ul[aria-label="Oportunidades"], ul[aria-label="Seguías mirando"]')
     const finder = document.querySelector('[aria-labelledby="inicio-finder"]')!.getBoundingClientRect()
-    return { identidadBottom: h1.bottom, finderTop: finder.top, hueco: finder.top - h1.bottom }
+    return {
+      contTop: cont.getBoundingClientRect().top,
+      primeraTop: primera.top,
+      carrilTop: carril ? carril.getBoundingClientRect().top : null,
+      finderTop: finder.top,
+    }
   })
-  expect(orden.finderTop, 'el Finder va justo detrás de la identidad').toBeGreaterThan(orden.identidadBottom)
-  // Sin número mágico: lo que se exige es que no haya un bloque entero de
-  // separación, no una distancia concreta.
-  expect(orden.hueco, `quedan ${Math.round(orden.hueco)} px entre identidad y Finder`).toBeLessThan(80)
+  expect(orden.carrilTop, 'hay un carril de producto en Inicio').not.toBeNull()
+  expect(orden.carrilTop!, 'el producto va por delante del Finder').toBeLessThan(orden.finderTop)
+  // Sin número mágico, igual que antes: lo que se exige es que la primera pieza
+  // no arrastre un bloque entero de separación por encima.
+  expect(
+    orden.primeraTop - orden.contTop,
+    `quedan ${Math.round(orden.primeraTop - orden.contTop)} px por encima de la primera pieza`,
+  ).toBeLessThan(80)
 })
 
 test('el aviso abre el apartado de reservas de la cuenta', async ({ page }) => {
