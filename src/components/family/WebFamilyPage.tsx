@@ -10,6 +10,7 @@ import { CatalogFiltersWeb } from '../product/CatalogFiltersWeb'
 import { OfferBadge, ProvisionalBadge } from '../ui/Tag'
 import { CatalogoVacio } from './CatalogoVacio'
 import { variantPath } from '../../data/products'
+import { getOfferVariant, type VarianteOfertada } from '../../lib/offers'
 import { euro } from '../../lib/format'
 import type { Family, Model } from '../../data/types'
 
@@ -52,12 +53,30 @@ function WebFamilyShowcase({ family, models }: { family: Family; models: Model[]
   const { t, intl } = useIdioma()
   const cat = useCatalogo()
 
-  // Sólo lo que está rebajado de verdad. Si no hay nada, se enseñan los cuatro
-  // primeros del catálogo: es el respaldo histórico, y evita una sección vacía.
-  const enOferta = models.filter((model) =>
-    model.colors.some((color) => color.capacities.some((capacity) => capacity.previousPrice != null)),
-  )
-  const destacados = enOferta.length > 0 ? enOferta : models.slice(0, 4)
+  // QUÉ ES UNA OFERTA LO DECIDE `offers.ts`, NO ESTA PÁGINA
+  //
+  // La primera versión de este archivo recorría `model.colors` a mano buscando
+  // un `previousPrice`. Eso repetía —peor— una lógica que ya existe y que está
+  // ahí por motivos concretos: la rebaja puede vivir en una capacidad que no es
+  // la de entrada (el MacBook Air M5 lo hace hoy mismo), un `previousPrice` que
+  // no baje el precio no es una rebaja, y si el precio, la foto y el enlace no
+  // salen de la MISMA variante la tarjeta anuncia un descuento que nadie puede
+  // comprar. `getOfferVariant` devuelve la variante entera precisamente para
+  // que todo eso hable de lo mismo.
+  //
+  // NO HAY RESPALDO: SIN OFERTAS NO HAY SECCIÓN
+  //
+  // Antes, si la familia no tenía ninguna rebaja se pintaban los cuatro
+  // primeros modelos del catálogo bajo el título «Oportunidades», con
+  // distintivo de oferta y precio en rojo. iPad y Apple Watch no tienen hoy
+  // ningún precio anterior, así que la web les inventaba un escaparate de
+  // rebajas que no existen. En un prototipo cuyos precios ya van marcados como
+  // demostrativos, fabricar descuentos es justo lo que no se puede hacer.
+  //
+  // Sin ofertas reales, la sección no se monta y el catálogo sube.
+  const destacados = models
+    .map((model) => ({ model, oferta: getOfferVariant(model) }))
+    .filter((item): item is { model: Model; oferta: VarianteOfertada } => item.oferta !== null)
 
   return (
     <>
@@ -106,77 +125,79 @@ function WebFamilyShowcase({ family, models }: { family: Family; models: Model[]
         </Container>
       </section>
 
-      {/* 2 — Oportunidades. El degradado es la identidad de la sección: es lo
-             que la separa del catálogo de abajo sin necesidad de un marco. */}
-      <section
-        data-familia-seccion="oportunidades"
-        className="bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] py-12 md:py-16"
-      >
-        <Container>
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-danger">{t('catalog.opportunities')}</p>
-            <h2 className="mt-2 text-3xl font-extrabold text-ink sm:text-5xl">
-              {t('catalog.featuredIn', { familia: family.name })}
-            </h2>
-            <p className="mt-3 text-muted">{t('family.demoPrices')}</p>
-          </div>
+      {/* 2 — Oportunidades, SÓLO si las hay. Sin rebajas reales esta sección no
+             se monta: el catálogo completo sube y ocupa su sitio. El degradado
+             es la identidad de la sección, lo que la separa del catálogo de
+             abajo sin necesidad de un marco. */}
+      {destacados.length > 0 && (
+        <section
+          data-familia-seccion="oportunidades"
+          className="bg-[linear-gradient(135deg,#f4f8fc_0%,#c9dcf1_48%,#ffe08a_100%)] py-12 md:py-16"
+        >
+          <Container>
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-danger">{t('catalog.opportunities')}</p>
+              <h2 className="mt-2 text-3xl font-extrabold text-ink sm:text-5xl">
+                {t('catalog.featuredIn', { familia: family.name })}
+              </h2>
+              <p className="mt-3 text-muted">{t('family.demoPrices')}</p>
+            </div>
 
-          <div className="mx-auto mt-10 grid max-w-5xl gap-5 sm:grid-cols-2">
-            {destacados.map((model) => {
-              const color = model.colors[0]
-              // Precio y precio anterior salen de la MISMA variante: mezclar el
-              // «desde» de una con el anterior de otra daría una rebaja falsa.
-              const oferta = color.capacities.find((capacity) => capacity.previousPrice != null) ?? color.capacities[0]
+            <div className="mx-auto mt-10 grid max-w-5xl gap-5 sm:grid-cols-2">
+              {destacados.map(({ model, oferta }) => {
+                // Imagen, color, capacidad, precio, precio anterior, descuento y
+                // enlace salen todos de la MISMA variante ofertada. Es lo que
+                // `getOfferVariant` garantiza por construcción.
+                const { color, capacity } = oferta
 
-              return (
-                <Link
-                  key={model.slug}
-                  to={variantPath(model, color, oferta)}
-                  className="group relative overflow-hidden rounded-[20px] border border-line bg-surface/55 p-6 shadow-[var(--shadow-rest)] backdrop-blur-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <OfferBadge>{t('common.offer')}</OfferBadge>
-                      <h3 className="mt-3 text-2xl font-extrabold text-ink">{cat(model.name)}</h3>
-                      <p className="mt-1 text-sm text-muted">{cat(model.tagline)}</p>
-                    </div>
-                    <Icon
-                      name="arrow-right"
-                      className="shrink-0 text-ink transition-transform group-hover:translate-x-1"
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <div className="mt-5 grid items-end gap-4 sm:grid-cols-[1fr_1.2fr]">
-                    <div>
-                      {oferta.previousPrice && (
-                        <p className="text-sm text-muted line-through">{euro(oferta.previousPrice, intl)}</p>
-                      )}
-                      <p className="text-3xl font-extrabold text-danger">{euro(oferta.price, intl)}</p>
-                      <div className="mt-2">
-                        <ProvisionalBadge label={t('common.demoPrice')} />
+                return (
+                  <Link
+                    key={model.slug}
+                    to={variantPath(model, color, capacity)}
+                    className="group relative overflow-hidden rounded-[20px] border border-line bg-surface/55 p-6 shadow-[var(--shadow-rest)] backdrop-blur-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <OfferBadge>{t('common.offer')}</OfferBadge>
+                        <h3 className="mt-3 text-2xl font-extrabold text-ink">{cat(model.name)}</h3>
+                        <p className="mt-1 text-sm text-muted">{cat(model.tagline)}</p>
                       </div>
+                      <Icon
+                        name="arrow-right"
+                        className="shrink-0 text-ink transition-transform group-hover:translate-x-1"
+                        aria-hidden="true"
+                      />
                     </div>
-                    <ProductImage
-                      src={color.image}
-                      alt={`${cat(model.name)} ${color.name}`}
-                      ratio="1 / 1"
-                      bgColor={color.imageBg}
-                      pad={!color.imageBg}
-                    />
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
+                    <div className="mt-5 grid items-end gap-4 sm:grid-cols-[1fr_1.2fr]">
+                      <div>
+                        <p className="text-sm text-muted line-through">{euro(oferta.precioAnterior, intl)}</p>
+                        <p className="text-3xl font-extrabold text-danger">{euro(oferta.precio, intl)}</p>
+                        <div className="mt-2">
+                          <ProvisionalBadge label={t('common.demoPrice')} />
+                        </div>
+                      </div>
+                      <ProductImage
+                        src={color.image}
+                        alt={`${cat(model.name)} ${color.name}`}
+                        ratio="1 / 1"
+                        bgColor={color.imageBg}
+                        pad={!color.imageBg}
+                      />
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
 
-          <div className="mt-10 flex justify-center">
-            <ButtonLink to={`/comparar?familia=${family.slug}`} variant="secondary" size="lg">
-              <Icon name="compare" size={18} aria-hidden="true" />
-              {t('catalog.compareModelsOf', { familia: family.name })}
-            </ButtonLink>
-          </div>
-        </Container>
-      </section>
+            <div className="mt-10 flex justify-center">
+              <ButtonLink to={`/comparar?familia=${family.slug}`} variant="secondary" size="lg">
+                <Icon name="compare" size={18} aria-hidden="true" />
+                {t('catalog.compareModelsOf', { familia: family.name })}
+              </ButtonLink>
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* 3 — El catálogo completo, con sus filtros. */}
       <section data-familia-seccion="catalogo">

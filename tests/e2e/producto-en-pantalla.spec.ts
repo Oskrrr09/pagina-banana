@@ -67,58 +67,78 @@ async function comoApp(page: Page, recientes?: string[]) {
  * geometrías a la vez.
  */
 async function productoVisible(page: Page) {
-  return page.evaluate((minimos) => {
-    const alto = (sel: string) => document.querySelector(sel)?.getBoundingClientRect()
-    const top = alto('[data-app-topbar]')
-    const tab = alto('[data-app-tab-bar]')
-    const util = { top: top ? top.bottom : 0, bottom: tab ? tab.top : window.innerHeight }
+  return page.evaluate(
+    (minimos) => {
+      const alto = (sel: string) => document.querySelector(sel)?.getBoundingClientRect()
+      const top = alto('[data-app-topbar]')
+      const tab = alto('[data-app-tab-bar]')
+      const util = { top: top ? top.bottom : 0, bottom: tab ? tab.top : window.innerHeight }
 
-    const interseca = (r: DOMRect) => Math.max(0, Math.min(r.bottom, util.bottom) - Math.max(r.top, util.top))
+      const interseca = (r: DOMRect) => Math.max(0, Math.min(r.bottom, util.bottom) - Math.max(r.top, util.top))
 
-    // Una tarjeta de producto es un enlace a una ficha con imagen dentro. Las
-    // entradas de familia (`/mac`, `/iphone`) tienen una sola sección en la
-    // ruta y quedan fuera: no son producto comercial.
-    const tarjetas = [...document.querySelectorAll<HTMLElement>('a[href]')].filter((a) => {
-      const href = a.getAttribute('href') ?? ''
-      const partes = href
-        .replace(/^\/pagina-banana/, '')
-        .split('/')
-        .filter(Boolean)
-      return partes.length >= 2 && !!a.querySelector('img')
-    })
+      // Una tarjeta de producto es un enlace a una ficha con imagen dentro. Las
+      // entradas de familia (`/mac`, `/iphone`) tienen una sola sección en la
+      // ruta y quedan fuera: no son producto comercial.
+      const tarjetas = [...document.querySelectorAll<HTMLElement>('a[href]')].filter((a) => {
+        const href = a.getAttribute('href') ?? ''
+        const partes = href
+          .replace(/^\/pagina-banana/, '')
+          .split('/')
+          .filter(Boolean)
+        return partes.length >= 2 && !!a.querySelector('img')
+      })
 
-    for (const tarjeta of tarjetas) {
-      const img = tarjeta.querySelector('img')
-      if (!img) continue
-      const visibleImagen = interseca(img.getBoundingClientRect())
-      if (visibleImagen < minimos.imagen) continue
+      for (const tarjeta of tarjetas) {
+        const img = tarjeta.querySelector('img')
+        if (!img) continue
+        const visibleImagen = interseca(img.getBoundingClientRect())
+        if (visibleImagen < minimos.imagen) continue
 
-      // EL NOMBRE, Y SÓLO EL NOMBRE
-      //
-      // Las dos tarjetas del catálogo ponen el nombre del producto en un `h3`
-      // dentro del enlace. Se busca ése y no «cualquier texto»: un `span` con el
-      // porcentaje de descuento no es el nombre de nada, y aceptarlo dejaba
-      // pasar tarjetas donde lo único legible era el distintivo rojo.
-      const h3 = tarjeta.querySelector<HTMLElement>('h3')
-      const visibleNombre = h3 ? interseca(h3.getBoundingClientRect()) : 0
+        // EL NOMBRE, Y SÓLO EL NOMBRE
+        //
+        // Las dos tarjetas del catálogo ponen el nombre del producto en un `h3`
+        // dentro del enlace. Se busca ése y no «cualquier texto»: un `span` con el
+        // porcentaje de descuento no es el nombre de nada, y aceptarlo dejaba
+        // pasar tarjetas donde lo único legible era el distintivo rojo.
+        const h3 = tarjeta.querySelector<HTMLElement>('h3')
+        const visibleNombre = h3 ? interseca(h3.getBoundingClientRect()) : 0
 
+        return {
+          ok: visibleNombre >= minimos.nombre,
+          visibleImagen: Math.round(visibleImagen),
+          visibleNombre: Math.round(visibleNombre),
+          nombre: (h3?.textContent ?? '').trim(),
+          href: tarjeta.getAttribute('href'),
+          util: { top: Math.round(util.top), bottom: Math.round(util.bottom) },
+        }
+      }
       return {
-        ok: visibleNombre >= minimos.nombre,
-        visibleImagen: Math.round(visibleImagen),
-        visibleNombre: Math.round(visibleNombre),
-        nombre: (h3?.textContent ?? '').trim(),
-        href: tarjeta.getAttribute('href'),
+        ok: false,
+        visibleImagen: 0,
+        visibleNombre: 0,
+        nombre: '',
+        href: null,
         util: { top: Math.round(util.top), bottom: Math.round(util.bottom) },
       }
-    }
-    return {
-      ok: false,
-      visibleImagen: 0,
-      texto: false,
-      href: null,
-      util: { top: Math.round(util.top), bottom: Math.round(util.bottom) },
-    }
-  }, MINIMO_IMAGEN)
+      // SE PASAN LOS DOS MÍNIMOS, NO UNO
+      //
+      // Aquí iba `MINIMO_IMAGEN` a secas —un número— mientras dentro se leía
+      // `minimos.imagen` y `minimos.nombre`. Sobre un número esas propiedades son
+      // `undefined`, así que las dos comparaciones del navegador eran siempre
+      // falsas: el bucle dejaba de descartar tarjetas por debajo del mínimo de
+      // imagen y `ok` no podía ser cierto nunca.
+      //
+      // POR QUÉ EL CI NO LO CAZÓ. TypeScript no se queja porque el parámetro del
+      // callback de `page.evaluate` se infiere como `any`. Y las pruebas no
+      // fallaban porque **las aserciones que deciden se evalúan en Node** contra
+      // las constantes reales —`visibleImagen` y `visibleNombre` frente a 120 y
+      // 12—, no contra `ok`, que no se usa en ninguna. En las tres pantallas la
+      // primera tarjeta con imagen es además la que cumple, así que filtrar o no
+      // devolvía el mismo elemento. El fallo no relajaba el umbral: desactivaba
+      // la búsqueda de una tarjeta mejor y dejaba `ok` muerto.
+    },
+    { imagen: MINIMO_IMAGEN, nombre: MINIMO_NOMBRE },
+  )
 }
 
 const ANCHOS = [

@@ -82,6 +82,19 @@ tercera es «Compras»; su ruta sigue siendo `/mis-productos`
 - Las **tipografías viajan con la aplicación** vía `@fontsource`; no hay
   peticiones a Google Fonts. Ver [[02-decisiones#D-080]].
 
+**Páginas con dos composiciones.** `Home` y `FamilyPage` montan estructuras
+distintas según la plataforma:
+
+```text
+FamilyPage
+  ├── WebFamilyPage   modelos → oportunidades (si las hay) → catálogo completo
+  └── AppFamilyPage   encabezado compacto → catálogo (Fase A)
+```
+
+Datos, tipos, precios, ofertas, rutas y el estado de los filtros son los mismos;
+la presentación no. La plataforma se decide una sola vez en la frontera de la
+página. Ver [[02-decisiones#D-085]].
+
 **Deuda conocida del armazón**: los chips de familia de `AppTopBar` ocupan 474 px,
 de modo que a 320 px sólo se ven cuatro de los seis y miden 32 px de alto. Tienda
 la rodea con «Explorar»; no está resuelta.

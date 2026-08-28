@@ -1,12 +1,61 @@
 ---
 tipo: cambios
-actualizado: 2026-08-23
+actualizado: 2026-08-28
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-28 — Las páginas de familia se separan en web y app
+
+**La regresión.** En el navegador, las páginas de familia habían perdido su
+escaparate: donde había un carrusel de modelos, una sección de «Oportunidades»
+con degradado y un encabezado de catálogo completo quedaba una rejilla con dos
+botones táctiles. Medido en `/iphone` a 1440 px: **0 secciones con degradado, 0
+`<select>` de orden, ningún encabezado de contenido** y una página de 1.785 px.
+
+**La causa.** `f3143d85` —«feat(app): Tienda deja el catálogo a un toque»— era
+una mejora real para la app: en `/iphone` los filtros aparecían en y=2.238. Pero
+`FamilyPage` la montaban **las dos plataformas**, así que la simplificación se
+llevó por delante también la web. La PR #85 no causó la pérdida, aunque siguió
+tocando la misma composición compartida.
+
+**La separación.** `FamilyPage` resuelve el 404 y decide la plataforma una sola
+vez, delegando en `WebFamilyPage` o `AppFamilyPage` —el patrón que `Home` ya
+usaba—. Los controles se parten en `CatalogFiltersWeb` y `CatalogFiltersApp`; el
+dominio se comparte en `useCatalogoFamilia` y en `lib/catalogFilters`, donde
+viven las listas de órdenes y disponibilidades para que separar la presentación
+no separe también lo que se ofrece. Queda como decisión: **D-085**.
+
+**La web restaurada.** `/iphone` a 1440 pasa de **1.785 a 3.057 px** y recupera
+carrusel → Oportunidades → catálogo completo. `/mac` igual. No es una copia del
+fichero antiguo: se conservan el estado en la URL, el estado sin resultados, la
+llamada única al comparador y el i18n, con **cinco claves nuevas en los cinco
+idiomas** para los literales que el escaparate histórico traía en castellano.
+
+**Sin ofertas no hay escaparate.** La primera versión, si la familia no tenía
+rebajas, enseñaba los cuatro primeros modelos bajo el título «Oportunidades»,
+con distintivo de oferta y precio en rojo. iPad y Apple Watch no tienen ningún
+precio anterior, así que la web les fabricaba descuentos inexistentes. Ahora las
+ofertas se derivan de `getOfferVariant` —la definición canónica, que además
+garantiza que imagen, color, capacidad, precio, precio anterior y enlace son de
+la **misma** variante— y la sección **sólo se monta si hay alguna**. `/ipad` y
+`/apple-watch` van de modelos a catálogo directamente.
+
+**La app no cambia.** `/iphone` a 320 y 390 y `/tienda` a 390 son **idénticas
+bit a bit** antes y después, comprobado con `cmp`. El contrato de Fase A se
+mantiene: imagen 246 px, nombre 15 px, primer producto en y=210, sin
+desbordamiento. AirPods en la app conserva sus controles táctiles.
+
+**Y una corrección en el contrato.** `producto-en-pantalla.spec.ts` pasaba al
+navegador `MINIMO_IMAGEN` a secas mientras dentro leía `minimos.imagen` y
+`minimos.nombre`: sobre un número, ambas son `undefined`. TypeScript no lo veía
+—el parámetro de `page.evaluate` se infiere como `any`— y el CI tampoco, porque
+las aserciones que deciden se evalúan contra las constantes reales. No relajaba
+ningún umbral; desactivaba el descarte de tarjetas por debajo del mínimo. Los
+mínimos siguen en **120 y 12**.
 
 ## 2026-08-23 — Tienda deja de ser un Inicio recortado y pasa a ser el catálogo
 

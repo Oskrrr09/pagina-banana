@@ -23,6 +23,7 @@ src/main.tsx
 ├── proveedores de idioma, autenticación, tienda y checkout
 └── App
     ├── Layout de la tienda web / shell propio de la app nativa
+    │   (y, donde hace falta, composiciones de página distintas: ver D-085)
     ├── CheckoutLayout
     ├── AgentAppScope + panel /agente
     └── ChatBubble
@@ -54,7 +55,11 @@ los accesorios en `src/data/accessories/`. Las tiendas viven en
   conversación, ficha del visitante y revisión de descuentos. Se distribuye
   como PWA con service worker, badge y notificaciones.
 - **App nativa de tienda:** mismo código empaquetado con Capacitor, shell propio
-  y proyectos iOS/Android versionados. Ambos binarios se han compilado y
+  y proyectos iOS/Android versionados. Lo que diverge **no se limita al
+  armazón**: una página puede tener dos composiciones —`Home` y `FamilyPage` ya
+  las tienen— cuando las dos plataformas necesitan estructuras distintas. Ver
+  [[02-decisiones#D-085]].
+  Los proyectos iOS/Android están versionados. Ambos binarios se han compilado y
   ejecutado en simulador o emulador; publicarlos exige autorización y cuentas
   comerciales de Banana.
 

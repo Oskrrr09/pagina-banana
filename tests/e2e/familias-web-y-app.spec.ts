@@ -99,6 +99,75 @@ test.describe('la web de familia conserva su escaparate', () => {
     await expect(page.getByLabel(/Ordenar/)).toBeVisible()
     await expect(page.getByText(/\d+ de \d+/).first()).toBeVisible()
   })
+  test('/ipad no monta Oportunidades porque no tiene ninguna', async ({ page }) => {
+    // POR QUÉ ESTE CASO
+    //
+    // La primera versión de esta página, si la familia no tenía rebajas,
+    // enseñaba los cuatro primeros modelos del catálogo bajo el título
+    // «Oportunidades», con distintivo de oferta y precio en rojo. iPad y Apple
+    // Watch no tienen hoy ningún precio anterior, así que la web les fabricaba
+    // un escaparate de descuentos inexistentes. En un prototipo cuyos precios ya
+    // van marcados como demostrativos, inventar rebajas es justo lo que no se
+    // puede hacer.
+    //
+    // NO SE COMPRUEBA CONTRA UN NÚMERO MÁGICO
+    //
+    // Que iPad no tenga ofertas es un hecho de los datos de hoy, y mañana puede
+    // dejar de serlo. Así que primero se mira el catálogo real —una tarjeta en
+    // oferta enseña su precio anterior tachado— y sólo entonces se exige la
+    // ausencia de la sección. Si algún día iPad se rebaja, esta prueba pedirá lo
+    // contrario en vez de quedarse obsoleta afirmando algo falso.
+    await page.goto('./ipad')
+
+    await expect(page.getByRole('navigation', { name: /iPad/ })).toBeVisible()
+    const catalogo = page.locator('[data-familia-seccion="catalogo"]')
+    await expect(catalogo).toBeVisible()
+
+    const rebajados = await catalogo.locator('[data-product-card] .line-through').count()
+    const oportunidades = page.locator('[data-familia-seccion="oportunidades"]')
+
+    if (rebajados === 0) {
+      await expect(oportunidades, 'sin rebajas reales no se monta el escaparate').toHaveCount(0)
+      // Y no se cuela por otra vía: ningún distintivo de oferta fuera del
+      // catálogo, que es donde `ProductCard` los pinta cuando toca.
+      await expect(page.getByText('Oportunidades')).toHaveCount(0)
+      expect(await seccionesEnOrden(page)).toEqual(['modelos', 'catalogo'])
+    } else {
+      await expect(oportunidades, 'si hay rebajas, la sección debe estar').toBeVisible()
+      expect(await seccionesEnOrden(page)).toEqual(['modelos', 'oportunidades', 'catalogo'])
+    }
+  })
+
+  test('lo que Oportunidades anuncia es comprable: precio y enlace de la misma variante', async ({ page }) => {
+    // El escaparate deriva sus ofertas de `getOfferVariant`, que devuelve la
+    // variante entera. Aquí se comprueba el efecto: la tarjeta enseña un precio
+    // anterior mayor que el actual y abre la ficha de esa misma configuración,
+    // no la de entrada del modelo.
+    await page.goto('./iphone')
+
+    const primera = page.locator('[data-familia-seccion="oportunidades"] a[href]').first()
+    await expect(primera).toBeVisible()
+
+    const precios = await primera.evaluate((a) => {
+      const texto = (sel: string) => a.querySelector(sel)?.textContent?.trim() ?? ''
+      const aNumero = (s: string) => Number(s.replace(/[^\d]/g, ''))
+      return {
+        anterior: aNumero(texto('.line-through')),
+        actual: aNumero(texto('.text-danger:not(.line-through)')),
+        href: a.getAttribute('href') ?? '',
+      }
+    })
+
+    expect(precios.anterior, 'hay precio anterior').toBeGreaterThan(0)
+    expect(precios.actual, 'el precio actual es menor que el anterior').toBeLessThan(precios.anterior)
+    // El enlace apunta a una variante concreta: familia/modelo/capacidad-color.
+    expect(
+      precios.href
+        .replace(/^\/pagina-banana/, '')
+        .split('/')
+        .filter(Boolean),
+    ).toHaveLength(3)
+  })
 })
 
 test.describe('la app de familia conserva la Fase A', () => {
