@@ -35,12 +35,8 @@ async function comoApp(page: Page, recientes?: string[]) {
  */
 async function ordenarPor(page: Page, etiqueta: string) {
   await page.getByRole('button', { name: /Ordenar/ }).click()
-  const panel = page.getByRole('dialog')
-  await panel.getByRole('button', { name: etiqueta, exact: true }).click()
-  await panel
-    .getByRole('button', { name: /Ver|resultados/i })
-    .first()
-    .click()
+  // La hoja de orden se titula «Ordenar», no «Filtrar»: elegir cierra.
+  await page.getByRole('dialog', { name: 'Ordenar' }).getByRole('button', { name: etiqueta, exact: true }).click()
 }
 
 type CatalogoReal = {
@@ -352,6 +348,38 @@ test.describe('catálogo de familia', () => {
     // queda el título. Se exige más que antes, no menos.
     const caja = (await page.getByRole('button', { name: /Ordenar/ }).boundingBox())!
     expect(caja.y, 'los controles del catálogo entran en el primer viewport').toBeLessThan(400)
+  })
+
+  test('Filtrar y Ordenar abren cada uno lo suyo', async ({ page }) => {
+    // POR QUÉ ESTA PRUEBA
+    //
+    // Los dos controles reutilizan el mismo `Modal` —no hace falta escribir otra
+    // hoja para que atrape el foco y cierre con Escape—, y en la primera versión
+    // de la Fase A eso se notaba mal: pulsar «Ordenar» abría una hoja titulada
+    // «Filtrar». Funcionaba, pero se leía como un error.
+    //
+    // Se comprueba el NOMBRE ACCESIBLE de cada hoja, no que exista un diálogo.
+    await comoApp(page)
+    await page.goto('./iphone')
+
+    await page.getByRole('button', { name: /Filtrar/ }).click()
+    await expect(page.getByRole('dialog', { name: 'Filtrar' }), 'Filtrar abre Filtrar').toBeVisible()
+    await expect(page.getByRole('dialog').getByText('Precio máximo')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    await page.getByRole('button', { name: /Ordenar/ }).click()
+    const orden = page.getByRole('dialog', { name: 'Ordenar' })
+    await expect(orden, 'Ordenar abre Ordenar').toBeVisible()
+    for (const opcion of ['Orden del catálogo', 'Precio: de menor a mayor', 'Precio: de mayor a menor']) {
+      await expect(orden.getByRole('button', { name: opcion, exact: true })).toBeVisible()
+    }
+    await expect(orden.getByText('Precio máximo'), 'la hoja de orden no trae los filtros').toHaveCount(0)
+
+    // Elegir cierra la hoja y escribe el estado en la URL.
+    await orden.getByRole('button', { name: 'Precio: de menor a mayor', exact: true }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page).toHaveURL(/orden=precio-asc/)
   })
 
   test('el filtro viaja en la URL y Atrás lo recupera', async ({ page }) => {

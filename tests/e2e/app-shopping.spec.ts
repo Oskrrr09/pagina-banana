@@ -364,10 +364,11 @@ test.describe('filtros del catálogo', () => {
     await page.getByRole('button', { name: 'Hasta 500 €' }).click()
     await page.getByRole('button', { name: /Ver \d+ modelos/ }).click()
     await page.getByRole('button', { name: /Ordenar/ }).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Precio: de mayor a menor', exact: true }).click()
+    // Elegir el orden cierra su propia hoja: ya no hay que pulsar «Ver
+    // resultados», que era del panel de filtros.
     await page
-      .getByRole('dialog')
-      .getByRole('button', { name: /Ver \d+ modelos/ })
+      .getByRole('dialog', { name: 'Ordenar' })
+      .getByRole('button', { name: 'Precio: de mayor a menor', exact: true })
       .click()
 
     await expect(page).toHaveURL(/\?precio=500&orden=precio-desc$/)

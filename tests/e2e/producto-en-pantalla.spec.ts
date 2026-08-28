@@ -13,13 +13,17 @@ import { expect, test, type Page } from '@playwright/test'
 // Lo que se exige aquí no es una maqueta concreta —eso envejece— sino que al
 // abrir las tres puertas de compra se vea producto de verdad.
 //
-// POR QUÉ 120 PX Y POR QUÉ «NOMBRE O PRECIO»
+// POR QUÉ 120 PX DE IMAGEN Y 12 PX DE NOMBRE
 //
 // Una imagen que asoma 4 px se lee como una banda de color, no como un
 // producto: por eso `boundingBox().y < viewportHeight` no sirve como criterio.
-// 120 px es el mínimo en el que la fotografía se reconoce. Y se pide nombre
-// **o** precio —no ambos— porque exigir los dos obligaría a rediseñar la
-// tarjeta por dentro, que es Fase B y no toca aquí.
+// 120 px es el mínimo en el que la fotografía se reconoce.
+//
+// Del texto se exige sólo el NOMBRE, no el precio, y con un mínimo propio: un
+// umbral de «más de cero» dejaba pasar títulos cortados a 3 px, justo el
+// recorte que aquí se rechaza para la imagen. El precio queda fuera del
+// contrato a propósito —cabe más abajo en la tarjeta— porque exigirlo también
+// obligaría a rediseñarla por dentro, que es Fase B y no toca aquí.
 //
 // EL ÁREA ÚTIL NO ES EL VIEWPORT
 //
@@ -30,6 +34,20 @@ import { expect, test, type Page } from '@playwright/test'
 
 /** Mínimo de imagen para que se lea como producto y no como una franja. */
 const MINIMO_IMAGEN = 120
+
+/**
+ * Mínimo de NOMBRE para que se lea, y no sólo asome.
+ *
+ * La primera versión de esta suite pedía «nombre o precio» y lo daba por bueno
+ * con cualquier intersección mayor que cero. Con eso, `/iphone` a 320 px pasaba
+ * enseñando **3 px** del título: exactamente el recorte que esta misma suite
+ * rechaza para la imagen. Y como buscaba en cualquier `p, span, h2, h3`, un
+ * distintivo de «-15 %» podía hacer de «nombre o precio».
+ *
+ * Doce píxeles son media línea de un texto de 15 px: no es «el elemento toca el
+ * viewport», es que se lee algo.
+ */
+const MINIMO_NOMBRE = 12
 
 /** Modo aplicación nativa, con el mismo mecanismo que el resto de la suite. */
 async function comoApp(page: Page, recientes?: string[]) {
@@ -49,7 +67,7 @@ async function comoApp(page: Page, recientes?: string[]) {
  * geometrías a la vez.
  */
 async function productoVisible(page: Page) {
-  return page.evaluate((minimo) => {
+  return page.evaluate((minimos) => {
     const alto = (sel: string) => document.querySelector(sel)?.getBoundingClientRect()
     const top = alto('[data-app-topbar]')
     const tab = alto('[data-app-tab-bar]')
@@ -73,17 +91,22 @@ async function productoVisible(page: Page) {
       const img = tarjeta.querySelector('img')
       if (!img) continue
       const visibleImagen = interseca(img.getBoundingClientRect())
-      if (visibleImagen < minimo) continue
+      if (visibleImagen < minimos.imagen) continue
 
-      // Nombre o precio del MISMO producto: se buscan dentro de la tarjeta.
-      const textos = [...tarjeta.querySelectorAll<HTMLElement>('p, span, h2, h3')]
-      const conTexto = textos.filter((e) => (e.textContent ?? '').trim().length > 1)
-      const nombreOprecio = conTexto.some((e) => interseca(e.getBoundingClientRect()) > 0)
+      // EL NOMBRE, Y SÓLO EL NOMBRE
+      //
+      // Las dos tarjetas del catálogo ponen el nombre del producto en un `h3`
+      // dentro del enlace. Se busca ése y no «cualquier texto»: un `span` con el
+      // porcentaje de descuento no es el nombre de nada, y aceptarlo dejaba
+      // pasar tarjetas donde lo único legible era el distintivo rojo.
+      const h3 = tarjeta.querySelector<HTMLElement>('h3')
+      const visibleNombre = h3 ? interseca(h3.getBoundingClientRect()) : 0
 
       return {
-        ok: nombreOprecio,
+        ok: visibleNombre >= minimos.nombre,
         visibleImagen: Math.round(visibleImagen),
-        texto: nombreOprecio,
+        visibleNombre: Math.round(visibleNombre),
+        nombre: (h3?.textContent ?? '').trim(),
         href: tarjeta.getAttribute('href'),
         util: { top: Math.round(util.top), bottom: Math.round(util.bottom) },
       }
@@ -125,7 +148,10 @@ for (const ventana of ANCHOS) {
           p.visibleImagen,
           `${ruta}: la imagen del primer producto se ve ${p.visibleImagen} px dentro del área útil (${p.util.top}-${p.util.bottom}); hacen falta ${MINIMO_IMAGEN}`,
         ).toBeGreaterThanOrEqual(MINIMO_IMAGEN)
-        expect(p.texto, `${ruta}: no se ve ni el nombre ni el precio de ese producto`).toBe(true)
+        expect(
+          p.visibleNombre,
+          `${ruta}: del nombre «${p.nombre}» sólo se leen ${p.visibleNombre} px; hacen falta ${MINIMO_NOMBRE}`,
+        ).toBeGreaterThanOrEqual(MINIMO_NOMBRE)
       })
     }
   })
@@ -142,6 +168,8 @@ test.describe('el inicio con algo que estabas mirando', () => {
     expect(p.visibleImagen, 'con recientes, el producto sigue entrando en pantalla').toBeGreaterThanOrEqual(
       MINIMO_IMAGEN,
     )
-    expect(p.texto).toBe(true)
+    expect(p.visibleNombre, `del nombre «${p.nombre}» se leen ${p.visibleNombre} px`).toBeGreaterThanOrEqual(
+      MINIMO_NOMBRE,
+    )
   })
 })

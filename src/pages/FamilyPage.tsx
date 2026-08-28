@@ -127,7 +127,7 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
   // Comparar sigue estando y sigue siendo táctil; lo que deja de ser es un
   // botón del ancho de la pantalla compitiendo con el producto.
   return (
-    <Container className="px-4 pb-8 pt-4">
+    <Container className="px-4 pb-8 pt-2">
       <div className="flex min-h-11 items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold text-ink">{family.name}</h1>
         <Link
@@ -139,10 +139,15 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
         </Link>
       </div>
 
-      {/* `mt-2` y no `mt-3`: medido a 320×568, el nombre del primer producto
-          se quedaba 5 px por debajo de la barra de pestañas. Los ocho píxeles
-          que se recuperan aquí y en la separación de los controles bastan, y
-          evitan tener que tocar la tarjeta —eso es Fase B—. */}
+      {/* LOS PÍXELES SALEN DE AQUÍ, NO DE LA TARJETA
+          Medido a 320×568: con `pt-4` y `mb-3` el nombre del primer producto
+          asomaba 3 px por encima de la barra de pestañas —presente, pero
+          ilegible—. Se recuperan 12 px entre el espacio superior y el que hay
+          bajo los controles; los 8 px entre el título y los controles se
+          mantienen, que es donde el aire se nota.
+
+          Acortar la tarjeta habría sido lo fácil y es Fase B: `min-h-[400px]`,
+          tagline, distintivo y precio se quedan como están. */}
       <div className="mt-2">
         <CatalogoFiltrable models={models} />
       </div>
