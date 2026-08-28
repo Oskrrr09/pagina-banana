@@ -1,10 +1,12 @@
 import { useId, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { allModels, families } from '../../../data/products'
-import { useIdioma } from '../../../lib/i18n'
+import { allModels, families, modelsByFamily } from '../../../data/products'
+import { appleAccessories } from '../../../data/accessories'
+import { useCatalogo, useIdioma } from '../../../lib/i18n'
 import { tieneOferta } from '../../../lib/offers'
 import { Icon } from '../../ui/Icon'
 import { ProductCardCompact } from '../../product/ProductCardCompact'
+import { ProductImage } from '../../product/ProductImage'
 
 // ============================================================================
 // Tienda — la puerta al catálogo de Banana.
@@ -49,8 +51,8 @@ export function AppHome() {
   return (
     <div className="pb-10">
       <Encabezado />
-      <Explorar />
       <Oportunidades />
+      <Explorar />
       <AyudaParaElegir />
       <Servicios />
     </div>
@@ -67,10 +69,11 @@ export function AppHome() {
 function Encabezado() {
   const { t } = useIdioma()
 
+  // Sin subtítulo. «Todo lo que puedes comprar en Banana» ocupaba una línea
+  // delante del producto para decir lo que la propia tienda demuestra.
   return (
-    <header className="px-4 pt-5">
+    <header className="px-4 pt-4">
       <h1 className="text-2xl font-extrabold text-ink">{t('appnav.store')}</h1>
-      <p className="mt-1 text-sm text-muted">{t('app.store.lead')}</p>
     </header>
   )
 }
@@ -96,21 +99,56 @@ function Encabezado() {
  */
 function Explorar() {
   const { t } = useIdioma()
+  const cat = useCatalogo()
+
+  // SEIS CAJAS VACÍAS CON CHEVRON PARECÍAN UNA PANTALLA DE AJUSTES
+  //
+  // La rejilla anterior era 2×3 de rectángulos con borde, nombre y flecha: cero
+  // producto, y por delante de las ofertas. Ahora cada familia entra con la
+  // fotografía de uno de sus productos reales, en un carril del mismo lenguaje
+  // que el resto de la pantalla.
+  //
+  // De dónde sale la imagen: `modelsByFamily` cubre cinco familias, pero **no
+  // «accesorios»** —sus productos viven en `appleAccessories`—. En vez de
+  // inventar un modelo falso o dejar a Accesorios sin imagen, cada caso lee de
+  // su propia fuente. Determinista: siempre el primero del orden del catálogo.
+  const entradas = useMemo(
+    () =>
+      families.map((familia) => {
+        const modelo = modelsByFamily[familia.slug]?.[0]
+        const imagen = modelo ? modelo.colors[0]?.image : appleAccessories[0]?.image
+        return {
+          slug: familia.slug,
+          nombre: familia.nameKey ? t(familia.nameKey) : familia.name,
+          alt: modelo ? cat(modelo.name) : appleAccessories[0]?.name,
+          imagen,
+        }
+      }),
+    [t, cat],
+  )
 
   return (
-    <section aria-labelledby="tienda-explorar" className="mt-6 px-4">
-      <h2 id="tienda-explorar" className="text-lg font-bold text-ink">
+    <section aria-labelledby="tienda-explorar" className="mt-8">
+      <h2 id="tienda-explorar" className="px-4 text-lg font-bold text-ink">
         {t('app.store.explore')}
       </h2>
-      <ul className="mt-3 grid grid-cols-2 gap-2">
-        {families.map((familia) => (
-          <li key={familia.slug}>
-            <Link
-              to={`/${familia.slug}`}
-              className="flex min-h-14 items-center gap-2 rounded-[14px] border border-line bg-surface px-3 text-[15px] font-semibold text-ink transition-colors active:bg-neutral"
-            >
-              <span className="min-w-0 flex-1 truncate">{familia.nameKey ? t(familia.nameKey) : familia.name}</span>
-              <Icon name="chevron-right" size={16} aria-hidden="true" className="shrink-0 text-muted" />
+      {/* Sin borde, sin fondo y sin chevron: la pieza es la fotografía. Meter
+          cada una en su tarjeta habría repetido el patrón de caja dentro de
+          caja que esta fase viene a quitar. */}
+      <ul
+        aria-label={t('app.store.explore')}
+        className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {entradas.map((e) => (
+          <li key={e.slug} className="snap-start">
+            <Link to={`/${e.slug}`} className="flex w-28 flex-col gap-2 focus-visible:outline-none">
+              <ProductImage
+                src={e.imagen}
+                alt={e.alt ?? e.nombre}
+                pad={false}
+                className="aspect-square rounded-[16px] bg-neutral"
+              />
+              <span className="text-center text-[15px] font-semibold text-ink">{e.nombre}</span>
             </Link>
           </li>
         ))}
@@ -222,9 +260,9 @@ function Oportunidades() {
   return (
     <Seccion titulo={t('app.home.deals')}>
       <Carrusel etiqueta={t('app.home.deals')}>
-        {enOferta.map((m) => (
+        {enOferta.map((m, i) => (
           <li key={`${m.family}/${m.slug}`} className="snap-start">
-            <ProductCardCompact model={m} />
+            <ProductCardCompact model={m} priority={i === 0} />
           </li>
         ))}
       </Carrusel>

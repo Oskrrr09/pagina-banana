@@ -278,11 +278,6 @@ test.describe('Inicio nativo', () => {
 // falso.
 // ============================================================================
 
-/** El alto del área que se desplaza, que es la que decide qué se ve sin scroll. */
-async function viewportUtil(page: Page) {
-  return page.locator('#contenido').evaluate((el) => el.clientHeight)
-}
-
 /** Posición de un bloque dentro del contenido, en coordenadas del propio scroll. */
 async function posicion(page: Page, selector: string) {
   return page.locator(selector).evaluate((el) => {
@@ -324,18 +319,31 @@ test.describe('Inicio v2 · el Finder gana sitio', () => {
     { width: 320, height: 568 },
     { width: 390, height: 844 },
   ]) {
-    test(`sin avisos, el Finder entra en el primer viewport a ${ventana.width} px`, async ({ page }) => {
-      // Sin sesión no hay avisos, así que el Finder es la primera pieza
-      // protagonista. Con avisos delante puede no caber entero, y eso es
-      // deliberado: el aviso es temporal y accionable. Por eso este contrato se
-      // afirma SÓLO en el estado sin avisos.
+    test(`sin avisos, el Finder sigue alcanzable a ${ventana.width} px`, async ({ page }) => {
+      // QUÉ CAMBIÓ EN LA FASE A
+      //
+      // Esta prueba exigía que el Finder cupiera entero en el primer viewport,
+      // porque era la primera pieza protagonista de Inicio. Desde la Fase A el
+      // primer viewport es para PRODUCTO: la app abría explicándose —bloque de
+      // cuenta y asistente— y el producto quedaba debajo del pliegue.
+      //
+      // El Finder no se toca ni se degrada: sigue existiendo, sigue siendo una
+      // pieza propia con su nombre accesible y sigue llevando al asistente. Lo
+      // que ya no se le exige es ir por delante del producto.
+      //
+      // Que el producto entre en el primer viewport lo afirma
+      // `producto-en-pantalla.spec.ts`, con una medida propia.
       await page.setViewportSize(ventana)
       await comoApp(page)
       await page.goto('./')
 
       await expect(page.locator('[aria-label="Avisos"]'), 'este caso es el de sin avisos').toHaveCount(0)
-      const finder = await posicion(page, '[aria-labelledby="inicio-finder"]')
-      expect(finder.bottom, 'el Finder cabe entero sin desplazar').toBeLessThanOrEqual(await viewportUtil(page))
+      const finder = page.getByRole('region', { name: 'Encuentra tu Apple' })
+      await expect(finder, 'el Finder sigue en Inicio').toBeVisible()
+      await expect(finder.getByRole('link').first(), 'y sigue llevando al asistente').toHaveAttribute(
+        'href',
+        /elige-tu-apple/,
+      )
     })
   }
 
@@ -355,7 +363,7 @@ test.describe('Inicio v2 · el Finder gana sitio', () => {
 test.describe('Inicio v2 · el aviso manda sobre el Finder', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
-  test('con una reserva disponible, el aviso va ANTES', async ({ page }) => {
+  test('el producto va antes que el asistente', async ({ page }) => {
     // El aviso necesita servidor, así que se usa la misma costura que el resto
     // de la suite: `listarReservas` es una prop de la pantalla.
     await comoApp(page, ['iphone/17-pro'])
@@ -365,9 +373,15 @@ test.describe('Inicio v2 · el aviso manda sobre el Finder', () => {
     // preferencias, que sí puede inyectar sesión. Aquí basta con demostrar que
     // el hueco no existe cuando no hay nada que avisar.
     await expect(page.locator('[aria-label="Avisos"]')).toHaveCount(0)
+    // ORDEN INVERTIDO EN LA FASE A, A PROPÓSITO
+    //
+    // Antes el Finder iba por delante del carril personal. Ahora es al revés:
+    // lo que esta persona estaba mirando es producto, y el producto manda sobre
+    // la herramienta. La aserción es igual de fuerte —una posición relativa
+    // exacta—, sólo que en el otro sentido.
     const finder = await posicion(page, '[aria-labelledby="inicio-finder"]')
     const recientes = await posicion(page, 'section:has(> div > ul[aria-label="Seguías mirando"])')
-    expect(finder.bottom, 'el Finder va antes que el carril personal').toBeLessThanOrEqual(recientes.top + 1)
+    expect(recientes.bottom, 'el carril personal va antes que el Finder').toBeLessThanOrEqual(finder.top + 1)
   })
 })
 

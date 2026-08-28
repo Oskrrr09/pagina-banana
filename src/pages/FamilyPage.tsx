@@ -110,29 +110,48 @@ function ShowcaseFamilyPage({ family, models }: { family: Family; models: Model[
   //
   // Queda encabezado, acceso a comparar y catálogo. Nada se pierde: los mismos
   // modelos y las mismas ofertas están abajo, filtrables y ordenables.
+  // EL PRIMER VIEWPORT ERA PARA LA INTERFAZ, NO PARA EL PRODUCTO
+  //
+  // Aquí había, por delante del catálogo: una banda gris con eyebrow
+  // «Catálogo Banana», un título centrado, un párrafo explicativo y un botón
+  // grande de comparar. Medido a 320×568, donde entre la barra de arriba y la
+  // de pestañas hay 398 px útiles: ese bloque ocupaba 281 y los controles del
+  // catálogo otros ~130. La primera tarjeta empezaba en y=576 y se veía
+  // **cero**.
+  //
+  // Nada de aquello decía algo que la pantalla no dijera ya: la barra y los
+  // chips indican la familia, y que se elige un modelo lo demuestra la propia
+  // rejilla. Así que se retira —no se sustituye por otra cosa— y queda una
+  // fila: el nombre de la familia y el acceso a comparar.
+  //
+  // Comparar sigue estando y sigue siendo táctil; lo que deja de ser es un
+  // botón del ancho de la pantalla compitiendo con el producto.
   return (
-    <>
-      <section className="border-b border-line bg-neutral">
-        <Container className="py-8 md:py-10">
-          <div className="text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">Catálogo Banana</p>
-            <h1 className="mt-2 text-3xl font-extrabold text-ink sm:text-4xl">
-              {t('catalog.buyA', { familia: family.name })}
-            </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-muted">{t('catalog.chooseModel')}</p>
-          </div>
-          <div className="mt-6 flex justify-center">
-            <ButtonLink to={`/comparar?familia=${family.slug}`} variant="secondary">
-              <Icon name="compare" size={18} /> Comparar modelos de {family.name}
-            </ButtonLink>
-          </div>
-        </Container>
-      </section>
+    <Container className="px-4 pb-8 pt-2">
+      <div className="flex min-h-11 items-center justify-between gap-3">
+        <h1 className="text-2xl font-extrabold text-ink">{family.name}</h1>
+        <Link
+          to={`/comparar?familia=${family.slug}`}
+          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm font-semibold text-ink"
+        >
+          <Icon name="compare" size={16} aria-hidden="true" />
+          {t('compare.title')}
+        </Link>
+      </div>
 
-      <Container className="py-8">
+      {/* LOS PÍXELES SALEN DE AQUÍ, NO DE LA TARJETA
+          Medido a 320×568: con `pt-4` y `mb-3` el nombre del primer producto
+          asomaba 3 px por encima de la barra de pestañas —presente, pero
+          ilegible—. Se recuperan 12 px entre el espacio superior y el que hay
+          bajo los controles; los 8 px entre el título y los controles se
+          mantienen, que es donde el aire se nota.
+
+          Acortar la tarjeta habría sido lo fácil y es Fase B: `min-h-[400px]`,
+          tagline, distintivo y precio se quedan como están. */}
+      <div className="mt-2">
         <CatalogoFiltrable models={models} />
-      </Container>
-    </>
+      </div>
+    </Container>
   )
 }
 
@@ -184,8 +203,12 @@ function CatalogoFiltrable({ models }: { models: Model[] }) {
       )}
       {visibles.length > 0 ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {visibles.map((m) => (
-            <ProductCard key={m.slug} model={m} />
+          {/* Sólo la primera imagen se pide con prioridad: ahora está sobre el
+              pliegue y era la única que se cargaba tarde por estar marcada como
+              diferida cuando este catálogo vivía debajo de dos escaparates. Las
+              demás siguen en carga diferida. */}
+          {visibles.map((m, i) => (
+            <ProductCard key={m.slug} model={m} priority={i === 0} />
           ))}
         </div>
       ) : (

@@ -26,6 +26,19 @@ async function comoApp(page: Page, recientes?: string[]) {
   }, recientes)
 }
 
+/**
+ * Cambia el orden del catálogo.
+ *
+ * Desde la Fase A el orden no es un `<select>` sino tres opciones dentro del
+ * mismo panel que los filtros: se abre, se elige y se cierra. El estado sigue
+ * viajando en la URL exactamente igual.
+ */
+async function ordenarPor(page: Page, etiqueta: string) {
+  await page.getByRole('button', { name: /Ordenar/ }).click()
+  // La hoja de orden se titula «Ordenar», no «Filtrar»: elegir cierra.
+  await page.getByRole('dialog', { name: 'Ordenar' }).getByRole('button', { name: etiqueta, exact: true }).click()
+}
+
 type CatalogoReal = {
   allModels: { family: string; slug: string }[]
   tieneOferta: (model: never) => boolean
@@ -82,7 +95,15 @@ test.describe('Tienda', () => {
       .evaluateAll((listas) =>
         listas.map((l) => l.getAttribute('aria-label')).filter((etiqueta): etiqueta is string => Boolean(etiqueta)),
       )
-    expect(carriles, 'el único carril de Tienda es el de ofertas').toEqual(['Oportunidades'])
+    // Desde la Fase A, «Explorar» también es un carril —las seis familias con
+    // su fotografía, en vez de seis cajas con chevron—. La propiedad que esta
+    // prueba protege no cambia: Tienda no monta NADA personal. Se sigue
+    // exigiendo la lista completa y exacta, no un `toContain`, para que un
+    // carril nuevo tenga que pasar por aquí.
+    expect(carriles, 'Tienda monta el de ofertas y el de familias, y nada personal').toEqual([
+      'Oportunidades',
+      'Explorar',
+    ])
 
     await expect(contenido.getByRole('heading', { name: 'Tu tienda' }), 'la tienda favorita es de Inicio').toHaveCount(
       0,
@@ -118,7 +139,11 @@ test.describe('Tienda', () => {
       ['AirPods', '/airpods'],
       ['Accesorios', '/accesorios'],
     ]) {
-      const enlace = explorar.getByRole('link', { name: nombre, exact: true })
+      // El nombre accesible del enlace ya no es sólo el rótulo: la pieza lleva
+      // la fotografía de un producto real de esa familia, así que el nombre
+      // incluye también su texto alternativo. Se busca por rótulo contenido y
+      // se sigue exigiendo el destino exacto.
+      const enlace = explorar.getByRole('link', { name: new RegExp(nombre) })
       await expect(enlace, nombre).toHaveAttribute('href', new RegExp(`${destino}$`))
       const caja = await enlace.boundingBox()
       expect(caja!.height, `«${nombre}» mide ${caja!.height} px de alto`).toBeGreaterThanOrEqual(44)
@@ -249,18 +274,35 @@ test.describe('Tienda v2', () => {
       await page.goto('./tienda')
 
       const explorar = page.getByRole('region', { name: 'Explorar' })
-      const marco = (await explorar.boundingBox())!
       const enlaces = explorar.getByRole('link')
       await expect(enlaces).toHaveCount(6)
 
-      // Las seis caben en el ancho: nada de descubrir familias arrastrando.
+      // QUÉ CAMBIÓ, Y QUÉ SE SIGUE EXIGIENDO
+      //
+      // Las seis familias estaban en una rejilla 2×3 y cabían sin desplazar.
+      // Desde la Fase A son un carril con la fotografía de un producto real de
+      // cada una: el producto pasa delante, y las familias se descubren
+      // desplazando, igual que los chips de la barra.
+      //
+      // Lo que NO se relaja: siguen siendo seis, siguen midiendo lo bastante
+      // para el dedo, y **todas tienen que poder alcanzarse**. Eso último se
+      // comprueba desplazando el carril hasta el final y verificando que la
+      // última entra entera en pantalla; si alguna quedara inalcanzable, esto
+      // falla.
+      const lista = explorar.getByRole('list')
       for (let i = 0; i < 6; i++) {
         const caja = (await enlaces.nth(i).boundingBox())!
         const nombre = (await enlaces.nth(i).innerText()).trim()
-        expect(caja.x, `«${nombre}» empieza fuera`).toBeGreaterThanOrEqual(marco.x - 2)
-        expect(caja.x + caja.width, `«${nombre}» termina fuera`).toBeLessThanOrEqual(marco.x + marco.width + 2)
         expect(caja.height, `«${nombre}» mide ${caja.height}`).toBeGreaterThanOrEqual(44)
       }
+
+      await lista.evaluate((el) => {
+        el.scrollLeft = el.scrollWidth
+      })
+      const ultima = (await enlaces.nth(5).boundingBox())!
+      const marco = (await explorar.boundingBox())!
+      expect(ultima.x, 'la sexta familia se alcanza desplazando').toBeGreaterThanOrEqual(marco.x - 2)
+      expect(ultima.x + ultima.width, 'y entra entera en pantalla').toBeLessThanOrEqual(marco.x + marco.width + 2)
 
       const medida = await page.evaluate(() => {
         const de = document.documentElement
@@ -288,25 +330,63 @@ test.describe('catálogo de familia', () => {
     await comoApp(page)
     await page.goto('./iphone')
 
-    await expect(page.getByRole('heading', { level: 1, name: /Comprar un iPhone/ })).toBeVisible()
-    await expect(page.getByRole('combobox', { name: 'Ordenar' })).toBeVisible()
+    // El `h1` sigue nombrando la familia; lo que se fue es el hero que lo
+    // envolvía —eyebrow, subtítulo y botón grande— y que empujaba el catálogo
+    // fuera del primer viewport.
+    await expect(page.getByRole('heading', { level: 1, name: 'iPhone' })).toBeVisible()
+    // Ordenar sigue alcanzable de un toque; ya no como `<select>` de
+    // formulario, sino dentro del mismo panel que los filtros.
+    await expect(page.getByRole('button', { name: /Ordenar/ })).toBeVisible()
 
     // Lo que se retiró: el carrusel que repetía todos los modelos y el
     // escaparate gigante de ofertas.
     await expect(page.getByRole('navigation', { name: /Modelos de/ })).toHaveCount(0)
     await expect(page.getByRole('heading', { name: /Ofertas destacadas en/ })).toHaveCount(0)
 
-    // Los filtros tienen que entrar dentro de la primera pantalla y media.
-    const orden = page.getByRole('combobox', { name: 'Ordenar' })
-    const caja = await orden.boundingBox()
-    expect(caja!.y, 'los filtros deben quedar cerca del principio del catálogo').toBeLessThan(844)
+    // Los controles ya no tienen que entrar «en la primera pantalla y media»:
+    // desde la Fase A entran en la PRIMERA, y por delante del producto sólo
+    // queda el título. Se exige más que antes, no menos.
+    const caja = (await page.getByRole('button', { name: /Ordenar/ }).boundingBox())!
+    expect(caja.y, 'los controles del catálogo entran en el primer viewport').toBeLessThan(400)
+  })
+
+  test('Filtrar y Ordenar abren cada uno lo suyo', async ({ page }) => {
+    // POR QUÉ ESTA PRUEBA
+    //
+    // Los dos controles reutilizan el mismo `Modal` —no hace falta escribir otra
+    // hoja para que atrape el foco y cierre con Escape—, y en la primera versión
+    // de la Fase A eso se notaba mal: pulsar «Ordenar» abría una hoja titulada
+    // «Filtrar». Funcionaba, pero se leía como un error.
+    //
+    // Se comprueba el NOMBRE ACCESIBLE de cada hoja, no que exista un diálogo.
+    await comoApp(page)
+    await page.goto('./iphone')
+
+    await page.getByRole('button', { name: /Filtrar/ }).click()
+    await expect(page.getByRole('dialog', { name: 'Filtrar' }), 'Filtrar abre Filtrar').toBeVisible()
+    await expect(page.getByRole('dialog').getByText('Precio máximo')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    await page.getByRole('button', { name: /Ordenar/ }).click()
+    const orden = page.getByRole('dialog', { name: 'Ordenar' })
+    await expect(orden, 'Ordenar abre Ordenar').toBeVisible()
+    for (const opcion of ['Orden del catálogo', 'Precio: de menor a mayor', 'Precio: de mayor a menor']) {
+      await expect(orden.getByRole('button', { name: opcion, exact: true })).toBeVisible()
+    }
+    await expect(orden.getByText('Precio máximo'), 'la hoja de orden no trae los filtros').toHaveCount(0)
+
+    // Elegir cierra la hoja y escribe el estado en la URL.
+    await orden.getByRole('button', { name: 'Precio: de menor a mayor', exact: true }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page).toHaveURL(/orden=precio-asc/)
   })
 
   test('el filtro viaja en la URL y Atrás lo recupera', async ({ page }) => {
     await comoApp(page)
     await page.goto('./iphone')
 
-    await page.getByRole('combobox', { name: 'Ordenar' }).selectOption('precio-asc')
+    await ordenarPor(page, 'Precio: de menor a mayor')
     await expect(page).toHaveURL(/orden=precio-asc/)
 
     // Entrar en una ficha y volver: el orden sigue puesto.
@@ -320,7 +400,9 @@ test.describe('catálogo de familia', () => {
     await expect(page).toHaveURL(/\/iphone\/[^/]+\//)
     await page.goBack()
     await expect(page).toHaveURL(/orden=precio-asc/)
-    await expect(page.getByRole('combobox', { name: 'Ordenar' })).toHaveValue('precio-asc')
+    // El estado se lee de la URL y se refleja en el control: el rótulo del
+    // botón dice por qué está ordenado.
+    await expect(page.getByRole('button', { name: /Ordenar/ })).toContainText('Precio')
   })
 
   test('abrir una ficha que ya es canónica no reemplaza su entrada de historial', async ({ page }) => {
@@ -353,7 +435,7 @@ test.describe('catálogo de familia', () => {
 
     await comoApp(page)
     await page.goto('./iphone')
-    await page.getByRole('combobox', { name: 'Ordenar' }).selectOption('precio-asc')
+    await ordenarPor(page, 'Precio: de menor a mayor')
     await expect(page).toHaveURL(/orden=precio-asc/)
 
     // Los reemplazos del catálogo son deliberados —los filtros no deben apilar

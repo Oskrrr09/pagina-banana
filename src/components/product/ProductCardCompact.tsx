@@ -28,8 +28,9 @@ import { presentacionDeTarjeta } from '../../lib/offers'
  * **esa** variante: si la rebaja está en la de 15 pulgadas, la tarjeta enseña su
  * precio y abre esa, no la configuración de entrada.
  *
- * La imagen se deja en carga diferida —`ProductImage` lo hace por defecto sin
- * `priority`—: estos carruseles viven por debajo del pliegue.
+ * La imagen se deja en carga diferida por defecto. Desde la Fase A el primer
+ * carril de Inicio y Tienda está sobre el pliegue, así que esa primera tarjeta
+ * —y sólo ella— recibe `priority`.
  *
  * LA VARIANTE `recent` NO ES OTRA TARJETA
  *
@@ -49,10 +50,18 @@ import { presentacionDeTarjeta } from '../../lib/offers'
 export function ProductCardCompact({
   model,
   variant = 'default',
+  priority = false,
 }: {
   model: Model
   /** `recent` retira la presentación de oferta. No cambia qué producto se enseña. */
   variant?: 'default' | 'recent'
+  /**
+   * `true` sólo para la primera tarjeta del primer carril de la pantalla. Desde
+   * la Fase A ese carril está sobre el pliegue y el comentario de arriba —que
+   * daba por hecho lo contrario— ya no vale para ella. Las demás siguen
+   * diferidas.
+   */
+  priority?: boolean
 }) {
   const { t, intl } = useIdioma()
   const cat = useCatalogo()
@@ -121,6 +130,7 @@ export function ProductCardCompact({
           alt={`${cat(model.name)} ${color.name}`}
           bgColor={color.imageBg}
           pad={false}
+          priority={priority}
           className={color.imageBg ? 'rounded-none' : 'rounded-none bg-transparent'}
         />
         {/* LA GEOMETRÍA NO DEPENDE DEL PRODUCTO QUE CAIGA DENTRO

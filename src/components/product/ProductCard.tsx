@@ -11,7 +11,20 @@ import { presentacionDeTarjeta } from '../../lib/offers'
 
 // Tarjeta de producto (§6): resume un modelo para decidir si entrar a la ficha.
 // Precio y disponibilidad en texto, no solo en color. Favorito con estado.
-export function ProductCard({ model, loading = false }: { model: Model; loading?: boolean }) {
+export function ProductCard({
+  model,
+  loading = false,
+  priority = false,
+}: {
+  model: Model
+  loading?: boolean
+  /**
+   * `true` sólo para la primera tarjeta del catálogo, que desde la Fase A vive
+   * sobre el pliegue. El resto sigue en carga diferida: esto no es una
+   * optimización general, es dejar de pedir tarde la única imagen que ya se ve.
+   */
+  priority?: boolean
+}) {
   const { t, intl } = useIdioma()
   const cat = useCatalogo()
   const { toggleFavorite, isFavorite, toggleCompare, isComparing, compare } = useStore()
@@ -95,6 +108,7 @@ export function ProductCard({ model, loading = false }: { model: Model; loading?
           alt={`${cat(model.name)} ${color.name}`}
           bgColor={color.imageBg}
           pad={!color.imageBg}
+          priority={priority}
         />
         <h3 className="mt-4 min-h-10 text-[15px] font-semibold text-ink group-hover:text-ink">{cat(model.name)}</h3>
       </Link>
