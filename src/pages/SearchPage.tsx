@@ -91,8 +91,30 @@ export function SearchPage() {
 
 function ResultsSections({ results }: { results: SearchResults }) {
   const cat = useCatalogo()
+  const t = useT()
   const { exactMatch, appleDevices, relatedProducts, appleAccessories, compatibleAccessories, services, help, intent } =
     results
+
+  // EL AVISO DE PRECIOS TAMBIÉN VIVE AQUÍ, UNA SOLA VEZ
+  //
+  // La tarjeta nativa dejó de pintar «Precio demostrativo» en cada producto
+  // —Fase B1— y el catálogo de familia pasó a darlo una vez por listado. Pero
+  // `/buscar` es la otra superficie que monta esa misma tarjeta en la app, así
+  // que sin esto la búsqueda nativa se quedaba sin la salvaguarda: tarjetas con
+  // precio y ningún sitio donde diga que son demostrativos.
+  //
+  // NO BASTA CON ESTAR EN LA APP. Se pinta sólo si de verdad hay una tarjeta de
+  // producto en pantalla: una búsqueda de servicios o de ayuda no enseña
+  // precios, y avisar sobre precios que no existen es ruido.
+  //
+  // Se mira `exactMatch` **y** `appleDevices` porque los dos montan
+  // `TarjetaDeProducto`, y se cuenta una sola vez aunque el mismo modelo salga
+  // en las dos secciones: la página tiene como máximo una nota.
+  const hayProductoConPrecio =
+    isNativeApp &&
+    [exactMatch, ...appleDevices].some(
+      (item) => item?.kind === 'apple-device' && allModels.some((m) => `device:${m.family}/${m.slug}` === item.id),
+    )
 
   const devicesBlock = appleDevices.length > 0 && (
     <section key="devices" className="mt-10" aria-labelledby="search-devices">
@@ -173,6 +195,11 @@ function ResultsSections({ results }: { results: SearchResults }) {
           </ul>
         </section>
       )}
+
+      {/* Al final y discreta: es un descargo, no encabeza la búsqueda ni se
+          interpone entre quien busca y el primer producto. En la web no
+          aparece —allí cada `ProductCardWeb` sigue llevando el suyo—. */}
+      {hayProductoConPrecio && <p className="mt-8 text-xs text-muted">{t('family.demoPrices')}</p>}
     </>
   )
 }

@@ -8,6 +8,37 @@ actualizado: 2026-08-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-29 — Fase B1: la tarjeta del catálogo nativo respira
+
+**Primera entrega visual de Fase B, y sólo para la app** (D-086).
+
+**Antes**: borde de tarjeta, dentro una caja gris para la imagen y dentro el
+producto con su relleno —tres marcos—; debajo, nombre y descripción con dos
+líneas reservadas cada uno, precio discreto, un distintivo de «precio
+demostrativo» por producto y un botón de comparar del ancho completo. A 320×568
+la tarjeta ocupaba **510 px** y el precio **no se veía**.
+
+**Ahora**: la imagen es la única superficie; el nombre y el precio van juntos
+debajo; favorito y comparar son iconos sobre la foto, con sus 44 px, su nombre
+accesible y su `aria-pressed`.
+
+**Medido a 320**: imagen 246 → **224**, nombre 15 → **21**, precio **0 → 20
+visibles**, tarjeta 510 → **281**. A 390, el segundo producto pasa de no verse a
+asomar 213 px.
+
+**La proporción es 5:4, no el 4:3 del diseño**: a 320 la imagen ocupa el ancho
+completo y su proporción decide el alto de todo. Con 4:3 la foto bajaba a 216 px;
+con 5:4 el precio entra igual y el producto conserva más presencia. El `ratio`
+por defecto de `ProductImage` no se toca —movería la web—: se pasa por prop.
+
+**El aviso de precios demostrativos no desaparece**: deja de repetirse por
+tarjeta y se da una vez por listado, al pie. Puesto en la cabecera empujaba el
+primer producto 44 px hacia abajo, medido.
+
+**La web queda idéntica**, comprobado con `cmp` sobre `/iphone`, `/buscar` y la
+portada a 1440. `ProductCardCompact`, `VariantPage` y `ModelPage`, sin tocar.
+**B2 no ha empezado.**
+
 ## 2026-08-29 — La tarjeta de producto tiene frontera de plataforma
 
 **Causa.** `ProductCard` seguía siendo una sola composición montada por la web

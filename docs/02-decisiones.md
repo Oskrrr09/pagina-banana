@@ -2003,3 +2003,43 @@ la app, porque la app va siempre en castellano
 - **Fuera de esta migración**: `ProductCardCompact` ya era una composición
   independiente —sólo la montan `AppHome` y `AppCustomerHome`— y no formaba parte
   del problema; no se ha tocado.
+
+## D-086 — La Fase B empieza por la app, y la web conserva su composición
+
+- Fecha: 2026-08-29.
+- Estado: vigente.
+- Decisión: **la Fase B visual («el producto respira») se aplica a la app y no a
+  la web.** Su primera entrega, **B1**, rediseña la tarjeta de catálogo nativa
+  —`ProductCardApp`— y deja `ProductCardWeb` exactamente como estaba.
+- Motivo: el diseño de Fase B se escribió **antes** de que existieran las
+  fronteras de D-085, midiendo a 320/390/430 en modo aplicación, y **no declara
+  plataforma en ninguna de sus decisiones**. La auditoría previa lo dejó por
+  escrito en vez de deducirlo: lo que la Fase B resuelve —que el precio entre en
+  pantalla junto al producto— es un problema de un catálogo que se recorre con
+  el pulgar, no de una rejilla de tres columnas en escritorio, donde la tarjeta
+  actual funciona. Aplicarlo a la web habría sido un rediseño que nadie pidió.
+- Implementación: B1 vive íntegramente en `ProductCardApp`, más el aviso de
+  precios demostrativos. Ese aviso **se da una vez por cada superficie de
+  listado nativa que monta la tarjeta nueva**, no una vez en total: el catálogo
+  de familia (`AppFamilyPage`) y **la búsqueda cuando corre en modo app**
+  (`SearchPage`), que es compartida y decide plataforma en su frontera. En la
+  búsqueda se exige además que haya un dispositivo real en pantalla —no basta
+  con estar en la app—, para no avisar sobre precios que no existen. La web no
+  recibe ese aviso: allí cada `ProductCardWeb` sigue llevando el suyo.
+  **No se tocó `useTarjetaDeProducto`**: variante
+  enseñada, oferta, destino, favorito, límite de tres y regla por familia siguen
+  definiéndose una sola vez para las dos plataformas. La proporción de imagen se
+  pasa por prop —el `ratio` por defecto de `ProductImage` **no se cambia**,
+  porque eso sí movería la web—.
+- Lo que hizo posible esto: la frontera de la PR #87. Sin ella, cada uno de
+  estos cambios habría cambiado también el navegador, que es el fallo que
+  D-085 describe.
+- **Pendiente, no decidido**: **B2**, la ficha de producto. `VariantPage` sigue
+  compartida y no se ha tocado. Si su limpieza se aplicara a las dos plataformas
+  —la auditoría apunta a que sus defectos son de ancho, no de plataforma— no
+  haría falta frontera; si se decidiera divergir, la mínima sería extraer el
+  hero, no partir la página.
+- **Fuera de alcance**: `ModelPage`. No hay evidencia de que el diseño aprobado
+  pretenda cambiarla, y ninguna superficie de producto enlaza a ella salvo el
+  detalle de accesorios. Permanece compartida.
+

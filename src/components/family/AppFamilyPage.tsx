@@ -168,15 +168,30 @@ function CatalogoApp({ models }: { models: Model[] }) {
       )}
 
       {visibles.length > 0 ? (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Sólo la primera imagen se pide con prioridad: ahora está sobre el
+        <>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Sólo la primera imagen se pide con prioridad: ahora está sobre el
               pliegue y era la única que se cargaba tarde por estar marcada como
               diferida cuando este catálogo vivía debajo de dos escaparates. Las
               demás siguen en carga diferida. */}
-          {visibles.map((m, i) => (
-            <ProductCardApp key={m.slug} model={m} priority={i === 0} />
-          ))}
-        </div>
+            {visibles.map((m, i) => (
+              <ProductCardApp key={m.slug} model={m} priority={i === 0} />
+            ))}
+          </div>
+          {/* EL AVISO DE PRECIOS SE DA UNA VEZ, NO POR PRODUCTO
+              Cada tarjeta llevaba su propio distintivo «Precio demostrativo».
+              Repetido cuatro veces en la misma pantalla dejaba de leerse y
+              robaba el sitio justo debajo del precio, que es lo que se mira. Es
+              una salvaguarda de honestidad, así que no desaparece: se dice una
+              vez para todo el listado, con el texto que ya existía.
+
+              VA AL PIE, NO A LA CABECERA. Puesto encima ocupaba dos líneas a
+              320 px y empujaba el primer producto 44 px hacia abajo —medido—,
+              que es justo lo que las fases A y B intentan recuperar. Un
+              descargo se lee cuando se busca; el producto tiene que verse al
+              abrir. */}
+          <p className="mt-6 text-xs text-muted">{t('family.demoPrices')}</p>
+        </>
       ) : (
         <CatalogoVacio onLimpiar={cambiar} />
       )}

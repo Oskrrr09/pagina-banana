@@ -102,6 +102,12 @@ página de catálogo que montan las dos plataformas— elige una sola vez.
 `ProductCardCompact` es aparte: sólo la usan los carriles de la app.
 **Quedan sin frontera `VariantPage` y `ModelPage`.**
 
+**Fase B iniciada (B1).** La tarjeta del catálogo **nativo** ya no repite marcos:
+una sola superficie —la imagen—, nombre y precio juntos debajo, y favorito y
+comparar como iconos encima de la foto. Medido a 320 px: la tarjeta pasa de 510 a
+281 y **el precio entra en el primer viewport por primera vez**. **La web no
+cambia** (D-086). **B2 —la ficha— no ha empezado.**
+
 **Deuda conocida del armazón**: los chips de familia de `AppTopBar` ocupan 474 px,
 de modo que a 320 px sólo se ven cuatro de los seis y miden 32 px de alto. Tienda
 la rodea con «Explorar»; no está resuelta.
