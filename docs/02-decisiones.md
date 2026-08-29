@@ -2043,3 +2043,41 @@ la app, porque la app va siempre en castellano
   pretenda cambiarla, y ninguna superficie de producto enlaza a ella salvo el
   detalle de accesorios. Permanece compartida.
 
+## D-087 — B2 diverge en tres nodos, no en una página
+
+- Fecha: 2026-08-29.
+- Estado: vigente.
+- Decisión: la Fase B2 —la ficha de producto— **no crea `VariantPageApp`,
+  `VariantPageWeb`, `ProductHeroApp` ni `ProductHeroWeb`**. `VariantPage` sigue
+  siendo **una sola página compartida**, y la presentación diverge en **tres
+  nodos concretos** mediante `isNativeApp`: la superficie de la galería, la fila
+  del nombre con el favorito, y el renderizador de los accesorios sugeridos.
+- Motivo: la auditoría previa acotó B2 a tres requisitos —galería sin marco,
+  favorito que deja de separar nombre y precio, accesorios con el tratamiento
+  del catálogo—. Extraer un hero significaría mover unas 240 líneas y pasar
+  hacia abajo modelo, color, capacidad, variante actual, tamaños y los callbacks
+  de selección, favorito, carrito y modales, para que **las dos copias nacieran
+  idénticas y siguieran idénticas**, porque ningún requisito pide que diverjan.
+  Sería duplicación sin divergencia. Separar la página entera es aún menos
+  defendible: hay un solo `isNativeApp` preexistente en 808 líneas.
+- Implementación: los tres nodos eligen presentación en el sitio donde se
+  pintan. `FavoriteToggle` gana una variante `soloIcono` —misma lógica, mismo
+  `aria-pressed`, mismo nombre accesible, sólo sin texto visible— porque con
+  texto medía 170 px y no cabía junto al título. Los accesorios nativos
+  **reutilizan `AccessoryCard`**, la fuente real del tratamiento del catálogo,
+  en lugar de copiar sus clases.
+- **La recomendación de la auditoría no se adopta, y conviene que conste.** Esa
+  auditoría concluyó que los tres problemas existen **igual en la web
+  estrecha** —el favorito se interpone también a 390 px de navegador, medido— y
+  que lo coherente sería arreglarlos en ambas plataformas. No se hace: **D-086
+  congela la composición web durante la Fase B**. Que un cambio también mejore
+  la web no lo convierte en parte de esta entrega; sería otra decisión, con su
+  propia revisión.
+- **Tampoco conviene falsear la historia**: el diseño original de Fase B **no
+  declaró B2 como app-only**. La decisión de aplicarlo sólo a la app es
+  posterior y consciente, tomada en D-086 y ejecutada aquí.
+- Fuera de alcance: `ModelPage` —ningún requisito la nombra—, selectores, stock,
+  entrega, financiación, compra, reservas, seguro, pestañas, barra de compra
+  fija y el distintivo de precio de la ficha, que B2 no menciona y por tanto no
+  se toca.
+

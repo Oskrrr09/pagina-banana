@@ -102,6 +102,12 @@ página de catálogo que montan las dos plataformas— elige una sola vez.
 `ProductCardCompact` es aparte: sólo la usan los carriles de la app.
 **Quedan sin frontera `VariantPage` y `ModelPage`.**
 
+**Fase B completa (B1 + B2).** La **ficha** nativa también respira: la galería
+pierde el marco y toma el radio del sistema, el favorito deja de separar el
+nombre del precio —se compacta a icono de 44 px— y los accesorios sugeridos
+reutilizan la tarjeta del catálogo. `VariantPage` **sigue siendo una sola página
+compartida**: divergen tres nodos, no la página (D-087). `ModelPage`, fuera.
+
 **Fase B iniciada (B1).** La tarjeta del catálogo **nativo** ya no repite marcos:
 una sola superficie —la imagen—, nombre y precio juntos debajo, y favorito y
 comparar como iconos encima de la foto. Medido a 320 px: la tarjeta pasa de 510 a
