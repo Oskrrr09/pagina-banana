@@ -104,7 +104,10 @@ test.describe('separar la presentación no separa el comportamiento', () => {
       if (nativo) await comoApp(page)
       await page.goto('./iphone')
 
-      const rebajada = page.locator('[data-product-card]').filter({ has: page.locator('.line-through') }).first()
+      const rebajada = page
+        .locator('[data-product-card]')
+        .filter({ has: page.locator('.line-through') })
+        .first()
       await expect(rebajada).toBeVisible()
 
       const datos = await rebajada.evaluate((c) => {
@@ -120,7 +123,12 @@ test.describe('separar la presentación no separa el comportamiento', () => {
       expect(datos.actual, 'el precio anunciado es menor que el anterior').toBeLessThan(datos.anterior)
       // Familia/modelo/variante: abre la configuración que enseña, no la de
       // entrada del modelo.
-      expect(datos.destino.replace(/^\/pagina-banana/, '').split('/').filter(Boolean)).toHaveLength(3)
+      expect(
+        datos.destino
+          .replace(/^\/pagina-banana/, '')
+          .split('/')
+          .filter(Boolean),
+      ).toHaveLength(3)
       expect(datos.favorito, 'el favorito arranca sin marcar y con estado accesible').toBe('false')
     })
   }
