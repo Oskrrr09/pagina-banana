@@ -8,7 +8,13 @@ actualizado: 2026-08-21
 La tienda se empaqueta con [Capacitor](https://capacitorjs.com) para poder
 publicarla en App Store y Google Play, que es lo que técnicamente tienen las
 apps de Amazon o PcComponentes. Envuelve **el mismo build de React** que se
-publica en GitHub Pages; no hay una segunda versión del código
+publica en GitHub Pages; no hay una segunda versión del código.
+
+**Compartir build no obliga a compartir composición.** Sigue habiendo un solo
+repositorio, un solo `npm run build` y un solo dominio —datos, tipos, precios,
+ofertas, rutas y estado—, pero una página puede montar una estructura distinta
+según la plataforma cuando lo necesita: `Home` lo hace desde el principio y
+`FamilyPage` desde el 28 de agosto de 2026. Ver [[02-decisiones#D-085]]
 ([[02-decisiones#D-040 — Un único código para web y app nativa]]).
 
 El panel de agentes **no** entra aquí: se instala como PWA desde el navegador

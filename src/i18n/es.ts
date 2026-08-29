@@ -557,6 +557,11 @@ export const es = {
   'catalog.showResults': 'Ver {total} modelos',
   'catalog.noResults': 'Ningún modelo coincide con los filtros.',
   'catalog.buyA': "Comprar un {familia}",
+  'catalog.modelsOf': "Modelos de {familia}",
+  'catalog.eyebrow': "Catálogo Banana",
+  'catalog.opportunities': "Oportunidades",
+  'catalog.fullCatalog': "Catálogo completo {familia}",
+  'catalog.compareModelsOf': "Comparar modelos de {familia}",
   'services.title': "Servicios",
   // ---- Afirmaciones comerciales ----
   'claim.disclaimer': "Condición demostrativa · pendiente de validación con Banana Computer.",

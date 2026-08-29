@@ -83,8 +83,36 @@ export function cuentaFiltrosActivos(filtros: FiltrosCatalogo): number {
 // veía quien lo mandó. Sólo se escriben los parámetros con valor, para no
 // ensuciar la URL de la mayoría, que no filtra nada.
 
-const ORDENES: Orden[] = ['catalogo', 'precio-asc', 'precio-desc']
-const DISPONIBILIDADES: Disponibilidad[] = ['disponible', 'bajo-pedido', 'agotado']
+// QUÉ SE OFRECE Y CÓMO SE LLAMA — LO MISMO EN LAS DOS PLATAFORMAS
+//
+// Web y app pintan estos controles de forma distinta —ver `CatalogFiltersWeb` y
+// `CatalogFiltersApp`—, pero lo que ofrecen no puede divergir: los mismos tres
+// órdenes, los mismos tres estados y en el mismo orden. Vive aquí, con la
+// lógica que ya valida la URL contra estas listas, para que separar la
+// presentación no acabe separando también la semántica.
+//
+// Las etiquetas de disponibilidad son las que ya usa la ficha de producto: el
+// mismo estado debe llamarse igual en toda la tienda.
+export const ORDENES: {
+  valor: Orden
+  clave: 'catalog.sort.default' | 'catalog.sort.priceAsc' | 'catalog.sort.priceDesc'
+}[] = [
+  { valor: 'catalogo', clave: 'catalog.sort.default' },
+  { valor: 'precio-asc', clave: 'catalog.sort.priceAsc' },
+  { valor: 'precio-desc', clave: 'catalog.sort.priceDesc' },
+]
+
+export const DISPONIBILIDADES: {
+  valor: Disponibilidad
+  clave: 'availability.inStock' | 'availability.backorder' | 'availability.soldOut'
+}[] = [
+  { valor: 'disponible', clave: 'availability.inStock' },
+  { valor: 'bajo-pedido', clave: 'availability.backorder' },
+  { valor: 'agotado', clave: 'availability.soldOut' },
+]
+
+const VALORES_ORDEN = ORDENES.map((o) => o.valor)
+const VALORES_DISPONIBILIDAD = DISPONIBILIDADES.map((d) => d.valor)
 
 export function leerFiltrosDeUrl(params: URLSearchParams): FiltrosCatalogo {
   const precioBruto = Number(params.get('precio'))
@@ -92,10 +120,10 @@ export function leerFiltrosDeUrl(params: URLSearchParams): FiltrosCatalogo {
 
   const disponibilidad = (params.get('disp') ?? '')
     .split(',')
-    .filter((v): v is Disponibilidad => DISPONIBILIDADES.includes(v as Disponibilidad))
+    .filter((v): v is Disponibilidad => VALORES_DISPONIBILIDAD.includes(v as Disponibilidad))
 
   const ordenBruto = params.get('orden')
-  const orden = ORDENES.includes(ordenBruto as Orden) ? (ordenBruto as Orden) : 'catalogo'
+  const orden = VALORES_ORDEN.includes(ordenBruto as Orden) ? (ordenBruto as Orden) : 'catalogo'
 
   return { precioMax, disponibilidad, orden }
 }

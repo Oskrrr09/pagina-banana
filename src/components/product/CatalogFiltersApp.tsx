@@ -6,15 +6,28 @@ import { Icon } from '../ui/Icon'
 import { euro } from '../../lib/format'
 import { useIdioma } from '../../lib/i18n'
 import {
+  DISPONIBILIDADES,
+  ORDENES,
   FILTROS_VACIOS,
   TRAMOS_PRECIO,
   cuentaFiltrosActivos,
   type Disponibilidad,
   type FiltrosCatalogo,
-  type Orden,
 } from '../../lib/catalogFilters'
 
-// Controles de «Filtrar» y «Ordenar» del catálogo de una familia.
+// Controles de «Filtrar» y «Ordenar» del catálogo de una familia, EN LA APP.
+//
+// SÓLO LA APP MONTA ESTO
+//
+// La presentación de aquí —dos botones táctiles del mismo alto y una hoja desde
+// abajo— se diseñó en la Fase A para un ancho de 320 px, donde cada píxel por
+// delante del producto se nota. En la web hay sitio de sobra y el orden se
+// enseña a la vista: eso vive en `CatalogFiltersWeb`.
+//
+// Las dos comparten `lib/catalogFilters` —los mismos filtros, los mismos
+// órdenes, el mismo estado en la URL—; lo único que diverge es cómo se pintan.
+// Cuando esto era un solo componente, rediseñarlo «para la app» cambiaba
+// también la web sin que nadie lo pidiera.
 //
 // El panel reutiliza `Modal`, que en móvil ya se abre como hoja desde abajo y
 // se encarga de atrapar el foco, cerrar con Escape y devolver el foco al botón
@@ -24,25 +37,7 @@ import {
 // Los filtros que se ofrecen son los que el catálogo puede sostener; el porqué
 // de los que faltan está en `lib/catalogFilters.ts`.
 
-// Se reutilizan las etiquetas de disponibilidad que ya usa la ficha de
-// producto: el mismo estado debe llamarse igual en toda la tienda.
-const DISPONIBILIDADES: {
-  valor: Disponibilidad
-  clave: 'availability.inStock' | 'availability.backorder' | 'availability.soldOut'
-}[] = [
-  { valor: 'disponible', clave: 'availability.inStock' },
-  { valor: 'bajo-pedido', clave: 'availability.backorder' },
-  { valor: 'agotado', clave: 'availability.soldOut' },
-]
-
-const ORDENES: { valor: Orden; clave: 'catalog.sort.default' | 'catalog.sort.priceAsc' | 'catalog.sort.priceDesc' }[] =
-  [
-    { valor: 'catalogo', clave: 'catalog.sort.default' },
-    { valor: 'precio-asc', clave: 'catalog.sort.priceAsc' },
-    { valor: 'precio-desc', clave: 'catalog.sort.priceDesc' },
-  ]
-
-export function CatalogFilters({
+export function CatalogFiltersApp({
   filtros,
   onCambiar,
   totalVisible,

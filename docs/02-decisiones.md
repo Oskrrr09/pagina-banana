@@ -522,6 +522,11 @@ No atribuye motivaciones que el repositorio no documenta.
   publica en GitHub Pages. No hay una segunda versión del código.
 - Motivo: es un prototipo de demostración; mantener dos interfaces en
   paralelo garantizaría que se separasen.
+- **Matiz (2026-08-28, D-085): «un único código» es un único repositorio,
+  un único build y un único dominio — no una única composición visual.** Esta
+  decisión sigue vigente tal y como se escribió; lo que se aclara es que nunca
+  quiso decir que web y app tuvieran que montar la misma estructura de página.
+  Ver [[#D-085]].
 - Implementación: la única diferencia es la base de las rutas. En Pages la
   web cuelga de `/pagina-banana/`; dentro del binario los ficheros están en
   la raíz. De ahí `npm run build:app`, que construye a `dist-app/` con
@@ -1951,3 +1956,36 @@ la app, porque la app va siempre en castellano
 ([[02-decisiones#D-047]]). `AppTabBar.tsx` apunta a `/mis-productos`. Lo vigilan
 `tests/e2e-prefs/mis-productos.spec.ts` y
 `tests/integration/mis-productos-servidor.spec.ts`.
+
+## D-085 — Compartir código no es compartir composición
+
+- Fecha: 2026-08-28.
+- Estado: vigente.
+- Decisión: **web y app son experiencias visuales distintas.** Comparten
+  repositorio, build, datos, tipos, precios, ofertas, rutas, lógica de filtros y
+  su estado en la URL. **No comparten obligatoriamente composición visual,
+  jerarquía de bloques ni controles de catálogo.** Cuando una página necesita
+  estructuras distintas, la plataforma se decide **una sola vez**, en la
+  frontera de esa página, y cada composición vive en su propio archivo.
+- Motivo: no es una preferencia estética, es la corrección de un fallo real.
+  `FamilyPage` la montaban las dos plataformas. En `f3143d85` —«feat(app):
+  Tienda deja el catálogo a un toque»— se simplificó pensando en la app, con
+  razón: en `/iphone` los filtros aparecían en y=2.238, casi tres pantallas por
+  debajo. Pero al ser una composición compartida, **la web perdió a la vez** su
+  carrusel de modelos, su escaparate de «Oportunidades» y el encabezado del
+  catálogo completo, y en escritorio quedó una pantalla de móvil estirada a
+  1440 px. Nadie lo pidió y nadie lo vio hasta meses después.
+- Regla que queda: **si cambiar una plataforma puede mover la otra por
+  accidente, la frontera está mal puesta.**
+- Implementación: `FamilyPage` resuelve el 404 y decide con `isNativeApp`,
+  delegando en `WebFamilyPage` o `AppFamilyPage`. Es el mismo patrón que `Home`
+  (D-042) ya usaba con `HomeWeb` y `AppCustomerHome`. Los controles de catálogo
+  se parten en `CatalogFiltersWeb` —orden a la vista, recuento legible— y
+  `CatalogFiltersApp` —dos controles táctiles y su hoja—. El dominio se comparte
+  en `useCatalogoFamilia` y en `lib/catalogFilters`, donde viven las listas de
+  órdenes y disponibilidades **para que separar la presentación no acabe
+  separando también lo que se ofrece**.
+- Alcance conocido y pendiente: `ProductCard` sigue siendo superficie compartida
+  —`WebFamilyPage`, `AppFamilyPage`, `Home` web y `SearchPage`—, igual que
+  `VariantPage` y `ModelPage`. Rediseñarlos para una plataforma cambiaría la
+  otra. Ponerles su frontera es **requisito previo** a tocarlos visualmente.
