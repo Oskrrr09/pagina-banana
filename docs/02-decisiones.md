@@ -2018,8 +2018,15 @@ la app, porque la app va siempre en castellano
   pantalla junto al producto— es un problema de un catálogo que se recorre con
   el pulgar, no de una rejilla de tres columnas en escritorio, donde la tarjeta
   actual funciona. Aplicarlo a la web habría sido un rediseño que nadie pidió.
-- Implementación: B1 vive íntegramente en `ProductCardApp` más la nota única de
-  precios en `AppFamilyPage`. **No se tocó `useTarjetaDeProducto`**: variante
+- Implementación: B1 vive íntegramente en `ProductCardApp`, más el aviso de
+  precios demostrativos. Ese aviso **se da una vez por cada superficie de
+  listado nativa que monta la tarjeta nueva**, no una vez en total: el catálogo
+  de familia (`AppFamilyPage`) y **la búsqueda cuando corre en modo app**
+  (`SearchPage`), que es compartida y decide plataforma en su frontera. En la
+  búsqueda se exige además que haya un dispositivo real en pantalla —no basta
+  con estar en la app—, para no avisar sobre precios que no existen. La web no
+  recibe ese aviso: allí cada `ProductCardWeb` sigue llevando el suyo.
+  **No se tocó `useTarjetaDeProducto`**: variante
   enseñada, oferta, destino, favorito, límite de tres y regla por familia siguen
   definiéndose una sola vez para las dos plataformas. La proporción de imagen se
   pasa por prop —el `ratio` por defecto de `ProductImage` **no se cambia**,
