@@ -8,6 +8,27 @@ actualizado: 2026-08-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-29 — Dos defectos vistos en el teléfono, corregidos en la app
+
+**Una franja blanca sobre «Seguías mirando».** El Home nativo pinta su fondo gris
+en un contenedor sin borde ni relleno, y su primer bloque lleva `mt-4`: sin un
+contexto de formato propio, ese margen **se colapsaba a través** del contenedor.
+Medido: el gris empezaba **16 px** por debajo de la barra y en medio asomaba el
+blanco del `main`. Se resuelve con `flow-root` en ese contenedor — no con
+`overflow-hidden`, que recortaría los carriles horizontales, ni con relleno, que
+cambiaría el ritmo vertical. Franja: **16 → 0 px**.
+
+**El historial se filtraba entre cuentas.** Una persona miraba productos, cerraba
+sesión, entraba otra y seguía viendo los de la primera. La app pasa a guardar el
+historial en **un espacio por identidad** (**D-088**), y el Home lo recalcula al
+cambiar la sesión, en el mismo render, para que no haya un fotograma con los
+productos de la anterior. **La web no cambia**: conserva D-064 y su clave única.
+
+Comprobado con el HTML renderizado de `/`, `/iphone` y la ficha a 1440 y 390:
+**idéntico** al de la base. Se adaptaron cuatro suites que sembraban el historial
+en la clave del navegador esperando verlo en el Home nativo — el concepto que
+fijaban sigue exigiéndose, sólo cambia dónde vive el dato.
+
 ## 2026-08-29 — Fase B2: la ficha de producto respira en la app
 
 Tres cambios, sólo en la app (D-086), y sólo los que el diseño aprobado

@@ -7,7 +7,7 @@ import { useCustomerAuth } from '../../../lib/customerAuth'
 import { useStorePreference } from '../../../lib/storePreference'
 import { useT } from '../../../lib/i18n'
 import { openChat } from '../../../lib/chatLauncher'
-import { leerRecientes } from '../../../lib/recentlyViewed'
+import { leerRecientesApp } from '../../../lib/recentlyViewedApp'
 import { tieneOferta } from '../../../lib/offers'
 import { listMyReservations } from '../../../lib/reservations'
 import { allModels, getModel } from '../../../data/products'
@@ -70,19 +70,32 @@ const BANANITO = `${import.meta.env.BASE_URL}img/chat/bananito-square.png`
  * pintar para no repetirlos: es la MISMA lista, no una segunda lectura.
  */
 function useRecientes(): Model[] {
-  const [modelos, setModelos] = useState<Model[]>([])
-  useEffect(() => {
-    setModelos(
-      leerRecientes()
+  // EL HISTORIAL ES DE QUIEN HA INICIADO SESIÓN, NO DEL TELÉFONO
+  //
+  // Antes esto leía una sola vez, con `[]` de dependencias, un almacén común a
+  // todo el dispositivo. En la app eso filtraba entre cuentas: A miraba
+  // productos, cerraba sesión, entraba B y seguía viendo los de A —tanto porque
+  // el almacén era compartido como porque este estado no se volvía a calcular—.
+  //
+  // Ahora la identidad es la dependencia. Al cambiar A → anónimo → B se vuelve
+  // a leer el espacio que toca, y **se calcula en el mismo render**, no en un
+  // efecto posterior: si se hiciera en un efecto, B vería durante un fotograma
+  // los productos de A antes de que el efecto los sustituyera.
+  //
+  // Ver D-088.
+  const { session } = useCustomerAuth()
+  const identidad = session?.user.id ?? null
+  return useMemo(
+    () =>
+      leerRecientesApp(identidad)
         .map((id) => {
           const [familia, slug] = id.split('/')
           return getModel(familia, slug)
         })
         .filter((m): m is Model => Boolean(m))
         .slice(0, 6),
-    )
-  }, [])
-  return modelos
+    [identidad],
+  )
 }
 
 export function AppCustomerHome({ listarReservas = listMyReservations }: { listarReservas?: ListarReservas } = {}) {
@@ -117,7 +130,18 @@ export function AppCustomerHome({ listarReservas = listMyReservations }: { lista
   // El gris vive aquí y no en `main` a propósito: sólo cambia Inicio, no el
   // resto de pantallas de la aplicación.
   return (
-    <div className="min-h-full bg-neutral pb-10">
+    // `flow-root`: el primer bloque de la pantalla lleva `mt-4`, y sin un
+    // contexto de formato propio ese margen se colapsa **a través** de este
+    // contenedor —no tiene borde, ni relleno, ni nada que lo detenga—. El
+    // resultado medido: el fondo gris empezaba 16 px más abajo que la barra
+    // superior y en medio se veía el blanco del `main`, una franja fina justo
+    // encima de «Seguías mirando».
+    //
+    // `flow-root` crea ese contexto sin efectos secundarios. `overflow-hidden`
+    // también lo haría, pero recortaría los carriles horizontales de producto,
+    // que se salen del ancho a propósito. Y añadir relleno arriba cambiaría el
+    // ritmo vertical que la Fase A dejó ajustado.
+    <div className="min-h-full flow-root bg-neutral pb-10">
       {/* EL ORDEN SIGUE UNA REGLA, NO CINCO MAQUETAS
           Urgencia primero, luego lo relevante, y la cuenta nunca la primera.
 

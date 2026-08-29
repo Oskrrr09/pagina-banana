@@ -19,6 +19,7 @@ import { getAccessoriesForModel, accessoryPath } from '../data/accessories'
 import { euro } from '../lib/format'
 import { useStore } from '../lib/store'
 import { registrarVisto } from '../lib/recentlyViewed'
+import { registrarVistoApp } from '../lib/recentlyViewedApp'
 import { isNativeApp } from '../lib/nativeApp'
 import { ALTURA_TAB_BAR } from '../components/layout/AppTabBar'
 import { useCustomerAuth } from '../lib/customerAuth'
@@ -154,10 +155,22 @@ export function VariantPage() {
   // favoritos, desde el propio historial o con el botón Atrás. Depende sólo de
   // familia y modelo, no de la variante, para que cambiar de color o capacidad
   // no vuelva a registrar lo mismo.
+  //
+  // DÓNDE SE ANOTA DEPENDE DE LA PLATAFORMA
+  //
+  // En el navegador el historial es del dispositivo y se guarda bajo una sola
+  // clave (D-064). En la app pertenece a quien ha iniciado sesión: un teléfono
+  // es de alguien, y sin separarlo la siguiente persona en entrar veía lo que
+  // había mirado la anterior. Por eso la app escribe en el espacio de su
+  // identidad —y `null` es el espacio de «sin cuenta», que también es propio—.
+  // Ver D-088.
+  const identidadRecientes = customerSession?.user.id ?? null
   useEffect(() => {
     if (!model) return
-    registrarVisto(`${model.family}/${model.slug}`)
-  }, [model])
+    const id = `${model.family}/${model.slug}`
+    if (isNativeApp) registrarVistoApp(identidadRecientes, id)
+    else registrarVisto(id)
+  }, [model, identidadRecientes])
 
   // Actualiza la URL al cambiar de variante, sin recargar (§9.3)
   //
