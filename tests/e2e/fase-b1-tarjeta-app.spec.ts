@@ -173,6 +173,57 @@ test.describe('las acciones siguen siendo alcanzables', () => {
   })
 })
 
+test.describe('la búsqueda nativa conserva el aviso de precios', () => {
+  // `/buscar` es la otra superficie que monta la tarjeta de app. Al quitarle el
+  // distintivo por producto, la búsqueda nativa se quedaba sin la salvaguarda:
+  // tarjetas con precio y ningún sitio donde dijera que son demostrativos. La
+  // nota se pinta en la frontera de la página, que es donde ya se decide la
+  // plataforma.
+
+  test('una sola nota para toda la página, y ningún distintivo por tarjeta', async ({ page }) => {
+    await comoApp(page)
+    await page.goto('./buscar?q=iPhone')
+
+    const tarjetas = page.locator('[data-product-card]')
+    await expect(tarjetas.first()).toBeVisible()
+    await expect(page.locator('[data-product-card-surface="app"]').first()).toBeVisible()
+    await expect(page.locator('[data-product-card-surface="web"]')).toHaveCount(0)
+
+    // Acotado a las tarjetas de producto: los accesorios conservan el suyo
+    // porque `AccessoryCard` no entra en B1, y esta prueba no debe fingir lo
+    // contrario.
+    await expect(
+      page.locator('[data-product-card]').getByText('Precio demostrativo'),
+      'sin distintivo por producto',
+    ).toHaveCount(0)
+    // Exactamente una, aunque haya varias tarjetas y el mismo modelo pueda salir
+    // en «Coincidencia principal» y en «Dispositivos Apple».
+    await expect(page.getByText(/^Precios demostrativos/), 'una sola nota en la página').toHaveCount(1)
+    expect(await tarjetas.count(), 'y hay más de una tarjeta, que es lo que lo hace interesante').toBeGreaterThan(1)
+  })
+
+  test('una búsqueda sin productos no avisa de precios que no existen', async ({ page }) => {
+    // Estar en la app no basta: la nota depende de que haya producto con precio
+    // en pantalla. Avisar sobre precios inexistentes sería ruido.
+    await comoApp(page)
+    await page.goto('./buscar?q=soporte')
+
+    await expect(page.locator('[data-product-card]')).toHaveCount(0)
+    await expect(page.getByText(/^Precios demostrativos/)).toHaveCount(0)
+  })
+
+  test('la búsqueda web no recibe la nota: cada tarjeta sigue llevando la suya', async ({ page }) => {
+    await page.goto('./buscar?q=iPhone')
+
+    await expect(page.locator('[data-product-card-surface="web"]').first()).toBeVisible()
+    await expect(
+      page.locator('[data-product-card]').getByText('Precio demostrativo').first(),
+      'la web conserva su distintivo dentro de la tarjeta',
+    ).toBeVisible()
+    await expect(page.getByText(/^Precios demostrativos/), 'y no recibe la nota de la app').toHaveCount(0)
+  })
+})
+
 test.describe('B1 no toca la web', () => {
   test('la tarjeta web conserva descripción, distintivo y botón de comparar', async ({ page }) => {
     await page.goto('./iphone')
