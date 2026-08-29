@@ -4,7 +4,7 @@ import { useCatalogoFamilia } from '../../lib/useCatalogoFamilia'
 import { Container } from '../ui/Container'
 import { Button, ButtonLink } from '../ui/Button'
 import { Icon } from '../ui/Icon'
-import { ProductCard } from '../product/ProductCard'
+import { ProductCardWeb } from '../product/ProductCardWeb'
 import { ProductImage } from '../product/ProductImage'
 import { CatalogFiltersWeb } from '../product/CatalogFiltersWeb'
 import { OfferBadge, ProvisionalBadge } from '../ui/Tag'
@@ -299,7 +299,7 @@ function CatalogoWeb({ models }: { models: Model[] }) {
       {visibles.length > 0 ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {visibles.map((m) => (
-            <ProductCard key={m.slug} model={m} />
+            <ProductCardWeb key={m.slug} model={m} />
           ))}
         </div>
       ) : (

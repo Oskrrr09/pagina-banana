@@ -6,7 +6,7 @@ import { Placeholder } from '../components/ui/Placeholder'
 import { Reveal, StaggerGroup, StaggerItem } from '../components/ui/Reveal'
 import { Accordion } from '../components/ui/Accordion'
 import { Icon } from '../components/ui/Icon'
-import { ProductCard } from '../components/product/ProductCard'
+import { ProductCardWeb } from '../components/product/ProductCardWeb'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
 import { StoreCarousel } from '../components/home/StoreCarousel'
 import { BentoShowcase } from '../components/home/BentoShowcase'
@@ -155,7 +155,7 @@ function HomeWeb() {
         <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {launches.map((m) => (
             <StaggerItem key={m.slug}>
-              <ProductCard model={m} />
+              <ProductCardWeb model={m} />
             </StaggerItem>
           ))}
         </StaggerGroup>
@@ -172,7 +172,7 @@ function HomeWeb() {
           <StaggerGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {offers.map((m) => (
               <StaggerItem key={m.slug}>
-                <ProductCard model={m} />
+                <ProductCardWeb model={m} />
               </StaggerItem>
             ))}
           </StaggerGroup>

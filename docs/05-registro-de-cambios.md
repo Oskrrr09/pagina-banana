@@ -1,12 +1,40 @@
 ---
 tipo: cambios
-actualizado: 2026-08-28
+actualizado: 2026-08-29
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-29 — La tarjeta de producto tiene frontera de plataforma
+
+**Causa.** `ProductCard` seguía siendo una sola composición montada por la web
+—`WebFamilyPage`, `Home`— y por la app —`AppFamilyPage`—, además de por
+`/buscar`, que es la misma pantalla en ambas. Cualquier retoque pensado para el
+catálogo nativo habría cambiado la web, que es el acoplamiento que D-085
+prohíbe y que la entrega anterior corrigió para `FamilyPage`.
+
+**Frontera creada.** `ProductCardWeb` y `ProductCardApp`, con el comportamiento
+compartido en `useTarjetaDeProducto`: variante enseñada, oferta, destino,
+favorito y comparación se definen una sola vez y siguen saliendo de
+`lib/offers`. Cada superficie importa explícitamente la suya, así que la
+frontera se lee en los imports; no hay un componente genérico que vuelva a
+montar las dos plataformas. `/buscar` decide una vez en su cabecera.
+
+**Cero cambio visual.** Las dos tarjetas nacen idénticas a lo que su plataforma
+enseñaba. Comprobado con `cmp` sobre seis capturas —web `/iphone`, `/buscar` y
+portada a 1440; app `/iphone` a 320 y 390 y `/buscar` a 390—: **todas idénticas
+bit a bit**. Esta entrega construye la puerta, no la cruza.
+
+**Tests de plataforma.** `tarjeta-por-plataforma.spec.ts` comprueba, mediante
+`data-product-card-surface` —semántica de arquitectura, no estilo—, que la web
+sólo monta tarjetas web y la app sólo de app, incluida la búsqueda en los dos
+modos; y que separar la presentación no ha separado el comportamiento.
+
+**Sigue pendiente**: `VariantPage` y `ModelPage`. `ProductCardCompact` no
+formaba parte de esta migración.
 
 ## 2026-08-28 — Las páginas de familia se separan en web y app
 
