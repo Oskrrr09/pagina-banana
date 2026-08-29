@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useCatalogo, useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Icon } from '../components/ui/Icon'
-import { ProductCard } from '../components/product/ProductCard'
+import { ProductCardApp } from '../components/product/ProductCardApp'
+import { ProductCardWeb } from '../components/product/ProductCardWeb'
 import { ButtonLink } from '../components/ui/Button'
 import { families, allModels, modelsByFamily } from '../data/products'
 import { searchCatalog, type SearchResults } from '../lib/catalogSearch'
@@ -11,6 +12,19 @@ import type { SearchItem } from '../data/searchIndex'
 import { CompactSearchCard, SearchSectionHeading } from '../components/search/SearchResultCards'
 import { AccessoryCard } from '../components/product/AccessoryCard'
 import { getAccessory } from '../data/accessories'
+import { isNativeApp } from '../lib/nativeApp'
+
+// LA ÚNICA PÁGINA DE CATÁLOGO QUE MONTAN LAS DOS PLATAFORMAS
+//
+// `/buscar` se abre desde el pie en la web y desde el buscador de `AppTopBar`
+// dentro de la app —`HeaderSearch` navega aquí—, así que a diferencia de
+// `FamilyPage` no se puede partir en dos composiciones: es la misma pantalla.
+// Lo que sí cambia es qué tarjeta de producto usa.
+//
+// La plataforma se decide **una vez, aquí**, y no dentro de cada tarjeta ni por
+// cada resultado. Así, cuando la Fase B rediseñe `ProductCardApp`, la búsqueda
+// nativa la seguirá y la web no se moverá.
+const TarjetaDeProducto = isNativeApp ? ProductCardApp : ProductCardWeb
 
 // Resultados del buscador (§4.4bis). Usa `searchCatalog` — el mismo motor
 // determinista y agrupado que el autocompletado del Header. Sincroniza el
@@ -172,7 +186,7 @@ function ExactMatchCard({ item }: { item: SearchItem }) {
     if (model) {
       return (
         <div className="grid gap-4 sm:grid-cols-2 md:max-w-3xl">
-          <ProductCard model={model} />
+          <TarjetaDeProducto model={model} />
         </div>
       )
     }
@@ -207,7 +221,7 @@ function DeviceGrid({ items }: { items: SearchItem[] }) {
   const cat = useCatalogo()
   const t = useT()
   // Dispositivos Apple: si la entrada es familia, tarjeta destacada; si es
-  // modelo real, ProductCard.
+  // modelo real, la tarjeta de producto de la plataforma.
   const cards: JSX.Element[] = []
   for (const item of items) {
     if (item.kind === 'apple-family' && item.route) {
@@ -230,7 +244,7 @@ function DeviceGrid({ items }: { items: SearchItem[] }) {
     if (item.kind === 'apple-device') {
       const model = allModels.find((m) => `device:${m.family}/${m.slug}` === item.id)
       if (model) {
-        cards.push(<ProductCard key={item.id} model={model} />)
+        cards.push(<TarjetaDeProducto key={item.id} model={model} />)
         continue
       }
     }
@@ -252,7 +266,7 @@ function CompactGrid({ items }: { items: SearchItem[] }) {
 /**
  * Grid visual para accesorios Apple del catálogo real. Cada ítem se
  * pinta con la MISMA `AccessoryCard` del catálogo (§4.5) para que la
- * jerarquía visual coincida con `ProductCard`. Los demostrativos caen
+ * jerarquía visual coincida con la tarjeta de producto. Los demostrativos caen
  * en la tarjeta compacta como fallback.
  */
 function AccessoryVisualGrid({ items }: { items: SearchItem[] }) {

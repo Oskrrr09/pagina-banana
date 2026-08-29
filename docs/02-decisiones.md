@@ -1985,7 +1985,21 @@ la app, porque la app va siempre en castellano
   en `useCatalogoFamilia` y en `lib/catalogFilters`, donde viven las listas de
   órdenes y disponibilidades **para que separar la presentación no acabe
   separando también lo que se ofrece**.
-- Alcance conocido y pendiente: `ProductCard` sigue siendo superficie compartida
-  —`WebFamilyPage`, `AppFamilyPage`, `Home` web y `SearchPage`—, igual que
-  `VariantPage` y `ModelPage`. Rediseñarlos para una plataforma cambiaría la
-  otra. Ponerles su frontera es **requisito previo** a tocarlos visualmente.
+- Alcance conocido al escribirla (2026-08-28): `ProductCard`, `VariantPage` y
+  `ModelPage` seguían siendo superficies compartidas. Rediseñarlas para una
+  plataforma cambiaría la otra, así que ponerles su frontera es **requisito
+  previo** a tocarlas visualmente.
+- **Actualización (2026-08-29): la tarjeta ya tiene su frontera.** `ProductCard`
+  se separó en `ProductCardWeb` y `ProductCardApp`, ambas nacidas idénticas a lo
+  que su plataforma enseñaba —la entrega construye la puerta, no la cruza—. El
+  comportamiento no se duplicó: variante enseñada, oferta, destino, favorito y
+  comparación viven una sola vez en `useTarjetaDeProducto`, que sigue usando
+  `lib/offers`. Cada superficie importa explícitamente la suya, de modo que la
+  frontera se lee en los imports; `/buscar`, que es la misma pantalla en las dos
+  plataformas, decide **una sola vez** en su cabecera. `data-product-card-surface`
+  lo hace comprobable en `tests/e2e/tarjeta-por-plataforma.spec.ts`.
+- **Sigue pendiente**: `VariantPage` y `ModelPage`. Son las dos superficies que
+  quedan sin frontera de presentación.
+- **Fuera de esta migración**: `ProductCardCompact` ya era una composición
+  independiente —sólo la montan `AppHome` y `AppCustomerHome`— y no formaba parte
+  del problema; no se ha tocado.

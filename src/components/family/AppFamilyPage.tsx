@@ -4,7 +4,7 @@ import { useCatalogoFamilia } from '../../lib/useCatalogoFamilia'
 import { Container } from '../ui/Container'
 import { Button, ButtonLink } from '../ui/Button'
 import { Icon } from '../ui/Icon'
-import { ProductCard } from '../product/ProductCard'
+import { ProductCardApp } from '../product/ProductCardApp'
 import { CatalogFiltersApp } from '../product/CatalogFiltersApp'
 import { CatalogoVacio } from './CatalogoVacio'
 import type { Family, Model } from '../../data/types'
@@ -152,7 +152,7 @@ function CatalogoApp({ models }: { models: Model[] }) {
       />
 
       {/* LA LLAMADA AL COMPARADOR ES DEL LISTADO, NO DE CADA TARJETA
-          Estaba dentro de `ProductCard`, así que con dos modelos comparados se
+          Estaba dentro de la tarjeta, así que con dos modelos comparados se
           pintaban dos enlaces idénticos y con tres, tres. Es una sola acción
           sobre una sola comparación: se pinta una vez, aquí. */}
       {enComparacion > 0 && (
@@ -174,7 +174,7 @@ function CatalogoApp({ models }: { models: Model[] }) {
               diferida cuando este catálogo vivía debajo de dos escaparates. Las
               demás siguen en carga diferida. */}
           {visibles.map((m, i) => (
-            <ProductCard key={m.slug} model={m} priority={i === 0} />
+            <ProductCardApp key={m.slug} model={m} priority={i === 0} />
           ))}
         </div>
       ) : (

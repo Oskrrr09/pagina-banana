@@ -95,6 +95,13 @@ Datos, tipos, precios, ofertas, rutas y el estado de los filtros son los mismos;
 la presentación no. La plataforma se decide una sola vez en la frontera de la
 página. Ver [[02-decisiones#D-085]].
 
+**La tarjeta de rejilla también está separada**: `ProductCardWeb` y
+`ProductCardApp`, hoy visualmente idénticas, con el comportamiento compartido en
+`useTarjetaDeProducto`. Cada superficie importa la suya, y `/buscar` —la única
+página de catálogo que montan las dos plataformas— elige una sola vez.
+`ProductCardCompact` es aparte: sólo la usan los carriles de la app.
+**Quedan sin frontera `VariantPage` y `ModelPage`.**
+
 **Deuda conocida del armazón**: los chips de familia de `AppTopBar` ocupan 474 px,
 de modo que a 320 px sólo se ven cuatro de los seis y miden 32 px de alto. Tienda
 la rodea con «Explorar»; no está resuelta.
