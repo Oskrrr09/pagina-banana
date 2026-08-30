@@ -8,6 +8,55 @@ actualizado: 2026-08-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-29 — Dos defectos vistos en el teléfono, corregidos en la app
+
+**Una franja blanca sobre «Seguías mirando».** El Home nativo pinta su fondo gris
+en un contenedor sin borde ni relleno, y su primer bloque lleva `mt-4`: sin un
+contexto de formato propio, ese margen **se colapsaba a través** del contenedor.
+Medido: el gris empezaba **16 px** por debajo de la barra y en medio asomaba el
+blanco del `main`. Se resuelve con `flow-root` en ese contenedor — no con
+`overflow-hidden`, que recortaría los carriles horizontales, ni con relleno, que
+cambiaría el ritmo vertical. Franja: **16 → 0 px**.
+
+**El historial se filtraba entre cuentas.** Una persona miraba productos, cerraba
+sesión, entraba otra y seguía viendo los de la primera. La app pasa a guardar el
+historial en **un espacio por identidad** (**D-088**), y el Home lo recalcula al
+cambiar la sesión, en el mismo render, para que no haya un fotograma con los
+productos de la anterior. **La web no cambia**: conserva D-064 y su clave única.
+
+Comprobado con el HTML renderizado de `/`, `/iphone` y la ficha a 1440 y 390:
+**idéntico** al de la base. Se adaptaron cuatro suites que sembraban el historial
+en la clave del navegador esperando verlo en el Home nativo — el concepto que
+fijaban sigue exigiéndose, sólo cambia dónde vive el dato.
+
+## 2026-08-29 — Fase B2: la ficha de producto respira en la app
+
+Tres cambios, sólo en la app (D-086), y sólo los que el diseño aprobado
+contiene:
+
+**La galería pierde el marco.** Era `1px solid #e3e3e6` alrededor de un fondo
+casi blanco —un contorno que no separaba la foto de nada— y su radio de 20 px no
+pertenecía a ningún sistema. En la app: sin borde y con **16**, el mismo de la
+tarjeta nativa. Proporción, relleno, tinte por color y `object-contain`, intactos.
+
+**El favorito deja de partir el nombre y el precio.** La fila es `flex-wrap`: al
+no caber, el botón bajaba y aterrizaba entre ambos. Medido: el hueco pasaba de
+18 a **66 px** a 320 y 390. Ahora se compacta a icono —mismo control, misma
+lógica, mismo nombre accesible— y el hueco vuelve a **20 px**, con la zona
+táctil pasando de 170×38 a **44×44**.
+
+**Los accesorios sugeridos son los del catálogo.** La ficha construía a mano otra
+tarjeta para enseñar lo mismo que `/accesorios`. Ahora la app **reutiliza
+`AccessoryCard`**, la fuente real de ese tratamiento, en vez de copiar sus
+clases.
+
+**`VariantPage` sigue siendo una sola página compartida**: divergen tres nodos,
+no la página (**D-087**). **La web no cambia**, comprobado comparando el HTML
+renderizado de la ficha, idéntico carácter a carácter a 1440 y a 390.
+
+Sin tocar: selectores, stock, entrega, financiación, compra, reservas, seguro,
+pestañas, barra fija, distintivo de precio y `ModelPage`.
+
 ## 2026-08-29 — Fase B1: la tarjeta del catálogo nativo respira
 
 **Primera entrega visual de Fase B, y sólo para la app** (D-086).

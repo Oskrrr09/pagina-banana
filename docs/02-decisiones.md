@@ -1128,6 +1128,10 @@ No atribuye motivaciones que el repositorio no documenta.
 - Estado: vigente.
 - Decisión: `banana:recientes` guarda sólo `familia/slug` de los últimos ocho
   productos vistos, y **no se borra al cerrar sesión**.
+- **Alcance reducido a la web el 2026-08-29 (D-088).** Esta decisión sigue
+  vigente **en el navegador**, tal y como se escribió. En la app se sustituye
+  por un historial separado por identidad: allí el razonamiento de «el
+  dispositivo es de todos» no se sostiene. Ver [[#D-088]].
 - Frontera con las preferencias de cuenta: la tienda favorita y los seguimientos
   de disponibilidad sí se vacían al cerrar sesión (ver
   [[02-decisiones#D-062]]), porque pertenecen a la CUENTA. El historial de
@@ -2042,4 +2046,72 @@ la app, porque la app va siempre en castellano
 - **Fuera de alcance**: `ModelPage`. No hay evidencia de que el diseño aprobado
   pretenda cambiarla, y ninguna superficie de producto enlaza a ella salvo el
   detalle de accesorios. Permanece compartida.
+
+## D-087 — B2 diverge en tres nodos, no en una página
+
+- Fecha: 2026-08-29.
+- Estado: vigente.
+- Decisión: la Fase B2 —la ficha de producto— **no crea `VariantPageApp`,
+  `VariantPageWeb`, `ProductHeroApp` ni `ProductHeroWeb`**. `VariantPage` sigue
+  siendo **una sola página compartida**, y la presentación diverge en **tres
+  nodos concretos** mediante `isNativeApp`: la superficie de la galería, la fila
+  del nombre con el favorito, y el renderizador de los accesorios sugeridos.
+- Motivo: la auditoría previa acotó B2 a tres requisitos —galería sin marco,
+  favorito que deja de separar nombre y precio, accesorios con el tratamiento
+  del catálogo—. Extraer un hero significaría mover unas 240 líneas y pasar
+  hacia abajo modelo, color, capacidad, variante actual, tamaños y los callbacks
+  de selección, favorito, carrito y modales, para que **las dos copias nacieran
+  idénticas y siguieran idénticas**, porque ningún requisito pide que diverjan.
+  Sería duplicación sin divergencia. Separar la página entera es aún menos
+  defendible: hay un solo `isNativeApp` preexistente en 808 líneas.
+- Implementación: los tres nodos eligen presentación en el sitio donde se
+  pintan. `FavoriteToggle` gana una variante `soloIcono` —misma lógica, mismo
+  `aria-pressed`, mismo nombre accesible, sólo sin texto visible— porque con
+  texto medía 170 px y no cabía junto al título. Los accesorios nativos
+  **reutilizan `AccessoryCard`**, la fuente real del tratamiento del catálogo,
+  en lugar de copiar sus clases.
+- **La recomendación de la auditoría no se adopta, y conviene que conste.** Esa
+  auditoría concluyó que los tres problemas existen **igual en la web
+  estrecha** —el favorito se interpone también a 390 px de navegador, medido— y
+  que lo coherente sería arreglarlos en ambas plataformas. No se hace: **D-086
+  congela la composición web durante la Fase B**. Que un cambio también mejore
+  la web no lo convierte en parte de esta entrega; sería otra decisión, con su
+  propia revisión.
+- **Tampoco conviene falsear la historia**: el diseño original de Fase B **no
+  declaró B2 como app-only**. La decisión de aplicarlo sólo a la app es
+  posterior y consciente, tomada en D-086 y ejecutada aquí.
+- Fuera de alcance: `ModelPage` —ningún requisito la nombra—, selectores, stock,
+  entrega, financiación, compra, reservas, seguro, pestañas, barra de compra
+  fija y el distintivo de precio de la ficha, que B2 no menciona y por tanto no
+  se toca.
+
+## D-088 — En la app, el historial de vistos es de la cuenta, no del teléfono
+
+- Fecha: 2026-08-29.
+- Estado: vigente. **Supera a D-064 sólo para la aplicación.**
+- Decisión: en la app, «Seguías mirando» se guarda en **un espacio por
+  identidad**: `banana:recientes:app:user:<id>` para cada cuenta y
+  `banana:recientes:app:anon` para quien navega sin identificarse. **La web no
+  cambia**: sigue con la clave única de D-064.
+- Motivo: se detectó **en el teléfono**, no en los tests. Una persona miraba
+  productos, cerraba sesión, entraba otra y **seguía viendo los productos de la
+  primera**. En un navegador compartido «lo que has mirado» es del navegador y
+  esa es la lectura correcta; en un teléfono con la aplicación instalada, el
+  historial es de quien ha iniciado sesión, y mezclarlo es una fuga entre
+  cuentas.
+- Reglas: los espacios **no se mezclan**. Entrar en una cuenta no arrastra lo
+  que se miró en anónimo —adivinar esa intención sería peor que no hacer nada—,
+  y salir de una cuenta hace desaparecer su historial de la pantalla al
+  instante. Volver a la misma cuenta en el mismo teléfono **sí** recupera lo
+  suyo, porque su espacio sigue donde estaba. Se mantienen el tope de ocho, el
+  orden por lo más reciente y la deduplicación.
+- Implementación: `src/lib/recentlyViewedApp.ts`, un módulo aparte.
+  `recentlyViewed.ts` **no se toca**, de modo que la web conserva su
+  comportamiento y sus pruebas. `VariantPage` elige dónde anotar según
+  `isNativeApp` —la frontera mínima, sin duplicar la página—, y el Home nativo
+  toma la identidad como dependencia y **calcula la lista en el mismo render**:
+  hacerlo en un efecto habría dejado un fotograma en el que la segunda persona
+  veía los productos de la primera.
+- Qué no se guarda, igual que antes: sólo `familia/slug`. Ni nombres, ni
+  precios, ni fechas, ni recuentos. Nunca se sincroniza con Supabase.
 

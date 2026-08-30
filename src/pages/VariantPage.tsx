@@ -10,6 +10,7 @@ import { Placeholder } from '../components/ui/Placeholder'
 import { StockIndicator } from '../components/ui/StockIndicator'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { Accordion } from '../components/ui/Accordion'
+import { AccessoryCard } from '../components/product/AccessoryCard'
 import { StorePicker } from '../components/product/StorePicker'
 import { FinanceSimulator } from '../components/product/FinanceSimulator'
 import { capacitySlug, getModel, familyInfo, variantPath } from '../data/products'
@@ -18,6 +19,7 @@ import { getAccessoriesForModel, accessoryPath } from '../data/accessories'
 import { euro } from '../lib/format'
 import { useStore } from '../lib/store'
 import { registrarVisto } from '../lib/recentlyViewed'
+import { registrarVistoApp } from '../lib/recentlyViewedApp'
 import { isNativeApp } from '../lib/nativeApp'
 import { ALTURA_TAB_BAR } from '../components/layout/AppTabBar'
 import { useCustomerAuth } from '../lib/customerAuth'
@@ -153,10 +155,22 @@ export function VariantPage() {
   // favoritos, desde el propio historial o con el botón Atrás. Depende sólo de
   // familia y modelo, no de la variante, para que cambiar de color o capacidad
   // no vuelva a registrar lo mismo.
+  //
+  // DÓNDE SE ANOTA DEPENDE DE LA PLATAFORMA
+  //
+  // En el navegador el historial es del dispositivo y se guarda bajo una sola
+  // clave (D-064). En la app pertenece a quien ha iniciado sesión: un teléfono
+  // es de alguien, y sin separarlo la siguiente persona en entrar veía lo que
+  // había mirado la anterior. Por eso la app escribe en el espacio de su
+  // identidad —y `null` es el espacio de «sin cuenta», que también es propio—.
+  // Ver D-088.
+  const identidadRecientes = customerSession?.user.id ?? null
   useEffect(() => {
     if (!model) return
-    registrarVisto(`${model.family}/${model.slug}`)
-  }, [model])
+    const id = `${model.family}/${model.slug}`
+    if (isNativeApp) registrarVistoApp(identidadRecientes, id)
+    else registrarVisto(id)
+  }, [model, identidadRecientes])
 
   // Actualiza la URL al cambiar de variante, sin recargar (§9.3)
   //
@@ -257,8 +271,27 @@ export function VariantPage() {
       {/* Información esencial — siempre visible */}
       <Container className="grid gap-8 py-8 lg:grid-cols-2">
         <div className="lg:sticky lg:top-24 lg:self-start">
+          {/* LA GALERÍA PIERDE EL MARCO EN LA APP (Fase B2)
+              El borde es `1px solid #e3e3e6` alrededor de un fondo casi blanco:
+              dibuja un contorno que no separa la foto de nada. Y el radio de
+              20 px no pertenece a ningún sistema —la tarjeta nativa de B1 usa
+              16—. En la app se retira el borde y se adopta ese mismo 16, que es
+              el radio vigente de la superficie de producto nativa.
+              La web conserva su marco y sus 20 px: D-086 congela su
+              composición mientras dura la Fase B. Todo lo demás —proporción,
+              relleno, tinte por color, animación y `object-contain`— se queda
+              igual en las dos. */}
           <motion.div
-            className="relative grid aspect-square place-items-center overflow-hidden rounded-[20px] border border-line p-6"
+            // La rama web repite la cadena entera, en su orden original, para que
+            // el atributo `class` que llega al navegador sea idéntico carácter a
+            // carácter al de antes de B2: componerla con plantilla da el mismo CSS
+            // pero otro orden, y eso basta para que una comparación de paridad deje
+            // de ser concluyente.
+            className={
+              isNativeApp
+                ? 'relative grid aspect-square place-items-center overflow-hidden rounded-[16px] p-6'
+                : 'relative grid aspect-square place-items-center overflow-hidden rounded-[20px] border border-line p-6'
+            }
             animate={{ backgroundColor: tintHex(color.hex, 0.84) }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
@@ -305,7 +338,23 @@ export function VariantPage() {
         </div>
 
         <div ref={buyBoxRef}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          {/* EL FAVORITO DEJA DE PARTIR EL NOMBRE Y EL PRECIO (Fase B2)
+              La fila es `flex-wrap`: en pantalla ancha el favorito va al lado
+              del título, pero en cuanto no cabe baja, y aterriza justo entre el
+              nombre y el precio. Medido en la ficha: a 320 y 390 px el hueco
+              entre ambos pasa de 18 a 66 px con el botón dentro.
+              En la app el botón se compacta a icono —el mismo control, la misma
+              lógica, sólo sin su texto— y ya cabe junto al título sin envolver,
+              así que el nombre y el precio quedan seguidos.
+              La web se queda como está, también a 390, donde tiene el mismo
+              problema: arreglarlo ahí es otra decisión (D-086). */}
+          <div
+            className={
+              isNativeApp
+                ? 'flex flex-nowrap items-start justify-between gap-3'
+                : 'flex flex-wrap items-start justify-between gap-3'
+            }
+          >
             <h1 className="text-3xl font-extrabold text-ink">
               {model.name}
               {hasSizeSelector && activeSize ? ` ${activeSize}` : ''}
@@ -315,6 +364,7 @@ export function VariantPage() {
               name={model.name}
               isFavorite={isFavorite(`${model.family}/${model.slug}`)}
               onToggle={() => toggleFavorite(`${model.family}/${model.slug}`)}
+              soloIcono={isNativeApp}
             />
           </div>
 
@@ -723,16 +773,28 @@ function QuantityControl({
   )
 }
 
+/**
+ * `soloIcono` es una variante de **presentación**, no otro control: mismo
+ * `onToggle`, mismo `aria-pressed` y el mismo nombre accesible, que sigue
+ * diciendo de qué producto se habla. Lo único que se va es el texto visible,
+ * porque con él el botón mide 170 px y en la app no cabe junto al título: bajaba
+ * de línea y se metía entre el nombre y el precio (Fase B2).
+ *
+ * A cambio de perder el texto gana zona táctil —44 px de lado, el mínimo—, que
+ * es lo que ya usa la tarjeta nativa desde B1.
+ */
 function FavoriteToggle({
   favId,
   name,
   isFavorite,
   onToggle,
+  soloIcono = false,
 }: {
   favId: string
   name: string
   isFavorite: boolean
   onToggle: () => void
+  soloIcono?: boolean
 }) {
   const t = useT()
   void favId
@@ -742,10 +804,19 @@ function FavoriteToggle({
       onClick={onToggle}
       aria-pressed={isFavorite}
       aria-label={isFavorite ? `Quitar ${name} de favoritos` : `Añadir ${name} a favoritos`}
-      className="mt-1 inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-danger hover:text-danger"
+      className={
+        soloIcono
+          ? 'grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink transition-colors hover:border-danger hover:text-danger'
+          : 'mt-1 inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-danger hover:text-danger'
+      }
     >
-      <Icon name="heart" size={16} className={isFavorite ? 'fill-danger text-danger' : ''} aria-hidden="true" />
-      {isFavorite ? t('product.inFavorites') : t('favorites.add')}
+      <Icon
+        name="heart"
+        size={soloIcono ? 20 : 16}
+        className={isFavorite ? 'fill-danger text-danger' : ''}
+        aria-hidden="true"
+      />
+      {!soloIcono && (isFavorite ? t('product.inFavorites') : t('favorites.add'))}
     </button>
   )
 }
@@ -770,36 +841,51 @@ function VariantAccessorySuggestions({ family, modelSlug }: { family: string; mo
           {t('common.allAccessories')}
         </Link>
       </div>
+      {/* EN LA APP, ESTOS ACCESORIOS SON LOS DEL CATÁLOGO (Fase B2)
+          Aquí se construía a mano otra tarjeta —otro borde, otro radio, otra
+          jerarquía— para enseñar exactamente lo mismo que `/accesorios`. El
+          requisito de B2 es que el tratamiento sea el del catálogo, y la forma
+          honesta de cumplirlo es **reutilizar `AccessoryCard`**, que es la
+          fuente real de ese tratamiento y la que ya usan el catálogo y la
+          búsqueda. Copiar sus clases habría producido un parecido que se
+          rompería al primer retoque.
+
+          La web conserva su tarjeta compacta: cambiarla también sería rediseñar
+          la ficha web, y D-086 la congela durante la Fase B. */}
       <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((a) => (
           <li key={a.slug}>
-            <Link
-              to={accessoryPath(a.slug)}
-              className="flex h-full flex-col overflow-hidden rounded-[12px] border border-line bg-surface hover:border-ink/30"
-            >
-              <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-neutral">
-                <img
-                  src={a.image}
-                  alt={cat(a.name)}
-                  width={400}
-                  height={400}
-                  loading="lazy"
-                  className="max-h-full max-w-full object-contain p-3"
-                  style={{ mixBlendMode: 'multiply' }}
-                />
-              </div>
-              <div className="p-3">
-                <p className="text-sm font-semibold text-ink">{cat(a.name)}</p>
-                {a.price != null && (
-                  <p className="mt-1 text-xs text-muted">
-                    {/* El ternario que había aquí distinguía precios enteros
+            {isNativeApp ? (
+              <AccessoryCard accessory={a} />
+            ) : (
+              <Link
+                to={accessoryPath(a.slug)}
+                className="flex h-full flex-col overflow-hidden rounded-[12px] border border-line bg-surface hover:border-ink/30"
+              >
+                <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-neutral">
+                  <img
+                    src={a.image}
+                    alt={cat(a.name)}
+                    width={400}
+                    height={400}
+                    loading="lazy"
+                    className="max-h-full max-w-full object-contain p-3"
+                    style={{ mixBlendMode: 'multiply' }}
+                  />
+                </div>
+                <div className="p-3">
+                  <p className="text-sm font-semibold text-ink">{cat(a.name)}</p>
+                  {a.price != null && (
+                    <p className="mt-1 text-xs text-muted">
+                      {/* El ternario que había aquí distinguía precios enteros
                         de decimales para escribir la coma a mano. `euro()` ya
                         lo hace, y además con el separador de cada idioma. */}
-                    {t('product.accessoryPriceDemo', { importe: euro(a.price, intl) })}
-                  </p>
-                )}
-              </div>
-            </Link>
+                      {t('product.accessoryPriceDemo', { importe: euro(a.price, intl) })}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            )}
           </li>
         ))}
       </ul>

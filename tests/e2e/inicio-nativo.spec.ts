@@ -26,7 +26,10 @@ async function comoApp(page: Page, recientes?: string[]) {
   await page.addInitScript((lista) => {
     ;(window as { Capacitor?: unknown }).Capacitor = {}
     localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
-    if (lista) localStorage.setItem('banana:recientes', JSON.stringify(lista))
+    // El historial de la app vive en el espacio de su identidad, no en la clave
+    // del navegador: sin sesión, el espacio anónimo (D-088). Antes se sembraba
+    // en `banana:recientes`, que es la del historial web y la app ya no lee.
+    if (lista) localStorage.setItem('banana:recientes:app:anon', JSON.stringify(lista))
   }, recientes)
 }
 

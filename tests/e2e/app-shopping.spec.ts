@@ -17,7 +17,10 @@ async function comoApp(page: Page, recientes?: string[]) {
   await page.addInitScript((lista) => {
     ;(window as { Capacitor?: unknown }).Capacitor = {}
     localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
-    if (lista) localStorage.setItem('banana:recientes', JSON.stringify(lista))
+    // El historial de la app vive en el espacio de su identidad, no en la clave
+    // del navegador: sin sesión, el espacio anónimo (D-088). Antes se sembraba
+    // en `banana:recientes`, que es la del historial web y la app ya no lee.
+    if (lista) localStorage.setItem('banana:recientes:app:anon', JSON.stringify(lista))
   }, recientes)
 }
 
@@ -90,7 +93,7 @@ test.describe('portada de la tienda', () => {
     await page.addInitScript(() => {
       ;(window as { Capacitor?: unknown }).Capacitor = {}
       localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
-      localStorage.setItem('banana:recientes', 'esto no es json')
+      localStorage.setItem('banana:recientes:app:anon', 'esto no es json')
     })
     await page.goto('./')
 
@@ -107,7 +110,12 @@ test.describe('portada de la tienda', () => {
 
     // Se anota al resolverse la ficha, así que un enlace directo cuenta igual
     // que llegar pulsando una tarjeta.
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('banana:recientes'))).toContain('iphone/17-pro')
+    // En la app se anota en el espacio de la identidad —anónimo aquí—, no en la
+    // clave del navegador. Lo que se exige es lo mismo: visitar una ficha deja
+    // el producto en el historial. Ver D-088.
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('banana:recientes:app:anon')))
+      .toContain('iphone/17-pro')
 
     // El historial se pinta en Inicio, que es donde el cliente lo retoma.
     await page.goto('./')
