@@ -37,31 +37,72 @@ function conHistorial(page: Page, identidad: string | null, ids: string[]) {
   )
 }
 
+/** Dónde empieza el primer bloque con contenido del Home, y qué hay antes. */
+async function primerBloque(page: Page) {
+  return page.evaluate(() => {
+    const barra = document.querySelector('[data-app-topbar]')!.getBoundingClientRect()
+    const fondo = document.querySelector('main > div')!.getBoundingClientRect()
+    const seccion = document.querySelector('main section')!
+    const s = getComputedStyle(seccion)
+    return {
+      titulo: seccion.querySelector('h2')?.textContent?.trim() ?? null,
+      // Del contenedor gris a la barra: si esto no es 0, vuelve el blanco.
+      huecoDelFondo: Math.round(fondo.top - barra.bottom),
+      // Del PRIMER BLOQUE a la barra: si esto no es 0, se ve una franja del
+      // color del fondo antes de que empiece el bloque.
+      huecoDelBloque: Math.round(seccion.getBoundingClientRect().top - barra.bottom),
+      // Una sección «banda» pinta su propio fondo; las demás son transparentes.
+      esBanda: s.backgroundColor !== 'rgba(0, 0, 0, 0)',
+      relleno: s.paddingTop,
+    }
+  })
+}
+
 test.describe('el Home nativo no deja una franja sobre el primer bloque', () => {
+  // POR QUÉ NO BASTA CON MIRAR EL FONDO
+  //
+  // La primera versión de esta prueba medía dónde empieza el contenedor gris y
+  // qué color hay bajo la barra. Eso dejó pasar el defecto siguiente: el
+  // contenedor empezaba bien, pero el primer bloque llevaba 16 px de margen
+  // **dentro** de él, así que la franja blanca se convirtió en una franja gris.
+  // Se veía igual de mal en el teléfono y la prueba seguía verde.
+  //
+  // El contrato es la geometría del **primer bloque visible**, no la del fondo.
   for (const [ancho, alto] of [
     [320, 568],
     [390, 844],
   ] as const) {
-    test(`a ${ancho} px el fondo del Home empieza donde acaba la barra`, async ({ page }) => {
+    test(`a ${ancho} px, sin avisos ni recientes, la banda empieza pegada a la barra`, async ({ page }) => {
+      // Escenario del defecto: sin sesión no hay avisos, y sin historial no hay
+      // «Seguías mirando», así que «Oportunidades» —que es una banda de color—
+      // queda la primera.
       await page.setViewportSize({ width: ancho, height: alto })
       await comoApp(page)
       await page.goto('./')
 
-      const medida = await page.evaluate(() => {
-        const barra = document.querySelector('[data-app-topbar]')!.getBoundingClientRect()
-        const fondo = document.querySelector('main > div')!.getBoundingClientRect()
-        // Qué hay pintado justo debajo de la barra: si el contenedor del Home
-        // empieza más abajo, aquí asoma el blanco del `main`.
-        const bajoLaBarra = document.elementFromPoint(10, Math.round(barra.bottom) + 2)!
-        return {
-          hueco: Math.round(fondo.top - barra.bottom),
-          colorBajoLaBarra: getComputedStyle(bajoLaBarra).backgroundColor,
-        }
-      })
+      const b = await primerBloque(page)
+      expect(b.titulo, 'el primer bloque es Oportunidades').toBe('Oportunidades')
+      expect(b.esBanda, 'y es una banda con fondo propio').toBe(true)
+      expect(b.huecoDelFondo, 'el fondo del Home sigue pegado a la barra').toBe(0)
+      expect(b.huecoDelBloque, 'y la banda también: sin franja de color por delante').toBe(0)
+      // La respiración no desaparece, se queda dentro de la banda.
+      expect(parseFloat(b.relleno), 'la banda conserva su relleno interno').toBeGreaterThan(0)
+    })
 
-      expect(medida.hueco, 'sin franja entre la barra y el fondo del Home').toBe(0)
-      // El gris del sistema, no el blanco del contenedor de página.
-      expect(medida.colorBajoLaBarra).toBe('rgb(245, 245, 247)')
+    test(`a ${ancho} px, con recientes, «Seguías mirando» conserva su separación`, async ({ page }) => {
+      // El caso contrario: una sección sin banda pinta su título directamente
+      // sobre el gris, y ahí los 16 px sí hacen falta. Quitarlos a todas habría
+      // pegado el título a la barra.
+      await page.setViewportSize({ width: ancho, height: alto })
+      await comoApp(page)
+      await conHistorial(page, null, ['iphone/17-pro'])
+      await page.goto('./')
+
+      const b = await primerBloque(page)
+      expect(b.titulo).toBe('Seguías mirando')
+      expect(b.esBanda, 'no es una banda').toBe(false)
+      expect(b.huecoDelFondo, 'el fondo sigue pegado a la barra').toBe(0)
+      expect(b.huecoDelBloque, 'pero el título respira').toBeGreaterThan(0)
     })
   }
 })

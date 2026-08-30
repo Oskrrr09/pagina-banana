@@ -210,11 +210,22 @@ function Seccion({
   banda?: boolean
 }) {
   return (
-    // `first:mt-4`: ahora el primer bloque de la pantalla es un carril de
-    // producto, y los 32 px que lo separaban del bloque anterior quedaban como
-    // un hueco blanco justo debajo de la barra. Entre secciones la separación
-    // no cambia.
-    <section className={banda ? 'mt-8 bg-brand-050 py-6 first:mt-4' : 'mt-8 first:mt-4'}>
+    // EL PRIMER BLOQUE NO PUEDE ARRASTRAR UN HUECO POR DELANTE
+    //
+    // Entre secciones la separación no cambia: 32 px. Lo que cambia es cuando
+    // una sección abre la pantalla, y ahí las dos variantes necesitan cosas
+    // distintas.
+    //
+    // Sin banda —«Seguías mirando»— el título va directo sobre el gris del
+    // Home, así que conserva 16 px: sin ellos quedaría pegado a la barra.
+    //
+    // Con banda —«Oportunidades»— el fondo de color es la propia sección y su
+    // aire va dentro, en el `py-6`. Los 16 px de fuera no separaban nada: se
+    // veían como una franja del color del Home entre la barra y la banda. Antes
+    // de `flow-root` esa franja salía blanca —el margen se escapaba del
+    // contenedor— y después salía gris; el hueco era el mismo en los dos casos,
+    // sólo cambiaba de color. Por eso aquí es `first:mt-0`.
+    <section className={banda ? 'mt-8 bg-brand-050 py-6 first:mt-0' : 'mt-8 first:mt-4'}>
       <div className="flex items-baseline justify-between gap-3 px-4">
         <h2 className="text-xl font-extrabold text-ink">{titulo}</h2>
         {enlace && (
