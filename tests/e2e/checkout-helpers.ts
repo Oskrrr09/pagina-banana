@@ -107,10 +107,17 @@ export async function rellenarPaso1(page: Page) {
  * Pulsa el control que lleva al paso siguiente.
  *
  * El rótulo cambia con el idioma y con el paso —«Continuar», «Confirmar
- * pedido»—, así que se localiza por estructura: es el único botón de la barra
- * inferior de navegación, que tiene marca propia. El detalle estructural vive
+ * pedido»—, así que se localiza por estructura. El detalle estructural vive
  * aquí y no se repite por la suite.
+ *
+ * DOS SITIOS, UN SOLO BOTÓN
+ *
+ * Desde la Fase C2 la acción principal vive en la fila `data-checkout-nav` en
+ * la web y en la barra anclada `data-checkout-bar` en la app. El localizador
+ * acepta los dos y NO relaja nada: si algún día existieran ambos a la vez,
+ * Playwright fallaría por modo estricto, que es justo lo que debe pasar —el
+ * contrato dice que la acción principal es una sola—.
  */
 export async function avanzar(page: Page) {
-  await page.locator('[data-checkout-nav] button').click()
+  await page.locator('[data-checkout-nav] button, [data-checkout-bar] button').click()
 }

@@ -129,8 +129,18 @@ html[data-native-boot] #arranque-nativo svg {
    parecen flotar y despegarse. Con dos barras fijas se notaba en las dos, y
    también en el menú de "Explorar". Sin scroll de documento no hay nada que
    recolocar y las barras se quedan quietas por construcción. */
+/* El checkout comparte ESTE MODELO, no el armazón. Sigue fuera de `Layout`
+   —sin barra superior, sin pestañas, con cabecera propia— pero también deja
+   quieto el documento y desplaza sólo `#contenido-checkout`, porque su CTA
+   anclado sufriría exactamente el mismo despegue descrito arriba.
+
+   Marcador propio a propósito: `data-app-shell` afirma «esto es el armazón
+   general», y el checkout no lo es. Comparten regla porque el efecto es el
+   mismo; no comparten significado. */
 html[data-app-shell],
-html[data-app-shell] body {
+html[data-app-shell] body,
+html[data-checkout-shell],
+html[data-checkout-shell] body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
