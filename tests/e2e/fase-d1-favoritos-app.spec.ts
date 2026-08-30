@@ -57,7 +57,15 @@ async function superficies(page: Page, selector = 'main') {
   return page.evaluate((sel) => {
     const raiz = document.querySelector(sel)
     if (!raiz) return null
-    const conMarco = [...raiz.querySelectorAll('*')].filter((e) => {
+    // LA RAÍZ CUENTA COMO ANCESTRO.
+    //
+    // Con `querySelectorAll('*')` a secas, la superficie de grupo quedaba
+    // fuera del conjunto y una tarjeta reintroducida DENTRO de ella no tenía
+    // ningún ancestro con marco al que compararse: el caso se quedaba verde
+    // con el defecto puesto. Es el mismo error de medición que la franja de la
+    // Fase B2 —medir el contenedor en vez de lo que hay dentro—, y se cazó
+    // porque la contraprueba no se puso roja.
+    const conMarco = [raiz, ...raiz.querySelectorAll('*')].filter((e) => {
       const s = getComputedStyle(e)
       return parseFloat(s.borderTopWidth) > 0 && parseFloat(s.borderTopLeftRadius) >= 10
     })
