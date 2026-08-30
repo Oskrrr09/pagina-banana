@@ -8,6 +8,40 @@ actualizado: 2026-08-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-30 — Fase C2: el checkout se lleva al pulgar (sin fusionar)
+
+Segunda entrega de la Fase C, y **sólo en la app**. Queda **pendiente de
+validación física en iPhone**.
+
+**El checkout cambia de modelo de scroll.** Su raíz pasa a ocupar el viewport
+dinámico y lo único que se desplaza es `#contenido-checkout`; el documento se
+queda quieto. Es lo que permite anclar el CTA sin reproducir el defecto que
+`index.css` ya documenta: en WKWebView un `position: fixed` sobre scroll de
+documento se recoloca al terminar el gesto y parece despegarse. **Pero el
+checkout no se muda al armazón general**: sigue fuera de `Layout`, sin
+`AppTopBar`, sin `AppTabBar` y con su cabecera, y se marca con
+`data-checkout-shell`, no con `data-app-shell` (**D-090**).
+
+**Se retira la tarjeta que envolvía el paso entero** —el formulario dentro de
+una card sobre fondo gris—, y sólo ésa: modo de entrega, financiación, seguros,
+datos del pedido, avisos y resumen conservan su superficie.
+
+**El CTA se ancla al borde inferior** a ancho útil. Medido a 320, 390 y 430 en
+los pasos 1 y 2: botón de 288/358/398 px y 52 px de alto, barra al ancho del
+viewport, 0 px hasta el borde de la pantalla, sin solape ni desbordamiento. La
+compensación de desplazamiento se deriva de lo que ocupa la barra y deja 12 px
+libres sobre el último bloque, también con la financiación abierta. Aquí **no**
+se usa `ALTURA_TAB_BAR`: no hay tab bar debajo, y el área segura la reserva la
+propia barra una sola vez. El paso 3 no monta barra.
+
+**`CheckoutPage` sigue siendo una sola página compartida.** Comportamiento
+intacto: `useCheckoutState`, `useStore`, precios, seguros, entrega, validación,
+pago, cupón, creación del pedido, compra invitada, auth y Supabase. La web no
+cambia (D-086).
+
+Suite nueva `tests/e2e/fase-c2-checkout-app.spec.ts` con 20 casos, cinco de
+ellos verificados en rojo al deshacer cada parte.
+
 ## 2026-08-30 — Fase C1: la compra del carrito se va al pulgar
 
 Primera entrega de la Fase C, y **sólo en la app**.

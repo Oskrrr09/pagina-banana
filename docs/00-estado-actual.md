@@ -102,11 +102,22 @@ página de catálogo que montan las dos plataformas— elige una sola vez.
 `ProductCardCompact` es aparte: sólo la usan los carriles de la app.
 **Quedan sin frontera `VariantPage` y `ModelPage`.**
 
-**Fase C iniciada (C1).** En la app, el carrito ancla su «Finalizar compra» en
-una barra sobre la navegación, apoyada en `ALTURA_TAB_BAR`, y «Entrega o
-recogida» pierde la tarjeta que envolvía a otras dos. `CartPage` sigue siendo una
-sola página compartida y la web conserva su composición (D-089). **El checkout
-—C2— no ha empezado y la Fase C no está completa.**
+**Fase C — C1 cerrada, C2 implementada y sin fusionar.** En la app, el carrito
+ancla su «Finalizar compra» en una barra sobre la navegación, apoyada en
+`ALTURA_TAB_BAR`, y «Entrega o recogida» pierde la tarjeta que envolvía a otras
+dos. `CartPage` sigue siendo una sola página compartida y la web conserva su
+composición (D-089).
+
+El **checkout** (C2) pierde en la app la tarjeta que envolvía el paso entero y
+ancla su CTA a ancho útil en el borde inferior. Para poder anclarlo sin heredar
+el defecto de WKWebView, el checkout adopta el **modelo de scroll** del armazón
+nativo —raíz a `100dvh` y un único contenedor que se desplaza— pero **sigue
+fuera del armazón general**, con su cabecera y su marca propia
+`data-checkout-shell` (D-090). `CheckoutPage` sigue siendo una sola página
+compartida.
+
+**C2 está pendiente de validación física en iPhone; hasta que se valide y se
+fusione, la Fase C no está cerrada.**
 
 **Fase B completa (B1 + B2).** La **ficha** nativa también respira: la galería
 pierde el marco y toma el radio del sistema, el favorito deja de separar el
