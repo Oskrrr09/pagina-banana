@@ -33,10 +33,16 @@ Lo que se consiguió:
   seguros, entrega, validación, pago, creación del pedido, compra invitada, auth
   y Supabase.
 
-**Validación automatizada aprobada** —CI #193 sobre el head fusionado, con E2E
-600 aprobadas y 1 omitida, la histórica— y **validación física en iPhone
-aprobada por el usuario**. Las decisiones de la fase son **D-089** (carrito) y
-**D-090** (checkout).
+**Validación automatizada aprobada sobre `main`.** La referencia del cierre es
+el **CI posterior al merge**: run `33337410945`, **CI #194**, evento `push`
+sobre `main`, SHA `7fbcfd0665e9ca358b438d80bfa65e1765090e23`, **`success`**. E2E
+**600 aprobadas · 1 omitida** (`pwa.spec.ts:109`, la histórica), unitarias 379,
+panel 24, preferencias 37, Supabase **36 / 103 / 5**, ESLint **0 errores / 24
+avisos**. CI #193 fue el gate previo de la PR #91, sobre su head; el que valida
+lo que quedó en `main` es el #194.
+
+**Validación física en iPhone aprobada por el usuario.** Las decisiones de la
+fase son **D-089** (carrito) y **D-090** (checkout).
 
 La **siguiente fase todavía no está decidida**.
 
