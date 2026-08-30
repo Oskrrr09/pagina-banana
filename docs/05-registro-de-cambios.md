@@ -1,6 +1,6 @@
 ---
 tipo: cambios
-actualizado: 2026-08-29
+actualizado: 2026-08-30
 ---
 	
 # Registro de cambios
@@ -8,10 +8,49 @@ actualizado: 2026-08-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-08-30 — Fase C2: el checkout se lleva al pulgar (sin fusionar)
+## 2026-08-30 — Fase C cerrada: «Comprar se siente de app»
 
-Segunda entrega de la Fase C, y **sólo en la app**. Queda **pendiente de
-validación física en iPhone**.
+Con la PR #91 fusionada, la Fase C queda **completa**. La formaron dos entregas,
+las dos sólo en la app:
+
+- **C1 — el carrito** (PR #90, merge `8ad3f130`): CTA anclado sobre la
+  navegación y «Entrega o recogida» sin su caja exterior.
+- **C2 — el checkout** (PR #91, merge
+  `7fbcfd0665e9ca358b438d80bfa65e1765090e23`): sin la tarjeta que envolvía el
+  paso, CTA anclado en los pasos 1 y 2, y modelo de scroll propio para poder
+  anclarlo sin el defecto de WKWebView.
+
+Lo que se consiguió:
+
+- el CTA de compra del carrito llega al pulgar;
+- el CTA del checkout está anclado en los pasos 1 y 2, y el paso 3 **no** monta
+  una barra artificial;
+- el checkout tiene su propio modelo de scroll nativo y **sigue fuera del
+  armazón general** de la app: sin `AppTopBar`, sin `AppTabBar` y con cabecera
+  propia;
+- la **web conserva su composición histórica** (D-086);
+- el **comportamiento comercial compartido está intacto**: carrito, precios,
+  seguros, entrega, validación, pago, creación del pedido, compra invitada, auth
+  y Supabase.
+
+**Validación automatizada aprobada sobre `main`.** La referencia del cierre es
+el **CI posterior al merge**: run `33337410945`, **CI #194**, evento `push`
+sobre `main`, SHA `7fbcfd0665e9ca358b438d80bfa65e1765090e23`, **`success`**. E2E
+**600 aprobadas · 1 omitida** (`pwa.spec.ts:109`, la histórica), unitarias 379,
+panel 24, preferencias 37, Supabase **36 / 103 / 5**, ESLint **0 errores / 24
+avisos**. CI #193 fue el gate previo de la PR #91, sobre su head; el que valida
+lo que quedó en `main` es el #194.
+
+**Validación física en iPhone aprobada por el usuario.** Las decisiones de la
+fase son **D-089** (carrito) y **D-090** (checkout).
+
+La **siguiente fase todavía no está decidida**.
+
+## 2026-08-30 — Fase C2: el checkout se lleva al pulgar
+
+Segunda entrega de la Fase C, y **sólo en la app**. Fusionada en `main` con la
+PR #91 tras validación física en iPhone (merge
+`7fbcfd0665e9ca358b438d80bfa65e1765090e23`).
 
 **El checkout cambia de modelo de scroll.** Su raíz pasa a ocupar el viewport
 dinámico y lo único que se desplaza es `#contenido-checkout`; el documento se

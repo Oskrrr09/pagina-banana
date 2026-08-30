@@ -2156,7 +2156,8 @@ la app, porque la app va siempre en castellano
 ## D-090 — El checkout nativo comparte el modelo de scroll, no el armazón
 
 - Fecha: 2026-08-30.
-- Estado: vigente. **Pendiente de validación física en iPhone** (PR de Fase C2).
+- Estado: vigente. **Validada físicamente en iPhone** y fusionada en `main` con
+  la PR #91 (merge `7fbcfd0665e9ca358b438d80bfa65e1765090e23`, 2026-08-30).
 - Decisión: en la app, **el checkout mantiene un armazón propio, separado de
   `Layout`, pero adopta un viewport `100dvh` con scroll interno** para no dejar
   un `position: fixed` sobre scroll de documento en WKWebView. La web conserva

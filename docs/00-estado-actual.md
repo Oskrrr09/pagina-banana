@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-23
+actualizado: 2026-08-30
 ---
 
 # Estado actual
@@ -102,22 +102,32 @@ página de catálogo que montan las dos plataformas— elige una sola vez.
 `ProductCardCompact` es aparte: sólo la usan los carriles de la app.
 **Quedan sin frontera `VariantPage` y `ModelPage`.**
 
-**Fase C — C1 cerrada, C2 implementada y sin fusionar.** En la app, el carrito
-ancla su «Finalizar compra» en una barra sobre la navegación, apoyada en
-`ALTURA_TAB_BAR`, y «Entrega o recogida» pierde la tarjeta que envolvía a otras
-dos. `CartPage` sigue siendo una sola página compartida y la web conserva su
-composición (D-089).
+**Fase C completa (C1 + C2) — «Comprar se siente de app».** Comprar desde la
+app ya no obliga a recorrer la pantalla hasta el fondo para encontrar el botón.
 
-El **checkout** (C2) pierde en la app la tarjeta que envolvía el paso entero y
-ancla su CTA a ancho útil en el borde inferior. Para poder anclarlo sin heredar
-el defecto de WKWebView, el checkout adopta el **modelo de scroll** del armazón
-nativo —raíz a `100dvh` y un único contenedor que se desplaza— pero **sigue
-fuera del armazón general**, con su cabecera y su marca propia
-`data-checkout-shell` (D-090). `CheckoutPage` sigue siendo una sola página
-compartida.
+En el **carrito** (C1), «Finalizar compra» se ancla en una barra sobre la
+navegación, apoyada en `ALTURA_TAB_BAR`, y «Entrega o recogida» pierde la
+tarjeta que envolvía a otras dos. `CartPage` sigue siendo una sola página
+compartida (D-089).
 
-**C2 está pendiente de validación física en iPhone; hasta que se valide y se
-fusione, la Fase C no está cerrada.**
+En el **checkout** (C2) desaparece la tarjeta que envolvía el paso entero y el
+CTA principal se ancla a ancho útil en el borde inferior, en los pasos 1 y 2; el
+paso 3 no monta barra, porque allí no hay nada que confirmar. Para poder anclarlo
+sin heredar el defecto de WKWebView, el checkout adopta el **modelo de scroll**
+del armazón nativo —raíz a `100dvh` y un único contenedor que se desplaza— pero
+**sigue fuera del armazón general**, con su cabecera y su marca propia
+`data-checkout-shell` (D-090). Aquí el área segura la reserva la propia barra y
+**no** se usa `ALTURA_TAB_BAR`: el checkout no monta `AppTabBar`.
+`CheckoutPage` sigue siendo una sola página compartida.
+
+La **web conserva su composición histórica** en ambas entregas (D-086) y el
+comportamiento comercial es el mismo en las dos plataformas: carrito, precios,
+seguros, entrega, validación, pago, creación del pedido, compra invitada, auth y
+Supabase no se duplican ni cambian.
+
+**Validación física en iPhone aprobada y PR #91 fusionada (merge
+`7fbcfd0665e9ca358b438d80bfa65e1765090e23`): la Fase C queda CERRADA.** La
+siguiente fase todavía **no está decidida**.
 
 **Fase B completa (B1 + B2).** La **ficha** nativa también respira: la galería
 pierde el marco y toma el radio del sistema, el favorito deja de separar el
