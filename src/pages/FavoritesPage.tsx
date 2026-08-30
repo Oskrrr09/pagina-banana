@@ -1,13 +1,13 @@
-import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../lib/i18n'
+import { isNativeApp } from '../lib/nativeApp'
+import { FavoritesApp } from '../components/favorites/FavoritesApp'
+import { useFavoritos } from '../components/favorites/useFavoritos'
 import { Container } from '../components/ui/Container'
 import { ButtonLink } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
 import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
-import { useStore } from '../lib/store'
-import { useStorePreference } from '../lib/storePreference'
 import { useFavoriteAlerts, currentInventoryStateFor } from '../lib/favoriteAlerts'
 import { INVENTORY_LABELS } from '../data/demoStoreInventory'
 import { allModels, variantPath } from '../data/products'
@@ -26,28 +26,44 @@ import type { Model } from '../data/types'
 //   inventario en memoria a "disponible" y genera una notificación.
 // - No se envían emails ni se realizan peticiones de red.
 // -----------------------------------------------------------------------
+/**
+ * Favoritos.
+ *
+ * LA FRONTERA
+ *
+ * El dominio —qué está guardado, qué se sigue, qué avisos hay y qué pasa al
+ * quitar o al elegir tienda— vive entero en `useFavoritos` y lo comparten las
+ * dos plataformas. Lo que se separa aquí es la COMPOSICIÓN: la web conserva su
+ * rejilla de tarjetas y sus controles históricos, y la app monta una lista
+ * nativa. D-085 y D-087: bifurcar donde diverge la presentación, sin duplicar
+ * lo que hace la página.
+ *
+ * La decisión se toma una sola vez, en la frontera, como en `Home` y en
+ * `FamilyPage`. Aquí no se resuelve porque veinte condicionales repartidos por
+ * tres secciones habrían dejado un archivo que nadie puede leer.
+ */
 export function FavoritesPage() {
+  if (isNativeApp) return <FavoritesApp />
+  return <FavoritesWeb />
+}
+
+/** La composición histórica de la web. No cambia (D-086). */
+function FavoritesWeb() {
   const t = useT()
-  const { favorites, toggleFavorite } = useStore()
-  const { favoriteStore, setFavorite: setFavoriteStore } = useStorePreference()
   const {
-    alerts,
+    favModels,
+    trackedAlerts,
     notifications,
-    setAlert,
-    changeAlertStore,
+    favoriteStoreSlug,
+    getAlertForProduct,
+    quitar,
+    seguir,
     disableAlert,
+    changeAlertStore,
     simulateArrival,
     markRead,
     markAllRead,
-    getAlertForProduct,
-  } = useFavoriteAlerts()
-
-  const favModels = useMemo<Model[]>(
-    () => allModels.filter((m) => favorites.some((f) => f.startsWith(`${m.family}/${m.slug}`))),
-    [favorites],
-  )
-
-  const trackedAlerts = alerts.filter((a) => a.enabled)
+  } = useFavoritos()
 
   return (
     <Container className="py-10">
@@ -81,20 +97,14 @@ export function FavoritesPage() {
                 <FavoriteCard
                   key={model.slug}
                   model={model}
-                  favoriteStoreSlug={favoriteStore?.slug ?? null}
+                  favoriteStoreSlug={favoriteStoreSlug}
                   alert={getAlertForProduct(`${model.family}/${model.slug}`)}
-                  onRemove={() => {
-                    // Retirar el favorito también desactiva el seguimiento
-                    // y borra las notificaciones huérfanas (§PR4).
-                    disableAlert(`${model.family}/${model.slug}`)
-                    toggleFavorite(`${model.family}/${model.slug}`)
-                  }}
-                  onFollow={(storeSlug, offerAsFavorite) => {
-                    setAlert(`${model.family}/${model.slug}`, storeSlug)
-                    if (offerAsFavorite && !favoriteStore) {
-                      setFavoriteStore(storeSlug)
-                    }
-                  }}
+                  // Retirar el favorito también desactiva su seguimiento y no
+                  // deja avisos huérfanos (§PR4). Elegir tienda la guarda como
+                  // favorita si aún no había ninguna. Las dos cosas viven en
+                  // `useFavoritos`: son dominio, no presentación.
+                  onRemove={() => quitar(`${model.family}/${model.slug}`)}
+                  onFollow={(storeSlug) => seguir(`${model.family}/${model.slug}`, storeSlug)}
                   onDisable={() => disableAlert(`${model.family}/${model.slug}`)}
                 />
               ))}
@@ -230,7 +240,7 @@ function FavoriteCard({
   favoriteStoreSlug: string | null
   alert: ReturnType<ReturnType<typeof useFavoriteAlerts>['getAlertForProduct']>
   onRemove: () => void
-  onFollow: (storeSlug: string, offerAsFavorite: boolean) => void
+  onFollow: (storeSlug: string) => void
   onDisable: () => void
 }) {
   const t = useT()
@@ -303,7 +313,7 @@ function FollowControls({
 }: {
   productId: string
   favoriteStoreSlug: string | null
-  onFollow: (storeSlug: string, offerAsFavorite: boolean) => void
+  onFollow: (storeSlug: string) => void
 }) {
   const t = useT()
   return (
@@ -317,7 +327,7 @@ function FollowControls({
             <li key={store.slug}>
               <button
                 type="button"
-                onClick={() => onFollow(store.slug, !favoriteStoreSlug)}
+                onClick={() => onFollow(store.slug)}
                 className="flex w-full items-center justify-between rounded-[8px] px-2 py-1.5 text-left text-xs text-ink hover:bg-brand-050"
               >
                 <span>
