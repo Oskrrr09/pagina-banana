@@ -8,6 +8,30 @@ actualizado: 2026-08-29
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-30 — Fase C1: la compra del carrito se va al pulgar
+
+Primera entrega de la Fase C, y **sólo en la app**.
+
+**El CTA se ancla.** «Finalizar compra» vivía al final del resumen: para pulsarlo
+había que recorrer toda la columna. Pasa a una barra fija sobre la navegación,
+apoyada en `ALTURA_TAB_BAR` —que ya incluye el área segura, así que no se añade
+otra—. Medido a 320, 390 y 430: la barra termina **exactamente** donde empieza la
+tab bar, 0 px de separación y sin solape, con el botón a ancho útil y 52 px de
+alto. Se añade una compensación de desplazamiento para que el cross-sell, que es
+lo último de la página, siga pudiendo leerse por encima.
+
+**«Entrega o recogida» pierde la caja exterior**, que envolvía dos opciones que ya
+son tarjetas con su propio borde y estado. Las opciones no se tocan. El resumen
+pierde su marco y conserva la jerarquía.
+
+**`CartPage` sigue siendo una sola página compartida**: divergen cuatro puntos
+locales más una barra de veinte líneas (**D-089**). Comportamiento intacto —
+carrito, cantidades, seguro, entrega compartida con el checkout, cupón, total y
+cross-sell—, sin duplicar `useStore` ni `useCheckoutState`.
+
+**La web no cambia**: sin barra anclada, CTA en el resumen y entrega con su
+marco. **El checkout es C2 y no ha empezado.**
+
 ## 2026-08-29 — Dos defectos vistos en el teléfono, corregidos en la app
 
 **Una franja blanca sobre «Seguías mirando».** El Home nativo pinta su fondo gris
