@@ -1,12 +1,48 @@
 ---
 tipo: cambios
-actualizado: 2026-08-30
+actualizado: 2026-08-31
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-31 — Fase D1: Favoritos se siente de app (sin fusionar)
+
+Primera entrega de la **Fase D — «Favoritos y comparador se sienten de app»**, y
+**sólo en la app**. Queda **pendiente de revisión técnica y de validación física
+en iPhone**.
+
+**Por qué esta superficie.** La auditoría posterior a la Fase C la midió como la
+más lejos del estándar nativo: con tres favoritos, 21 superficies con marco —16
+dentro de otra— y 24 de 28 controles por debajo de 44 px, con «Ver producto» y
+«Quitar» a 30 px y las tiendas a 28. Y es el destino del corazón que aparece en
+todas las tarjetas del catálogo, que la Fase B ya dejó nativas.
+
+**La lista es una superficie, no una rejilla de tarjetas.** Cada favorito es una
+fila separada por divisores: la fila entera —imagen, nombre, precio y estado en
+tienda— es el enlace a la ficha, y debajo van sus dos acciones. Medido a 320,
+390 y 430: **2 superficies con marco, 0 anidadas, 0 controles por debajo de
+44 px**, acciones de 48 px, fila de 100 px y cero desbordamiento.
+
+**La elección de tienda se despliega en la propia fila**, con una opción por
+tienda a 48 px, en lugar del `<select>` del sistema. **Mis avisos** y
+**Notificaciones** siguen el mismo patrón: una superficie por grupo y filas
+dentro.
+
+**El dominio no se duplica.** `useFavoritos` centraliza lo que ya hacía la
+página —quitar un favorito desactiva su seguimiento para no dejar avisos
+huérfanos, y elegir tienda la guarda como favorita si no había ninguna— y lo
+consumen las dos composiciones. Ningún comportamiento se reimplementa:
+`setAlert`, `changeAlertStore`, `disableAlert`, `simulateArrival`, `markRead` y
+`markAllRead` son los mismos.
+
+**La web no cambia** (D-086): su HTML renderizado es **carácter por carácter
+idéntico** al de `main`, a 390 y a 1280, con y sin aviso activo.
+
+Suite nueva `tests/e2e/fase-d1-favoritos-app.spec.ts` con 26 casos. **D2 —el
+comparador— no ha empezado y la Fase D no está completa.**
 
 ## 2026-08-30 — Fase C cerrada: «Comprar se siente de app»
 

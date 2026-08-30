@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-30
+actualizado: 2026-08-31
 ---
 
 # Estado actual
@@ -126,8 +126,26 @@ seguros, entrega, validación, pago, creación del pedido, compra invitada, auth
 Supabase no se duplican ni cambian.
 
 **Validación física en iPhone aprobada y PR #91 fusionada (merge
-`7fbcfd0665e9ca358b438d80bfa65e1765090e23`): la Fase C queda CERRADA.** La
-siguiente fase todavía **no está decidida**.
+`7fbcfd0665e9ca358b438d80bfa65e1765090e23`): la Fase C queda CERRADA.**
+
+**Fase D — «Favoritos y comparador se sienten de app»: en curso.** La auditoría
+posterior a la Fase C midió `/favoritos` como la superficie más lejos del
+estándar nativo —21 superficies con marco, 16 dentro de otra y 24 de 28
+controles por debajo del mínimo táctil—, y es el destino del corazón que
+aparece en todas las tarjetas del catálogo. Se divide en dos entregas:
+
+- **D1 — Favoritos.** En la app la lista pasa a ser **una** superficie con una
+  fila por producto separada por divisores: la fila entera lleva a la ficha,
+  las acciones miden 48 px y la elección de tienda se despliega en filas
+  pulsables en lugar del `<select>` del sistema. Avisos y notificaciones siguen
+  el mismo patrón. El dominio —qué está guardado, qué se sigue, qué pasa al
+  quitar o al elegir tienda— se centraliza en `useFavoritos` y lo comparten las
+  dos plataformas. **Implementada; pendiente de revisión técnica y de
+  validación física en iPhone.**
+- **D2 — Comparador. PENDIENTE, no empezada.** Su diseño no está decidido.
+
+La web conserva su composición histórica en `/favoritos` (D-086): su HTML
+renderizado es idéntico al de `main` antes de la entrega.
 
 **Fase B completa (B1 + B2).** La **ficha** nativa también respira: la galería
 pierde el marco y toma el radio del sistema, el favorito deja de separar el
