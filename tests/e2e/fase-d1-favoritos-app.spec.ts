@@ -381,15 +381,25 @@ test.describe('favoritos nativos: el comportamiento no cambia', () => {
   })
 
   test('quitar un favorito con seguimiento activo no deja el aviso huérfano', async ({ page }) => {
+    // CON DOS PRODUCTOS SEGUIDOS, NO CON UNO.
+    //
+    // Con uno solo, quitarlo deja la lista vacía y la sección de avisos
+    // desaparece porque no se pinta el bloque entero: la comprobación pasaba
+    // aunque el aviso siguiera vivo en almacenamiento. Siguiendo los dos y
+    // quitando uno, la sección sigue en pantalla y puede decirse algo real
+    // sobre lo que queda dentro.
     await comoApp(page)
-    await conFavoritos(page, ['iphone/17-pro'])
+    await conFavoritos(page)
     await page.goto('./favoritos')
     await activarSeguimiento(page, PRODUCTO, TIENDA)
-    await expect(page.locator('[data-fav-avisos]')).toHaveCount(1)
+    await activarSeguimiento(page, OTRO, TIENDA)
+    await expect(page.locator('[data-fav-avisos] [data-fav-aviso]')).toHaveCount(2)
 
     await page.getByRole('button', { name: `Quitar ${PRODUCTO} de favoritos` }).click()
-    await expect(page.locator('[data-fav-avisos]'), 'el aviso se va con el favorito').toHaveCount(0)
-    await expect(page.locator('[data-fav-vacio]')).toBeVisible()
+    const avisos = page.locator('[data-fav-avisos] [data-fav-aviso]')
+    await expect(avisos, 'el aviso se va con el favorito').toHaveCount(1)
+    await expect(avisos.first(), 'y el que queda es el del producto que sigue guardado').toContainText(OTRO)
+    await expect(page.locator('[data-fav-avisos]')).not.toContainText(PRODUCTO)
   })
 })
 
