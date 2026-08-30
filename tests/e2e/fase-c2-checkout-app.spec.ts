@@ -128,7 +128,7 @@ async function alFinal(page: Page) {
         ultimoBloque: number
         barraTop: number
         libre: number
-      }>((listo) => {
+      }>((resolve) => {
         const main = document.querySelector('#contenido-checkout') as HTMLElement
         main.scrollTop = main.scrollHeight
         setTimeout(() => {
@@ -136,7 +136,7 @@ async function alFinal(page: Page) {
           // El último bloque de contenido real del paso es el resumen del
           // pedido: va después de la fila de «Atrás» y es lo que queda abajo.
           const aside = document.querySelector('#contenido-checkout aside')!.getBoundingClientRect()
-          listo({
+          resolve({
             seDesplazo: main.scrollTop > 0,
             enElTope: Math.abs(main.scrollTop - (main.scrollHeight - main.clientHeight)) <= 1,
             ultimoBloque: Math.round(aside.bottom),
