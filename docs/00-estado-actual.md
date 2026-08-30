@@ -102,6 +102,12 @@ página de catálogo que montan las dos plataformas— elige una sola vez.
 `ProductCardCompact` es aparte: sólo la usan los carriles de la app.
 **Quedan sin frontera `VariantPage` y `ModelPage`.**
 
+**Fase C iniciada (C1).** En la app, el carrito ancla su «Finalizar compra» en
+una barra sobre la navegación, apoyada en `ALTURA_TAB_BAR`, y «Entrega o
+recogida» pierde la tarjeta que envolvía a otras dos. `CartPage` sigue siendo una
+sola página compartida y la web conserva su composición (D-089). **El checkout
+—C2— no ha empezado y la Fase C no está completa.**
+
 **Fase B completa (B1 + B2).** La **ficha** nativa también respira: la galería
 pierde el marco y toma el radio del sistema, el favorito deja de separar el
 nombre del precio —se compacta a icono de 44 px— y los accesorios sugeridos

@@ -8,6 +8,8 @@ import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { useStore } from '../lib/store'
 import { useCheckoutState } from '../lib/checkoutState'
+import { isNativeApp } from '../lib/nativeApp'
+import { ALTURA_TAB_BAR } from '../components/layout/AppTabBar'
 import { productImage } from '../data/products'
 import { euro } from '../lib/format'
 import { appleAccessories, accessoryPath, getAccessoriesForFamily } from '../data/accessories'
@@ -141,8 +143,14 @@ export function CartPage() {
             })}
           </ul>
 
-          {/* Entrega o recogida (resumen) */}
-          <div className="mt-6 rounded-[12px] border border-line p-5">
+          {/* ENTREGA O RECOGIDA — SIN CAJA DENTRO DE CAJA EN LA APP (Fase C1)
+              Las dos opciones ya son superficies seleccionables, con su borde,
+              su radio y su estado activo. Envolverlas además en otra tarjeta
+              dibujaba un marco alrededor de otro marco: el patrón que la
+              auditoría visual señaló como lo que más delata una web.
+              En la app se retira sólo el envoltorio; las opciones no se tocan.
+              La web conserva su tarjeta: D-086 la congela durante la Fase C. */}
+          <div className={isNativeApp ? 'mt-6' : 'mt-6 rounded-[12px] border border-line p-5'}>
             <p className="mb-3 font-semibold text-ink">{t('product.deliveryOrPickup')}</p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <DeliveryOption
@@ -196,7 +204,11 @@ export function CartPage() {
 
         {/* Resumen */}
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <div className="rounded-[12px] border border-line bg-neutral p-6">
+          {/* El resumen sigue siendo una agrupación con su título y su lista de
+              importes. En la app pierde el marco y el fondo —una tarjeta más
+              sobre un fondo que ya es gris— pero conserva la jerarquía: el
+              total sigue destacado y separado por su línea. */}
+          <div className={isNativeApp ? '' : 'rounded-[12px] border border-line bg-neutral p-6'}>
             <h2 className="font-bold text-ink">{t('cart.summary')}</h2>
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between">
@@ -218,10 +230,23 @@ export function CartPage() {
               <span className="font-bold text-ink">{t('cart.total')}</span>
               <span className="text-xl font-bold text-ink">{euro(total)}</span>
             </div>
-            <ButtonLink to="/checkout/1" size="lg" className="mt-5 w-full">
-              Finalizar compra
-            </ButtonLink>
-            <Link to="/iphone" className="mt-3 block text-center text-sm font-semibold text-ink hover:underline">
+            {/* EL CTA SE VA AL PULGAR EN LA APP (Fase C1)
+                Aquí dentro queda al final de una columna larga: para pulsarlo
+                hay que llegar hasta el fondo del resumen. En la app pasa a una
+                barra anclada sobre la navegación —ver abajo—, y aquí sólo se
+                pinta en la web, donde el resumen es una columna lateral fija y
+                el botón cae a la vista sin desplazarse. */}
+            {!isNativeApp && (
+              <ButtonLink to="/checkout/1" size="lg" className="mt-5 w-full">
+                Finalizar compra
+              </ButtonLink>
+            )}
+            {/* «Seguir comprando» se queda donde está en las dos: es una salida,
+                no una acción principal, y no debe competir con el CTA anclado. */}
+            <Link
+              to="/iphone"
+              className={`block text-center text-sm font-semibold text-ink hover:underline ${isNativeApp ? 'mt-5' : 'mt-3'}`}
+            >
               Seguir comprando
             </Link>
           </div>
@@ -229,7 +254,44 @@ export function CartPage() {
       </div>
 
       <CrossSellSuggestions cart={cart} />
+
+      {/* Hueco para que la barra anclada no tape el final de la página.
+          Se deriva de lo que ocupa la barra —su relleno más el alto del botón—,
+          no de un número redondo puesto a ojo. */}
+      {isNativeApp && <div className="h-24" aria-hidden />}
+      {isNativeApp && <CartCheckoutBarApp />}
     </Container>
+  )
+}
+
+/**
+ * Barra de compra del carrito, anclada sobre la navegación. Sólo en la app.
+ *
+ * DÓNDE SE APOYA, Y POR QUÉ NO EN `bottom-0`
+ *
+ * `AppTabBar` **no** es `fixed`: es el último hermano de la columna que ocupa la
+ * pantalla. Una barra en `bottom-0` se coloca respecto al viewport y quedaría
+ * detrás de la navegación —que además pinta por encima con su `z-50`—, con el
+ * botón inalcanzable. Se sube exactamente la altura de esa barra tomándola de
+ * `ALTURA_TAB_BAR`, que **ya incluye** `env(safe-area-inset-bottom)`: añadir
+ * aquí otro relleno de área segura reservaría el mismo espacio dos veces.
+ *
+ * Es el mismo criterio que ya resolvió la barra de compra de la ficha, y por eso
+ * se reutiliza el criterio —no el código—: aquélla aparece y desaparece con el
+ * desplazamiento y ésta está siempre, porque en el carrito la única acción que
+ * importa es terminar.
+ */
+function CartCheckoutBarApp() {
+  return (
+    <div
+      data-cart-bar
+      style={{ bottom: ALTURA_TAB_BAR }}
+      className="fixed inset-x-0 z-40 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur-md"
+    >
+      <ButtonLink to="/checkout/1" size="lg" className="w-full">
+        Finalizar compra
+      </ButtonLink>
+    </div>
   )
 }
 

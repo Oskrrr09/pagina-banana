@@ -2115,3 +2115,40 @@ la app, porque la app va siempre en castellano
 - Qué no se guarda, igual que antes: sólo `familia/slug`. Ni nombres, ni
   precios, ni fechas, ni recuentos. Nunca se sincroniza con Supabase.
 
+## D-089 — La compra se ancla al pulgar, empezando por el carrito
+
+- Fecha: 2026-08-30.
+- Estado: vigente.
+- Decisión: en la app, **la acción principal de compra del carrito vive en una
+  barra anclada sobre la navegación**, no al final del resumen. La barra se
+  apoya en `ALTURA_TAB_BAR`. La web conserva su composición: su CTA sigue dentro
+  del resumen.
+- Motivo: es el punto 5 del «Top 5» de la auditoría visual —el único que seguía
+  sin hacer— y el objetivo declarado de la Fase C: «el botón está donde va el
+  pulgar». En una columna larga, terminar la compra exigía desplazarse hasta el
+  fondo. En el navegador no pasa: allí el resumen es una columna lateral fija.
+- Por qué `ALTURA_TAB_BAR` y no `bottom-0`: `AppTabBar` **no** es `fixed`, es el
+  último hermano de la columna. Una barra en `bottom-0` se coloca respecto al
+  viewport y queda detrás de la navegación —que además pinta con `z-50`—, con el
+  botón inalcanzable. La constante ya incluye `env(safe-area-inset-bottom)`, así
+  que **no se añade otro relleno de área segura**: reservaría el mismo espacio
+  dos veces. Es el criterio que ya resolvió la barra de compra de la ficha, y se
+  reutiliza el criterio, no el código: aquélla aparece con el desplazamiento y
+  ésta está siempre, porque en el carrito la única acción que importa es
+  terminar.
+- Junto a eso, en la app **«Entrega o recogida» pierde su tarjeta exterior**: sus
+  dos opciones ya son superficies con borde, radio y estado activo, y
+  envolverlas dibujaba un marco alrededor de otro marco. Las opciones no se
+  tocan. El resumen pierde su marco pero conserva la jerarquía y el total
+  destacado.
+- Arquitectura: **`CartPage` sigue siendo una sola página compartida**, con
+  divergencias locales —envoltorio de entrega, marco del resumen, ubicación del
+  CTA y compensación de desplazamiento— más un componente de app de veinte
+  líneas para la barra. Es el criterio de D-087 aplicado otra vez: bifurcar en
+  hojas antes que duplicar páginas.
+- Comportamiento **sin tocar**: carrito, cantidades, borrado, seguro por línea,
+  entrega compartida con el checkout mediante `useCheckoutState`, cupón, envío,
+  total y cross-sell. No se duplica `useStore` ni `useCheckoutState`.
+- **Fuera de esta entrega**: el checkout, que es C2 y no ha empezado. La Fase C
+  **no** está completa.
+
