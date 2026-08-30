@@ -12,6 +12,7 @@ import { Chip } from '../components/ui/Chip'
 import { useStore } from '../lib/store'
 import { ISLAS, useCheckoutState, formatAddressLine, type ErroresStep1, type MotivoStep1 } from '../lib/checkoutState'
 import { useCustomerAuth } from '../lib/customerAuth'
+import { isNativeApp } from '../lib/nativeApp'
 import { createReservationsFromCart, isReservationLine } from '../lib/reservations'
 import { mirrorOrderToSupabase } from '../lib/orderSync'
 import {
@@ -77,6 +78,18 @@ const CLAVE_ERROR_STEP1 = {
 } as const satisfies Record<MotivoStep1, ClaveTexto>
 
 const STEPS: ClaveTexto[] = ['checkout.step.delivery', 'checkout.step.payment', 'checkout.step.confirmation']
+
+/**
+ * Lo que ocupa la barra del CTA en la app, para que el final del paso pueda
+ * leerse por encima de ella.
+ *
+ * No es un número redondo: son sus dos rellenos (0,75rem arriba y abajo) más
+ * el alto del botón `size="lg"` (3,25rem) —4,75rem en total—, más un respiro
+ * de 0,75rem para que el último control no quede pegado al borde. El área
+ * segura se suma porque la barra también la reserva; es el mismo hueco, no
+ * otro.
+ */
+const COMPENSACION_BARRA_APP = 'calc(5.5rem + env(safe-area-inset-bottom))'
 
 export function CheckoutPage() {
   const { t, intl } = useIdioma()
@@ -236,6 +249,21 @@ export function CheckoutPage() {
   }
 
   const total = cartSubtotal + cartInsuranceTotal
+
+  // La acción principal es la misma en las dos plataformas: cambia DÓNDE vive,
+  // no qué hace ni qué dice. Se escribe una vez para que no puedan divergir.
+  const conBarraApp = isNativeApp && current < 3
+  const contenidoCta = processing ? (
+    <>
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+      {t('checkout.processing')}
+    </>
+  ) : current === 2 ? (
+    t('checkout.confirmOrder')
+  ) : (
+    t('common.continue')
+  )
+
   const summaryLines = current === 3 && confirmedOrder ? confirmedOrder.lines : cart
   const summaryInsurance = current === 3 && confirmedOrder ? confirmedOrder.monthlyInsuranceTotal : cartInsuranceTotal
   const summaryProducts = current === 3 && confirmedOrder ? confirmedOrder.productsTotal : cartSubtotal
@@ -282,8 +310,15 @@ export function CheckoutPage() {
         </ol>
       </Container>
 
-      <Container className="grid gap-8 pb-16 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-[12px] border border-line bg-surface p-6">
+      <Container className={`grid gap-8 lg:grid-cols-[1fr_360px] ${conBarraApp ? '' : 'pb-16'}`}>
+        {/* LA CARD QUE ERA LA PÁGINA ENTERA
+            En la web, el paso completo vive dentro de una tarjeta sobre fondo
+            gris: es el patrón que hace que la app parezca el formulario web
+            metido en un WebView. En la app se retira ese marco —y sólo ése—.
+            Las superficies de dentro (modo de entrega, financiación, seguros,
+            datos del pedido, avisos) conservan la suya: quitarlas dejaría el
+            paso plano y sin jerarquía, que no es lo que se busca. */}
+        <div className={isNativeApp ? '' : 'rounded-[12px] border border-line bg-surface p-6'}>
           {current === 1 && (
             <div>
               <h1 className="text-xl font-bold text-ink">{t('checkout.deliveryOrPickup')}</h1>
@@ -556,11 +591,17 @@ export function CheckoutPage() {
             </div>
           )}
 
-          {current < 3 && (
-            // `data-checkout-nav` marca la barra de avance. El rótulo del botón
-            // cambia con el paso y con el idioma, así que las pruebas que
-            // recorren el flujo en otros idiomas necesitan un ancla estructural.
-            // Misma convención que `data-app-topbar` o `data-app-chips`.
+          {/* LA FILA DE AVANCE
+              `data-checkout-nav` marca el sitio donde se avanza. El rótulo del
+              botón cambia con el paso y con el idioma, así que las pruebas que
+              recorren el flujo en otros idiomas necesitan un ancla estructural.
+              Misma convención que `data-app-topbar` o `data-app-chips`.
+
+              En la web sigue llevando las dos cosas, «Atrás» y el CTA, y no se
+              toca. En la app el CTA se va a la barra anclada y aquí sólo queda
+              «Atrás», que es secundario y no compite: en el paso 1 no hay
+              «Atrás» que poner, así que la fila no se pinta. */}
+          {current < 3 && (!isNativeApp || current > 1) && (
             <div data-checkout-nav className="mt-8 flex items-center justify-between">
               {current > 1 ? (
                 <Link to={`/checkout/${current - 1}`} className="text-sm font-semibold text-muted hover:text-ink">
@@ -569,18 +610,11 @@ export function CheckoutPage() {
               ) : (
                 <span />
               )}
-              <Button size="lg" onClick={next} disabled={processing}>
-                {processing ? (
-                  <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    {t('checkout.processing')}
-                  </>
-                ) : current === 2 ? (
-                  t('checkout.confirmOrder')
-                ) : (
-                  t('common.continue')
-                )}
-              </Button>
+              {!isNativeApp && (
+                <Button size="lg" onClick={next} disabled={processing}>
+                  {contenidoCta}
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -668,6 +702,59 @@ export function CheckoutPage() {
           </div>
         </aside>
       </Container>
+
+      {/* El hueco que la barra anclada necesita para no tapar el final del
+          paso: el último campo, su mensaje de error, «Atrás» o el resumen.
+          Va dentro de lo que se desplaza, que es donde hace falta, y FUERA de
+          la rejilla: dentro sería un elemento más y heredaría su `gap`, con lo
+          que el hueco real dejaría de ser el que dice la constante. */}
+      {conBarraApp && <div aria-hidden style={{ height: COMPENSACION_BARRA_APP }} />}
+
+      {conBarraApp && (
+        <CheckoutActionsApp onClick={next} disabled={processing}>
+          {contenidoCta}
+        </CheckoutActionsApp>
+      )}
+    </div>
+  )
+}
+
+/**
+ * La acción principal del checkout en la app, anclada al borde inferior.
+ *
+ * POR QUÉ `bottom-0` Y NO `ALTURA_TAB_BAR`
+ *
+ * El carrito sube su barra la altura de `AppTabBar` porque allí la navegación
+ * es el último hermano de la columna y una barra a ras de viewport quedaría
+ * detrás. Aquí no hay tab bar: el checkout es un armazón propio y debajo de la
+ * barra sólo está el borde de la pantalla. Usar la constante del armazón
+ * reservaría un hueco para algo que no existe.
+ *
+ * El área segura la reserva ESTA barra, una sola vez. Ni el layout ni la
+ * página vuelven a reservarla: sería el mismo espacio contado dos veces.
+ *
+ * Y se apoya en que el documento ya no se desplaza —ver `CheckoutLayout`—:
+ * sobre scroll de documento, en WKWebView, este `fixed` se recolocaría al
+ * terminar el gesto y parecería despegarse.
+ */
+function CheckoutActionsApp({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: ReactNode
+  onClick: () => void
+  disabled: boolean
+}) {
+  return (
+    <div
+      data-checkout-bar
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 px-4 pt-3 backdrop-blur-md"
+      style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+    >
+      <Button size="lg" onClick={onClick} disabled={disabled} className="w-full">
+        {children}
+      </Button>
     </div>
   )
 }

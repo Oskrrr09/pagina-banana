@@ -2152,3 +2152,49 @@ la app, porque la app va siempre en castellano
 - **Fuera de esta entrega**: el checkout, que es C2 y no ha empezado. La Fase C
   **no** está completa.
 
+
+## D-090 — El checkout nativo comparte el modelo de scroll, no el armazón
+
+- Fecha: 2026-08-30.
+- Estado: vigente. **Pendiente de validación física en iPhone** (PR de Fase C2).
+- Decisión: en la app, **el checkout mantiene un armazón propio, separado de
+  `Layout`, pero adopta un viewport `100dvh` con scroll interno** para no dejar
+  un `position: fixed` sobre scroll de documento en WKWebView. La web conserva
+  exactamente su comportamiento: allí sigue desplazándose el documento.
+- Qué NO cambia: el checkout **sigue fuera del armazón general**. No monta
+  `AppTopBar`, no monta `AppTabBar`, no monta chips y conserva su cabecera.
+  Lo único que comparte es el principio: el documento no se desplaza, se
+  desplaza el contenido.
+- Marcador propio, `data-checkout-shell`: reutilizar `data-app-shell` afirmaría
+  que el checkout pasó a formar parte del armazón general, y no es cierto.
+  Comparten la regla de CSS —el efecto es el mismo— agrupando selectores, no
+  duplicándola; no comparten significado.
+- Motivo: `index.css` ya documenta que en iOS los elementos `position: fixed`
+  se recolocan al TERMINAR el gesto, no durante, así que sobre scroll de
+  documento parecen despegarse. Anclar el CTA del checkout sin cambiar antes el
+  modelo de scroll habría reproducido ese defecto conocido. Un navegador de
+  escritorio pinta bien las dos cosas, y por eso los contratos nuevos comprueban
+  **quién se desplaza**, no la foto.
+- **El CTA inferior del checkout usa su propia área segura y no
+  `ALTURA_TAB_BAR`**, porque el checkout no monta `AppTabBar`: debajo de la
+  barra sólo está el borde de la pantalla, y la constante del armazón reservaría
+  hueco para algo que no existe. El área segura la reserva la barra una sola
+  vez; ni el layout ni la página la vuelven a reservar. Es la diferencia con
+  D-089, donde sí hay navegación debajo.
+- Junto a eso, en la app **desaparece la tarjeta que envolvía el paso entero**
+  —el formulario dentro de una card sobre fondo gris—, y sólo ésa: las
+  superficies internas (modo de entrega, financiación, seguros, datos del
+  pedido, avisos, resumen) conservan su jerarquía. La web las conserva todas,
+  card exterior incluida.
+- Arquitectura: **`CheckoutPage` sigue siendo una sola página compartida**. No
+  hay `CheckoutPageApp` ni `CheckoutPageWeb`. Divergen puntos locales —card
+  exterior, sitio del CTA, fila de avance y compensación— más
+  `CheckoutActionsApp`, un componente de veinte líneas. D-087 otra vez.
+- Comportamiento **sin tocar**: `useCheckoutState`, `useStore`, carrito,
+  precios, seguros, entrega, dirección, tienda, validación y sus mensajes,
+  método de pago, financiación, cupón, `next()`, `confirmOrder()`, creación del
+  pedido, compra invitada, auth, Supabase y la navegación entre pasos. El paso 3
+  sigue exigiendo un pedido real, no una sesión, y no monta barra de CTA.
+- **Fuera de esta entrega**: el stepper móvil y el `<select>` nativo, que la
+  auditoría detectó pero no hacen falta para el objetivo aprobado. Se evaluarán
+  aparte si tras la validación física siguen sintiéndose mal.
