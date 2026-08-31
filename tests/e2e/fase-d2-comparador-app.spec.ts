@@ -181,6 +181,27 @@ for (const [ancho, alto] of [
         expect(g.pequenos, `controles por debajo de 44: ${JSON.stringify(g.pequenos)}`).toEqual([])
       })
 
+      test('el final de la comparación se alcanza por encima de la navegación', async ({ page }) => {
+        await comoApp(page)
+        await conComparacion(page, [...semillas])
+        await page.goto('./comparar')
+
+        const f = await page.evaluate(
+          () =>
+            new Promise<{ libre: number; ultimo: string }>((resolve) => {
+              // EN LA APP EL SCROLL ES DE `main#contenido`, no del documento.
+              const main = document.querySelector('main') as HTMLElement
+              main.scrollTop = main.scrollHeight
+              setTimeout(() => {
+                const tab = document.querySelector('[data-app-tab-bar]')!.getBoundingClientRect()
+                const raiz = document.querySelector('[data-cmp-app]')!.getBoundingClientRect()
+                resolve({ libre: Math.round(tab.top - raiz.bottom), ultimo: 'el comparador' })
+              }, 350)
+            }),
+        )
+        expect(f.libre, `${f.ultimo} termina por encima de la navegación`).toBeGreaterThanOrEqual(0)
+      })
+
       test('la jerarquía de superficies es simple', async ({ page }) => {
         await comoApp(page)
         await conComparacion(page, [...semillas])
