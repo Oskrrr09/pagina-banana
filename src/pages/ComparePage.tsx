@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useT } from '../lib/i18n'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
@@ -8,13 +8,13 @@ import { Chip } from '../components/ui/Chip'
 import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { ModelPickerDialog } from '../components/compare/ModelPickerDialog'
+import { useComparador } from '../components/compare/useComparador'
 import { CompareApp } from '../components/compare/CompareApp'
 import { isNativeApp } from '../lib/nativeApp'
-import { useStore } from '../lib/store'
-import { families, getFamilyModels, familyInfo, developedFamilies, productImage, variantPath } from '../data/products'
+import { MAX_COMPARE } from '../lib/store'
+import { productImage, variantPath } from '../data/products'
 import type { Model } from '../data/types'
 import { euro } from '../lib/format'
-import { buildDecisionSections, buildDecisionSummary, type FamilySlug } from '../data/productDecisionData'
 
 // ---------------------------------------------------------------------------
 // Comparador (versión simplificada).
@@ -37,7 +37,9 @@ import { buildDecisionSections, buildDecisionSummary, type FamilySlug } from '..
 // - Compatibilidad `banana:compare`: el shape de `CompareItem` no cambia.
 // ---------------------------------------------------------------------------
 
-const MAX_SLOTS = 3
+// El máximo lo define el dominio: `MAX_COMPARE` en el store. Aquí sólo se
+// le da el nombre con el que ya se leía el JSX de la tabla.
+const MAX_SLOTS = MAX_COMPARE
 
 /**
  * El comparador.
@@ -58,92 +60,53 @@ export function ComparePage() {
   return <CompareWeb />
 }
 
-/** La composición histórica de la web. No cambia (D-086). */
+/**
+ * La composición histórica de la web. Su maquetación NO cambia (D-086).
+ *
+ * Lo que sí cambió es de dónde saca los datos: antes tenía su propio dominio
+ * —familia activa, contextos, secciones, resumen, destacados, añadir,
+ * sustituir, quitar y la limpieza de accesorios heredados— y `CompareApp`
+ * consumía otro. Dos implementaciones de lo mismo divergen en cuanto una se
+ * toca, y de hecho compartían un defecto: pintaban las columnas desde
+ * `compare` en crudo mientras la tabla salía de los contextos ya filtrados,
+ * así que un modelo retirado del catálogo aparecía como fantasma y arrastraba
+ * los valores de sus vecinos. Ahora las dos superficies leen `useComparador`.
+ *
+ * Los nombres locales se conservan para que el JSX de abajo no se toque.
+ */
 function CompareWeb() {
   const t = useT()
-  const { compare, toggleCompare, removeCompare, replaceCompareItem, addToCart, toggleFavorite, isFavorite } =
-    useStore()
-  const [params, setParams] = useSearchParams()
-  const [onlyDifferences, setOnlyDifferences] = useState(true)
+  const c = useComparador()
   const [pickerSlot, setPickerSlot] = useState<
     { kind: 'add' } | { kind: 'replace'; currentId: string; currentSlug: string } | null
   >(null)
 
-  const paramFamily = params.get('familia') ?? ''
-  const activeFamily = (
-    compare.length > 0 ? compare[0].family : developedFamilies.includes(paramFamily) ? paramFamily : 'iphone'
-  ) as FamilySlug
-  const family = familyInfo(activeFamily)
-  const models = getFamilyModels(activeFamily)
-  const comparableFamilies = families.filter(
-    (f) => developedFamilies.includes(f.slug) && getFamilyModels(f.slug).length > 1,
-  )
+  const { addToCart, toggleFavorite, isFavorite, secciones: sections, comparables } = c
+  const activeFamily = c.familiaActiva
+  const family = c.familia
+  const models = c.modelos
+  const comparableFamilies = c.familiasComparables
+  const usedSlugs = c.slugsUsados
+  const onlyDifferences = c.soloDiferencias
+  const setOnlyDifferences = c.setSoloDiferencias
+  const switchFamily = c.cambiarFamilia
+  const handleAdd = c.anadir
+  const handleReplace = (model: Model, currentId: string) => c.sustituir(model, currentId)
+  const removeCompare = c.quitar
+  const highlightsFor = c.destacadosDe
+  const isEmpty = c.vacio
 
-  const usedSlugs = useMemo(() => compare.map((c) => c.modelSlug), [compare])
-
-  function compareItemFor(model: Model) {
-    const color = model.colors[0]
-    const capacity = color.capacities[0]
-    return {
-      id: `${model.family}/${model.slug}/${color.color}/${capacity.capacity}`,
-      modelSlug: model.slug,
-      family: model.family,
-      name: model.name,
-      color: color.name,
-      capacity: capacity.capacity,
-      price: capacity.price,
-      specs: model.specs,
-    }
-  }
-
-  const contexts = useMemo(() => {
-    const out: { model: Model; capacity: string | null; color: string | null }[] = []
-    for (const c of compare) {
-      const model = models.find((m) => m.slug === c.modelSlug)
-      if (!model) continue
-      out.push({ model, capacity: c.capacity ?? null, color: c.color ?? null })
-    }
-    return out
-  }, [compare, models])
-
-  const sections = useMemo(
-    () => (contexts.length > 0 ? buildDecisionSections(contexts, activeFamily, { onlyDifferences }) : []),
-    [contexts, activeFamily, onlyDifferences],
-  )
-
-  const summary = useMemo(() => buildDecisionSummary(contexts), [contexts])
-
-  function switchFamily(slug: string) {
-    setParams(slug === 'iphone' ? {} : { familia: slug })
-  }
-
-  function handleAdd(model: Model) {
-    toggleCompare(compareItemFor(model))
-  }
-  function handleReplace(model: Model, currentId: string) {
-    replaceCompareItem(currentId, compareItemFor(model))
-  }
-
-  // Etiqueta "Destaca por…" (máx. 2) por columna, sólo si hay ganador único.
-  function highlightsFor(modelSlug: string): string[] {
-    const out: string[] = []
-    if (summary.cheapestSlug === modelSlug) out.push('Más económico')
-    if (summary.lightestSlug === modelSlug) out.push('Más ligero')
-    if (summary.largestScreenSlug === modelSlug) out.push('Mayor pantalla')
-    if (summary.largestCapacitySlug === modelSlug) out.push('Mayor capacidad')
-    return out.slice(0, 2)
-  }
-
-  const isEmpty = compare.length === 0
-
-  // Compat: si algún accesorio quedó persistido en localStorage con la
-  // family antigua `accessory:<category>`, lo retiramos silenciosamente
-  // — el comparador queda solo para dispositivos.
-  useEffect(() => {
-    compare.forEach((c) => {
-      if (c.family?.startsWith('accessory:')) removeCompare(c.id)
-    })
-  }, [compare, removeCompare])
+  // Las columnas se pintan desde la lista RESUELTA, la misma de la que sale la
+  // tabla: es lo que impide que un modelo retirado se cuele como columna y
+  // desplace los valores. Con datos legítimos el resultado es idéntico —el
+  // HTML renderizado se compara carácter por carácter contra la base—.
+  const compare = comparables.map((r) => ({
+    ...r.item,
+    name: r.nombre,
+    color: r.color,
+    capacity: r.capacidad,
+    price: r.precio,
+  }))
 
   return (
     <Container className="py-10">

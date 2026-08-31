@@ -8,7 +8,6 @@ import { Icon } from '../ui/Icon'
 import { ProductImage } from '../product/ProductImage'
 import { ProvisionalBadge } from '../ui/Tag'
 import { ModelPickerDialog } from './ModelPickerDialog'
-import { etiquetasCortas } from './etiquetaCorta'
 import { useComparador } from './useComparador'
 import { productImage, variantPath } from '../../data/products'
 import { euro } from '../../lib/format'
@@ -49,12 +48,11 @@ export function CompareApp() {
   const c = useComparador()
   const [picker, setPicker] = useState<{ modo: 'add' } | { modo: 'replace'; id: string; slug: string } | null>(null)
 
-  // La identificación corta se calcula una vez para toda la comparación: así
-  // todos los bloques dicen lo mismo del mismo producto.
-  const etiquetas = etiquetasCortas(
-    c.compare.map((x) => x.name),
-    c.modelos.map((m) => m.name),
-  )
+  // Producto, nombre, etiqueta, valores y destacados salen TODOS de
+  // `comparables`. Antes las etiquetas se sacaban de `compare` en crudo
+  // mientras los valores venían de los contextos ya filtrados, y un modelo
+  // retirado desalineaba las dos listas sin lanzar ninguna excepción.
+  const etiquetas = c.comparables.map((x) => x.etiqueta)
 
   return (
     <div data-cmp-app>
@@ -77,23 +75,26 @@ export function CompareApp() {
               tarjetas de catálogo: aquí sólo hace falta reconocerlo, saber
               cuánto cuesta y poder actuar. */}
             <ul data-cmp-resumen className="mt-5 overflow-hidden rounded-[16px] border border-line bg-surface">
-              {c.compare.map((item, i) => {
-                const model = c.modelos.find((m) => m.slug === item.modelSlug)
-                const destacados = c.destacadosDe(item.modelSlug)
+              {c.comparables.map((resuelto, i) => {
+                const { item, model, destacados } = resuelto
                 return (
                   <li data-cmp-producto key={item.id} className="border-b border-line last:border-b-0 p-3">
                     <div className="flex items-start gap-3">
                       <div className="w-[68px] shrink-0">
-                        <ProductImage src={productImage(item.modelSlug, item.color)} alt={item.name} ratio="1 / 1" />
+                        <ProductImage
+                          src={productImage(item.modelSlug, resuelto.color)}
+                          alt={resuelto.nombre}
+                          ratio="1 / 1"
+                        />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p data-cmp-nombre className="text-[15px] font-semibold leading-tight text-ink">
-                          {item.name}
+                          {resuelto.nombre}
                         </p>
                         <p className="mt-0.5 text-xs text-muted">
-                          {item.capacity} · {item.color}
+                          {resuelto.capacidad} · {resuelto.color}
                         </p>
-                        <p className="mt-1 text-[15px] font-bold text-ink">{euro(item.price)}</p>
+                        <p className="mt-1 text-[15px] font-bold text-ink">{euro(resuelto.precio)}</p>
                         {destacados.length > 0 && (
                           <p className="mt-1 text-xs font-semibold text-ink">{destacados.join(' · ')}</p>
                         )}
@@ -112,28 +113,28 @@ export function CompareApp() {
                             id: item.id,
                             modelSlug: item.modelSlug,
                             family: item.family,
-                            name: item.name,
-                            color: item.color,
-                            capacity: item.capacity,
-                            price: item.price,
+                            name: resuelto.nombre,
+                            color: resuelto.color,
+                            capacity: resuelto.capacidad,
+                            price: resuelto.precio,
                             previousPrice: null,
                           })
                         }
                       >
                         Comprar
                       </Button>
-                      {model && (
-                        <Link
-                          to={variantPath(model)}
-                          className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-[12px] border border-line px-3 text-sm font-semibold text-ink"
-                        >
-                          Ver producto
-                        </Link>
-                      )}
+                      {/* `model` está garantizado: `comparables` sólo trae los
+                          que existen de verdad en el catálogo. */}
+                      <Link
+                        to={variantPath(model)}
+                        className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-[12px] border border-line px-3 text-sm font-semibold text-ink"
+                      >
+                        Ver producto
+                      </Link>
                       <button
                         type="button"
                         onClick={() => setPicker({ modo: 'replace', id: item.id, slug: item.modelSlug })}
-                        aria-label={`Cambiar ${item.name} por otro modelo`}
+                        aria-label={`Cambiar ${resuelto.nombre} por otro modelo`}
                         className="grid h-11 w-11 shrink-0 place-items-center rounded-[12px] border border-line text-ink"
                       >
                         <Icon name="refresh" size={18} aria-hidden="true" />
@@ -141,13 +142,13 @@ export function CompareApp() {
                       <button
                         type="button"
                         onClick={() => c.quitar(item.id)}
-                        aria-label={`Quitar ${item.name} de la comparación`}
+                        aria-label={`Quitar ${resuelto.nombre} de la comparación`}
                         className="grid h-11 w-11 shrink-0 place-items-center rounded-[12px] border border-line text-danger"
                       >
                         <Icon name="close" size={18} aria-hidden="true" />
                       </button>
                     </div>
-                    <span className="sr-only">{`Producto ${i + 1} de ${c.compare.length}`}</span>
+                    <span className="sr-only">{`Producto ${i + 1} de ${c.comparables.length}`}</span>
                   </li>
                 )
               })}
@@ -161,7 +162,7 @@ export function CompareApp() {
                   onClick={() => setPicker({ modo: 'add' })}
                   aria-label={t('compare.emptySlotAria', {
                     familia: c.familia?.name ?? '',
-                    n: c.compare.length + 1,
+                    n: c.comparables.length + 1,
                   })}
                   className="inline-flex min-h-11 items-center gap-2 rounded-[12px] border border-dashed border-brand px-4 text-sm font-semibold text-ink"
                 >
@@ -172,7 +173,7 @@ export function CompareApp() {
               <ProvisionalBadge />
             </div>
 
-            {c.compare.length < 2 ? (
+            {c.comparables.length < 2 ? (
               <p className="mt-6 text-[15px] text-muted">Añade otro modelo para ver sus diferencias.</p>
             ) : (
               <>
@@ -211,7 +212,7 @@ export function CompareApp() {
                             campo={fila.field}
                             etiquetas={etiquetas}
                             valores={fila.values}
-                            destacadoDe={(i) => destacadoDelValor(c, fila.field, i)}
+                            destacadoDe={(i) => c.destacadoEn(fila.field, i)}
                           />
                         ))}
                       </div>
@@ -239,34 +240,6 @@ export function CompareApp() {
       </Container>
     </div>
   )
-}
-
-/**
- * El destacado que corresponde a ESTE valor, no al producto en abstracto.
- *
- * En la web las etiquetas «Destaca por…» viven sueltas en la cabecera de la
- * columna. Aquí se pegan al dato que las gana: «959 € · Más económico» dice
- * algo; una pastilla arriba, mucho menos. El cálculo es el mismo de
- * `buildDecisionSummary`; sólo cambia dónde se enseña.
- */
-function destacadoDelValor(c: ReturnType<typeof useComparador>, campo: string, indice: number): string | null {
-  const item = c.compare[indice]
-  if (!item) return null
-  const porCampo: Record<string, string | null> = {
-    Precio: c.resumen.cheapestSlug,
-    Peso: c.resumen.lightestSlug,
-    Pantalla: c.resumen.largestScreenSlug,
-    'Capacidad inicial': c.resumen.largestCapacitySlug,
-    'Almacenamiento inicial': c.resumen.largestCapacitySlug,
-  }
-  if (porCampo[campo] !== item.modelSlug) return null
-  return {
-    Precio: 'Más económico',
-    Peso: 'Más ligero',
-    Pantalla: 'Mayor pantalla',
-    'Capacidad inicial': 'Mayor capacidad',
-    'Almacenamiento inicial': 'Mayor capacidad',
-  }[campo]!
 }
 
 /** Un atributo: su nombre y, debajo, un valor por producto. */
