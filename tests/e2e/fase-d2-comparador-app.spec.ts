@@ -507,6 +507,154 @@ test.describe('el comparador nativo funciona igual por dentro', () => {
 })
 
 // ---------------------------------------------------------------------------
+// LO PERSISTIDO NO SIEMPRE TRAE TODO, Y NO SIEMPRE SIGUE EN EL CATÁLOGO
+//
+// La PR #94 cerró que un `CompareItem` legítimo sólo necesita `id`,
+// `modelSlug` y `family`: los datos de presentación —`name`, `color`,
+// `capacity`, `price`— pueden faltar, porque el comparador puede resolverlos
+// desde el catálogo vivo. Y un `modelSlug` retirado del catálogo debe
+// ignorarse en silencio, no pintarse.
+//
+// Medido antes de esta corrección:
+//
+//   dos elementos mínimos     → PÁGINA EN BLANCO («… reading 'trim'»)
+//   retirado al principio     → «Retirado» salía como producto fantasma Y los
+//                               valores se atribuían al producto equivocado:
+//                               etiquetas [Retirado, 17, 17 Pro] con valores
+//                               [959 €, 1229 €, —], y «Más económico» acababa
+//                               junto a 1229 €
+//
+// La causa es la misma en los dos: las etiquetas salían de `compare` en crudo
+// mientras los valores salían de los contextos ya filtrados. Dos listas de
+// distinta longitud indexadas a la vez. Esto tiene que ser imposible por
+// construcción, no evitable con cuidado.
+// ---------------------------------------------------------------------------
+
+/** Un `CompareItem` con lo mínimo que el contrato de #94 considera legítimo. */
+const minimo = (id: string, slug: string) => ({ id, modelSlug: slug, family: 'iphone' })
+
+/** Siembra valores crudos: aquí importa lo que NO traen. */
+function conCrudo(page: Page, lista: unknown[]) {
+  return page.addInitScript((l) => {
+    localStorage.setItem('banana:favorite-store-prompt', 'dismissed')
+    localStorage.setItem('banana:compare', JSON.stringify(l))
+  }, lista)
+}
+
+/** Producto, etiqueta, valor y destacado del primer bloque, en orden. */
+async function alineacion(page: Page) {
+  return page.evaluate(() => {
+    const bloque = document.querySelector('[data-cmp-atributo]')
+    return {
+      productos: [...document.querySelectorAll('[data-cmp-producto] [data-cmp-nombre]')].map((e) =>
+        (e.textContent ?? '').trim(),
+      ),
+      campo: (bloque?.querySelector('[data-cmp-campo]')?.textContent ?? '').trim(),
+      filas: [...(bloque?.querySelectorAll('[data-cmp-valor]') ?? [])].map((v) => ({
+        etiqueta: (v.querySelector('[data-cmp-etiqueta]')?.textContent ?? '').trim(),
+        valor: (v.querySelector('[data-cmp-dato]')?.textContent ?? '').trim(),
+        destaca: (v.querySelector('[data-cmp-destaca]')?.textContent ?? '').trim(),
+      })),
+    }
+  })
+}
+
+test.describe('el comparador nativo resuelve lo persistido contra el catálogo', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('dos elementos con sólo id, modelSlug y family se comparan igual', async ({ page }) => {
+    const errores: string[] = []
+    page.on('pageerror', (e) => errores.push(e.message))
+
+    await comoApp(page)
+    await conCrudo(page, [minimo('a', '17'), minimo('b', '17-pro')])
+    await page.goto('./comparar')
+
+    await expect(page.locator('[data-cmp-app]'), 'la app se pinta').toHaveCount(1)
+    expect(errores, `excepciones sin controlar: ${errores.join(' | ')}`).toEqual([])
+
+    // Los nombres salen del catálogo, no del campo que no venía.
+    const nombres = await page.locator('[data-cmp-producto] [data-cmp-nombre]').allTextContents()
+    expect(nombres.map((n) => n.trim())).toEqual(['iPhone 17', 'iPhone 17 Pro'])
+
+    // Y se comparan de verdad, con los valores del catálogo.
+    const a = await alineacion(page)
+    expect(a.filas.length, 'un valor por producto').toBe(2)
+    expect(a.filas.every((f) => f.valor !== '' && f.valor !== '—')).toBe(true)
+
+    // Lo persistido sigue siendo válido después de recargar.
+    await page.reload()
+    await expect(page.locator('[data-cmp-producto]')).toHaveCount(2)
+    const guardado = await page.evaluate(() => JSON.parse(localStorage.getItem('banana:compare') ?? '[]'))
+    expect(guardado.length).toBe(2)
+  })
+
+  for (const [donde, lista] of [
+    ['al principio', [minimo('r', 'modelo-retirado'), minimo('a', '17'), minimo('b', '17-pro')]],
+    ['en medio', [minimo('a', '17'), minimo('r', 'modelo-retirado'), minimo('b', '17-pro')]],
+    ['al final', [minimo('a', '17'), minimo('b', '17-pro'), minimo('r', 'modelo-retirado')]],
+  ] as const) {
+    test(`un modelo retirado ${donde} no se pinta ni desalinea a los demás`, async ({ page }) => {
+      await comoApp(page)
+      await conCrudo(page, [...lista])
+      await page.goto('./comparar')
+
+      const a = await alineacion(page)
+      expect(a.productos, 'el retirado no aparece como producto fantasma').toEqual(['iPhone 17', 'iPhone 17 Pro'])
+      expect(a.filas.length, 'y sólo hay dos valores').toBe(2)
+      expect(
+        a.filas.map((f) => f.etiqueta),
+        'las etiquetas conservan el orden de los válidos',
+      ).toEqual(['17', '17 Pro'])
+
+      // LA ALINEACIÓN, QUE ES LO QUE SE ROMPÍA: cada valor pertenece a su
+      // producto. El iPhone 17 cuesta menos que el 17 Pro, siempre.
+      if (a.campo === 'Precio') {
+        const [normal, pro] = a.filas.map((f) => parseInt(f.valor.replace(/\D/g, ''), 10))
+        expect(normal, `«17» debe costar menos que «17 Pro» (${normal} vs ${pro})`).toBeLessThan(pro)
+        const ganador = a.filas.find((f) => f.destaca !== '')
+        expect(ganador?.etiqueta, 'y «Más económico» va con el barato').toBe('17')
+      }
+    })
+  }
+})
+
+// ---------------------------------------------------------------------------
+// UN SOLO DOMINIO PARA LAS DOS SUPERFICIES
+// ---------------------------------------------------------------------------
+
+test.describe('app y web comparten el mismo dominio', () => {
+  const TRES = [minimo('a', '17'), minimo('b', '17-pro'), minimo('c', '17-pro-max')]
+
+  test('el máximo de productos es el mismo en las dos', async ({ page }) => {
+    // Una sola fuente de verdad: si hubiera dos constantes, bastaría con que
+    // una cambiara para que las superficies dejaran de coincidir.
+    await comoApp(page)
+    await conCrudo(page, TRES)
+    await page.goto('./comparar')
+    await expect(page.locator('[data-cmp-producto]')).toHaveCount(3)
+    await expect(page.locator('[data-model-picker-trigger]'), 'con tres, la app no ofrece un cuarto').toHaveCount(0)
+  })
+
+  test('la web también resuelve lo persistido y no pinta el retirado', async ({ page }) => {
+    // El defecto vivía en el dominio: la web indexaba las mismas dos listas.
+    await conCrudo(page, [minimo('r', 'modelo-retirado'), minimo('a', '17'), minimo('b', '17-pro')])
+    await page.goto('./comparar')
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+    const nombres = await page.evaluate(() => {
+      const grupo = [...document.querySelectorAll('[role="group"]')].find((g) =>
+        /^Modelos comparados/.test(g.getAttribute('aria-label') ?? ''),
+      )
+      return [...(grupo?.querySelectorAll('p.font-bold') ?? [])]
+        .map((p) => (p.textContent ?? '').trim())
+        .filter((t) => t !== '' && !t.includes('€'))
+    })
+    expect(nombres, 'sin fantasma y con los nombres del catálogo').toEqual(['iPhone 17', 'iPhone 17 Pro'])
+  })
+})
+
+// ---------------------------------------------------------------------------
 // LA WEB SIGUE IGUAL (D-086)
 // ---------------------------------------------------------------------------
 
