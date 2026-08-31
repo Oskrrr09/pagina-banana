@@ -1,12 +1,98 @@
 ---
 tipo: cambios
-actualizado: 2026-08-30
+actualizado: 2026-08-31
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-08-31 — Fase D1: Favoritos se siente de app
+
+Primera entrega de la **Fase D — «Favoritos y comparador se sienten de app»**, y
+**sólo en la app**. Revisión técnica aprobada y **validación física en iPhone
+aprobada**.
+
+**Por qué esta superficie.** La auditoría posterior a la Fase C la midió como la
+más lejos del estándar nativo: con tres favoritos, 21 superficies con marco —16
+dentro de otra— y 24 de 28 controles por debajo de 44 px, con «Ver producto» y
+«Quitar» a 30 px y las tiendas a 28. Y es el destino del corazón que aparece en
+todas las tarjetas del catálogo, que la Fase B ya dejó nativas.
+
+**La lista es una superficie, no una rejilla de tarjetas.** Cada favorito es una
+fila separada por divisores: la fila entera —imagen, nombre, precio y estado en
+tienda— es el enlace a la ficha, y debajo van sus dos acciones. Medido a 320,
+390 y 430: **2 superficies con marco, 0 anidadas, 0 controles por debajo de
+44 px**, acciones de 48 px, fila de 100 px y cero desbordamiento.
+
+**La elección de tienda se despliega en la propia fila**, con una opción por
+tienda a 48 px, en lugar del `<select>` del sistema. **Mis avisos** y
+**Notificaciones** siguen el mismo patrón: una superficie por grupo y filas
+dentro.
+
+**El dominio no se duplica.** `useFavoritos` centraliza lo que ya hacía la
+página —quitar un favorito desactiva su seguimiento para no dejar avisos
+huérfanos, y elegir tienda la guarda como favorita si no había ninguna— y lo
+consumen las dos composiciones. Ningún comportamiento se reimplementa:
+`setAlert`, `changeAlertStore`, `disableAlert`, `simulateArrival`, `markRead` y
+`markAllRead` son los mismos.
+
+**La web no cambia** (D-086): su HTML renderizado es **carácter por carácter
+idéntico** al de `main`, a 390 y a 1280, con y sin aviso activo.
+
+### El bug que encontró la validación física
+
+Con la entrega ya en el teléfono apareció un fallo real: **guardando sólo el
+iPhone 17 Pro, Favoritos enseñaba también el iPhone 17.**
+
+El almacenamiento era correcto —`banana:fav` contenía un único identificador,
+comprobado por la interfaz—. El fallo estaba en cómo se reconstruía la lista:
+
+```ts
+favorites.some((f) => f.startsWith(`${m.family}/${m.slug}`))
+```
+
+Eso no pregunta «¿está guardado este modelo?» sino «¿empieza algún favorito por
+su identificador?», y `"iphone/17-pro"` empieza por `"iphone/17"`.
+
+**El censo del catálogo dio tres modelos afectados, no uno:**
+
+| Guardado | Aparecían además |
+| --- | --- |
+| `iphone/17-pro-max` | `iphone/17-pro` **y** `iphone/17` |
+| `iphone/17-pro` | `iphone/17` |
+| `airpods/airpods-4-anc` | `airpods/airpods-4` |
+
+El defecto era **anterior a D1** —estaba igual en `FavoritesPage`— y, al vivir
+en el dominio que comparten las dos plataformas, **la web pintaba el mismo
+modelo fantasma**. Se corrigió aquí porque la validación física lo encontró en
+la superficie que se estaba cambiando.
+
+**La corrección es igualdad exacta del identificador.** El contrato de
+`banana:fav` es exactamente `familia/modelo`: lo componen así los seis sitios
+que escriben favoritos y `toggleFavorite` lo guarda tal cual. Sin listas de
+excepciones, así que cualquier modelo futuro cuyo identificador sea prefijo de
+otro queda cubierto por construcción. No se tocó `useStore`, `toggleFavorite` ni
+el formato persistido.
+
+### Cobertura
+
+`tests/e2e/fase-d1-favoritos-app.spec.ts` con **34 casos** —composición,
+geometría a 320/390/430, comportamiento, identidad en app y en web, y
+congelación de la web— y `tests/unit/favoritos-identidad.test.ts` con **8
+unitarios de dominio**, incluido un censo que recorre el catálogo entero.
+Rojos antes del arreglo: 3 unitarios y 4 E2E, uno de ellos de la web.
+
+### Validación física
+
+Aprobada por el usuario en iPhone: guardar sólo el iPhone 17 Pro enseña
+únicamente el iPhone 17 Pro; añadir después el iPhone 17 enseña exactamente los
+dos; quitar uno mantiene el otro. El bug apareció durante la validación, se
+corrigió, se reinstaló la build nueva, se repitió la prueba y quedó aprobada.
+
+**D1 queda cerrada. D2 —el comparador— no ha empezado y la Fase D sigue
+abierta.**
 
 ## 2026-08-30 — Fase C cerrada: «Comprar se siente de app»
 

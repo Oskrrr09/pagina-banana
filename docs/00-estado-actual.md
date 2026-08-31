@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-30
+actualizado: 2026-08-31
 ---
 
 # Estado actual
@@ -126,8 +126,44 @@ seguros, entrega, validación, pago, creación del pedido, compra invitada, auth
 Supabase no se duplican ni cambian.
 
 **Validación física en iPhone aprobada y PR #91 fusionada (merge
-`7fbcfd0665e9ca358b438d80bfa65e1765090e23`): la Fase C queda CERRADA.** La
-siguiente fase todavía **no está decidida**.
+`7fbcfd0665e9ca358b438d80bfa65e1765090e23`): la Fase C queda CERRADA.**
+
+**Fase D — «Favoritos y comparador se sienten de app»: ABIERTA.** La auditoría
+posterior a la Fase C midió `/favoritos` como la superficie más lejos del
+estándar nativo —21 superficies con marco, 16 dentro de otra y 24 de 28
+controles por debajo del mínimo táctil—, y es el destino del corazón que
+aparece en todas las tarjetas del catálogo. Se divide en dos entregas:
+
+- **D1 — Favoritos: CERRADA.** En la app la lista pasa a ser **una** superficie
+  con una fila por producto separada por divisores: la fila entera lleva a la
+  ficha, las acciones miden 48 px y la elección de tienda se despliega en filas
+  pulsables en lugar del `<select>` del sistema. Avisos y notificaciones siguen
+  el mismo patrón. El dominio —qué está guardado, qué se sigue, qué pasa al
+  quitar o al elegir tienda— se centraliza en `useFavoritos` y lo comparten las
+  dos plataformas. **Revisión técnica aprobada y validación física en iPhone
+  aprobada.**
+- **D2 — Comparador: PENDIENTE, no empezada.** Su diseño no está decidido.
+
+**La identidad de un favorito es su identificador exacto.** Durante la
+validación física apareció un fallo real: guardando sólo el iPhone 17 Pro,
+Favoritos enseñaba también el iPhone 17. El almacenamiento era correcto —un
+único id—; la lista se reconstruía con `startsWith`, que no pregunta si el
+modelo está guardado sino si algún favorito empieza por su identificador. El
+censo del catálogo dio **tres** modelos afectados: `iphone/17-pro-max` —que
+arrastraba dos—, `iphone/17-pro` y `airpods/airpods-4-anc`. El defecto era
+**anterior a D1** —estaba igual en `FavoritesPage`— y, al vivir en el dominio
+compartido, **afectaba también a la web**. Corregido con **igualdad exacta del
+identificador `familia/modelo`**, que es el formato que escriben los seis
+sitios que guardan favoritos; sin listas de excepciones, así que cualquier
+modelo futuro cuyo id sea prefijo de otro queda cubierto. Protegido por
+unitarios de identidad —incluido un censo del catálogo entero— y por casos E2E
+en las dos plataformas. Ver `src/components/favorites/identidadDeFavoritos.ts`.
+
+La web conserva su composición histórica en `/favoritos` (D-086): su HTML
+renderizado es idéntico al de `main` antes de la entrega, salvo por los datos
+correctos que ahora corresponden al estado real de la lista.
+
+**La Fase D no está completa: D2 no ha empezado.**
 
 **Fase B completa (B1 + B2).** La **ficha** nativa también respira: la galería
 pierde el marco y toma el radio del sistema, el favorito deja de separar el
