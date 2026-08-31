@@ -8,6 +8,52 @@ actualizado: 2026-08-31
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-31 — Fase D2: el comparador se siente de app (sin fusionar)
+
+Segunda entrega de la **Fase D**, y **sólo en la app**. Queda **pendiente de
+revisión técnica y de validación física en iPhone**.
+
+**El problema no era el tamaño de los botones.** La web compara en columnas —A
+| B | C— y en un teléfono esa metáfora no cabe: a 320 px con tres productos,
+`min-w-[720px]` dejaba **424 px de la tabla fuera de pantalla** tras un gesto
+horizontal sin ninguna señal, con **dos desplazadores anidados**, 15 de 17
+controles por debajo del mínimo táctil y 18 superficies dentro de otra.
+Comparar así obligaba a sostener una cifra en la memoria mientras se arrastraba
+para ver la otra.
+
+**En la app la comparación es vertical y por atributo.** Cada característica es
+un bloque y dentro van los valores, uno por línea, con la identificación del
+producto a la izquierda y el dato a la derecha. El «Destaca por…» se pega al
+valor que lo gana en vez de vivir suelto en la cabecera de la columna. Arriba,
+un resumen de una fila por producto —imagen, nombre, precio y sus acciones—, no
+tres tarjetas de catálogo.
+
+Medido a 320, 390 y 430 en los cuatro estados: **0 desbordamiento, 0
+desplazadores horizontales, 0 desplazadores verticales propios, 0 superficies
+anidadas y 0 controles por debajo de 44 px**. Con «Solo diferencias» son 6
+bloques con dos productos y 7 con tres.
+
+**El motor no se toca.** `ESSENTIAL_FIELDS`, `EXTENDED_FIELDS`,
+`FIELD_SECTIONS`, `buildDecisionSections` y `buildDecisionSummary` son los
+mismos, «Solo diferencias» sigue activo por defecto, y `MAX_COMPARE = 3`, la
+familia única y la persistencia no cambian. El dominio entero vive en
+`useComparador` y lo comparten las dos composiciones.
+
+**La identificación corta** dentro de los atributos sale de una regla genérica
+—el prefijo común de palabras de la familia: `iPhone`, `iPad`, `Apple Watch`,
+`AirPods`— con reserva al nombre completo si no lo hay (los Mac), si quedaría
+vacía o si dos productos colisionarían. Sin listas de excepciones.
+
+**Sin cabecera pegajosa**, a propósito: es la primera versión y esa pieza se
+decidirá con el teléfono delante.
+
+**La web no cambia** (D-086): su HTML renderizado es **carácter por carácter
+idéntico** al de `main`, a 390 y 1280, en los cuatro estados y con «Mostrar
+todas».
+
+Suite nueva `tests/e2e/fase-d2-comparador-app.spec.ts` con 56 casos. **La Fase
+D sigue abierta: D2 no está cerrada.**
+
 ## 2026-08-31 — Fase D1: Favoritos se siente de app
 
 Primera entrega de la **Fase D — «Favoritos y comparador se sienten de app»**, y

@@ -142,7 +142,20 @@ aparece en todas las tarjetas del catálogo. Se divide en dos entregas:
   quitar o al elegir tienda— se centraliza en `useFavoritos` y lo comparten las
   dos plataformas. **Revisión técnica aprobada y validación física en iPhone
   aprobada.**
-- **D2 — Comparador: PENDIENTE, no empezada.** Su diseño no está decidido.
+- **D2 — Comparador: implementada, pendiente de revisión técnica y de
+  validación física.** La web compara en columnas y en un teléfono esa
+  metáfora no cabe: a 320 px `min-w-[720px]` dejaba **424 px de la tabla fuera
+  de pantalla** tras un gesto horizontal sin señal, con dos desplazadores
+  anidados y 15 de 17 controles por debajo del mínimo táctil. En la app la
+  comparación pasa a ser **vertical y por atributo**: cada característica es un
+  bloque y dentro van los valores, uno por línea, con la identificación a la
+  izquierda y el dato a la derecha; el destacado se pega al valor que lo gana.
+  Medido a 320/390/430 y con 0, 1, 2 y 3 productos: **cero desbordamiento,
+  cero desplazadores, cero superficies anidadas y cero controles por debajo de
+  44 px**. El motor no se toca —`productDecisionData`, «Solo diferencias»
+  activo por defecto, `MAX_COMPARE = 3` y la familia única— y el dominio se
+  comparte en `useComparador`. Sin cabecera pegajosa: es la primera versión y
+  esa pieza se decidirá con el teléfono delante.
 
 **La identidad de un favorito es su identificador exacto.** Durante la
 validación física apareció un fallo real: guardando sólo el iPhone 17 Pro,
