@@ -620,6 +620,130 @@ test.describe('el comparador nativo resuelve lo persistido contra el catálogo',
 })
 
 // ---------------------------------------------------------------------------
+// UN MODELO RETIRADO NO PUEDE SEGUIR OCUPANDO UN HUECO
+//
+// Ocultarlo de lo que se pinta no basta: mientras siga dentro de `compare`,
+// `toggleCompare` lo cuenta contra `MAX_COMPARE` y el hueco queda muerto.
+// Medido antes de esta corrección:
+//
+//   [retirado, 17, 17 Pro]  → 2 visibles, CTA de añadir AUSENTE,
+//                             `banana:compare` con 3 entradas
+//   [r1, r2, r3]            → 0 visibles, SIN estado vacío y SIN CTA:
+//                             una pantalla muerta de la que no se sale
+//
+// DOS CAPAS DISTINTAS, Y NO SE MEZCLAN
+//
+//   PR #94  · ¿la FORMA persistida es utilizable? — `normalizarComparacion`,
+//             que no conoce el catálogo y no debe conocerlo.
+//   Fase D2 · ¿el modelo TODAVÍA existe en el catálogo? — reconciliación de
+//             dominio, en `useComparador`.
+//
+// Un elemento con `id`, `modelSlug` y `family` sigue siendo estructuralmente
+// válido aunque su modelo haya desaparecido: lo primero es parsing, lo segundo
+// es dominio.
+// ---------------------------------------------------------------------------
+
+/** Lo que hay realmente guardado, por modelo y en orden. */
+async function persistidos(page: Page) {
+  return page.evaluate(() =>
+    (JSON.parse(localStorage.getItem('banana:compare') ?? '[]') as { modelSlug: string }[]).map((x) => x.modelSlug),
+  )
+}
+
+test.describe('los modelos retirados no dejan huecos zombis', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('un retirado por delante deja libre el tercer hueco, y se puede usar', async ({ page }) => {
+    await comoApp(page)
+    await conCrudo(page, [minimo('r', 'modelo-retirado'), minimo('a', '17'), minimo('b', '17-pro')])
+    await page.goto('./comparar')
+
+    await expect(page.locator('[data-cmp-producto]')).toHaveCount(2)
+    await expect(page.locator('[data-model-picker-trigger]'), 'el hueco libre se ofrece').toHaveCount(1)
+
+    await page.locator('[data-model-picker-trigger]').click()
+    const dialogo = page.getByRole('dialog', { name: /modelo de/ })
+    await dialogo.getByRole('button', { name: /^Elegir iPhone 17 Pro Max$/ }).click()
+
+    const nombres = await page.locator('[data-cmp-producto] [data-cmp-nombre]').allTextContents()
+    expect(
+      nombres.map((n) => n.trim()),
+      'tres vivos, no cuatro',
+    ).toEqual(['iPhone 17', 'iPhone 17 Pro', 'iPhone 17 Pro Max'])
+    await expect(page.locator('[data-model-picker-trigger]'), 'y ahora sí está lleno').toHaveCount(0)
+  })
+
+  test('lo persistido se reconcilia: el retirado desaparece del almacenamiento', async ({ page }) => {
+    await comoApp(page)
+    await conCrudo(page, [minimo('r', 'modelo-retirado'), minimo('a', '17'), minimo('b', '17-pro')])
+    await page.goto('./comparar')
+    await expect(page.locator('[data-cmp-producto]')).toHaveCount(2)
+
+    await expect
+      .poll(() => persistidos(page), { message: 'sólo quedan los vivos, en su orden' })
+      .toEqual(['17', '17-pro'])
+  })
+
+  test('un retirado en medio no altera el orden de los vivos', async ({ page }) => {
+    await comoApp(page)
+    await conCrudo(page, [minimo('a', '17'), minimo('r', 'modelo-retirado'), minimo('b', '17-pro')])
+    await page.goto('./comparar')
+
+    const nombres = await page.locator('[data-cmp-producto] [data-cmp-nombre]').allTextContents()
+    expect(nombres.map((n) => n.trim())).toEqual(['iPhone 17', 'iPhone 17 Pro'])
+    await expect.poll(() => persistidos(page)).toEqual(['17', '17-pro'])
+    await expect(page.locator('[data-model-picker-trigger]'), 'con el tercer hueco libre').toHaveCount(1)
+  })
+
+  test('con todos retirados se vuelve al vacío normal y se puede empezar', async ({ page }) => {
+    await comoApp(page)
+    await conCrudo(page, [minimo('r1', 'retirado-1'), minimo('r2', 'retirado-2'), minimo('r3', 'retirado-3')])
+    await page.goto('./comparar')
+
+    await expect(page.locator('[data-cmp-vacio]'), 'el estado vacío de verdad').toBeVisible()
+    await expect(page.locator('[data-cmp-producto]')).toHaveCount(0)
+    await expect.poll(() => persistidos(page), { message: 'el almacenamiento queda limpio' }).toEqual([])
+
+    // Y desde ahí se puede volver a comparar.
+    await page.locator('[data-model-picker-trigger]').click()
+    const dialogo = page.getByRole('dialog', { name: /modelo de/ })
+    await dialogo.getByRole('button', { name: /^Elegir iPhone 17 Pro$/ }).click()
+    await expect(page.locator('[data-cmp-producto]')).toHaveCount(1)
+  })
+
+  test('tres vivos siguen llenando el comparador', async ({ page }) => {
+    // La reconciliación no puede debilitar el máximo.
+    await comoApp(page)
+    await conCrudo(page, [minimo('a', '17'), minimo('b', '17-pro'), minimo('c', '17-pro-max')])
+    await page.goto('./comparar')
+
+    await expect(page.locator('[data-cmp-producto]')).toHaveCount(3)
+    await expect(page.locator('[data-model-picker-trigger]'), 'sin cuarto hueco').toHaveCount(0)
+    await expect.poll(() => persistidos(page), 'los tres siguen guardados').toEqual(['17', '17-pro', '17-pro-max'])
+  })
+
+  test('sin nada que reconciliar, el almacenamiento no se reescribe', async ({ page }) => {
+    await comoApp(page)
+    await conCrudo(page, [minimo('a', '17'), minimo('b', '17-pro')])
+    await page.goto('./comparar')
+    await expect(page.locator('[data-cmp-producto]')).toHaveCount(2)
+    await expect.poll(() => persistidos(page)).toEqual(['17', '17-pro'])
+  })
+
+  test('la web tampoco se queda bloqueada por un hueco fantasma', async ({ page }) => {
+    // La reconciliación es dominio compartido: su composición no cambia, pero
+    // el estado sí se limpia.
+    await conCrudo(page, [minimo('r', 'modelo-retirado'), minimo('a', '17'), minimo('b', '17-pro')])
+    await page.goto('./comparar')
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+    await expect.poll(() => persistidos(page)).toEqual(['17', '17-pro'])
+    // Su tercer hueco vacío vuelve a estar disponible.
+    await expect(page.locator('[data-model-picker-trigger]'), 'la web recupera su hueco').toHaveCount(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // UN SOLO DOMINIO PARA LAS DOS SUPERFICIES
 // ---------------------------------------------------------------------------
 
