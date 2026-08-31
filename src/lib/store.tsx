@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { normalizarComparacion } from './comparePersistence'
 
 // ------------------------------------------------------------------
 // Estado del prototipo: carrito, comparador y favoritos.
@@ -98,11 +99,26 @@ const StoreContext = createContext<StoreState | null>(null)
 export const MAX_COMPARE = 3
 export const INSURANCE_PRICE = 8.99
 
-function usePersistent<T>(key: string, initial: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+/**
+ * Estado persistido en `localStorage`.
+ *
+ * El `try/catch` cubre que la clave no exista, que el almacenamiento esté
+ * bloqueado y que el JSON esté roto. Lo que NO puede cubrir es que lo guardado
+ * tenga una forma distinta de la esperada: eso sólo lo sabe quien conoce el
+ * contrato de cada clave, así que se pasa como `sanear`. Es opcional y sólo lo
+ * usa el comparador; esto no pretende ser un sistema de esquemas.
+ */
+function usePersistent<T>(
+  key: string,
+  initial: T,
+  sanear?: (valor: unknown) => T,
+): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
     try {
       const raw = localStorage.getItem(key)
-      return raw ? (JSON.parse(raw) as T) : initial
+      if (!raw) return initial
+      const parsed: unknown = JSON.parse(raw)
+      return sanear ? sanear(parsed) : (parsed as T)
     } catch {
       return initial
     }
@@ -120,7 +136,11 @@ function usePersistent<T>(key: string, initial: T): [T, React.Dispatch<React.Set
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = usePersistent<CartLine[]>('banana:cart', [])
   const [favorites, setFavorites] = usePersistent<string[]>('banana:fav', [])
-  const [compare, setCompare] = usePersistent<CompareItem[]>('banana:compare', [])
+  // Una forma inesperada aquí no rompía sólo el comparador: `Header` y las
+  // tarjetas de producto leen `compare.length`, y sin `ErrorBoundary` una
+  // excepción al pintar deja la aplicación entera en blanco. Ver
+  // `comparePersistence`.
+  const [compare, setCompare] = usePersistent<CompareItem[]>('banana:compare', [], normalizarComparacion)
 
   const value = useMemo<StoreState>(() => {
     const addToCart: StoreState['addToCart'] = (line, qty = 1) => {
