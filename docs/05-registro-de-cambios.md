@@ -8,6 +8,99 @@ actualizado: 2026-08-31
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-08-31 — Fase D cerrada: «Favoritos y comparador se sienten de app»
+
+Con la **PR #95** aprobada, la Fase D queda **completa**. La formaron dos
+entregas, las dos sólo en la app:
+
+- **D1 — Favoritos** (PR #93, merge `34ae588b`): la lista pasa a ser una
+  superficie con una fila por producto, y el dominio se centraliza en
+  `useFavoritos`.
+- **D2 — el comparador** (PR #95): la comparación deja la tabla de columnas y
+  pasa a ser **vertical y por atributo**, con un máximo de **3** productos —una
+  sola fuente de verdad, `MAX_COMPARE` del store—.
+
+Lo que quedó establecido en D2:
+
+- **dominio compartido**: `useComparador` lo consumen las dos superficies, con
+  sus composiciones separadas;
+- **resolución canónica**: una única lista de comparables casa lo persistido
+  con el catálogo vivo, y de ella salen producto, nombre, valores y
+  destacados, así que no puede haber desalineación;
+- **modelos retirados reconciliados fuera del estado**, no sólo de la vista:
+  ya no dejan huecos muertos contra el máximo;
+- **la web conserva su composición histórica** (D-086): HTML renderizado
+  idéntico carácter por carácter, 12 de 12 escenarios.
+
+**Validación física en iPhone aprobada por el usuario**: la implementación
+gusta tal como está, sin cambios adicionales. Revisión técnica independiente
+aprobada. Las decisiones de la fase son las ya existentes —D-085, D-086 y
+D-087—; **no se introdujo ninguna nueva**.
+
+La **siguiente fase no está decidida**.
+
+## 2026-08-31 — Fase D2: el comparador se siente de app
+
+Segunda entrega de la **Fase D**, y **sólo en la app**. En la PR **#95**.
+
+**El problema no era el tamaño de los botones.** La web compara en columnas —A
+| B | C— y en un teléfono esa metáfora no cabe: a 320 px con tres productos,
+`min-w-[720px]` dejaba **424 px de la tabla fuera de pantalla** tras un gesto
+horizontal sin ninguna señal, con **dos desplazadores anidados**, 15 de 17
+controles por debajo del mínimo táctil y 18 superficies dentro de otra.
+Comparar así obligaba a sostener una cifra en la memoria mientras se arrastraba
+para ver la otra.
+
+**En la app la comparación es vertical y por atributo.** Cada característica es
+un bloque y dentro van los valores, uno por línea, con la identificación del
+producto a la izquierda y el dato a la derecha. El «Destaca por…» se pega al
+valor que lo gana en vez de vivir suelto en la cabecera de la columna. Arriba,
+un resumen de una fila por producto —imagen, nombre, precio y sus acciones—, no
+tres tarjetas de catálogo.
+
+Medido a 320, 390 y 430 en los cuatro estados: **0 desbordamiento, 0
+desplazadores horizontales, 0 desplazadores verticales propios, 0 superficies
+anidadas y 0 controles por debajo de 44 px**. Con «Solo diferencias» son 6
+bloques con dos productos y 7 con tres.
+
+**El motor no se toca.** `ESSENTIAL_FIELDS`, `EXTENDED_FIELDS`,
+`FIELD_SECTIONS`, `buildDecisionSections` y `buildDecisionSummary` son los
+mismos, «Solo diferencias» sigue activo por defecto, y `MAX_COMPARE = 3`, la
+familia única y la persistencia no cambian. El dominio entero vive en
+`useComparador` y lo comparten las dos composiciones.
+
+**La identificación corta** dentro de los atributos sale de una regla genérica
+—el prefijo común de palabras de la familia: `iPhone`, `iPad`, `Apple Watch`,
+`AirPods`— con reserva al nombre completo si no lo hay (los Mac), si quedaría
+vacía o si dos productos colisionarían. Sin listas de excepciones.
+
+**Sin cabecera pegajosa**, a propósito: es la primera versión y esa pieza se
+decidirá con el teléfono delante.
+
+**La web no cambia** (D-086): su HTML renderizado es **carácter por carácter
+idéntico** al de `main`, a 390 y 1280, en los cuatro estados y con «Mostrar
+todas».
+
+**Tras la primera revisión técnica** se unificó el dominio: `CompareWeb`
+conservaba todavía el suyo propio, y las etiquetas de la app salían de
+`CompareItem.name`, que según el contrato de la PR #94 puede no venir. Dos
+elementos mínimos legítimos dejaban la app en blanco, y un modelo retirado del
+catálogo aparecía como producto fantasma **atribuyendo cada valor al modelo
+equivocado** —«Más económico» llegó a señalar al más caro— sin lanzar ninguna
+excepción. Ahora existe una única colección resuelta de la que sale todo, los
+contextos se derivan de ella y `MAX_COMPARE` tiene una sola fuente de verdad.
+
+**En una segunda revisión** apareció el último: los modelos retirados se
+ocultaban, pero seguían dentro de `compare` ocupando cupo. Con `[retirado, 17,
+17 Pro]` no había dónde añadir el tercero, y con tres retirados la pantalla
+quedaba sin productos, sin estado vacío y sin salida. Ahora se reconcilian
+**fuera del estado**, conservando el orden de los vivos y sin tocar el
+almacenamiento cuando no hay nada que limpiar. Son dos capas distintas y no se
+mezclan: la PR #94 valida la **forma** persistida y no conoce el catálogo; esto
+comprueba si el modelo **todavía existe**, que es dominio.
+
+Suite `tests/e2e/fase-d2-comparador-app.spec.ts` con 69 casos.
+
 ## 2026-08-31 — Fase D1: Favoritos se siente de app
 
 Primera entrega de la **Fase D — «Favoritos y comparador se sienten de app»**, y

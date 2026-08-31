@@ -128,7 +128,7 @@ Supabase no se duplican ni cambian.
 **Validación física en iPhone aprobada y PR #91 fusionada (merge
 `7fbcfd0665e9ca358b438d80bfa65e1765090e23`): la Fase C queda CERRADA.**
 
-**Fase D — «Favoritos y comparador se sienten de app»: ABIERTA.** La auditoría
+**Fase D — «Favoritos y comparador se sienten de app»: CERRADA.** La auditoría
 posterior a la Fase C midió `/favoritos` como la superficie más lejos del
 estándar nativo —21 superficies con marco, 16 dentro de otra y 24 de 28
 controles por debajo del mínimo táctil—, y es el destino del corazón que
@@ -142,7 +142,28 @@ aparece en todas las tarjetas del catálogo. Se divide en dos entregas:
   quitar o al elegir tienda— se centraliza en `useFavoritos` y lo comparten las
   dos plataformas. **Revisión técnica aprobada y validación física en iPhone
   aprobada.**
-- **D2 — Comparador: PENDIENTE, no empezada.** Su diseño no está decidido.
+- **D2 — Comparador: CERRADA.** La web compara en columnas y en un teléfono esa
+  metáfora no cabe: a 320 px `min-w-[720px]` dejaba **424 px de la tabla fuera
+  de pantalla** tras un gesto horizontal sin señal, con dos desplazadores
+  anidados y 15 de 17 controles por debajo del mínimo táctil. En la app la
+  comparación pasa a ser **vertical y por atributo**: cada característica es un
+  bloque y dentro van los valores, uno por línea, con la identificación a la
+  izquierda y el dato a la derecha; el destacado se pega al valor que lo gana.
+  Medido a 320/390/430 y con 0, 1, 2 y 3 productos: **cero desbordamiento,
+  cero desplazadores, cero superficies anidadas y cero controles por debajo de
+  44 px**. El motor no se toca —`productDecisionData`, «Solo diferencias»
+  activo por defecto, `MAX_COMPARE = 3` —una sola fuente de verdad, la del
+  store— y la familia única. El dominio entero, incluida la resolución de lo
+  persistido contra el catálogo vivo, vive en `useComparador` y lo consumen
+  **las dos** superficies: una única lista resuelta de la que salen producto,
+  nombre, valores y destacados, así que un elemento sin datos de presentación
+  o con un modelo retirado no puede desalinear nada. Y un modelo que **ya no
+  existe en el catálogo** se reconcilia fuera del estado, no sólo de la
+  vista: si sólo se ocultara, seguiría ocupando un cupo de `MAX_COMPARE` y
+  dejaría huecos muertos. Sin cabecera pegajosa: es la primera versión y no
+  hizo falta en la prueba física. **Revisión técnica independiente aprobada y
+  validación física en iPhone aprobada: la implementación gusta tal como
+  está.**
 
 **La identidad de un favorito es su identificador exacto.** Durante la
 validación física apareció un fallo real: guardando sólo el iPhone 17 Pro,
@@ -163,7 +184,14 @@ La web conserva su composición histórica en `/favoritos` (D-086): su HTML
 renderizado es idéntico al de `main` antes de la entrega, salvo por los datos
 correctos que ahora corresponden al estado real de la lista.
 
-**La Fase D no está completa: D2 no ha empezado.**
+**La Fase D queda CERRADA**: sus dos entregas están aprobadas técnica y
+físicamente. La siguiente fase **no está decidida** y no se ha empezado.
+
+Con D2 cerrada, comprar, guardar y comparar se hacen ya con el lenguaje de la
+app: `Home`, `FamilyPage`, `StorePage`, `VariantPage`, `CartPage`,
+`CheckoutPage`, `FavoritesPage` y `ComparePage` tienen composición nativa
+propia y la web conserva la suya (D-086). Quedan sin frontera `ModelPage`
+—que la app no enlaza desde ninguna superficie— y las páginas editoriales.
 
 **Fase B completa (B1 + B2).** La **ficha** nativa también respira: la galería
 pierde el marco y toma el radio del sistema, el favorito deja de separar el

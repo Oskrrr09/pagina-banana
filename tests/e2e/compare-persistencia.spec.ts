@@ -64,6 +64,30 @@ async function pantalla(page: Page) {
   }
 }
 
+/**
+ * El modelo recién elegido se ve en pantalla, en la composición que le toque.
+ *
+ * DOS COMPOSICIONES, LA MISMA PROPIEDAD
+ *
+ * Lo que este caso protege es la RECUPERACIÓN: tras un valor corrupto se puede
+ * volver a comparar, se ve, se persiste bien y aguanta una recarga. Cómo se
+ * ve depende de la plataforma —desde la Fase D2 la app compara atributo a
+ * atributo y ya no monta la cabecera de columnas de la web—, así que cada una
+ * se comprueba contra su propia composición real. No se relaja nada: antes una
+ * sola aserción servía para las dos porque compartían maquetación; ahora hay
+ * una por superficie y ambas son más específicas.
+ */
+async function enPantalla(page: Page, modo: 'app' | 'web') {
+  if (modo === 'app') {
+    await expect(page.locator('[data-cmp-producto]')).toHaveCount(1)
+    await expect(page.locator('[data-cmp-producto] [data-cmp-nombre]')).toHaveText('iPhone 17 Pro')
+    return
+  }
+  await expect(
+    page.getByRole('group', { name: /^Modelos comparados/ }).getByText('iPhone 17 Pro', { exact: true }),
+  ).toBeVisible()
+}
+
 const FORMAS = [
   ['null', 'null'],
   ['un objeto en vez de una lista', '{"a":1}'],
@@ -113,9 +137,7 @@ for (const modo of ['app', 'web'] as const) {
         await expect(dialogo).toBeVisible()
         await dialogo.getByRole('button', { name: /^Elegir iPhone 17 Pro$/ }).click()
         await expect(dialogo).toBeHidden()
-        await expect(
-          page.getByRole('group', { name: /^Modelos comparados/ }).getByText('iPhone 17 Pro', { exact: true }),
-        ).toBeVisible()
+        await enPantalla(page, modo)
 
         // Lo persistido vuelve a ser una lista utilizable.
         const guardado = await page.evaluate(() => JSON.parse(localStorage.getItem('banana:compare') ?? 'null'))
@@ -125,9 +147,7 @@ for (const modo of ['app', 'web'] as const) {
 
         // Y sobrevive a la recarga.
         await page.reload()
-        await expect(
-          page.getByRole('group', { name: /^Modelos comparados/ }).getByText('iPhone 17 Pro', { exact: true }),
-        ).toBeVisible()
+        await enPantalla(page, modo)
       })
     })
   }
@@ -168,21 +188,17 @@ test.describe('una comparación guardada legítima no se toca', () => {
     await conComparacionGuardada(page, DOS)
     await page.goto('./comparar')
 
-    // Por nombre exacto y contando: «iPhone 17» es subcadena de «iPhone 17
-    // Pro», así que una comprobación por texto suelto no distingue las dos
-    // columnas.
-    const nombres = await page.evaluate(() => {
-      const grupo = [...document.querySelectorAll('[role="group"]')].find((g) =>
-        /^Modelos comparados/.test(g.getAttribute('aria-label') ?? ''),
-      )
-      // El precio también va en negrita en la tarjeta; se descarta por el símbolo.
-      return [...(grupo?.querySelectorAll('p.font-bold') ?? [])]
-        .map((p) => (p.textContent ?? '').trim())
-        .filter((texto) => !texto.includes('€'))
-    })
-    expect(nombres, 'las dos columnas guardadas siguen ahí').toEqual(['iPhone 17 Pro', 'iPhone 17'])
+    // Por nombre exacto y en orden: «iPhone 17» es subcadena de «iPhone 17
+    // Pro», así que una comprobación por texto suelto no distingue los dos.
+    // Desde la Fase D2 la app compara atributo a atributo, así que se
+    // comprueba su composición real, no la tabla de la web.
+    const nombres = await page.locator('[data-cmp-producto] [data-cmp-nombre]').allTextContents()
+    expect(
+      nombres.map((n) => n.trim()),
+      'los dos productos guardados siguen ahí',
+    ).toEqual(['iPhone 17 Pro', 'iPhone 17'])
     await expect(page.getByRole('button', { name: 'Solo diferencias' })).toBeVisible()
-    expect(await page.locator('tbody th[scope="row"]').count(), 'con filas de diferencias').toBeGreaterThan(0)
+    expect(await page.locator('[data-cmp-atributo]').count(), 'con bloques de diferencias').toBeGreaterThan(0)
   })
 
   test('un elemento sin datos de presentación se conserva y se resuelve del catálogo', async ({ page }) => {
