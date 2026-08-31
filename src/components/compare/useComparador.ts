@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { MAX_COMPARE, useStore, type CompareItem } from '../../lib/store'
-import { families, getFamilyModels, familyInfo, developedFamilies } from '../../data/products'
+import { families, getFamilyModels, getModel, familyInfo, developedFamilies } from '../../data/products'
 import { buildDecisionSections, buildDecisionSummary, type FamilySlug } from '../../data/productDecisionData'
 import { etiquetasCortas } from './etiquetaCorta'
 import type { Model } from '../../data/types'
@@ -85,12 +85,14 @@ export function useComparador() {
   const parejas = useMemo(() => {
     const out: { item: CompareItem; model: Model }[] = []
     for (const item of compare) {
-      const model = modelos.find((m) => m.slug === item.modelSlug)
+      // La identidad es `family + modelSlug`, no la posición en la lista de la
+      // familia activa: así no depende de qué familia se esté mirando.
+      const model = getModel(item.family, item.modelSlug)
       if (!model) continue
       out.push({ item, model })
     }
     return out
-  }, [compare, modelos])
+  }, [compare])
 
   // Los contextos SALEN de las mismas parejas: misma longitud y mismo orden
   // que `comparables`, así que secciones y resumen no pueden desalinearse.
@@ -164,13 +166,39 @@ export function useComparador() {
     }
   }
 
-  // Compat: si algún accesorio quedó persistido con la family antigua
-  // `accessory:<category>`, se retira en silencio — el comparador es sólo para
-  // dispositivos.
+  // RECONCILIACIÓN CON EL CATÁLOGO VIVO
+  //
+  // Ocultar un modelo retirado de lo que se pinta no basta: mientras siguiera
+  // dentro de `compare`, `toggleCompare` lo contaría contra `MAX_COMPARE` y el
+  // hueco quedaría muerto. Medido antes de esta reconciliación:
+  //
+  //   [retirado, 17, 17 Pro] → 2 visibles y NINGÚN sitio donde añadir el
+  //                            tercero, con 3 entradas guardadas
+  //   [r1, r2, r3]           → 0 visibles, sin estado vacío y sin CTA: una
+  //                            pantalla de la que no se sale
+  //
+  // Por eso el elemento se retira del estado, no sólo de la vista. Y por eso
+  // esto vive aquí y no en `normalizarComparacion`: aquélla comprueba si la
+  // FORMA persistida es utilizable —y no conoce el catálogo, ni debe—; esto
+  // comprueba si el modelo TODAVÍA existe, que es dominio.
+  //
+  // Sólo se afirma que un modelo no existe cuando la familia sí tiene catálogo:
+  // si `getFamilyModels` no devuelve nada no podemos concluir nada, y borrar
+  // por un falso negativo sería peor que dejar el elemento. Y si no hay nada
+  // que retirar no se toca el estado, para no reescribir el almacenamiento en
+  // cada render.
   useEffect(() => {
-    compare.forEach((c) => {
-      if (c.family?.startsWith('accessory:')) removeCompare(c.id)
-    })
+    const aRetirar = compare
+      .filter((c) => {
+        // Accesorios heredados con la family antigua `accessory:<category>`:
+        // el comparador es sólo para dispositivos.
+        if (c.family?.startsWith('accessory:')) return true
+        if (getFamilyModels(c.family).length === 0) return false
+        return !getModel(c.family, c.modelSlug)
+      })
+      .map((c) => c.id)
+    if (aRetirar.length === 0) return
+    aRetirar.forEach(removeCompare)
   }, [compare, removeCompare])
 
   return {
