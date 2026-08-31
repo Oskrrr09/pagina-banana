@@ -1,6 +1,6 @@
 ---
 tipo: estado
-actualizado: 2026-08-31
+actualizado: 2026-09-01
 ---
 
 # Estado actual
@@ -183,6 +183,14 @@ en las dos plataformas. Ver `src/components/favorites/identidadDeFavoritos.ts`.
 La web conserva su composición histórica en `/favoritos` (D-086): su HTML
 renderizado es idéntico al de `main` antes de la entrega, salvo por los datos
 correctos que ahora corresponden al estado real de la lista.
+
+**Auditoría web pre-APP completada.** Comparada la web renderizada contra
+`5201a44` —el padre del primer commit nativo— quedaba **una sola** regresión de
+composición: la tarjeta de producto, que `f3143d85` cambió por una necesidad de
+la app cuando todavía era compartida. Restaurada: vuelve a terminar en su
+distintivo, sin el CTA de comparar, y el favorito recupera su disco de 36 px —el
+área pulsable se queda en 44, que en web móvil es el mínimo táctil—. Los filtros
+de catálogo en URL y la composición de `WebFamilyPage` se conservan a propósito.
 
 **La Fase D queda CERRADA**: sus dos entregas están aprobadas técnica y
 físicamente. La siguiente fase **no está decidida** y no se ha empezado.

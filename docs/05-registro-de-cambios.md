@@ -1,12 +1,52 @@
 ---
 tipo: cambios
-actualizado: 2026-08-31
+actualizado: 2026-09-01
 ---
 	
 # Registro de cambios
 
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
+
+## 2026-09-01 — La tarjeta web vuelve a la de antes de la adaptación nativa
+
+Auditoría de la web contra `5201a44f64185fc962c203d55bb468f77196c5ff` —el padre
+del primer commit nativo— para separar lo que cambió **por decisión APP** de lo
+que son mejoras legítimas. Comparando la web renderizada de aquel commit con la
+actual en 1280 y 390 px, **sólo quedaba una regresión de composición**: la
+tarjeta de producto.
+
+`f3143d85` —«feat(app): Tienda deja el catálogo a un toque»— la tocó cuando
+todavía era una sola, compartida. Su propio mensaje lo dice: «La tarjeta de
+producto gana el botón de comparar que antes solo existía en la ficha, y el
+favorito pasa de 36 a 44 px de lado.» Cuando después se separaron
+`ProductCardWeb` y `ProductCardApp`, la web nació con ese estado ya dentro: la
+frontera llegó tarde para esos dos detalles.
+
+**Qué se restaura.** La tarjeta web vuelve a terminar en su distintivo de precio
+demostrativo —sin el «Añadir a comparar» a todo el ancho— y el favorito
+recupera su disco de 36 px en el mismo sitio de antes. Verificado contra el
+build de la referencia: mismo alto de tarjeta (523 px), mismo texto, un solo
+botón y un solo enlace.
+
+**Qué NO se restaura, y por qué.** El área pulsable del favorito se queda en
+44 px. En la web móvil, 36 es un objetivo táctil por debajo del mínimo y
+perderlo sería una regresión de accesibilidad real, no fidelidad. Se separan las
+dos cosas: el botón es la caja de 44 y el disco de 36 vive centrado dentro. Sin
+`isNativeApp`, sin medir anchos en JS y sin media queries.
+
+**El comparador no se toca.** Sólo deja de poder añadirse desde cada tarjeta del
+catálogo, que es el contrato anterior a la app. Sus entradas siguen siendo las
+de entonces: la ficha de modelo, el selector de `/comparar` y los enlaces del
+listado.
+
+**Se conservan deliberadamente**: los filtros de catálogo con estado en URL, el
+orden, la disponibilidad y el recuento —beneficio de la web, no de la app—, y la
+composición restaurada de `WebFamilyPage`. `CatalogFiltersWeb` no se toca.
+
+**La app no cambia**: su HTML renderizado es idéntico carácter por carácter en
+las ocho rutas comprobadas. No se crea decisión nueva: esto aplica D-085 y
+D-086.
 
 ## 2026-08-31 — Fase D cerrada: «Favoritos y comparador se sienten de app»
 
