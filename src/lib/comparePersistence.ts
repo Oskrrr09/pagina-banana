@@ -41,18 +41,33 @@ import type { CompareItem } from './store'
 // primera escritura legítima vuelve a dejar una lista válida.
 // ============================================================================
 
-/** ¿Este valor sirve como elemento de la comparación? */
+/**
+ * ¿Este valor sirve como elemento de la comparación?
+ *
+ * EL `try` ES POR ELEMENTO, Y ESO IMPORTA
+ *
+ * Estaba alrededor del recorrido entero, así que un elemento que lanzase al
+ * leer una propiedad devolvía la lista vacía y se llevaba por delante a sus
+ * vecinos legítimos. Eso contradecía el contrato —descartar los inservibles
+ * **uno a uno** y conservar los buenos tal cual—, y el caso de «nunca lanza»
+ * no lo detectaba porque pasaba el elemento problemático suelto, nunca entre
+ * hermanos buenos. Aquí cada elemento responde sólo por sí mismo.
+ */
 function esComparable(valor: unknown): valor is CompareItem {
-  if (typeof valor !== 'object' || valor === null) return false
-  const c = valor as Record<string, unknown>
-  return (
-    typeof c.id === 'string' &&
-    c.id.length > 0 &&
-    typeof c.modelSlug === 'string' &&
-    c.modelSlug.length > 0 &&
-    typeof c.family === 'string' &&
-    c.family.length > 0
-  )
+  try {
+    if (typeof valor !== 'object' || valor === null) return false
+    const c = valor as Record<string, unknown>
+    return (
+      typeof c.id === 'string' &&
+      c.id.length > 0 &&
+      typeof c.modelSlug === 'string' &&
+      c.modelSlug.length > 0 &&
+      typeof c.family === 'string' &&
+      c.family.length > 0
+    )
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -67,7 +82,9 @@ export function normalizarComparacion(valor: unknown): CompareItem[] {
     if (!Array.isArray(valor)) return []
     return valor.filter(esComparable)
   } catch {
-    // Un objeto con un getter que lanza no puede tirar la aplicación.
+    // Red de seguridad del RECORRIDO, no de los elementos: de eso se encarga
+    // `esComparable`. Sólo llegaría aquí algo que ni siquiera se deja iterar,
+    // y entonces no hay nada que conservar.
     return []
   }
 }

@@ -84,6 +84,42 @@ describe('normalizar lo guardado en banana:compare', () => {
     expect(normalizarComparacion([{ id: 'a', modelSlug: '17-pro', family: '' }])).toEqual([])
   })
 
+  it('un elemento que lanza al leerlo no arrastra a sus vecinos buenos', () => {
+    // EL AGUJERO QUE ESTE CASO CIERRA
+    //
+    // El `try/catch` estaba alrededor del `filter` entero, así que una
+    // excepción en CUALQUIER elemento devolvía la lista vacía y se llevaba por
+    // delante los legítimos. El caso de «nunca lanza» no lo detectaba porque
+    // pasaba el elemento problemático suelto, nunca entre hermanos buenos.
+    //
+    // Un getter no sobrevive a `JSON.parse`, así que esto no es un flujo de
+    // usuario roto: es el contrato de la frontera `unknown → CompareItem[]`,
+    // que hemos decidido proteger, y decía «descartar uno a uno».
+    const bueno1 = item('a', '17-pro', 'iphone')
+    const bueno2 = item('b', '17', 'iphone')
+    const explosivo = {
+      get id(): string {
+        throw new Error('propiedad hostil')
+      },
+      modelSlug: '17-pro-max',
+      family: 'iphone',
+    }
+
+    expect(() => normalizarComparacion([bueno1, explosivo, bueno2])).not.toThrow()
+    const resultado = normalizarComparacion([bueno1, explosivo, bueno2])
+    expect(resultado).toEqual([bueno1, bueno2])
+    // Y se conservan TAL CUAL: no se copian ni se reconstruyen.
+    expect(resultado[0]).toBe(bueno1)
+    expect(resultado[1]).toBe(bueno2)
+  })
+
+  it('el orden se conserva aunque caigan elementos por el medio', () => {
+    const a = item('a', '17-pro', 'iphone')
+    const b = item('b', '17', 'iphone')
+    const c = item('c', 'air', 'iphone')
+    expect(normalizarComparacion([a, null, b, 'texto', c])).toEqual([a, b, c])
+  })
+
   it('nunca lanza, sea cual sea la entrada', () => {
     const raros: unknown[] = [
       Symbol('x'),
