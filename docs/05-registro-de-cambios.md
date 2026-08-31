@@ -51,8 +51,18 @@ decidirá con el teléfono delante.
 idéntico** al de `main`, a 390 y 1280, en los cuatro estados y con «Mostrar
 todas».
 
-Suite nueva `tests/e2e/fase-d2-comparador-app.spec.ts` con 56 casos. **La Fase
-D sigue abierta: D2 no está cerrada.**
+**Tras la primera revisión técnica** se unificó el dominio: `CompareWeb`
+conservaba todavía el suyo propio, y las etiquetas de la app salían de
+`CompareItem.name`, que según el contrato de la PR #94 puede no venir. Dos
+elementos mínimos legítimos dejaban la app en blanco, y un modelo retirado del
+catálogo aparecía como producto fantasma **atribuyendo cada valor al modelo
+equivocado** —«Más económico» llegó a señalar al más caro— sin lanzar ninguna
+excepción. Ahora existe una única colección resuelta de la que sale todo, los
+contextos se derivan de ella y `MAX_COMPARE` tiene una sola fuente de verdad.
+
+Suite `tests/e2e/fase-d2-comparador-app.spec.ts` con 62 casos. **La Fase D
+sigue abierta: D2 no está cerrada y queda pendiente de nueva revisión técnica y
+de validación física.**
 
 ## 2026-08-31 — Fase D1: Favoritos se siente de app
 

@@ -153,8 +153,12 @@ aparece en todas las tarjetas del catálogo. Se divide en dos entregas:
   Medido a 320/390/430 y con 0, 1, 2 y 3 productos: **cero desbordamiento,
   cero desplazadores, cero superficies anidadas y cero controles por debajo de
   44 px**. El motor no se toca —`productDecisionData`, «Solo diferencias»
-  activo por defecto, `MAX_COMPARE = 3` y la familia única— y el dominio se
-  comparte en `useComparador`. Sin cabecera pegajosa: es la primera versión y
+  activo por defecto, `MAX_COMPARE = 3` —una sola fuente de verdad, la del
+  store— y la familia única. El dominio entero, incluida la resolución de lo
+  persistido contra el catálogo vivo, vive en `useComparador` y lo consumen
+  **las dos** superficies: una única lista resuelta de la que salen producto,
+  nombre, valores y destacados, así que un elemento sin datos de presentación
+  o con un modelo retirado no puede desalinear nada. Sin cabecera pegajosa: es la primera versión y
   esa pieza se decidirá con el teléfono delante.
 
 **La identidad de un favorito es su identificador exacto.** Durante la
