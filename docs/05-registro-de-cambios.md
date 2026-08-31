@@ -8,10 +8,40 @@ actualizado: 2026-08-31
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
-## 2026-08-31 — Fase D2: el comparador se siente de app (sin fusionar)
+## 2026-08-31 — Fase D cerrada: «Favoritos y comparador se sienten de app»
 
-Segunda entrega de la **Fase D**, y **sólo en la app**. Queda **pendiente de
-revisión técnica y de validación física en iPhone**.
+Con la **PR #95** aprobada, la Fase D queda **completa**. La formaron dos
+entregas, las dos sólo en la app:
+
+- **D1 — Favoritos** (PR #93, merge `34ae588b`): la lista pasa a ser una
+  superficie con una fila por producto, y el dominio se centraliza en
+  `useFavoritos`.
+- **D2 — el comparador** (PR #95): la comparación deja la tabla de columnas y
+  pasa a ser **vertical y por atributo**, con un máximo de **3** productos —una
+  sola fuente de verdad, `MAX_COMPARE` del store—.
+
+Lo que quedó establecido en D2:
+
+- **dominio compartido**: `useComparador` lo consumen las dos superficies, con
+  sus composiciones separadas;
+- **resolución canónica**: una única lista de comparables casa lo persistido
+  con el catálogo vivo, y de ella salen producto, nombre, valores y
+  destacados, así que no puede haber desalineación;
+- **modelos retirados reconciliados fuera del estado**, no sólo de la vista:
+  ya no dejan huecos muertos contra el máximo;
+- **la web conserva su composición histórica** (D-086): HTML renderizado
+  idéntico carácter por carácter, 12 de 12 escenarios.
+
+**Validación física en iPhone aprobada por el usuario**: la implementación
+gusta tal como está, sin cambios adicionales. Revisión técnica independiente
+aprobada. Las decisiones de la fase son las ya existentes —D-085, D-086 y
+D-087—; **no se introdujo ninguna nueva**.
+
+La **siguiente fase no está decidida**.
+
+## 2026-08-31 — Fase D2: el comparador se siente de app
+
+Segunda entrega de la **Fase D**, y **sólo en la app**. En la PR **#95**.
 
 **El problema no era el tamaño de los botones.** La web compara en columnas —A
 | B | C— y en un teléfono esa metáfora no cabe: a 320 px con tres productos,
@@ -69,9 +99,7 @@ almacenamiento cuando no hay nada que limpiar. Son dos capas distintas y no se
 mezclan: la PR #94 valida la **forma** persistida y no conoce el catálogo; esto
 comprueba si el modelo **todavía existe**, que es dominio.
 
-Suite `tests/e2e/fase-d2-comparador-app.spec.ts` con 69 casos. **La Fase D
-sigue abierta: D2 no está cerrada y queda pendiente de nueva revisión técnica y
-de validación física.**
+Suite `tests/e2e/fase-d2-comparador-app.spec.ts` con 69 casos.
 
 ## 2026-08-31 — Fase D1: Favoritos se siente de app
 
