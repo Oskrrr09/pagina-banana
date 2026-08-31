@@ -60,7 +60,16 @@ equivocado** —«Más económico» llegó a señalar al más caro— sin lanzar
 excepción. Ahora existe una única colección resuelta de la que sale todo, los
 contextos se derivan de ella y `MAX_COMPARE` tiene una sola fuente de verdad.
 
-Suite `tests/e2e/fase-d2-comparador-app.spec.ts` con 62 casos. **La Fase D
+**En una segunda revisión** apareció el último: los modelos retirados se
+ocultaban, pero seguían dentro de `compare` ocupando cupo. Con `[retirado, 17,
+17 Pro]` no había dónde añadir el tercero, y con tres retirados la pantalla
+quedaba sin productos, sin estado vacío y sin salida. Ahora se reconcilian
+**fuera del estado**, conservando el orden de los vivos y sin tocar el
+almacenamiento cuando no hay nada que limpiar. Son dos capas distintas y no se
+mezclan: la PR #94 valida la **forma** persistida y no conoce el catálogo; esto
+comprueba si el modelo **todavía existe**, que es dominio.
+
+Suite `tests/e2e/fase-d2-comparador-app.spec.ts` con 69 casos. **La Fase D
 sigue abierta: D2 no está cerrada y queda pendiente de nueva revisión técnica y
 de validación física.**
 

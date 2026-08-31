@@ -158,7 +158,10 @@ aparece en todas las tarjetas del catálogo. Se divide en dos entregas:
   persistido contra el catálogo vivo, vive en `useComparador` y lo consumen
   **las dos** superficies: una única lista resuelta de la que salen producto,
   nombre, valores y destacados, así que un elemento sin datos de presentación
-  o con un modelo retirado no puede desalinear nada. Sin cabecera pegajosa: es la primera versión y
+  o con un modelo retirado no puede desalinear nada. Y un modelo que **ya no
+  existe en el catálogo** se reconcilia fuera del estado, no sólo de la
+  vista: si sólo se ocultara, seguiría ocupando un cupo de `MAX_COMPARE` y
+  dejaría huecos muertos. Sin cabecera pegajosa: es la primera versión y
   esa pieza se decidirá con el teléfono delante.
 
 **La identidad de un favorito es su identificador exacto.** Durante la
