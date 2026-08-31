@@ -3,6 +3,7 @@ import { useStore } from '../../lib/store'
 import { useStorePreference } from '../../lib/storePreference'
 import { useFavoriteAlerts } from '../../lib/favoriteAlerts'
 import { allModels } from '../../data/products'
+import { modelosFavoritos } from './identidadDeFavoritos'
 import type { Model } from '../../data/types'
 
 /**
@@ -38,10 +39,9 @@ export function useFavoritos() {
     getAlertForProduct,
   } = useFavoriteAlerts()
 
-  const favModels = useMemo<Model[]>(
-    () => allModels.filter((m) => favorites.some((f) => f.startsWith(`${m.family}/${m.slug}`))),
-    [favorites],
-  )
+  // Identidad exacta, no por prefijo: ver `identidadDeFavoritos`. Con
+  // `startsWith`, guardar el iPhone 17 Pro traía también al iPhone 17.
+  const favModels = useMemo<Model[]>(() => modelosFavoritos(allModels, favorites), [favorites])
 
   const trackedAlerts = alerts.filter((a) => a.enabled)
 

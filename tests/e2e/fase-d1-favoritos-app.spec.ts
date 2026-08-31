@@ -404,6 +404,116 @@ test.describe('favoritos nativos: el comportamiento no cambia', () => {
 })
 
 // ---------------------------------------------------------------------------
+// IDENTIDAD: UN FAVORITO ES UN MODELO EXACTO
+//
+// Lo encontró la validación física de D1: guardando sólo el iPhone 17 Pro
+// aparecían dos filas, la suya y la del iPhone 17. La lista se reconstruía con
+// `startsWith`, que no pregunta «¿está guardado este modelo?» sino «¿empieza
+// algún favorito por su identificador?», y `"iphone/17-pro"` empieza por
+// `"iphone/17"`. El almacenamiento era correcto: se guardaba un solo id.
+//
+// El censo del catálogo (ver `tests/unit/favoritos-identidad.test.ts`) da tres
+// modelos afectados, no uno: `17-pro-max` arrastraba DOS fantasmas y
+// `airpods-4-anc` arrastraba `airpods-4`.
+//
+// Las aserciones son por cantidad exacta y por rótulo exacto: «iPhone 17» es
+// subcadena de «iPhone 17 Pro», así que un `toContainText` diría que todo va
+// bien con el defecto puesto.
+// ---------------------------------------------------------------------------
+
+/** Los rótulos de las filas de favoritos, tal cual se pintan. */
+async function rotulos(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('[data-fav-item] h3')].map((h) => (h.textContent ?? '').trim()),
+  )
+}
+
+for (const [guardado, esperado] of [
+  ['iphone/17-pro', 'iPhone 17 Pro'],
+  ['iphone/17', 'iPhone 17'],
+  ['iphone/17-pro-max', 'iPhone 17 Pro Max'],
+  ['airpods/airpods-4-anc', 'AirPods 4 con Cancelación Activa de Ruido'],
+] as const) {
+  test.describe(`guardar sólo ${guardado} en la app`, () => {
+    test.use({ viewport: { width: 390, height: 844 } })
+
+    test(`enseña «${esperado}» y ningún modelo más`, async ({ page }) => {
+      await comoApp(page)
+      await conFavoritos(page, [guardado])
+      await page.goto('./favoritos')
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+      await expect(page.locator('[data-fav-item]'), 'una sola fila').toHaveCount(1)
+      expect(await rotulos(page), 'y es exactamente el modelo guardado').toEqual([esperado])
+      // El enlace apunta al modelo guardado, no a un vecino de nombre parecido.
+      const destino = await page.locator('[data-fav-item] a').first().getAttribute('href')
+      expect(destino).toContain(`/${guardado.split('/')[0]}/${guardado.split('/')[1]}/`)
+    })
+  })
+}
+
+test.describe('la identidad de los favoritos en la app', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('guardar los dos enseña los dos, y quitar uno deja el otro', async ({ page }) => {
+    await comoApp(page)
+    await conFavoritos(page, ['iphone/17-pro', 'iphone/17'])
+    await page.goto('./favoritos')
+
+    await expect(page.locator('[data-fav-item]')).toHaveCount(2)
+    expect((await rotulos(page)).sort()).toEqual(['iPhone 17', 'iPhone 17 Pro'])
+
+    await page.getByRole('button', { name: 'Quitar iPhone 17 Pro de favoritos' }).click()
+    await expect(page.locator('[data-fav-item]')).toHaveCount(1)
+    expect(await rotulos(page), 'queda el que no se quitó').toEqual(['iPhone 17'])
+  })
+
+  test('el seguimiento del 17 Pro no toca al 17 ni deja un aviso fantasma', async ({ page }) => {
+    await comoApp(page)
+    await conFavoritos(page, ['iphone/17-pro'])
+    await page.goto('./favoritos')
+    await activarSeguimiento(page, PRODUCTO, TIENDA)
+
+    await expect(page.locator('[data-fav-avisos] [data-fav-aviso]'), 'un solo aviso').toHaveCount(1)
+    expect(
+      await page.evaluate(() =>
+        [...document.querySelectorAll('[data-fav-aviso] p')].map((p) => (p.textContent ?? '').trim()),
+      ),
+      'y es el del producto guardado',
+    ).toContain(PRODUCTO)
+
+    await page.getByRole('button', { name: `Quitar ${PRODUCTO} de favoritos` }).click()
+    await expect(page.locator('[data-fav-avisos]'), 'sin favorito no queda su aviso').toHaveCount(0)
+    await expect(page.locator('[data-fav-vacio]'), 'y la lista queda vacía de verdad').toBeVisible()
+  })
+})
+
+test.describe('la identidad de los favoritos en la web', () => {
+  test.use({ viewport: { width: 1280, height: 900 } })
+
+  test('la web tampoco arrastra el modelo vecino', async ({ page }) => {
+    // El defecto vivía en el dominio compartido: la web pintaba el mismo
+    // fantasma. No es un contrato de la app.
+    await conFavoritos(page, ['iphone/17-pro'])
+    await page.goto('./favoritos')
+    await expect(page.getByRole('heading', { name: 'Favoritos', level: 1 })).toBeVisible()
+
+    const tarjetas = page.getByRole('listitem').filter({ has: page.getByRole('heading', { level: 3 }) })
+    await expect(tarjetas, 'una sola tarjeta').toHaveCount(1)
+    expect(
+      await page.evaluate(() => [...document.querySelectorAll('main h3')].map((h) => (h.textContent ?? '').trim())),
+    ).toEqual(['iPhone 17 Pro'])
+  })
+
+  test('y con los dos guardados enseña los dos', async ({ page }) => {
+    await conFavoritos(page, ['iphone/17-pro', 'iphone/17'])
+    await page.goto('./favoritos')
+    const tarjetas = page.getByRole('listitem').filter({ has: page.getByRole('heading', { level: 3 }) })
+    await expect(tarjetas).toHaveCount(2)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // LA WEB SIGUE IGUAL (D-086)
 // ---------------------------------------------------------------------------
 
