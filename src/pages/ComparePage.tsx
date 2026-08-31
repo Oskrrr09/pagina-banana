@@ -8,6 +8,8 @@ import { Chip } from '../components/ui/Chip'
 import { ProductImage } from '../components/product/ProductImage'
 import { ProvisionalBadge } from '../components/ui/Tag'
 import { ModelPickerDialog } from '../components/compare/ModelPickerDialog'
+import { CompareApp } from '../components/compare/CompareApp'
+import { isNativeApp } from '../lib/nativeApp'
 import { useStore } from '../lib/store'
 import { families, getFamilyModels, familyInfo, developedFamilies, productImage, variantPath } from '../data/products'
 import type { Model } from '../data/types'
@@ -37,7 +39,27 @@ import { buildDecisionSections, buildDecisionSummary, type FamilySlug } from '..
 
 const MAX_SLOTS = 3
 
+/**
+ * El comparador.
+ *
+ * LA FRONTERA
+ *
+ * La web compara en columnas y la app compara atributo a atributo: no es el
+ * mismo diseño en dos anchos, son dos composiciones. El dominio —qué familia,
+ * qué modelos, qué atributos difieren, quién gana cada uno y qué pasa al
+ * añadir, sustituir o quitar— vive en `useComparador` y lo comparten las dos.
+ *
+ * La plataforma se decide **una sola vez**, aquí, como en `Home`, `FamilyPage`
+ * y Favoritos. D-085 y D-087: bifurcar donde diverge la presentación, sin
+ * duplicar lo que hace la página.
+ */
 export function ComparePage() {
+  if (isNativeApp) return <CompareApp />
+  return <CompareWeb />
+}
+
+/** La composición histórica de la web. No cambia (D-086). */
+function CompareWeb() {
   const t = useT()
   const { compare, toggleCompare, removeCompare, replaceCompareItem, addToCart, toggleFavorite, isFavorite } =
     useStore()

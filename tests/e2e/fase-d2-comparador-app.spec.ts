@@ -78,7 +78,15 @@ async function geometria(page: Page) {
     if (!raiz) return null
     const dentro = [raiz, ...raiz.querySelectorAll('*')] as HTMLElement[]
 
+    // Los `sr-only` quedan fuera: miden 1 px de ancho con el texto sin
+    // envolver, así que su `scrollWidth` siempre excede al `clientWidth` por
+    // construcción. No son superficies visibles y contarlos sería ruido.
+    const visible = (e: HTMLElement) => {
+      const r = e.getBoundingClientRect()
+      return r.width > 2 && r.height > 2
+    }
     const desbordanH = dentro
+      .filter(visible)
       .filter((e) => e.scrollWidth > e.clientWidth + 1)
       .map((e) => ({
         etiqueta: e.tagName.toLowerCase() + (e.dataset.cmpAtributo ? '[atributo]' : ''),
@@ -387,7 +395,10 @@ test.describe('el comparador nativo funciona igual por dentro', () => {
       .nth(1)
       .getByRole('button', { name: /Cambiar/ })
       .click()
-    const dialogo = page.getByRole('dialog', { name: /^Elegir modelo de/ })
+    // En modo sustitución el diálogo se titula «Cambiar modelo de…», no
+    // «Elegir modelo de…»: es el mismo componente con otro rótulo.
+    const dialogo = page.getByRole('dialog', { name: /modelo de/ })
+    await expect(dialogo).toBeVisible()
     await dialogo.getByRole('button', { name: /iPhone Air/ }).click()
 
     const nombres = await page.locator('[data-cmp-producto] [data-cmp-nombre]').allTextContents()
