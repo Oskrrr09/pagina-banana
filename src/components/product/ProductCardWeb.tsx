@@ -39,22 +39,8 @@ export function ProductCardWeb({
    */
   priority?: boolean
 }) {
-  const {
-    t,
-    intl,
-    cat,
-    nombre,
-    color,
-    oferta,
-    destino,
-    favorito,
-    alternarFavorito,
-    comparando,
-    comparadorLleno,
-    alternarComparar,
-    etiquetaFavorito,
-    etiquetaComparar,
-  } = useTarjetaDeProducto(model)
+  const { t, intl, cat, nombre, color, oferta, destino, favorito, alternarFavorito, etiquetaFavorito } =
+    useTarjetaDeProducto(model)
 
   if (loading) {
     return (
@@ -72,13 +58,27 @@ export function ProductCardWeb({
       data-product-card-surface="web"
       className="group relative flex h-full min-h-[400px] flex-col rounded-[12px] border border-line bg-surface p-4 transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-banana hover:shadow-[var(--shadow-raised)]"
     >
+      {/* LO QUE SE VE Y LO QUE SE PULSA, SEPARADOS
+          Antes de la adaptación nativa este botón era un disco de 36 px a 20 px
+          del borde. `f3143d85` lo llevó a 44 y a 12 px por una necesidad de la
+          app, sobre la tarjeta que entonces era única.
+          Aquí vuelve su aspecto —36 px, a 20 del borde— sin devolver el área
+          pulsable a 36: en la web móvil eso está por debajo del mínimo táctil y
+          perderlo sería una regresión de accesibilidad de verdad, no fidelidad.
+          Así que el BOTÓN es la caja de 44 y el DISCO vive centrado dentro: 44
+          menos 36 son 8, cuatro por lado, así que con la caja a 16 px del borde
+          el disco queda a los 20 de siempre.
+          Sin `isNativeApp`, sin medir anchos en JS y sin media queries: es la
+          misma geometría en todos los anchos. */}
       <button
         onClick={alternarFavorito}
         aria-label={etiquetaFavorito}
         aria-pressed={favorito}
-        className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full bg-surface/80 text-muted backdrop-blur transition-colors hover:text-danger"
+        className="absolute right-4 top-4 z-10 grid h-11 w-11 place-items-center text-muted transition-colors hover:text-danger"
       >
-        <Icon name="heart" className={favorito ? 'fill-danger text-danger' : ''} />
+        <span data-fav-superficie className="grid h-9 w-9 place-items-center rounded-full bg-surface/80 backdrop-blur">
+          <Icon name="heart" className={favorito ? 'fill-danger text-danger' : ''} />
+        </span>
       </button>
 
       {oferta && (
@@ -123,24 +123,13 @@ export function ProductCardWeb({
         <ProvisionalBadge label={t('common.demoPrice')} />
       </div>
 
-      <button
-        type="button"
-        onClick={alternarComparar}
-        aria-label={etiquetaComparar}
-        aria-pressed={comparando}
-        disabled={comparadorLleno}
-        className={`mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] border text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-          comparando ? 'border-ink bg-ink text-white' : 'border-line bg-surface text-ink hover:border-ink/30'
-        }`}
-      >
-        <Icon name="compare" size={16} aria-hidden="true" />
-        {comparando ? t('compare.added') : t('product.addToCompare')}
-      </button>
-      {comparadorLleno && <p className="mt-1 text-xs text-muted">{t('compare.full')}</p>}
-      {/* La llamada a abrir el comparador NO vive aquí: es del listado.
-          Pintándola dentro de cada tarjeta seleccionada aparecían dos enlaces
-          idénticos con dos modelos comparados, y tres con tres. El catálogo la
-          pinta una sola vez —ver `WebFamilyPage`—. */}
+      {/* AQUÍ TERMINABA LA TARJETA ANTES DE LA APP, Y AQUÍ VUELVE A TERMINAR
+          `f3143d85` le añadió un «Añadir a comparar» a todo el ancho por una
+          necesidad del catálogo nativo. En la web el comparador se alimenta de
+          donde se alimentaba: la ficha de modelo, el selector de `/comparar` y
+          los enlaces del propio listado. La capacidad de comparar no se toca:
+          `useTarjetaDeProducto` la sigue exponiendo y `ProductCardApp` la sigue
+          usando. */}
     </div>
   )
 }

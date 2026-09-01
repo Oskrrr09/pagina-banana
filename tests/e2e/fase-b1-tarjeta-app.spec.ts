@@ -225,15 +225,33 @@ test.describe('la búsqueda nativa conserva el aviso de precios', () => {
 })
 
 test.describe('B1 no toca la web', () => {
-  test('la tarjeta web conserva descripción, distintivo y botón de comparar', async ({ page }) => {
+  // QUÉ FIJA ESTE CASO, Y QUÉ CAMBIÓ DESPUÉS
+  //
+  // Lo que protege es que la Fase B1 —el rediseño de la tarjeta NATIVA— no se
+  // llevó por delante la de la web: su descripción, su distintivo y su propia
+  // composición siguen siendo los suyos, y en el navegador no se monta ninguna
+  // tarjeta de app. Eso sigue siendo cierto y sigue comprobándose.
+  //
+  // Lo que ha cambiado es una de las pruebas que se usaban como evidencia. Este
+  // caso citaba el botón «Comparar» de la tarjeta web para señalar que allí
+  // seguía siendo un botón con texto y no el icono de la app. Ese botón ya no
+  // existe en la web: lo había añadido `f3143d85` por una necesidad del
+  // catálogo nativo, sobre la tarjeta que entonces era única, y la restauración
+  // pre-APP lo ha retirado. Su ausencia se comprueba ahora donde le toca, en
+  // `tests/e2e/web-tarjeta-pre-app.spec.ts`.
+  //
+  // Así que la evidencia se sustituye por otra igual de específica —el enlace
+  // único a la ficha y el favorito, que son de la web y sólo suyos— y la
+  // intención del caso no se toca.
+  test('la tarjeta web conserva su descripción, su distintivo y su composición', async ({ page }) => {
     await page.goto('./iphone')
 
     const tarjeta = page.locator('[data-product-card-surface="web"]').first()
     await expect(tarjeta).toBeVisible()
     await expect(tarjeta.getByText('La pantalla más grande y la mayor autonomía.')).toBeVisible()
     await expect(tarjeta.getByText('Precio demostrativo')).toBeVisible()
-    // En la web sigue siendo un botón con texto, no un icono.
-    await expect(tarjeta.getByRole('button', { name: /^Comparar / })).toContainText(/comparar/i)
+    await expect(tarjeta.locator('a[href]'), 'un único enlace a su ficha').toHaveCount(1)
+    await expect(tarjeta.locator('button[aria-label*="favoritos"]'), 'y su favorito').toHaveCount(1)
     await expect(page.locator('[data-product-card-surface="app"]'), 'y ninguna tarjeta de app').toHaveCount(0)
   })
 })
