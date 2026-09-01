@@ -1,12 +1,18 @@
-# Banana Computer — Prototipo navegable (Fase 2)
+# Banana Computer — Prototipo navegable
 
-Prototipo de demostración de la nueva web de Banana Computer. SPA construida
-sobre React + Vite + TypeScript y publicada en GitHub Pages.
+Prototipo de demostración de una tienda Apple para Banana Computer. Una sola
+SPA de React + Vite + TypeScript que se sirve como **tres superficies**:
+
+- **Web** pública, publicada en GitHub Pages;
+- **tienda nativa** para iOS y Android, empaquetada con Capacitor;
+- **panel de agentes** en `/agente`, instalable como PWA.
 
 > ⚠️ **Demostración conceptual.** Ningún precio, condición, stock, pedido, pago
-> o email es real. Los datos aparecen etiquetados como _Precio demostrativo_,
-> _Pedido de demostración_, _Condición demostrativa_, _Stock de ejemplo_ o
-> _Pendiente de validación con Banana Computer_.
+> o email es real. No hay pasarela de pago, ni inventario, ni pedidos
+> comerciales, ni integración definitiva con Banana Computer. Los datos
+> aparecen etiquetados como _Precio demostrativo_, _Pedido de demostración_,
+> _Condición demostrativa_, _Stock de ejemplo_ o _Pendiente de validación con
+> Banana Computer_.
 
 **URL pública:** <https://oskrrr09.github.io/pagina-banana/>
 
@@ -14,14 +20,17 @@ sobre React + Vite + TypeScript y publicada en GitHub Pages.
 
 | Pieza | Versión efectiva |
 | --- | --- |
-| Node.js | 24 (versión utilizada en GitHub Actions) |
+| Node.js | 24 (`.nvmrc` y GitHub Actions) |
 | React / React DOM | 18.3.1 |
 | React Router DOM | 7.18.2 |
 | Motion (`motion/react`) | 11.x |
-| Vite | 6.x |
-| TypeScript | 5.x |
-| Tailwind CSS (+ plugin de Vite) | 4.x |
+| Vite | 6.4.x |
+| TypeScript | 5.9.x |
+| Tailwind CSS (+ plugin de Vite) | 4.3.x |
+| Capacitor (`core`, `ios`, `android`, `splash-screen`) | 8.4.x |
 | Playwright | 1.62 |
+| Vitest | 4.x |
+| Supabase | proyecto de demostración + local para pruebas |
 
 ## Arrancar y verificar
 
@@ -76,6 +85,68 @@ binarios se compilaron y ejecutaron en un simulador iOS y un emulador Android
 el 2026-08-01; los requisitos y lo que hace falta para publicar de verdad están en
 [`docs/06-app-nativa.md`](docs/06-app-nativa.md).
 
+## Arquitectura: una base, dos composiciones
+
+El principio que sostiene el proyecto y que **no conviene romper al
+retomarlo**:
+
+> Compartir dominio no significa compartir composición.
+
+Web y app comparten repositorio, cadena de herramientas, datos, tipos, precios,
+ofertas, rutas, estado, persistencia y la mayor parte del código. Lo que puede
+diverger es **cómo se ve y cómo se toca**.
+
+**El build no es el mismo**: `npm run build` produce `dist/` para la web
+publicada y `npm run build:app` produce `dist-app/`, con base `/`, para
+Capacitor. Dos artefactos del mismo código.
+
+La plataforma se resuelve una sola vez al arrancar, en
+[`src/lib/nativeApp.ts`](src/lib/nativeApp.ts):
+
+```ts
+export const isNativeApp = Boolean(window.Capacitor)
+```
+
+Capacitor inyecta `window.Capacitor` en el WebView antes del bundle, así que el
+valor no cambia durante la vida de la aplicación. En las pruebas E2E se simula
+con `window.Capacitor = {}` desde un `addInitScript`.
+
+Se consulta en **fronteras explícitas de plataforma** —una página elige entre
+dos composiciones— o en **divergencias locales deliberadas y pequeñas**, que es
+lo que hacen `VariantPage`, `CartPage` y `CheckoutPage` (D-087). Lo que no debe
+hacer es dispersarse por la composición ni dejar que una necesidad visual de la
+app mueva la web.
+
+**Dónde se decide**, comprobado contra el código:
+
+| Superficie | Cómo diverge |
+| --- | --- |
+| `Home` | la página elige: `AppCustomerHome` en la app, composición web aparte |
+| `FamilyPage` | elige entre `WebFamilyPage` y `AppFamilyPage` |
+| `ComparePage` | elige entre `CompareWeb` y `CompareApp`; el dominio vive en `useComparador` |
+| `FavoritesPage` | elige entre su composición web y `FavoritesApp`; el dominio, en `useFavoritos` |
+| Tarjeta de producto | `ProductCardWeb` y `ProductCardApp`, con el comportamiento en `useTarjetaDeProducto`. `ProductCardCompact` es aparte: sólo la usan los carriles nativos |
+| `SearchPage` | comparte composición y sólo escoge la tarjeta |
+| `VariantPage`, `CartPage`, `CheckoutPage` | **una sola página compartida** con divergencias locales contadas, no dos páginas |
+| `CheckoutLayout` | armazón propio, con modelo de scroll nativo en la app |
+| `ModelPage` y las páginas editoriales | compartidas, sin frontera |
+
+**Por qué a veces una página entera y a veces tres nodos.** Cuando divergen la
+estructura y el público —una portada de escaparate frente a una de cliente—,
+salpicar condicionales por doce secciones deja un archivo que nadie lee entero.
+Cuando divergen tres detalles, duplicar la página garantiza que las dos copias
+se separen sin que nadie se entere. El criterio está escrito en D-085, D-086 y
+D-087.
+
+**Dominio compartido, y no duplicado**: `useStore` (carrito, favoritos,
+comparador y su persistencia), `useCheckoutState`, `productDecisionData`,
+`useFavoritos`, `useComparador` y `useTarjetaDeProducto`. Las composiciones
+consumen; no reimplementan.
+
+El detalle y el porqué de cada decisión están en
+[`docs/02-decisiones.md`](docs/02-decisiones.md) — especialmente **D-085** a
+**D-090**.
+
 ## Catálogo desarrollado
 
 Cinco familias con datos, imágenes locales y variantes reales:
@@ -86,7 +157,7 @@ Cinco familias con datos, imágenes locales y variantes reales:
 | **Mac** | 8 (MacBook Neo, Air M4/M5, Pro M4/M5, iMac 24" M4, Mac Studio, Mac mini M4) | Imágenes oficiales optimizadas en WebP |
 | **iPad** | 4 (Pro, Air, mini, A16) | Pulgada seleccionable dentro de la ficha |
 | **Apple Watch** | 3 (Ultra 3, Series 11, SE 3) | Tamaño y GPS/Cellular seleccionables (excepto Ultra) |
-| **AirPods** | 2 (Pro 3, Max) | 5 colores de AirPods Max |
+| **AirPods** | 4 (Pro 3, 4 con Cancelación Activa de Ruido, 4, Max) | 5 colores de AirPods Max |
 
 **Accesorios** reúne 18 modelos demostrativos y fichas propias bajo
 `/accesorios`, con
@@ -116,14 +187,24 @@ src/
     layout/             Header + MegaMenu + MobileMenu, Footer, Layout,
                         CheckoutLayout, ChatBubble, Logo
     home/               HeroCarousel, BentoShowcase, StoreCarousel
-    product/            ProductCard, ProductImage, FinanceSimulator, StorePicker
-  pages/                Home, Family, Model, Variant, Search, Compare,
+    product/            ProductCardWeb / ProductCardApp / ProductCardCompact,
+                        useTarjetaDeProducto, CatalogFiltersWeb/App,
+                        ProductImage, FinanceSimulator, StorePicker
+    family/             WebFamilyPage, AppFamilyPage
+    home/app/           AppCustomerHome y sus secciones
+    favorites/          FavoritesApp, useFavoritos, identidadDeFavoritos
+    compare/            CompareApp, useComparador, ModelPickerDialog
+  pages/                Home, Family, Model, Variant, Search, Compare, Store,
                         Cart, Checkout, Services, PlanRenove, Stores,
-                        StoreDetail, Support, Favorites, NotFound
+                        StoreDetail, Support, ServiceTechnical, Favorites,
+                        Accessories, AppleFinder, Login, Register, Profile,
+                        MyProducts, Agent, NotFound
 tests/e2e/              Pruebas Playwright de interfaz y accesibilidad
+tests/unit/             Vitest sobre dominio y utilidades
 tests/schema/           Instalación, actualización y RLS en PGlite
 tests/rls/              GoTrue/PostgREST/Storage en Supabase dedicado
-docs/                   Documentación viva (00–05 + sesiones)
+tests/integration/      Flujos autenticados contra Supabase local
+docs/                   Documentación viva (00–09 + sesiones)
 public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 ```
 
@@ -132,7 +213,8 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 | Ruta | Pantalla |
 | --- | --- |
 | `/` | Portada (empieza directamente por el `HeroCarousel` — sin `<h1>` por decisión visual consciente) |
-| `/:family` | Familia (`iphone`, `mac`, `ipad`, `apple-watch`, `airpods` usan `ShowcaseFamilyPage`) |
+| `/tienda` | Catálogo de la app nativa. En el navegador redirige a `/` |
+| `/:family` | Familia (`iphone`, `mac`, `ipad`, `apple-watch`, `airpods`). Web y app montan composiciones distintas: `WebFamilyPage` / `AppFamilyPage` |
 | `/:family/:model` | Modelo (redirige a la variante base) |
 | `/:family/:model/:variant` | Ficha con selectores de color, capacidad y (según modelo) tamaño |
 | `/buscar?q=…` | Buscador sincronizado con la URL |
@@ -149,7 +231,11 @@ public/img/             WebP optimizados (~2,9 MB para todo el catálogo)
 | `/soporte` | Centro de soporte (buscador, FAQ, acceso al Servicio Técnico y activador de la guía **Preparar mi dispositivo**) |
 | `/servicio-tecnico` | **Servicio Técnico Autorizado**: sin cita, checklist, entrega, garantía / fuera de garantía y plazos orientativos |
 | `/tiendas`, `/tiendas/:slug` | Google Maps embed con las 5 tiendas |
-| `/favoritos` | Favoritos del usuario |
+| `/favoritos` | Favoritos, con seguimiento de disponibilidad. Composición propia en la app |
+| `/login`, `/registro` | Acceso y alta de cliente (Supabase Auth) |
+| `/cuenta`, `/cuenta/:apartado` | Mi cuenta: datos, direcciones, pedidos, reservas, descuento educativo y favoritos |
+| `/mis-productos` | Dispositivos comprados, con acceso a Mis pedidos |
+| `/agente`, `/agente/login` | Panel interno de agentes, instalable como PWA |
 | `*` | 404 amable |
 
 ## Checkout blindado
@@ -430,7 +516,7 @@ conteo debe tomarse siempre de Playwright, no mantenerse a mano en esta lista.
   con tamaño y GPS/Cellular preservados al alternar, y navegación entre
   pasos del checkout sin errores de hooks en consola.
 - `tests/e2e/favorites-compare.spec.ts` — flujo real de usuario: añadir
-  y quitar favoritos desde el `ProductCard` de `/iphone` y `/favoritos`,
+  y quitar favoritos desde la tarjeta de producto de `/iphone` y `/favoritos`,
   y añadir dos productos al comparador desde `/iphone/17-pro` usando los
   checkboxes "Añadir a comparar", verlos en `/comparar` y vaciarlo con
   los botones "Quitar". **No se preselecciona nada en `localStorage`.**
@@ -493,12 +579,20 @@ conteo debe tomarse siempre de Playwright, no mantenerse a mano en esta lista.
 
 Fuente de verdad viva en `docs/`:
 
-- `00-estado-actual.md` — capacidades y últimos cambios.
+- `00-estado-actual.md` — capacidades y últimos cambios. Distingue el presente
+  del histórico; conviene respetar esa marca.
 - `01-contexto-del-proyecto.md` — propósito y mapa técnico.
 - `02-decisiones.md` — decisiones aceptadas con fecha y evidencia.
 - `03-roadmap.md` — trabajo previsible (no compromiso).
-- `04-problemas-pendientes.md` — bugs, deuda y validaciones.
+- `04-problemas-pendientes.md` — bugs, deuda y validaciones. Abre con un índice
+  de lo que sigue abierto.
 - `05-registro-de-cambios.md` — bitácora de entregas.
+- `06-app-nativa.md` — requisitos, firma y publicación de iOS/Android.
+- `07-modelo-seguridad.md` — superficie de seguridad y RLS.
+- `08-predespliegue-supabase.md` — comprobaciones antes de tocar producción.
+- **`09-entrega-y-reanudacion.md`** — cómo levantarlo desde cero, qué
+  arquitectura no romper y un guion para enseñarlo. **Empieza por aquí si
+  retomas el proyecto.**
 - `sesiones/AAAA-MM-DD--tema.md` — notas de sesión.
 
 El código ejecutable es siempre la fuente de verdad cuando choque con la
