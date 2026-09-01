@@ -1,13 +1,37 @@
 ---
 tipo: problemas
-actualizado: 2026-08-25
+actualizado: 2026-09-01
 ---
 
 # Problemas pendientes
 
 Todos los elementos siguientes se observaron directamente en el estado auditado
 del repositorio. Los cerrados conservan la evidencia histórica; los abiertos
-forman el backlog verificable.
+forman el backlog verificable. Cada entrada lleva su propia línea `Estado:`, que
+es la que manda.
+
+## Qué sigue abierto al aparcar el proyecto
+
+Índice de lectura rápida, revisado el 2026-09-01. Todo lo demás en este
+documento está **cerrado** o es **histórico**.
+
+| Elemento | Estado |
+| --- | --- |
+| **FUNC-002** — controles simulados sin resultado | abierto hasta decidir alcance |
+| **CUENTAS-003** — favoritos y tienda favorita fuera de la cuenta | abierto, decisión consciente |
+| **ENTORNO-002** — caché de npm propiedad de `root` | pendiente, y sólo en la máquina local de Oscar |
+| **I18N-001** — cobertura pública multidioma | en corrección desde 2026-08-04 |
+| **SEC-RLS-001** — migración segura | aplicada en producción; queda publicar lo que indica su ficha |
+| Chips de familia de `AppTopBar` a 320 px | sin resolver. Ver [[00-estado-actual]] |
+
+**Deuda técnica pausada a propósito**, y que **no está fichada en este
+repositorio**: los avisos de hooks, la división del bundle, `npm audit`, la
+migración a React Router 8 y los límites de descarga de Docker Hub que
+aparecen de vez en cuando en el job de Supabase sin llegar a tumbarlo. Los tres
+primeros tienen su apartado en [[03-roadmap]]. El seguimiento detallado de esa
+deuda vive **fuera del repositorio**, en las notas de sesión del segundo
+cerebro; quien retome el proyecto sólo con el repositorio debe saber que existe
+y no darla por inexistente.
 
 ## WEB-001 — La URL de variante ignora el basename
 

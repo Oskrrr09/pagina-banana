@@ -12,25 +12,28 @@ actualizado: 2026-09-01
 > tiempo real con Supabase + panel de agentes** (Fase 1 desplegada el
 > 2026-07-30). No hay integración comercial real ni motor de pago.
 
-## Foto de `main` (2026-08-23)
+## Estado actual del producto
 
 > [!info] Cómo leer este documento
-> **Foto del producto hoy**: esta sección, «Referencia actual», «Qué funciona
-> hoy», «Qué no existe» y «Stack efectivo». Describen `main` tal y como está, no
-> cómo llegó a estarlo.
+> **Presente**: esta sección, «Referencia actual», «Qué funciona hoy», «Qué no
+> existe» y «Stack efectivo». Describen `main` tal y como está, no cómo llegó a
+> estarlo.
 >
 > **Archivo histórico**, con su fecha en el título y que **no debe leerse como
-> presente**: «Auditoría de seguridad», «Fase 2», «Chat», «Aplicaciones», los
-> tres bloques de «Cambios recientes», «Historial de despliegues» y
-> «Verificación realizada». Se conservan porque explican cómo se llegó aquí.
+> presente**: «Cómo se llegó aquí», «Auditoría de seguridad», «Fase 2», «Chat»,
+> «Aplicaciones», los tres bloques de «Cambios recientes», «Historial de
+> despliegues» y «Verificación realizada». Se conservan porque explican el
+> camino, no el destino.
 >
-> La historia completa —qué PR trajo cada cosa— vive en
-> [[05-registro-de-cambios]]; el porqué, en [[02-decisiones]].
+> **No se anota aquí el SHA de `main`**: caduca con el primer merge y hace que
+> el documento mienta sin que nadie lo toque. La historia completa —qué PR
+> trajo cada cosa— vive en [[05-registro-de-cambios]]; el porqué, en
+> [[02-decisiones]].
 
 | | |
 | --- | --- |
-| `main` = `origin/main` | `e04f0e6f681e30b6fb493f6f312a0d61bbbb7dde` |
-| Último merge | **PR #74** — Tienda nativa v2 |
+| Último cambio funcional | **PR #96** — restauración de la tarjeta web anterior a la adaptación nativa |
+| Siguiente fase de producto | **no iniciada**, y sin decidir |
 | URL pública | <https://oskrrr09.github.io/pagina-banana/> |
 | `main` protegida | sí, ruleset sin bypass. Ver [[02-decisiones#D-063]] |
 | Node en CI y `.nvmrc` | **24** |
@@ -96,11 +99,15 @@ la presentación no. La plataforma se decide una sola vez en la frontera de la
 página. Ver [[02-decisiones#D-085]].
 
 **La tarjeta de rejilla también está separada**: `ProductCardWeb` y
-`ProductCardApp`, hoy visualmente idénticas, con el comportamiento compartido en
-`useTarjetaDeProducto`. Cada superficie importa la suya, y `/buscar` —la única
-página de catálogo que montan las dos plataformas— elige una sola vez.
-`ProductCardCompact` es aparte: sólo la usan los carriles de la app.
-**Quedan sin frontera `VariantPage` y `ModelPage`.**
+`ProductCardApp`, con el comportamiento compartido en `useTarjetaDeProducto`.
+Cada superficie importa la suya, y `/buscar` —la única página de catálogo que
+montan las dos plataformas— elige una sola vez. `ProductCardCompact` es aparte:
+sólo la usan los carriles de la app. Ya no son visualmente idénticas: la
+restauración pre-APP devolvió a la web su favorito de 36 px y le quitó el CTA de
+comparar que había llegado por una necesidad nativa.
+**`VariantPage`, `CartPage` y `CheckoutPage` son páginas compartidas con
+divergencias locales contadas; `ModelPage` y las editoriales no tienen
+frontera.**
 
 **Fase C completa (C1 + C2) — «Comprar se siente de app».** Comprar desde la
 app ya no obliga a recorrer la pantalla hasta el fondo para encontrar el botón.
@@ -201,21 +208,31 @@ app: `Home`, `FamilyPage`, `StorePage`, `VariantPage`, `CartPage`,
 propia y la web conserva la suya (D-086). Quedan sin frontera `ModelPage`
 —que la app no enlaza desde ninguna superficie— y las páginas editoriales.
 
+**Deuda conocida del armazón**: los chips de familia de `AppTopBar` ocupan
+474 px, de modo que a 320 px sólo se ven cuatro de los seis y miden 32 px de
+alto. Tienda la rodea con «Explorar»; **no está resuelta**. El resto de la deuda
+viva está en [[04-problemas-pendientes]].
+
+### Cómo se llegó aquí — histórico de las fases visuales
+
+> [!info]
+> Lo que sigue son las entregas que llevaron a la app nativa a su composición
+> actual, en el orden en que ocurrieron. **No es el estado presente**: eso está
+> arriba. Cada una tiene su entrada completa, con medidas y PR, en
+> [[05-registro-de-cambios]].
+
 **Fase B completa (B1 + B2).** La **ficha** nativa también respira: la galería
 pierde el marco y toma el radio del sistema, el favorito deja de separar el
 nombre del precio —se compacta a icono de 44 px— y los accesorios sugeridos
 reutilizan la tarjeta del catálogo. `VariantPage` **sigue siendo una sola página
 compartida**: divergen tres nodos, no la página (D-087). `ModelPage`, fuera.
 
-**Fase B iniciada (B1).** La tarjeta del catálogo **nativo** ya no repite marcos:
-una sola superficie —la imagen—, nombre y precio juntos debajo, y favorito y
-comparar como iconos encima de la foto. Medido a 320 px: la tarjeta pasa de 510 a
-281 y **el precio entra en el primer viewport por primera vez**. **La web no
-cambia** (D-086). **B2 —la ficha— no ha empezado.**
-
-**Deuda conocida del armazón**: los chips de familia de `AppTopBar` ocupan 474 px,
-de modo que a 320 px sólo se ven cuatro de los seis y miden 32 px de alto. Tienda
-la rodea con «Explorar»; no está resuelta.
+**Fase B1**, la primera de esa fase. La tarjeta del catálogo **nativo** dejó de
+repetir marcos: una sola superficie —la imagen—, nombre y precio juntos debajo,
+y favorito y comparar como iconos encima de la foto. Medido a 320 px: la tarjeta
+pasó de 510 a 281 px y **el precio entró en el primer viewport por primera
+vez**. **La web no cambió** (D-086). B2 llegó después, y está descrita justo
+encima.
 
 ### Catálogo
 
@@ -442,9 +459,9 @@ Android (2026-08-01).**
 
 ## Referencia actual
 
-- Rama de producción: `main`, en
-  `e04f0e6f681e30b6fb493f6f312a0d61bbbb7dde` (PR #74). Sin ramas de
-  consolidación abiertas.
+- Rama de producción: `main`. Sin ramas de consolidación abiertas. El último
+  cambio funcional es la **PR #96**; después sólo hay cierre documental. No se
+  anota el SHA: caduca con el siguiente merge.
 - Base multidioma a cinco idiomas; la afirmación de cobertura completa quedó
   retirada por I18N-001.
 - **Repositorio**: `Oskrrr09/pagina-banana`. Transferido el 2026-08-07 desde

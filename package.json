@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Prototipo navegable de la nueva web de Banana Computer (Fase 2). Demostración conceptual con datos de ejemplo.",
+  "description": "Prototipo navegable de una tienda Apple para Banana Computer: web, aplicación nativa iOS/Android con Capacitor y panel de agentes. Demostración conceptual con datos de ejemplo.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/generate-sw.mjs",

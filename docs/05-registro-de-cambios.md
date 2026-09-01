@@ -8,6 +8,38 @@ actualizado: 2026-09-01
 Este registro resume cambios relevantes. Git sigue siendo la fuente exacta para
 autores, diffs y marcas de tiempo.
 
+## 2026-09-01 — Snapshot estable para aparcar el proyecto
+
+Cierre documental, **sin un solo cambio de producto**: `src/`, `tests/`,
+`supabase/`, `ios/`, `android/`, los workflows y el lockfile quedan intactos.
+
+El objetivo es que dentro de seis meses el repositorio se explique solo: qué es,
+qué no es, cómo se levanta desde un clon limpio, qué arquitectura no conviene
+romper y qué queda pendiente.
+
+- **README** deja de titularse «Fase 2» y pasa a describir las **tres
+  superficies** —web, app nativa con Capacitor y panel de agentes—, con una
+  sección de arquitectura contrastada contra el código: dónde se decide la
+  plataforma, qué páginas divergen enteras, cuáles divergen en nodos y cuáles no
+  tienen frontera. Se corrigen referencias que ya no existían
+  (`ProductCard`, `ShowcaseFamilyPage`), la tabla de rutas —le faltaban
+  `/tienda`, `/login`, `/registro`, `/cuenta`, `/mis-productos` y `/agente`— y
+  el recuento de AirPods, que decía 2 y son 4.
+- **`00-estado-actual`** deja de llevar un SHA de `main` que caducaba con el
+  primer merge, y separa de forma inequívoca el presente del histórico: las
+  frases «B2 no ha empezado» y «Fase B completa» convivían como si las dos
+  fueran actuales.
+- **`03-roadmap`** queda revisado punto por punto contra la realidad: lo
+  resuelto se marca en su sitio, lo que no se ha podido demostrar se dice tal
+  cual —el caso de `search.spec.ts` no se cierra sin evidencia—.
+- **`04-problemas-pendientes`** gana un índice de lo que sigue abierto, y deja
+  escrito que hay deuda pausada cuyo seguimiento vive fuera del repositorio.
+- **`09-entrega-y-reanudacion`** es nuevo: levantar el proyecto desde cero,
+  variables de entorno, web, app nativa, la arquitectura que no debe romperse y
+  un guion corto para enseñarlo.
+- **`package.json`** actualiza sólo la `description`. La versión sigue siendo
+  **0.1.0** y no se toca ninguna dependencia.
+
 ## 2026-09-01 — La tarjeta web vuelve a la de antes de la adaptación nativa
 
 Auditoría de la web contra `5201a44f64185fc962c203d55bb468f77196c5ff` —el padre

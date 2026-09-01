@@ -1,6 +1,6 @@
 ---
 tipo: roadmap
-actualizado: 2026-08-21
+actualizado: 2026-09-01
 ---
 
 # Roadmap
@@ -10,22 +10,31 @@ actualizado: 2026-08-21
 > que se desprende directamente del código, el README y los problemas
 > verificados. Es backlog documental, no una promesa de alcance o fecha.
 
+> [!info] Revisado al aparcar el proyecto (2026-09-01)
+> Cada punto se contrastó con el estado real. Lo resuelto queda marcado como
+> **hecho** en su sitio en vez de borrarse, para que no se vuelva a proponer. Lo
+> que **no se ha podido demostrar** se dice tal cual: ni se da por hecho ni se
+> da por pendiente.
+
 ## 1. Estabilizar el prototipo publicado
 
-- Confirmar en CI el Supabase local ya versionado y ejecutar los 27 casos de
-  `tests/rls/` contra GoTrue, PostgREST y Storage.
-- Solo después: integrar las PR #33 y #34, activar Anonymous sign-ins en el
-  proyecto de demostración, aplicar la migración y publicar el frontend
-  compatible en la misma ventana.
-- Actualizar React Router a una versión sin los avisos moderados actuales y
-  volver a ejecutar la suite completa y `npm audit`.
+- **Hecho.** El Supabase local versionado corre en CI, en su propio job, con los
+  casos de `tests/rls/` contra GoTrue, PostgREST y Storage. Ya no son 27: son
+  **36**, más 103 de integración y 5 de confirmación.
+- **Hecho.** Las PR #33 y #34 se integraron y el chat anónimo funciona contra el
+  proyecto de demostración; sus flujos están cubiertos por `tests/integration/`.
+- **Hecho.** React Router está en **7.18.2**, la versión que cierra los avisos
+  moderados. La migración a la **8** sigue pendiente y tiene su apartado en 5.1.
+- **Pendiente**: `npm audit` no se ha vuelto a ejecutar en este cierre. Deuda
+  pausada a propósito.
 
 Detalle: [[04-problemas-pendientes]].
 
 ## 2. Alinear documentación y comportamiento
 
-- Actualizar el README: el catálogo ya no es solo iPhone y el proyecto usa
-  imágenes locales de producto.
+- **Hecho** al aparcar el proyecto: el README describe las tres superficies
+  —web, app nativa y panel—, la frontera de plataforma y el catálogo real de
+  cinco familias con imágenes locales.
 - Mantener este vault al día cada vez que cambien rutas, datos, decisiones,
   riesgos o comandos de verificación.
 - Registrar sesiones solo cuando aporten contexto no capturado en los
@@ -62,7 +71,7 @@ Solo después de acordar alcance:
 
 - [x] TypeScript, ESLint, Vitest, pruebas de esquema, Playwright y axe en CI.
 - [x] E2E contra el artefacto compilado y despliegue dependiente de calidad.
-- [ ] Resolver los 23 avisos actuales de hooks sin reescribir efectos a
+- [ ] Resolver los **24** avisos actuales de hooks sin reescribir efectos a
       ciegas; cada cambio necesita una regresión que justifique la conducta.
 - [ ] Añadir presupuesto o división de bundle: el JavaScript principal supera
       actualmente el umbral de 500 kB sin comprimir de Vite.
@@ -137,6 +146,13 @@ Hasta que exista, `docs/08-predespliegue-supabase.md` marca Confirm Email como
 ## 5.3 Estabilizar `search.spec.ts:342`
 
 Tarea propia, registrada el 2026-08-06.
+
+> [!warning] Estado al aparcar el proyecto: **sin demostrar en ninguno de los
+> dos sentidos**. Los últimos runs de CI —del #198 al #211— no registran ni un
+> solo `retry`, `flaky` ni `interrupted`, y el fichero ha cambiado desde
+> entonces, así que la línea 342 ya no es la que describe este apartado. Eso no
+> prueba que la carrera esté resuelta: prueba que no se ha vuelto a ver. Se deja
+> abierto porque cerrarlo sin evidencia sería peor.
 
 «Escape con selección cierra, restaura foco y no navega» falla de vez en cuando
 en el primer intento y pasa en el reintento. En el run 31084026968 salió como
