@@ -92,8 +92,13 @@ retomarlo**:
 
 > Compartir dominio no significa compartir composición.
 
-Web y app comparten repositorio, build, datos, tipos, precios, ofertas, rutas,
-estado y persistencia. Lo que puede diverger es **cómo se ve y cómo se toca**.
+Web y app comparten repositorio, cadena de herramientas, datos, tipos, precios,
+ofertas, rutas, estado, persistencia y la mayor parte del código. Lo que puede
+diverger es **cómo se ve y cómo se toca**.
+
+**El build no es el mismo**: `npm run build` produce `dist/` para la web
+publicada y `npm run build:app` produce `dist-app/`, con base `/`, para
+Capacitor. Dos artefactos del mismo código.
 
 La plataforma se resuelve una sola vez al arrancar, en
 [`src/lib/nativeApp.ts`](src/lib/nativeApp.ts):
@@ -105,6 +110,12 @@ export const isNativeApp = Boolean(window.Capacitor)
 Capacitor inyecta `window.Capacitor` en el WebView antes del bundle, así que el
 valor no cambia durante la vida de la aplicación. En las pruebas E2E se simula
 con `window.Capacitor = {}` desde un `addInitScript`.
+
+Se consulta en **fronteras explícitas de plataforma** —una página elige entre
+dos composiciones— o en **divergencias locales deliberadas y pequeñas**, que es
+lo que hacen `VariantPage`, `CartPage` y `CheckoutPage` (D-087). Lo que no debe
+hacer es dispersarse por la composición ni dejar que una necesidad visual de la
+app mueva la web.
 
 **Dónde se decide**, comprobado contra el código:
 

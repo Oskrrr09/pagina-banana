@@ -23,15 +23,50 @@ documento está **cerrado** o es **histórico**.
 | **I18N-001** — cobertura pública multidioma | en corrección desde 2026-08-04 |
 | **SEC-RLS-001** — migración segura | aplicada en producción; queda publicar lo que indica su ficha |
 | Chips de familia de `AppTopBar` a 320 px | sin resolver. Ver [[00-estado-actual]] |
+| **DEP-001** — `nanoid` con aviso de severidad alta | abierto, pausado. Ver abajo |
 
-**Deuda técnica pausada a propósito**, y que **no está fichada en este
-repositorio**: los avisos de hooks, la división del bundle, `npm audit`, la
-migración a React Router 8 y los límites de descarga de Docker Hub que
-aparecen de vez en cuando en el job de Supabase sin llegar a tumbarlo. Los tres
-primeros tienen su apartado en [[03-roadmap]]. El seguimiento detallado de esa
-deuda vive **fuera del repositorio**, en las notas de sesión del segundo
-cerebro; quien retome el proyecto sólo con el repositorio debe saber que existe
-y no darla por inexistente.
+**Deuda técnica pausada a propósito**: los avisos de hooks, la división del
+bundle, la migración a React Router 8, la vulnerabilidad de `nanoid` que se
+detalla abajo y los límites de descarga de Docker Hub que aparecen de vez en
+cuando en el job de Supabase sin llegar a tumbarlo. Los tres primeros tienen su
+apartado en [[03-roadmap]].
+
+Parte del seguimiento cronológico de esa deuda se llevó en **notas externas de
+trabajo**, fuera del repositorio. Lo que importa para retomar el proyecto está
+recogido aquí y en el roadmap: **este documento y [[03-roadmap]] son suficientes
+para conocer la deuda conocida**, sin depender de esas notas.
+
+## DEP-001 — `nanoid` con un aviso de severidad alta
+
+- Estado: **abierto**, pausado a propósito al aparcar el proyecto.
+- Detectado el 2026-09-01 con `npm audit` en modo sólo lectura, bajo Node
+  v24.9.0 y npm 11.6.0.
+
+`npm ci` informa de **una vulnerabilidad de severidad alta**. No es el antiguo
+aviso de React Router, que se cerró al migrar a 7.18.2: es **`nanoid@3.3.16`**,
+por el aviso «custom generators can loop indefinitely when size is zero», que
+afecta a las versiones `< 3.3.18`.
+
+| | |
+| --- | --- |
+| Dependencia | **transitiva**: `vite` → `postcss` → `nanoid` |
+| Marcada en el lockfile | `dev: true` |
+| `npm audit` completo | 1 alta, 0 críticas, 0 moderadas, 0 bajas |
+| `npm audit --omit=dev` | **0 vulnerabilidades** |
+| Arreglo disponible según npm | sí |
+
+**Qué significa y qué no.** Al no ser dependencia de producción, no entra en el
+bundle que se publica ni en el que empaqueta Capacitor: es una pieza de la
+cadena de compilación. Eso no la convierte en irrelevante —quien ejecute el
+build corre ese código—, pero sí explica por qué no bloquea el snapshot.
+
+**Por qué no se corrige aquí.** El cierre del proyecto es documental y no toca
+`package-lock.json` ni dependencias; hacerlo obligaría a reejecutar y revalidar
+la suite entera por un cambio que nadie ha revisado. Es una decisión consciente,
+no un descuido.
+
+**Cuándo hay que reevaluarla.** Antes de actualizar dependencias y, sin
+excepción, antes de convertir el prototipo en producto real.
 
 ## WEB-001 — La URL de variante ignora el basename
 

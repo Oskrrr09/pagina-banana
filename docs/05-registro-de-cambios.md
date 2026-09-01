@@ -40,6 +40,17 @@ romper y qué queda pendiente.
 - **`package.json`** actualiza sólo la `description`. La versión sigue siendo
   **0.1.0** y no se toca ninguna dependencia.
 
+Tras la revisión independiente se corrigieron cuatro imprecisiones del propio
+snapshot: que `supabase:start` bastara para conectar el frontend —no basta: hay
+que darle la URL y la clave que devuelve `supabase status`—; que el CI «tampoco
+tiene credenciales», cuando compila **dos** artefactos y sólo el de pruebas
+lleva las variables vacías; la regla de no consultar `isNativeApp` dentro de los
+componentes, que contradecía D-087 y lo que hacen `VariantPage`, `CartPage` y
+`CheckoutPage`; y describir web y app como si compartieran «el build», cuando
+son `dist/` y `dist-app/`. Se registra además **DEP-001**, un aviso de severidad
+alta en `nanoid`, transitivo y sólo de desarrollo, que se deja pausado a
+propósito.
+
 ## 2026-09-01 — La tarjeta web vuelve a la de antes de la adaptación nativa
 
 Auditoría de la web contra `5201a44f64185fc962c203d55bb468f77196c5ff` —el padre

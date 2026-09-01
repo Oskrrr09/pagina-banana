@@ -71,8 +71,17 @@ Sólo se versionan dos ficheros, y **ninguno contiene secretos**:
   `.env.local`, que git ignora, y ahí van los valores reales.
 - **`.env.test`** — entorno de las pruebas E2E, con las dos variables
   **vacías a propósito**: las pruebas corren contra el modo demostración y no
-  contra la base de datos real. El CI tampoco tiene credenciales, así que local
-  y CI prueban lo mismo.
+  contra la base de datos real.
+
+**Qué hace el CI, que no es lo mismo para los dos artefactos.** `ci.yml`
+compila **dos veces**, y la diferencia importa porque Vite **incrusta** las
+variables `VITE_` en el JavaScript durante el build: no son configuración de
+tiempo de ejecución.
+
+| Artefacto | Variables | Consecuencia |
+| --- | --- | --- |
+| **Publicación** (`dist/`, a Pages) | recibe `SUPABASE_URL` y `SUPABASE_ANON_KEY` desde los secretos de Actions, mapeadas a `VITE_*` | si esos secretos están configurados, la web publicada **queda conectada** al proyecto de demostración; si no lo están, se publica en modo demostración |
+| **Pruebas** (`dist-test`, el que consumen las E2E) | `VITE_SUPABASE_URL=''` y `VITE_SUPABASE_ANON_KEY=''`, explícitamente vacías | las E2E **nunca** tocan el Supabase remoto |
 
 `.gitignore` ignora `.env` y `.env.*` salvo esos dos. **La `service_role` de
 Supabase no va nunca en el frontend**: es de servidor.
@@ -83,7 +92,30 @@ Tres formas de arrancar, según lo que se necesite:
 | --- | --- | --- |
 | **Sin Supabase** | sin `.env.local`, o con las variables vacías | Todo el catálogo, favoritos, comparador, carrito y checkout demostrativo. El chat y la cuenta quedan en modo demo |
 | **Contra el proyecto de demostración** | `.env.local` con URL y `anon key` | Además: registro, acceso, cuenta, pedidos, reservas, chat y panel de agentes |
-| **Supabase local** | `npm run supabase:start` | Lo mismo, contra una base efímera, y habilita las suites de RLS e integración |
+| **Supabase local** | `npm run supabase:start` **y además** pasarle al frontend la URL y la clave que devuelve `npx supabase status -o json` | Lo mismo, contra una base efímera |
+
+`supabase:start` **por sí solo no conecta el frontend**: sólo levanta los
+contenedores. El frontend lee `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, y
+esas hay que dárselas:
+
+```bash
+npm run supabase:start
+npx supabase status -o json     # de aquí salen API_URL y ANON_KEY
+```
+
+Con esos dos valores se escribe un `.env.local` —o se pasan como variables de
+entorno al arrancar— y ya. **No se pegan aquí ni se commitean**: son de la
+instancia local y se regeneran.
+
+Para las **suites de integración** no hace falta nada de eso:
+
+```bash
+npm run test:integration
+```
+
+`scripts/test-supabase-local.mjs` levanta Supabase, lee `supabase status -o
+json`, saca `API_URL` y `ANON_KEY` y se las inyecta al proceso de pruebas como
+`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. Se configura solo.
 
 ## Web
 
@@ -112,19 +144,31 @@ El principio que sostiene todo lo demás:
 
 > **Compartir dominio no significa compartir composición.**
 
-Web y app comparten repositorio, build, datos, precios, ofertas, rutas, estado y
-persistencia. Lo que puede diverger es cómo se ve y cómo se toca. La plataforma
-se resuelve **una sola vez** al arrancar, en `src/lib/nativeApp.ts`, y se decide
-en fronteras explícitas y contadas —no consultando `isNativeApp` por dentro de
-los componentes—.
+Web y app comparten repositorio, cadena de herramientas, datos, dominio, hooks,
+rutas, estado, persistencia y la mayor parte del código. Lo que puede diverger
+es cómo se ve y cómo se toca.
+
+**El build no es el mismo**: `npm run build` produce `dist/` para la web
+publicada, y `npm run build:app` produce `dist-app/` con base `/` para
+Capacitor. Son dos artefactos distintos del mismo código.
+
+La plataforma se resuelve **una sola vez** al arrancar, en
+`src/lib/nativeApp.ts`. `isNativeApp` se consulta en **fronteras explícitas de
+plataforma** o en **divergencias locales deliberadas y pequeñas**; lo que no
+debe hacer es dispersarse por la composición ni permitir que una necesidad
+visual de la app mueva la web.
 
 Tres reglas prácticas:
 
 1. **Un cambio visual de la app no puede mover la web**, ni al revés. Si puede,
    la frontera está mal puesta.
-2. **Divergencia pequeña, rama local**; divergencia de estructura entera,
-   composición aparte. Duplicar una página garantiza que las dos copias se
-   separen sin que nadie se entere.
+2. **Divergencia de estructura entera, composición aparte**: `HomeWeb` /
+   `AppCustomerHome`, `WebFamilyPage` / `AppFamilyPage`, `ProductCardWeb` /
+   `ProductCardApp`, la composición web de Favoritos frente a `FavoritesApp`, y
+   `CompareWeb` / `CompareApp`. **Divergencia de unos pocos nodos, rama local**
+   dentro de una sola página: es lo que hacen `VariantPage`, `CartPage` y
+   `CheckoutPage`, y es deliberado (D-087). Duplicar una página por tres
+   detalles garantiza que las dos copias se separen sin que nadie se entere.
 3. **El dominio no se duplica.** Si dos superficies necesitan lo mismo, va a un
    hook compartido.
 
